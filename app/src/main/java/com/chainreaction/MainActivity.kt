@@ -36,6 +36,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -178,15 +179,15 @@ private fun SubScreen(
 
 @Composable
 private fun BackBar(title: String, onBack: () -> Unit) {
-    Row(
+    Box(
         Modifier
             .fillMaxWidth()
             .height(56.dp)
             .padding(horizontal = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(
             Modifier
+                .align(Alignment.CenterStart)
                 .height(48.dp)
                 .clip(androidx.compose.foundation.shape.RoundedCornerShape(12.dp))
                 .clickable(onClick = onBack)
@@ -195,15 +196,21 @@ private fun BackBar(title: String, onBack: () -> Unit) {
         ) {
             Text("‹  Menu", color = Sage, fontWeight = FontWeight.Bold, fontSize = 17.sp)
         }
+        // Centred on the screen, not on the leftover space; the side padding keeps a
+        // long course name from running under the Menu button.
         Text(
             title.uppercase(),
             color = OffWhite,
             fontWeight = FontWeight.Black,
-            fontSize = 15.sp,
+            fontSize = 18.sp,
             letterSpacing = 1.5.sp,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.padding(start = 8.dp),
+            textAlign = TextAlign.Center,
+            modifier = Modifier
+                .align(Alignment.Center)
+                .fillMaxWidth()
+                .padding(horizontal = 96.dp),
         )
     }
 }

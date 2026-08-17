@@ -208,11 +208,14 @@
   .big.play { background: #F7941E; color: var(--pine); }
   .big.menublue { background: #1B62B5; color: var(--off); }
 
-  .backbar { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
-  .backbar .back { background: none; min-height: 48px; padding: 0 12px;
-                   color: var(--sage); font-weight: 700; font-size: 17px; }
-  .backbar span { color: var(--off); font-weight: 900; font-size: 15px; letter-spacing: 1.5px;
-                  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .backbar { position: relative; display: flex; align-items: center; justify-content: center;
+             min-height: 48px; margin-bottom: 4px; }
+  .backbar .back { position: absolute; left: 0; background: none; min-height: 48px;
+                   padding: 0 12px; color: var(--sage); font-weight: 700; font-size: 17px; }
+  /* Centred on the bar, not the leftover space; side margins keep a long course name
+     from running under the Menu button. */
+  .backbar span { color: var(--off); font-weight: 900; font-size: 18px; letter-spacing: 1.5px;
+                  margin: 0 88px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 
   nav {
