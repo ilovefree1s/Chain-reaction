@@ -1,0 +1,19 @@
+{
+  "name": "Chain Reaction",
+  "short_name": "Chain Reaction",
+  "description": "Disc golf card game companion",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0C1A14",
+  "theme_color": "#0C1A14",
+  "icons": [
+    {
+      "src": "assets/icon.png",
+      "sizes": "1254x1254",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

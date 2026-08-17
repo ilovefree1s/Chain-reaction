@@ -1,0 +1,60 @@
+{
+  "_comment": "Built-in course library. Read by the Android app (bundled as an asset) and injected into the web build by web/build.js. Add a course by appending an entry: pars must have exactly holeCount entries. Name the tees too — pars differ per tee.",
+  "courses": [
+    {
+      "name": "W.S. Gibbs Memorial Disc Golf Course — White/Shorts",
+      "holeCount": 18,
+      "pars": [3, 4, 3, 3, 4, 3, 4, 3, 3, 4, 3, 3, 3, 3, 3, 4, 3, 3]
+    },
+    {
+      "name": "Pioneer Park",
+      "holeCount": 18,
+      "pars": [3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3]
+    },
+    {
+      "name": "Mt. Gilead",
+      "holeCount": 18,
+      "pars": [3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3]
+    },
+    {
+      "name": "Washington Township Park",
+      "holeCount": 18,
+      "pars": [3, 3, 3, 3, 3, 3, 4, 3, 3, 3, 4, 3, 5, 4, 3, 4, 3, 4]
+    },
+    {
+      "name": "Walnut Ridge",
+      "holeCount": 18,
+      "pars": [3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 5]
+    },
+    {
+      "name": "Hawks Nest",
+      "holeCount": 18,
+      "pars": [3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3]
+    },
+    {
+      "name": "Avon Town Hall",
+      "holeCount": 9,
+      "pars": [3, 3, 3, 3, 3, 3, 3, 3, 3]
+    },
+    {
+      "name": "Faith Baptist",
+      "holeCount": 18,
+      "pars": [3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 3, 4, 3, 3, 3, 3]
+    },
+    {
+      "name": "Jimmy Nash Park",
+      "holeCount": 18,
+      "pars": [3, 3, 3, 3, 3, 4, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 3, 3]
+    },
+    {
+      "name": "Masters 9",
+      "holeCount": 9,
+      "pars": [3, 3, 3, 3, 3, 3, 3, 3, 3]
+    },
+    {
+      "name": "Masters 18",
+      "holeCount": 18,
+      "pars": [4, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 3, 3, 3]
+    }
+  ]
+}

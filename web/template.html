@@ -1,0 +1,1171 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Chain Reaction">
+<meta name="theme-color" content="#0C1A14">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="assets/icon.png">
+<title>Chain Reaction</title>
+<style>
+  :root {
+    --pine: #0C1A14;
+    --panel: #132A21;
+    --raised: #1B3B2E;
+    --sage: #8AA79A;
+    --off: #F2F5F1;
+    --attack: #FF5A4D;
+    --self: #FFD23F;
+    --dual: #FF57C1;
+    --react: #4DD9E8;
+    --group: #A78BFA;
+    --tap: 56px;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    margin: 0;
+    background: var(--pine);
+    color: var(--off);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-size: 17px;
+    line-height: 1.45;
+    overscroll-behavior-y: none;
+  }
+  body {
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) 0 env(safe-area-inset-left);
+  }
+  #app { padding: 16px 16px 96px; max-width: 640px; margin: 0 auto; }
+  h1 {
+    font-size: 34px; line-height: 1.05; font-weight: 900;
+    letter-spacing: -0.5px; margin: 0 0 4px;
+  }
+  .sub { color: var(--sage); margin: 0 0 28px; }
+  .label {
+    text-transform: uppercase; color: var(--sage); font-size: 14px;
+    font-weight: 900; letter-spacing: 1.5px; margin: 24px 0 10px;
+  }
+  .label:first-child { margin-top: 0; }
+
+  .panel { background: var(--panel); border-radius: 16px; padding: 14px; margin-bottom: 10px; }
+
+  button {
+    font-family: inherit; border: 0; cursor: pointer; color: var(--off);
+    background: var(--raised); border-radius: 14px; min-height: var(--tap);
+    font-size: 17px;
+  }
+  button:disabled { opacity: .45; cursor: default; }
+  .big {
+    display: block; width: 100%; min-height: var(--tap); border-radius: 14px;
+    font-weight: 700; font-size: 15px; letter-spacing: .8px; text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  .big.primary { background: var(--self); color: var(--pine); }
+  .big.wheel { background: var(--group); color: var(--pine); }
+  .big.quiet { background: var(--panel); color: var(--off); }
+  /* For use *on* a panel, where .quiet would vanish into the background. */
+  .big.raised { background: var(--raised); color: var(--off); }
+  .big.danger { background: var(--panel); color: var(--attack); }
+
+  .step {
+    width: var(--tap); height: var(--tap); min-height: var(--tap); flex: 0 0 var(--tap);
+    font-size: 30px; font-weight: 900; line-height: 1; border-radius: 14px;
+    background: var(--raised); display: flex; align-items: center; justify-content: center;
+  }
+  .row { display: flex; align-items: center; gap: 10px; }
+  .grow { flex: 1 1 auto; min-width: 0; }
+  .num { width: 56px; text-align: center; font-size: 34px; font-weight: 900; }
+
+  input[type=text] {
+    width: 100%; min-height: var(--tap); background: var(--panel); color: var(--off);
+    border: 2px solid var(--raised); border-radius: 14px; padding: 0 14px;
+    font-family: inherit; font-size: 17px;
+  }
+  input[type=text]:focus { outline: none; border-color: var(--self); }
+
+  .me {
+    width: var(--tap); height: var(--tap); flex: 0 0 var(--tap); border-radius: 14px;
+    background: var(--panel); color: var(--sage); font-weight: 900; font-size: 15px;
+  }
+  .me.on { background: var(--self); color: var(--pine); }
+
+  .hole-title { text-align: center; flex: 1 1 auto; }
+  .hole-title strong { display: block; font-size: 26px; font-weight: 900; }
+  .hole-title span { font-size: 14px; font-weight: 700; letter-spacing: 1px; color: var(--sage); }
+  .hole-title span.locked { color: var(--self); }
+
+  .player { background: var(--panel); border-radius: 16px; padding: 12px; margin-bottom: 10px; }
+  .player.me { background: var(--raised); outline: 2px solid var(--self); }
+  .player .name { font-size: 22px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .player.me .name { color: var(--self); }
+  .rel { font-size: 15px; font-weight: 900; }
+  .rel.under { color: var(--react); }
+  .rel.even { color: var(--sage); }
+  .rel.over { color: var(--attack); }
+
+  .total { display: flex; align-items: center; gap: 10px; background: var(--panel);
+           border-radius: 12px; padding: 12px 14px; margin-bottom: 8px; }
+  .total .name { flex: 1 1 auto; font-size: 22px; font-weight: 700; overflow: hidden;
+                 text-overflow: ellipsis; white-space: nowrap; }
+  .total .v { font-size: 22px; font-weight: 700; text-align: right; width: 52px; }
+  .lead { background: var(--group); color: var(--pine); font-size: 11px; font-weight: 900;
+          border-radius: 4px; padding: 2px 6px; }
+
+  .counters { display: flex; gap: 10px; margin-bottom: 12px; }
+  .counter { flex: 1; background: var(--panel); border-radius: 14px; padding: 12px 4px; text-align: center; }
+  .counter b { display: block; font-size: 26px; font-weight: 900; }
+  .counter span { font-size: 12px; font-weight: 900; letter-spacing: 1px; color: var(--sage);
+                  text-transform: uppercase; }
+
+  .card { display: flex; background: var(--panel); border-radius: 18px; overflow: hidden; margin-bottom: 12px; }
+  .card .stripe { width: 8px; flex: 0 0 8px; }
+  .card .body { padding: 16px; flex: 1 1 auto; min-width: 0; }
+  .tags { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+  .tag { font-size: 13px; font-weight: 900; letter-spacing: 1px; border-radius: 6px;
+         padding: 4px 8px; text-transform: uppercase; }
+  .tag.timing { background: var(--raised); color: var(--sage); }
+  .card h3 { margin: 0 0 6px; font-size: 26px; font-weight: 900; letter-spacing: -.3px; }
+  .card p { margin: 0; color: var(--sage); }
+  .card .acts { display: flex; gap: 10px; margin-top: 14px; }
+  .card .acts button { flex: 1; margin: 0; }
+
+  .k-attack { background: var(--attack); color: var(--pine); }
+  .k-self   { background: var(--self);   color: var(--pine); }
+  .k-dual   { background: var(--dual);   color: var(--pine); }
+  .k-react  { background: var(--react);  color: var(--pine); }
+  .k-group  { background: var(--group);  color: var(--pine); }
+  .s-attack { background: var(--attack); }
+  .s-self   { background: var(--self); }
+  .s-dual   { background: var(--dual); }
+  .s-react  { background: var(--react); }
+  .s-group  { background: var(--group); }
+
+  .hint { color: var(--sage); margin: 0 0 12px; }
+
+  .course { cursor: pointer; }
+  .cname { font-size: 22px; font-weight: 700; }
+  .cname.picked { color: var(--self); }
+  .courserow { display: flex; align-items: center; background: var(--panel);
+               border-radius: 14px; margin-bottom: 8px; overflow: hidden; }
+  .courserow .pick { flex: 1 1 auto; min-width: 0; padding: 14px; cursor: pointer; }
+  .courserow .del { flex: 0 0 var(--tap); width: var(--tap); background: none;
+                    color: var(--attack); font-size: 28px; font-weight: 900; border-radius: 0; }
+  .pargrid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; margin-bottom: 12px; }
+  .parcell { height: 64px; min-height: 64px; border-radius: 12px; background: var(--panel);
+             display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  .parcell.off { background: var(--raised); }
+  .parcell b { font-size: 24px; font-weight: 900; }
+  .parcell.off b { color: var(--self); }
+  .parcell span { font-size: 12px; font-weight: 900; color: var(--sage); }
+  .total-par { float: right; color: var(--react); }
+  .place { flex: 0 0 32px; width: 32px; text-align: center; font-size: 20px;
+           font-weight: 900; color: var(--sage); }
+  .place.won { color: var(--self); }
+
+  /* ---- main menu ---- */
+  body.menu-screen #app { padding: 0; max-width: none; }
+  .menu { position: relative; min-height: 100vh; min-height: 100dvh;
+          background: var(--pine); overflow: hidden;
+          display: flex; flex-direction: column; }
+  /* Full width, anchored top: cropping to fill a tall screen would trim the sides and
+     cut the ends off the logo. Grass carries on below it. */
+  .menu-art { flex: 0 0 auto; }
+  .menu-art img { width: 100%; display: block; }
+  /* Grass fills the rest of the frame. The negative margin pulls it up over the photo's
+     bottom edge and the mask fades its own top out, cross-fading the join rather than
+     butting the two images together. */
+  .menu-grass {
+    flex: 1 1 auto; margin-top: -7vh; min-height: 0;
+    background: center / cover no-repeat;
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 7vh);
+    mask-image: linear-gradient(to bottom, transparent 0, #000 7vh);
+  }
+  /* Gentle darkening so the buttons hold up against bright grass. */
+  .menu::after {
+    content: ""; position: absolute; inset: 0; pointer-events: none;
+    background: linear-gradient(to bottom, transparent 55%, rgba(0, 0, 0, 0.28) 100%);
+  }
+  /* The button sheet is transparent, so it just sits on the photo. */
+  .menu-buttons {
+    position: absolute; left: 0; right: 0; z-index: 1;
+    bottom: env(safe-area-inset-bottom); height: 40%;
+    display: flex; justify-content: center;
+  }
+  .menu-buttons .sheet { position: relative; height: 100%; aspect-ratio: 1024 / 1536; }
+  .menu-buttons img { height: 100%; width: 100%; display: block; }
+  /* Measured off the artwork's pixels; boundaries fall between buttons. */
+  .hit { position: absolute; left: 0; right: 0; cursor: pointer; }
+  .menu-buttons-plain { position: absolute; left: 0; right: 0; z-index: 1;
+                        bottom: env(safe-area-inset-bottom); padding: 0 20px; }
+  .big.play { background: #F7941E; color: var(--pine); }
+  .big.menublue { background: #1B62B5; color: var(--off); }
+
+  .backbar { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+  .backbar .back { background: none; min-height: 48px; padding: 0 12px;
+                   color: var(--sage); font-weight: 700; font-size: 17px; }
+  .backbar span { color: var(--off); font-weight: 900; font-size: 15px; letter-spacing: 1.5px;
+                  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+
+  nav {
+    position: fixed; left: 0; right: 0; bottom: 0; display: flex; background: var(--panel);
+    padding-bottom: env(safe-area-inset-bottom);
+    border-top: 1px solid var(--raised);
+  }
+  nav button {
+    flex: 1; background: none; border-radius: 0; min-height: 64px; color: var(--sage);
+    font-size: 14px; font-weight: 700; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 4px;
+  }
+  nav button.on { color: var(--off); }
+  .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--sage); position: relative; }
+  nav button.on .dot { width: 14px; height: 14px; }
+  nav button.on .dot.score { background: var(--self); }
+  nav button.on .dot.hand  { background: var(--react); }
+  nav button.on .dot.rules { background: var(--group); }
+  .badge {
+    position: absolute; top: -9px; left: 8px; min-width: 18px; height: 18px;
+    border-radius: 9px; background: var(--attack); color: var(--pine);
+    font-size: 11px; font-weight: 900; line-height: 18px; text-align: center; padding: 0 4px;
+  }
+
+  .modal {
+    position: fixed; inset: 0; background: var(--pine); z-index: 20; overflow-y: auto;
+    padding: calc(20px + env(safe-area-inset-top)) 20px calc(24px + env(safe-area-inset-bottom));
+  }
+  .modal h1 { color: var(--group); }
+  .placeholder { background: var(--panel); border-radius: 18px; padding: 40px 16px;
+                 text-align: center; color: var(--sage); margin-bottom: 12px; }
+  .winner { background: var(--panel); border-radius: 18px; padding: 32px 16px; text-align: center;
+            font-size: 34px; font-weight: 900; margin-bottom: 16px; }
+  .winner.done { color: var(--group); }
+  .dim { color: var(--sage); }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+"use strict";
+
+var DATA = /*__CARD_DATA__*/;
+var CARDS = DATA.cards;
+var BY_ID = {};
+CARDS.forEach(function (c) { BY_ID[c.id] = c; });
+var WHEEL_POOL = CARDS.filter(function (c) { return DATA.wheelExcludes.indexOf(c.id) === -1; });
+var MIN_PLAYERS = 3, MAX_PLAYERS = 5, DEFAULT_PAR = 3;
+var PAR_CYCLE = [3, 4, 5];
+
+/* Courses that ship with the app, from shared/courses.json — the same file the
+   Android build reads. */
+var BUILT_IN_COURSES = /*__COURSE_DATA__*/;
+
+/* Artwork, inlined as data URIs by web/build.js so this stays one file. */
+var MENU_IMAGE = "__MENU_IMAGE__";
+var BUTTONS_IMAGE = "__BUTTONS_IMAGE__";
+var GRASS_IMAGE = "__GRASS_IMAGE__";
+
+/* ---------- persistence ---------- */
+/* Falls back to memory if the browser blocks storage (e.g. opened as a file:// URL). */
+var STORE_KEY = "chainreaction.round";
+var memoryStore = null;
+
+function save(s) {
+  memoryStore = s;
+  try { localStorage.setItem(STORE_KEY, JSON.stringify(s)); } catch (e) { /* memory only */ }
+}
+function load() {
+  try {
+    var raw = localStorage.getItem(STORE_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch (e) { /* fall through */ }
+  return memoryStore;
+}
+function clearSaved() {
+  memoryStore = null;
+  try { localStorage.removeItem(STORE_KEY); } catch (e) { /* nothing to do */ }
+}
+
+/* Saved courses live under their own key — ending a round must not lose them. */
+var COURSES_KEY = "chainreaction.courses";
+var memoryCourses = null;
+
+function savedCourses() {
+  try {
+    var raw = localStorage.getItem(COURSES_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch (e) { /* fall through */ }
+  return memoryCourses || [];
+}
+function putSavedCourses(list) {
+  memoryCourses = list;
+  try { localStorage.setItem(COURSES_KEY, JSON.stringify(list)); } catch (e) { /* memory only */ }
+}
+/* Built-ins first, then your own. Saving over a built-in's name replaces it. */
+function allCourses() {
+  var mine = savedCourses();
+  var taken = mine.map(function (c) { return c.name.toLowerCase(); });
+  return BUILT_IN_COURSES.filter(function (c) {
+    return taken.indexOf(c.name.toLowerCase()) === -1;
+  }).concat(mine);
+}
+function canDeleteCourse(name) {
+  return savedCourses().some(function (c) { return c.name === name; });
+}
+function putCourse(name, holeCount, pars) {
+  var next = savedCourses().filter(function (c) {
+    return c.name.toLowerCase() !== name.toLowerCase();
+  });
+  next.push({ name: name, holeCount: holeCount, pars: pars.slice() });
+  putSavedCourses(next);
+}
+function sum(a) { return a.reduce(function (x, y) { return x + y; }, 0); }
+function parList(n) { var a = []; for (var i = 0; i < n; i++) a.push(DEFAULT_PAR); return a; }
+
+/* ---------- settings ---------- */
+var SETTINGS_KEY = "chainreaction.settings";
+var memorySettings = null;
+
+function defaultSettings() { return { players: [], meIndex: 0 }; }
+
+function loadSettings() {
+  try {
+    var raw = localStorage.getItem(SETTINGS_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch (e) { /* fall through */ }
+  return memorySettings || defaultSettings();
+}
+function putSettings(next) {
+  settings = next;
+  memorySettings = next;
+  try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(next)); } catch (e) { /* memory only */ }
+}
+var settings = loadSettings();
+
+
+/* ---------- the one piece of real logic ---------- */
+function drawCount(holeScores, meIndex) {
+  var lo = Math.min.apply(null, holeScores);
+  var hi = Math.max.apply(null, holeScores);
+  var mine = holeScores[meIndex];
+  if (lo === hi) return 1;
+  if (mine === lo) return 0;
+  if (mine === hi) return 2;
+  return 1;
+}
+
+function shuffled(arr) {
+  var a = arr.slice();
+  for (var i = a.length - 1; i > 0; i--) {
+    var j = Math.floor(Math.random() * (i + 1));
+    var t = a[i]; a[i] = a[j]; a[j] = t;
+  }
+  return a;
+}
+
+function newRound(players, meIndex, holeCount, coursePars, courseName) {
+  var deck = shuffled(CARDS.map(function (c) { return c.id; }));
+  var source = (coursePars && coursePars.length === holeCount) ? coursePars : parList(holeCount);
+  var pars = [], scores = [], locked = [];
+  for (var h = 0; h < holeCount; h++) {
+    pars.push(source[h]);
+    locked.push(false);
+    var row = [];
+    // Everyone starts the hole on par; the steppers take it from there.
+    for (var p = 0; p < players.length; p++) row.push(source[h]);
+    scores.push(row);
+  }
+  return {
+    players: players, meIndex: meIndex, holeCount: holeCount, currentHole: 0,
+    pars: pars, scores: scores, locked: locked,
+    hand: deck.slice(0, DATA.handSize), deck: deck.slice(DATA.handSize), discard: [], owed: 0,
+    // The course being played, when one was chosen rather than pars set by hand.
+    courseName: courseName || null
+  };
+}
+
+/* ---------- derived ---------- */
+function totalFor(s, p) {
+  var t = 0;
+  for (var h = 0; h < s.holeCount; h++) if (s.locked[h]) t += s.scores[h][p];
+  return t;
+}
+function relFor(s, p) {
+  var t = 0;
+  for (var h = 0; h < s.holeCount; h++) if (s.locked[h]) t += s.scores[h][p] - s.pars[h];
+  return t;
+}
+function lockedCount(s) {
+  return s.locked.filter(function (v) { return v; }).length;
+}
+function drawForHole(s, h) { return drawCount(s.scores[h], s.meIndex); }
+function roundComplete(s) { return s.locked.every(function (v) { return v; }); }
+/* Player indices, best (lowest total) first. */
+function standings(s) {
+  return s.players.map(function (_, i) { return i; })
+    .sort(function (a, b) { return totalFor(s, a) - totalFor(s, b); });
+}
+/* Everyone tied for the lowest total — ties are left standing. */
+function winners(s) {
+  var best = Math.min.apply(null, s.players.map(function (_, i) { return totalFor(s, i); }));
+  return s.players.map(function (_, i) { return i; })
+    .filter(function (i) { return totalFor(s, i) === best; });
+}
+function handIsFull(s) { return s.hand.length >= DATA.handCap; }
+function fmtRel(v) { return v === 0 ? "E" : (v > 0 ? "+" + v : "" + v); }
+function relClass(v) { return v < 0 ? "under" : (v === 0 ? "even" : "over"); }
+function esc(t) {
+  return String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
+/* ---------- app state ---------- */
+var state = load();
+var tab = "score";
+/* holes stays 0 until a course is picked or its length chosen — the course decides
+   how many holes there are, so Setup has nothing to toggle. */
+var screen = "menu";
+var setup = freshSetup();
+var wheel = null;
+var confirming = false;
+var parsUI = { open: false, name: "" };
+var roundCourseName = "";
+var savedAs = null;
+var savedGroup = false;
+/* Reopening the scorecard after a round finishes is a deliberate act; finishing it
+   again puts the result back in front. */
+var showScorecard = false;
+
+function freshSetup() {
+  // Pre-filled from the group saved in Settings, so the usual four aren't retyped.
+  var names = (settings.players && settings.players.length) ? settings.players.slice() : ["", "", "", ""];
+  return { names: names, meIndex: settings.meIndex || 0, holes: 0, pars: [], courseName: null };
+}
+
+function resizePars(n) {
+  while (setup.pars.length < n) setup.pars.push(DEFAULT_PAR);
+  while (setup.pars.length > n) setup.pars.pop();
+}
+function setupPars() { return setup.pars.slice(0, setup.holes); }
+
+var app = document.getElementById("app");
+
+function render() {
+  var html;
+  if (screen === "menu") {
+    html = renderMenu();
+  } else if (screen === "setup") {
+    html = backBar("New round") + renderSetup();
+  } else if (screen === "cards") {
+    html = backBar("Cards") + renderCards();
+  } else if (screen === "rules") {
+    html = backBar("Rules") + renderRules();
+  } else if (screen === "settings") {
+    html = backBar("Settings") + renderSettings();
+  } else {
+    // No title: the Score screen's own header already says which hole and par.
+    var scoreTab = (roundComplete(state) && !showScorecard) ? renderResults() : renderScore();
+    // The course you're on. The hole and par live in the Score screen's own header.
+    html = backBar(state.courseName || "") +
+      (tab === "score" ? scoreTab : tab === "hand" ? renderHand() : renderRoundRules()) +
+      renderNav();
+  }
+  if (wheel) html += renderWheel();
+  if (parsUI.open) html += renderParGrid();
+  app.innerHTML = html;
+  document.body.classList.toggle("menu-screen", screen === "menu");
+}
+
+function backBar(title) {
+  return '<div class="backbar">' +
+    '<button class="back" data-act="menu">&lsaquo;&nbsp; Menu</button>' +
+    '<span>' + esc(title.toUpperCase()) + '</span></div>';
+}
+
+/*
+ * The button artwork is one sheet with all four buttons painted in, so they can't be
+ * laid out individually — the sheet is cropped to the button stack and four invisible
+ * tap targets are tiled over it. The fractions were measured off the actual pixels
+ * (per-row brightness), and the weights split at the midpoints between buttons so
+ * every tap lands on the nearest one with no dead gaps.
+ */
+var BUTTON_BANDS = [
+  ["play", 13.0, 18.77],
+  ["goCards", 31.77, 18.07],
+  ["goRules", 49.84, 17.97],
+  ["goSettings", 67.81, 16.19]
+];
+
+function renderMenu() {
+  var targets = BUTTON_BANDS.map(function (b) {
+    return '<div class="hit" data-act="' + b[0] + '" style="top:' + b[1] +
+      '%;height:' + b[2] + '%"></div>';
+  }).join("");
+
+  return '<div class="menu">' +
+    (MENU_IMAGE ? '<div class="menu-art"><img src="' + MENU_IMAGE + '" alt=""></div>' : "") +
+    (GRASS_IMAGE
+      ? '<div class="menu-grass" style="background-image:url(' + GRASS_IMAGE + ')"></div>'
+      : "") +
+    (BUTTONS_IMAGE
+      ? '<div class="menu-buttons"><div class="sheet">' +
+        '<img src="' + BUTTONS_IMAGE + '" alt="">' + targets + '</div></div>'
+      // Fallback if the sheet is missing, so the menu is never unusable.
+      : '<div class="menu-buttons-plain">' +
+        '<button class="big play" data-act="play">Play</button>' +
+        '<button class="big menublue" data-act="goCards">Cards</button>' +
+        '<button class="big menublue" data-act="goRules">Rules</button>' +
+        '<button class="big menublue" data-act="goSettings">Settings</button></div>') +
+    '</div>';
+}
+
+/* ---------- setup ---------- */
+function renderSetup() {
+  var rows = setup.names.map(function (n, i) {
+    return '<div class="row" style="margin-bottom:10px">' +
+      '<input type="text" class="grow" data-name="' + i + '" value="' + esc(n) +
+      '" placeholder="Player ' + (i + 1) + '">' +
+      '<button class="me' + (setup.meIndex === i ? " on" : "") + '" data-act="me" data-i="' + i + '">ME</button>' +
+      '</div>';
+  }).join("");
+
+  var addRemove = '<div class="row">' +
+    (setup.names.length < MAX_PLAYERS ? '<button data-act="addPlayer" style="padding:0 18px">+ Add player</button>' : "") +
+    (setup.names.length > MIN_PLAYERS ? '<button data-act="removePlayer" style="padding:0 18px">&minus; Remove</button>' : "") +
+    "</div>";
+
+  var namesReady = setup.names.every(function (n) { return n.trim() !== ""; });
+  var courseReady = setup.holes > 0;
+  var ready = namesReady && courseReady;
+
+  return '<h1>CHAIN<br>REACTION</h1><p class="sub">Disc golf card game</p>' +
+    '<div class="label">Players</div>' +
+    '<p class="hint">Tap ME on your own name.</p>' + rows + addRemove +
+    '<div class="label">Course</div>' +
+    '<div class="panel course" data-act="openPars">' +
+      '<div class="cname' + (setup.courseName ? " picked" : "") + '">' +
+        esc(setup.courseName || (courseReady ? "Custom pars" : "Choose a course")) + '</div>' +
+      '<div class="dim">' + (courseReady
+        ? setup.holes + ' holes &middot; par ' + sum(setupPars())
+        : 'Pick one, or set the pars yourself') + '</div>' +
+    '</div>' +
+    '<div style="height:36px"></div>' +
+    '<button class="big primary" data-act="start"' + (ready ? "" : " disabled") + '>Start round</button>' +
+    '<p class="hint" data-start-hint' + (ready ? ' style="display:none"' : "") + '>' +
+      (namesReady ? "Choose a course first." : "Every player needs a name.") + '</p>';
+}
+
+/* Typing deliberately does not re-render (that would drop focus mid-name),
+   so the start button's enabled state is synced by hand instead. */
+function syncStartButton() {
+  var btn = app.querySelector('[data-act="start"]');
+  if (!btn) return;
+  var namesReady = setup.names.every(function (n) { return n.trim() !== ""; });
+  var ready = namesReady && setup.holes > 0;
+  btn.disabled = !ready;
+  var hint = app.querySelector("[data-start-hint]");
+  if (hint) {
+    hint.style.display = ready ? "none" : "";
+    hint.textContent = namesReady ? "Choose a course first." : "Every player needs a name.";
+  }
+}
+
+/* ---------- score ---------- */
+function renderScore() {
+  var s = state, h = s.currentHole, locked = s.locked[h], par = s.pars[h];
+
+  var head = '<div class="row" style="margin-bottom:16px">' +
+    '<button class="step" data-act="hole" data-n="' + (h - 1) + '"' + (h > 0 ? "" : " disabled") + '>&lsaquo;</button>' +
+    '<div class="hole-title"><strong>HOLE ' + (h + 1) + '</strong>' +
+      // Par is fixed by the course — shown, not editable.
+      '<span' + (locked ? ' class="locked"' : "") + '>PAR ' + par + '  &middot;  OF ' + s.holeCount +
+      (locked ? "  &middot;  LOCKED" : "") + '</span></div>' +
+    '<button class="step" data-act="hole" data-n="' + (h + 1) + '"' + (h < s.holeCount - 1 ? "" : " disabled") + '>&rsaquo;</button>' +
+    '</div>';
+
+  var players = s.players.map(function (name, i) {
+    var score = s.scores[h][i], rel = score - par, me = i === s.meIndex;
+    return '<div class="player' + (me ? " me" : "") + '"><div class="row">' +
+      '<div class="grow"><div class="name">' + esc(name) + '</div>' +
+        '<div class="rel ' + relClass(rel) + '">' + fmtRel(rel) + '</div></div>' +
+      '<button class="step" data-act="score" data-i="' + i + '" data-n="-1"' +
+        (locked || score <= 1 ? " disabled" : "") + '>&minus;</button>' +
+      '<div class="num">' + score + '</div>' +
+      '<button class="step" data-act="score" data-i="' + i + '" data-n="1"' + (locked ? " disabled" : "") + '>+</button>' +
+      '</div></div>';
+  }).join("");
+
+  var lockBlock = locked
+    ? '<p class="hint">You drew ' + drawForHole(s, h) + ' on this hole.</p>' +
+      '<button class="big quiet" data-act="unlock">Unlock hole ' + (h + 1) + '</button>'
+    : '<button class="big primary" data-act="lock">Lock hole &amp; draw</button>' +
+      '<p class="hint">Locking gives you ' + drawForHole(s, h) + ' card(s).</p>';
+
+  var order = s.players.map(function (_, i) { return i; })
+    .sort(function (a, b) { return totalFor(s, a) - totalFor(s, b); });
+  var best = order.length ? totalFor(s, order[0]) : 0;
+
+  var totals = order.map(function (i) {
+    var t = totalFor(s, i), r = relFor(s, i);
+    var lead = lockedCount(s) > 0 && t === best;
+    return '<div class="total">' + (lead ? '<span class="lead">LEAD</span>' : "") +
+      '<span class="name"' + (i === s.meIndex ? ' style="color:var(--self)"' : "") + '>' + esc(s.players[i]) + '</span>' +
+      '<span class="v rel ' + relClass(r) + '" style="width:48px">' + fmtRel(r) + '</span>' +
+      '<span class="v">' + t + '</span></div>';
+  }).join("");
+
+  return head + players + lockBlock +
+    '<div class="label">Totals &middot; ' + lockedCount(s) + ' of ' + s.holeCount + ' holes locked</div>' + totals;
+}
+
+/* ---------- results ----------
+   Shown in place of the scorecard once every hole is locked: a finished round should
+   announce itself, not leave you staring at an unlock button. */
+function winnerLine(names) {
+  if (names.length === 1) return names[0] + " wins";
+  if (names.length === 2) return names[0] + " and " + names[1] + " tie";
+  return names.slice(0, -1).join(", ") + " and " + names[names.length - 1] + " tie";
+}
+
+function renderResults() {
+  var s = state;
+  var won = winners(s);
+  var winningTotal = totalFor(s, won[0]);
+
+  var rows = standings(s).map(function (p, place) {
+    var total = totalFor(s, p);
+    var rel = relFor(s, p);
+    var isWinner = won.indexOf(p) !== -1;
+    var behind = total - winningTotal;
+    return '<div class="player' + (isWinner ? " me" : "") + '"><div class="row">' +
+      '<div class="place' + (isWinner ? " won" : "") + '">' + (place + 1) + '</div>' +
+      '<div class="grow"><div class="name">' + esc(s.players[p]) + '</div>' +
+        // Relative to par, then how far off the win — spelled out, because
+        // "E · +1" reads as a contradiction at a glance.
+        '<div class="rel ' + relClass(rel) + '">' + fmtRel(rel) +
+        (behind ? '  &middot;  ' + behind + ' back' : "") + '</div></div>' +
+      '<div class="num">' + total + '</div>' +
+      '</div></div>';
+  }).join("");
+
+  return '<div class="label">' +
+    esc(s.courseName || (s.holeCount + " holes")) + ' &middot; round complete</div>' +
+    '<h1 style="color:var(--self)">' + esc(winnerLine(won.map(function (i) { return s.players[i]; }))) + '</h1>' +
+    '<p class="sub">' + winningTotal + '  &middot;  ' + fmtRel(relFor(s, won[0])) +
+    ' to a par of ' + sum(s.pars) + '</p>' +
+    '<div class="label">Final scores</div>' + rows +
+    '<div style="height:14px"></div>' +
+    '<button class="big primary" data-act="finishRound">Finish round</button>' +
+    // Escape hatch: a mis-scored final hole is still fixable from the scorecard.
+    '<button class="big quiet" data-act="viewScorecard">Back to scorecard</button>';
+}
+
+/* ---------- hand ---------- */
+function renderHand() {
+  var s = state;
+  var counters = '<div class="counters">' +
+    counter("Hand", s.hand.length + "/" + DATA.handCap) +
+    counter("Deck", s.deck.length) +
+    counter("Discard", s.discard.length) + '</div>';
+
+  var drawBlock = "";
+  if (s.owed > 0) {
+    drawBlock = handIsFull(s)
+      ? '<button class="big quiet" disabled>Hand is full &mdash; discard first</button>' +
+        '<p class="hint">You\'re owed ' + s.owed + ' card(s) but you\'re holding the maximum of ' +
+        DATA.handCap + '. Discard, then draw.</p>'
+      : '<button class="big primary" data-act="draw">Draw a card (' + s.owed + ' owed)</button>';
+  }
+
+  var cards = s.hand.length
+    ? s.hand.map(function (id) { return cardHtml(BY_ID[id], true); }).join("")
+    : '<p class="hint">Nothing in hand. Cards arrive when you lock a hole.</p>';
+
+  return counters + drawBlock +
+    '<button class="big wheel" data-act="openWheel">Spin the Double Wheel</button>' +
+    '<div class="label">Your hand</div>' + cards;
+}
+
+function counter(label, value) {
+  return '<div class="counter"><b>' + value + '</b><span>' + label + '</span></div>';
+}
+
+function cardHtml(c, withActions) {
+  return '<div class="card"><div class="stripe s-' + c.kind + '"></div><div class="body">' +
+    '<div class="tags"><span class="tag k-' + c.kind + '">' + c.kind + '</span>' +
+    '<span class="tag timing">' + esc(c.timing) + '</span></div>' +
+    '<h3>' + esc(c.name) + '</h3><p>' + esc(c.text) + '</p>' +
+    (withActions
+      ? '<div class="acts">' +
+        '<button class="big primary" data-act="resolve" data-i="' + c.id + '">Play</button>' +
+        '<button class="big raised" data-act="resolve" data-i="' + c.id + '">Discard</button></div>'
+      : "") +
+    '</div></div>';
+}
+
+/* ---------- rules ---------- */
+var HOUSE_RULES = [
+  ["Stroke play", "Lowest total wins."],
+  ["Starting hand", "4 cards, dealt at the start of the round."],
+  ["Hand cap", "7 cards. You cannot draw past it — discard first."],
+  ["Your own deck", "Every player shuffles their own 52-card deck. Duplicates across players are expected and fine. This phone only tracks your deck."],
+  ["Discard", "Played and discarded cards go to your own discard pile. If your deck runs out, the discard is reshuffled back in."],
+  ["Two per player, per hole", "At most 2 cards may be played on any one player per hole. The app does not enforce this — track it yourselves."],
+  ["The app doesn't referee", "It deals cards and keeps score. It never applies card effects or stroke penalties. Cards that rewrite scores get entered by hand with the ± steppers."]
+];
+var DRAW_TABLE = [
+  ["Best score, or tied for best", "0"],
+  ["Middle of the pack", "1"],
+  ["Last, or tied for last", "2"],
+  ["Everyone tied", "1 each"]
+];
+var KIND_MEANING = {
+  attack: "Played on an opponent",
+  self: "Benefits you",
+  dual: "Self-help or attack, depending on the target",
+  react: "Played in response to another card",
+  group: "Affects everyone"
+};
+
+/* The in-round Rules tab carries everything plus the round-specific actions;
+   the menu splits the same content into separate Rules and Cards destinations. */
+function renderRoundRules() {
+  var danger = confirming
+    ? '<div class="panel"><div style="font-size:22px;font-weight:700">End the round?</div>' +
+      '<p style="color:var(--sage)">Scores, your hand, deck and discard are all cleared. This can\'t be undone.</p>' +
+      '<div class="row"><button class="big danger" data-act="endYes" style="margin:0">End round</button>' +
+      '<button class="big quiet" data-act="endNo" style="margin:0">Keep playing</button></div></div>'
+    : '<button class="big danger" data-act="endAsk">End round</button>';
+
+  // You usually learn a course's real pars by playing it — capture them here.
+  var saveCourse = '<div class="label">Save this course</div>' +
+    '<p class="hint">Keeps these ' + state.holeCount + ' pars (par ' + sum(state.pars) +
+    ') for next time.</p>' +
+    '<input type="text" data-round-course placeholder="Course name" value="' +
+    esc(roundCourseName) + '">' +
+    '<div style="height:10px"></div>' +
+    '<button class="big primary" data-act="saveRoundCourse"' +
+    (roundCourseName.trim() ? "" : " disabled") + '>Save course</button>' +
+    (savedAs ? '<p class="hint" style="color:var(--react)">Saved as &ldquo;' +
+      esc(savedAs) + '&rdquo;.</p>' : "");
+
+  return renderHouseRules() + renderCardLibrary() +
+    '<div style="height:16px"></div>' + saveCourse +
+    '<div style="height:16px"></div>' + danger;
+}
+
+/* Menu destination: the rules on their own, no card list. */
+function renderRules() { return renderHouseRules(); }
+
+function renderHouseRules() {
+  var rules = HOUSE_RULES.map(function (r) {
+    return '<div class="panel"><div style="font-size:22px;font-weight:700">' + esc(r[0]) +
+      '</div><p style="margin:4px 0 0;color:var(--sage)">' + esc(r[1]) + '</p></div>';
+  }).join("");
+
+  var table = DRAW_TABLE.map(function (r) {
+    return '<div class="total"><span class="name" style="font-size:17px;font-weight:400;color:var(--sage)">' +
+      esc(r[0]) + '</span><span class="v">' + r[1] + '</span></div>';
+  }).join("");
+
+  var kinds = Object.keys(KIND_MEANING).map(function (k) {
+    return '<div class="panel row" style="gap:12px"><span class="tag k-' + k + '">' + k + '</span>' +
+      '<span style="color:var(--sage)">' + esc(KIND_MEANING[k]) + '</span></div>';
+  }).join("");
+
+  return '<div class="label">How it works</div>' + rules +
+    '<div class="label">Cards drawn at the end of a hole</div>' + table +
+    '<div class="label">What the colours mean</div>' + kinds;
+}
+
+function renderCardLibrary() {
+  return DATA.timings.map(function (t) {
+    var group = CARDS.filter(function (c) { return c.timing === t; });
+    if (!group.length) return "";
+    return '<div class="label">' + esc(t) + ' &middot; ' + group.length + '</div>' +
+      group.map(function (c) { return cardHtml(c, false); }).join("");
+  }).join("");
+}
+
+function renderCards() {
+  return '<div class="label">All ' + CARDS.length + ' cards</div>' + renderCardLibrary();
+}
+
+/* ---------- settings ---------- */
+function renderSettings() {
+  var rows = settings.players.length ? settings.players : ["", "", "", ""];
+  var names = rows.map(function (n, i) {
+    return '<div class="row" style="margin-bottom:10px">' +
+      '<input type="text" class="grow" data-setting-name="' + i + '" value="' + esc(n) +
+      '" placeholder="Player ' + (i + 1) + '">' +
+      '<button class="me' + ((settings.meIndex || 0) === i ? " on" : "") +
+      '" data-act="settingMe" data-i="' + i + '">ME</button></div>';
+  }).join("");
+
+  var addRemove = '<div class="row">' +
+    (rows.length < MAX_PLAYERS ? '<button data-act="settingAdd" style="padding:0 18px">+ Add player</button>' : "") +
+    (rows.length > MIN_PLAYERS ? '<button data-act="settingRemove" style="padding:0 18px">&minus; Remove</button>' : "") +
+    "</div>";
+
+  return '<div class="label">Your usual group</div>' +
+    '<p class="hint">Saved here, these names pre-fill every new round.</p>' +
+    names + addRemove +
+    '<div style="height:12px"></div>' +
+    '<button class="big primary" data-act="saveGroup"' +
+      (rows.every(function (n) { return n.trim() !== ""; }) ? "" : " disabled") +
+      '>Save group</button>' +
+    (savedGroup ? '<p class="hint" style="color:var(--react)">Saved.</p>' : "") +
+
+    '<div class="label">Courses</div>' +
+    '<div class="panel course" data-act="openPars">' +
+      '<div class="cname">Manage courses</div>' +
+      '<div class="dim">' + allCourses().length + ' saved &middot; add, edit or delete</div>' +
+    '</div>';
+}
+
+/* ---------- nav ---------- */
+function renderNav() {
+  var tabs = [["score", "Score"], ["hand", "Hand"], ["rules", "Rules"]];
+  return "<nav>" + tabs.map(function (t) {
+    var badge = t[0] === "hand" && state.owed > 0
+      ? '<span class="badge">' + state.owed + "</span>" : "";
+    return '<button class="' + (tab === t[0] ? "on" : "") + '" data-act="tab" data-t="' + t[0] + '">' +
+      '<span class="dot ' + t[0] + '">' + badge + '</span>' + t[1] + '</button>';
+  }).join("") + "</nav>";
+}
+
+/* ---------- double wheel ---------- */
+function renderWheel() {
+  var stage = wheel.stage;
+  var effect = wheel.card
+    ? cardHtml(wheel.card, false)
+    : '<div class="placeholder">Spin to reveal the effect</div>';
+
+  var html = '<div class="modal"><h1>DOUBLE WHEEL</h1>' +
+    '<p class="sub">Effect first, then the name. The named player is the only one exempt.</p>' +
+    '<div class="label">1 &middot; The effect</div>' + effect;
+
+  if (stage === "idle") {
+    html += '<button class="big wheel" data-act="spinCard">Spin the effect</button>';
+  }
+  if (stage === "cardDone" || stage === "nameSpin" || stage === "done") {
+    html += '<div class="label">2 &middot; Who\'s exempt</div>' +
+      '<div class="winner' + (stage === "done" ? " done" : "") + '">' +
+      esc(wheel.name || "—") + '</div>';
+    if (stage === "cardDone") {
+      html += '<button class="big wheel" data-act="spinName">Spin the name</button>';
+    }
+  }
+  if (stage === "done") {
+    html += '<p>' + esc(wheel.name) + ' sits this one out. Everyone else — including whoever ' +
+      'played the card — carries out the effect.</p>';
+  }
+  html += '<button class="big quiet" data-act="closeWheel">' +
+    (stage === "done" ? "Done" : "Close") + "</button></div>";
+  return html;
+}
+
+/* ---------- course & pars ---------- */
+function renderParGrid() {
+  var list = allCourses();
+  var saved = list.map(function (c) {
+    return '<div class="courserow">' +
+      '<div class="pick" data-act="loadCourse" data-course="' + esc(c.name) + '">' +
+        '<div class="cname">' + esc(c.name) + '</div>' +
+        '<div class="dim">' + c.holeCount + ' holes &middot; par ' + sum(c.pars) + '</div>' +
+      '</div>' +
+      (canDeleteCourse(c.name)
+        ? '<button class="del" data-act="deleteCourse" data-course="' + esc(c.name) + '">&times;</button>'
+        : "") +
+      '</div>';
+  }).join("");
+
+  var lengths = '<div class="label">' +
+    (list.length ? "Or set up a new one" : "Set up a course") + '</div>' +
+    '<div class="row">' + [9, 18].map(function (n) {
+      return '<button class="big ' + (setup.holes === n ? "primary" : "quiet") +
+        '" data-act="holes" data-n="' + n + '" style="margin:0">' + n + ' holes</button>';
+    }).join("") + '</div>';
+
+  // Nothing to edit until we know how long the course is.
+  var editor = "";
+  if (setup.holes > 0) {
+    editor = '<div class="label">Pars <span class="total-par">Total ' +
+      sum(setupPars()) + '</span></div>' +
+      '<div class="pargrid">' + setupPars().map(function (p, i) {
+        return '<button class="parcell' + (p !== DEFAULT_PAR ? " off" : "") +
+          '" data-act="cyclePar" data-i="' + i + '"><span>' + (i + 1) + '</span><b>' +
+          p + '</b></button>';
+      }).join("") + '</div>' +
+      '<button class="big quiet" data-act="resetPars">Reset to all par 3</button>' +
+      '<div class="label">Save for next time</div>' +
+      '<input type="text" data-course-name placeholder="Course name" value="' +
+      esc(parsUI.name) + '">' +
+      '<div style="height:10px"></div>' +
+      '<button class="big primary" data-act="saveCourse"' +
+      (parsUI.name.trim() ? "" : " disabled") + '>Save as course</button>';
+  }
+
+  return '<div class="modal"><h1 style="color:var(--off)">COURSE &amp; PARS</h1>' +
+    '<p class="sub">Tap a hole to cycle its par: 3 &rarr; 4 &rarr; 5.</p>' +
+    (list.length ? '<div class="label">Saved courses</div>' + saved : "") +
+    lengths + editor +
+    '<div style="height:16px"></div>' +
+    '<button class="big quiet" data-act="closePars">Done</button></div>';
+}
+
+function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+function spin(kind) {
+  // Tuned to land in roughly 1.6s per stage — long enough to build, short enough to play.
+  var ticks = kind === "card" ? 18 : 16;
+  var step = kind === "card" ? 30 : 40;
+  var grow = kind === "card" ? 7 : 9;
+  wheel.stage = kind === "card" ? "cardSpin" : "nameSpin";
+
+  (function tick(n, delay) {
+    if (n >= ticks) {
+      if (kind === "card") { wheel.card = pick(WHEEL_POOL); wheel.stage = "cardDone"; }
+      else { wheel.name = pick(state.players); wheel.stage = "done"; }
+      render();
+      return;
+    }
+    if (kind === "card") wheel.card = pick(WHEEL_POOL);
+    else wheel.name = pick(state.players);
+    render();
+    setTimeout(function () { tick(n + 1, delay + grow); }, delay);
+  })(0, step);
+}
+
+/* ---------- actions ---------- */
+function commit(next) { state = next; save(state); render(); }
+
+function doDraw() {
+  var s = state;
+  if (s.owed <= 0 || handIsFull(s)) return;
+  var deck = s.deck, discard = s.discard;
+  if (!deck.length) {
+    if (!discard.length) return;
+    deck = shuffled(discard);
+    discard = [];
+  }
+  s.hand = s.hand.concat([deck[0]]);
+  s.deck = deck.slice(1);
+  s.discard = discard;
+  s.owed -= 1;
+  commit(s);
+}
+
+/* Typing never re-renders (that would drop focus), so each text field syncs the one
+   button that depends on it by hand. */
+app.addEventListener("input", function (e) {
+  var idx = e.target.getAttribute("data-name");
+  if (idx !== null) {
+    setup.names[+idx] = e.target.value;
+    syncStartButton();
+    return;
+  }
+  if (e.target.hasAttribute("data-course-name")) {
+    parsUI.name = e.target.value;
+    syncButton('[data-act="saveCourse"]', parsUI.name.trim() !== "");
+    return;
+  }
+  if (e.target.hasAttribute("data-round-course")) {
+    roundCourseName = e.target.value;
+    savedAs = null;
+    syncButton('[data-act="saveRoundCourse"]', roundCourseName.trim() !== "");
+    return;
+  }
+  var slot = e.target.getAttribute("data-setting-name");
+  if (slot !== null) {
+    if (!settings.players.length) settings.players = ["", "", "", ""];
+    settings.players[+slot] = e.target.value;
+    savedGroup = false;
+    syncButton(
+      '[data-act="saveGroup"]',
+      settings.players.every(function (n) { return n.trim() !== ""; }),
+    );
+  }
+});
+
+function syncButton(selector, enabled) {
+  var btn = app.querySelector(selector);
+  if (btn) btn.disabled = !enabled;
+}
+
+app.addEventListener("click", function (e) {
+  var el = e.target.closest("[data-act]");
+  if (!el) return;
+  var act = el.getAttribute("data-act");
+  var n = +el.getAttribute("data-n");
+  var i = +el.getAttribute("data-i");
+  var courseName = el.getAttribute("data-course");
+  var s = state;
+
+  switch (act) {
+    case "me": setup.meIndex = i; render(); break;
+    case "holes":
+      setup.holes = n; resizePars(n); setup.courseName = null; render(); break;
+
+    case "openPars":
+      resizePars(setup.holes); parsUI = { open: true, name: "" }; render(); break;
+    case "closePars": parsUI.open = false; render(); break;
+    case "cyclePar":
+      setup.pars[i] = PAR_CYCLE[(PAR_CYCLE.indexOf(setup.pars[i]) + 1) % PAR_CYCLE.length];
+      setup.courseName = null; render(); break;
+    case "resetPars":
+      setup.pars = parList(setup.holes); setup.courseName = null; render(); break;
+    case "loadCourse":
+      var found = allCourses().filter(function (c) { return c.name === courseName; })[0];
+      if (found) {
+        setup.holes = found.holeCount;
+        setup.pars = found.pars.slice();
+        setup.courseName = found.name;
+      }
+      render(); break;
+    case "deleteCourse":
+      putSavedCourses(savedCourses().filter(function (c) { return c.name !== courseName; }));
+      if (setup.courseName === courseName) setup.courseName = null;
+      render(); break;
+    case "saveCourse":
+      if (parsUI.name.trim()) {
+        putCourse(parsUI.name.trim(), setup.holes, setupPars());
+        setup.courseName = parsUI.name.trim();
+        parsUI.name = "";
+      }
+      render(); break;
+    case "saveRoundCourse":
+      if (roundCourseName.trim()) {
+        putCourse(roundCourseName.trim(), s.holeCount, s.pars);
+        savedAs = roundCourseName.trim();
+        roundCourseName = "";
+      }
+      render(); break;
+    case "addPlayer":
+      if (setup.names.length < MAX_PLAYERS) setup.names.push("");
+      render(); break;
+    case "removePlayer":
+      if (setup.names.length > MIN_PLAYERS) setup.names.pop();
+      if (setup.meIndex > setup.names.length - 1) setup.meIndex = setup.names.length - 1;
+      render(); break;
+    case "start":
+      commit(newRound(
+        setup.names.map(function (x) { return x.trim(); }),
+        setup.meIndex, setup.holes, setupPars(), setup.courseName,
+      ));
+      roundCourseName = state.courseName || "";
+      screen = "round";
+      render();
+      break;
+
+    case "tab": tab = el.getAttribute("data-t"); render(); break;
+
+    // ---- menu navigation ----
+    case "menu": screen = "menu"; render(); break;
+    case "play":
+      if (state) {
+        // Pre-fill "save this course" so correcting its pars is a one-tap save.
+        roundCourseName = state.courseName || "";
+        screen = "round";
+      } else {
+        setup = freshSetup();
+        screen = "setup";
+      }
+      render(); break;
+    case "goCards": screen = "cards"; render(); break;
+    case "goRules": screen = "rules"; render(); break;
+    case "goSettings": savedGroup = false; screen = "settings"; render(); break;
+
+    // ---- settings ----
+    case "settingMe": settings.meIndex = i; savedGroup = false; render(); break;
+    case "settingAdd":
+      if (!settings.players.length) settings.players = ["", "", "", ""];
+      if (settings.players.length < MAX_PLAYERS) settings.players.push("");
+      savedGroup = false; render(); break;
+    case "settingRemove":
+      if (settings.players.length > MIN_PLAYERS) settings.players.pop();
+      if (settings.meIndex > settings.players.length - 1) {
+        settings.meIndex = settings.players.length - 1;
+      }
+      savedGroup = false; render(); break;
+    case "saveGroup":
+      putSettings({
+        players: settings.players.map(function (n) { return n.trim(); }),
+        meIndex: settings.meIndex,
+      });
+      savedGroup = true; render(); break;
+
+    case "hole":
+      s.currentHole = Math.max(0, Math.min(s.holeCount - 1, n));
+      commit(s); break;
+    case "score":
+      if (s.locked[s.currentHole]) break;
+      s.scores[s.currentHole][i] = Math.max(1, s.scores[s.currentHole][i] + n);
+      commit(s); break;
+    case "lock":
+      if (s.locked[s.currentHole]) break;
+      s.owed += drawForHole(s, s.currentHole);
+      s.locked[s.currentHole] = true;
+      s.currentHole = Math.min(s.holeCount - 1, s.currentHole + 1);
+      showScorecard = false;
+      commit(s); break;
+
+    case "viewScorecard": showScorecard = true; render(); break;
+    // Clears the round and returns to the menu, so Play means play again.
+    case "finishRound":
+      clearSaved();
+      state = null;
+      tab = "score";
+      screen = "menu";
+      showScorecard = false;
+      setup = freshSetup();
+      roundCourseName = "";
+      savedAs = null;
+      render(); break;
+    case "unlock":
+      if (!s.locked[s.currentHole]) break;
+      s.owed = Math.max(0, s.owed - drawForHole(s, s.currentHole));
+      s.locked[s.currentHole] = false;
+      commit(s); break;
+
+    case "draw": doDraw(); break;
+    case "resolve":
+      var at = s.hand.indexOf(i);
+      if (at < 0) break;
+      s.hand.splice(at, 1);
+      s.discard.push(i);
+      commit(s); break;
+
+    case "openWheel": wheel = { stage: "idle", card: null, name: null }; render(); break;
+    case "spinCard": spin("card"); break;
+    case "spinName": spin("name"); break;
+    case "closeWheel": wheel = null; render(); break;
+
+    case "endAsk": confirming = true; render(); break;
+    case "endNo": confirming = false; render(); break;
+    case "endYes":
+      confirming = false;
+      clearSaved();
+      state = null;
+      tab = "score";
+      screen = "menu";
+      setup = freshSetup();
+      roundCourseName = "";
+      savedAs = null;
+      render(); break;
+  }
+});
+
+render();
+
+/* Caches the app on first visit so it works with no signal afterwards. Needs https
+   (or localhost) — opened as a bare file this quietly does nothing, which is fine. */
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", function () {
+    navigator.serviceWorker.register("sw.js").catch(function () { /* offline is a bonus */ });
+  });
+}
+</script>
+</body>
+</html>

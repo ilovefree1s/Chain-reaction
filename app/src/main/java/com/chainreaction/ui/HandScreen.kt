@@ -1,0 +1,158 @@
+package com.chainreaction.ui
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.chainreaction.data.CardDeck
+import com.chainreaction.data.GameState
+import com.chainreaction.data.Rules
+import com.chainreaction.ui.theme.Group
+import com.chainreaction.ui.theme.OffWhite
+import com.chainreaction.ui.theme.Panel
+import com.chainreaction.ui.theme.PanelRaised
+import com.chainreaction.ui.theme.Pine
+import com.chainreaction.ui.theme.Sage
+import com.chainreaction.ui.theme.SelfCard
+
+@Composable
+fun HandScreen(
+    state: GameState,
+    modifier: Modifier = Modifier,
+    onDraw: () -> Unit,
+    onResolve: (cardId: Int) -> Unit,
+    onOpenWheel: () -> Unit,
+) {
+    LazyColumn(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(horizontal = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        item {
+            Spacer(Modifier.height(12.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Counter("Hand", "${state.hand.size}/${Rules.HAND_CAP}", Modifier.weight(1f))
+                Counter("Deck", "${state.deck.size}", Modifier.weight(1f))
+                Counter("Discard", "${state.discard.size}", Modifier.weight(1f))
+            }
+        }
+
+        // Draw affordance — only present when cards are actually owed.
+        if (state.owed > 0) {
+            item {
+                if (state.handIsFull) {
+                    Column {
+                        BigButton(
+                            text = "Hand is full — discard first",
+                            fill = Panel,
+                            onFill = OffWhite,
+                            enabled = false,
+                            onClick = {},
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            "You're owed ${state.owed} card(s) but you're holding the " +
+                                "maximum of ${Rules.HAND_CAP}. Discard, then draw.",
+                            color = Sage,
+                            style = MaterialTheme.typography.bodyLarge,
+                        )
+                    }
+                } else {
+                    BigButton(
+                        text = "Draw a card  (${state.owed} owed)",
+                        fill = SelfCard,
+                        onFill = Pine,
+                        onClick = onDraw,
+                    )
+                }
+            }
+        }
+
+        item {
+            BigButton(
+                text = "Spin the Double Wheel",
+                fill = Group,
+                onFill = Pine,
+                onClick = onOpenWheel,
+            )
+        }
+
+        item { SectionLabel("Your hand") }
+
+        if (state.hand.isEmpty()) {
+            item {
+                Text(
+                    "Nothing in hand. Cards arrive when you lock a hole.",
+                    color = Sage,
+                    style = MaterialTheme.typography.bodyLarge,
+                )
+            }
+        }
+
+        items(state.hand, key = { it }) { id ->
+            val card = CardDeck.card(id)
+            CardTile(card) {
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Box(Modifier.weight(1f)) {
+                        BigButton(
+                            text = "Play",
+                            fill = SelfCard,
+                            onFill = Pine,
+                            onClick = { onResolve(id) },
+                        )
+                    }
+                    Box(Modifier.weight(1f)) {
+                        // Raised, not Panel — a Panel fill would vanish into the card behind it.
+                        BigButton(
+                            text = "Discard",
+                            fill = PanelRaised,
+                            onFill = OffWhite,
+                            onClick = { onResolve(id) },
+                        )
+                    }
+                }
+            }
+        }
+
+        item { Spacer(Modifier.height(24.dp)) }
+    }
+}
+
+@Composable
+private fun Counter(label: String, value: String, modifier: Modifier = Modifier) {
+    Column(
+        modifier
+            .clip(RoundedCornerShape(14.dp))
+            .background(Panel)
+            .padding(vertical = 12.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Text(value, style = MaterialTheme.typography.headlineMedium, color = OffWhite)
+        Text(
+            label.uppercase(),
+            color = Sage,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Black,
+            letterSpacing = 1.sp,
+        )
+    }
+}

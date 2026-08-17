@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The artwork as an adaptive-icon foreground.
+
+  An adaptive icon layer is 108dp but launchers only ever show the middle 72dp — the
+  outer ring is bleed for parallax. Insetting by (108-72)/2 / 108 = 16.7% puts the
+  full artwork inside that visible square, so nothing important is trimmed. Circular
+  launchers still clip the corners, which here are only dark background and glow.
+-->
+<inset xmlns:android="http://schemas.android.com/apk/res/android"
+    android:drawable="@drawable/chainreactionicon"
+    android:inset="16.7%" />

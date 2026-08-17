@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="pine">#0C1A14</color>
+    <!-- Sampled from the launcher artwork's corners. -->
+    <color name="icon_background">#05070E</color>
+</resources>
