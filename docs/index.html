@@ -208,6 +208,16 @@
   .big.play { background: #F7941E; color: var(--pine); }
   .big.menublue { background: #1B62B5; color: var(--off); }
 
+  /* Black ground: the artwork's own edges are near-black, and pine would show as
+     green bands around it. Stretched to fill the screen — the art's proportions are
+     close enough that the stretch is subtle, and it beats a dead band under the frame. */
+  body.rules-screen { background: #000; }
+  body.rules-screen #app { padding: 0; max-width: none; }
+  .rulesart { position: relative; height: 100vh; height: 100dvh; }
+  .rulesart img { width: 100%; height: 100%; display: block; }
+  /* Over the painted "< Menu" in the art's top-left. */
+  .rulesart .hit { position: absolute; left: 0; top: 0; width: 28%; height: 9%; cursor: pointer; }
+
   .backbar { position: relative; display: flex; align-items: center; justify-content: center;
              min-height: 48px; margin-bottom: 4px; }
   .backbar .back { position: absolute; left: 0; background: none; min-height: 48px;
@@ -274,6 +284,7 @@ var BUILT_IN_COURSES = [{"name":"W.S. Gibbs Memorial Disc Golf Course — White/
 var MENU_IMAGE = "assets/menu.png";
 var BUTTONS_IMAGE = "assets/buttons.png";
 var GRASS_IMAGE = "assets/grass.png";
+var RULES_IMAGE = "assets/rules.png";
 
 /* ---------- persistence ---------- */
 /* Falls back to memory if the browser blocks storage (e.g. opened as a file:// URL). */
@@ -469,7 +480,8 @@ function render() {
   } else if (screen === "cards") {
     html = backBar("Cards") + renderCards();
   } else if (screen === "rules") {
-    html = backBar("Rules") + renderRules();
+    // The artwork paints its own header and Menu button.
+    html = RULES_IMAGE ? renderRules() : backBar("Rules") + renderRules();
   } else if (screen === "settings") {
     html = backBar("Settings") + renderSettings();
   } else {
@@ -484,6 +496,7 @@ function render() {
   if (parsUI.open) html += renderParGrid();
   app.innerHTML = html;
   document.body.classList.toggle("menu-screen", screen === "menu");
+  document.body.classList.toggle("rules-screen", screen === "rules" && !!RULES_IMAGE);
 }
 
 function backBar(title) {
@@ -764,8 +777,14 @@ function renderRoundRules() {
     '<div style="height:16px"></div>' + danger;
 }
 
-/* Menu destination: the rules on their own, no card list. */
-function renderRules() { return renderHouseRules(); }
+/* Menu destination: the rules as a single full-page graphic with its own painted
+   header and Menu button — an invisible tap target covers the painted Menu. The
+   text version still lives in the in-round Rules tab, which also has the colour key. */
+function renderRules() {
+  if (!RULES_IMAGE) return renderHouseRules(); // fallback if the art is missing
+  return '<div class="rulesart"><img src="' + RULES_IMAGE + '" alt="Rules">' +
+    '<div class="hit" data-act="menu"></div></div>';
+}
 
 function renderHouseRules() {
   var rules = HOUSE_RULES.map(function (r) {

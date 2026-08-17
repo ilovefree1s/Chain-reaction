@@ -97,6 +97,7 @@ function copyArt(source, target) {
 const menuImage = copyArt("chainreactionmain.png", "menu.png");
 const buttonsImage = copyArt("mainbuttons.png", "buttons.png");
 const grassImage = copyArt("moregrass.png", "grass.png");
+const rulesImage = copyArt("rules.png", "rules.png");
 const iconImage = copyArt("chainreactionicon.png", "icon.png");
 
 // ---- the page ----
@@ -107,6 +108,7 @@ const template = fs.readFileSync(path.join(__dirname, "template.html"), "utf8");
   "__MENU_IMAGE__",
   "__BUTTONS_IMAGE__",
   "__GRASS_IMAGE__",
+  "__RULES_IMAGE__",
 ].forEach((token) => {
   if (!template.includes(token)) {
     console.error(`template.html is missing the ${token} placeholder`);
@@ -119,7 +121,8 @@ const html = template
   .replace("/*__COURSE_DATA__*/", JSON.stringify(courses))
   .replace("__MENU_IMAGE__", menuImage)
   .replace("__BUTTONS_IMAGE__", buttonsImage)
-  .replace("__GRASS_IMAGE__", grassImage);
+  .replace("__GRASS_IMAGE__", grassImage)
+  .replace("__RULES_IMAGE__", rulesImage);
 fs.writeFileSync(path.join(dist, "index.html"), html, "utf8");
 
 // ---- installable ----

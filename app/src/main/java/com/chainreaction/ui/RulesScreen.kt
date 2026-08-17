@@ -1,18 +1,25 @@
 package com.chainreaction.ui
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -26,7 +33,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import com.chainreaction.R
 import com.chainreaction.data.CardDeck
 import com.chainreaction.data.CardKind
 import com.chainreaction.data.Rules
@@ -149,17 +160,35 @@ fun LazyListScope.cardLibraryItems() {
     }
 }
 
-/** Menu destination: the rules on their own. */
+/**
+ * Menu destination: the rules as a single full-page graphic, stretched to fill the
+ * screen — the art's proportions are close enough that the stretch is subtle, and it
+ * beats a dead band under the frame. The painted "Menu" in its top-left gets an
+ * invisible tap target; the text version of these rules still lives in the in-round
+ * Rules tab, which also carries the colour key.
+ */
 @Composable
-fun RulesScreen(modifier: Modifier = Modifier) {
-    LazyColumn(
-        modifier = modifier
+fun RulesScreen(modifier: Modifier = Modifier, onBack: () -> Unit) {
+    Box(
+        modifier
             .fillMaxSize()
-            .padding(horizontal = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
+            // Black, not pine: the artwork's own edges are near-black, and the pine
+            // ground would show as green bands around it.
+            .background(Color.Black),
     ) {
-        houseRulesItems()
-        item { Spacer(Modifier.height(32.dp)) }
+        Image(
+            painter = painterResource(R.drawable.rules),
+            contentDescription = "Rules",
+            contentScale = ContentScale.FillBounds,
+            modifier = Modifier.fillMaxSize(),
+        )
+        // Over the painted "< Menu".
+        Box(
+            Modifier
+                .fillMaxWidth(0.28f)
+                .fillMaxHeight(0.09f)
+                .clickable(onClick = onBack),
+        )
     }
 }
 

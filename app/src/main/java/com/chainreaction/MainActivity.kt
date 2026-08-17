@@ -124,9 +124,15 @@ private fun App(vm: GameViewModel = viewModel()) {
             CardsScreen(modifier = content)
         }
 
-        Screen.RULES -> SubScreen("Rules", onBack = { go(Screen.MENU) }) { content ->
-            RulesScreen(modifier = content)
-        }
+        // No SubScreen bar: the artwork paints its own header and Menu button.
+        // Black before the safe-area padding, so the status/nav bar strips match
+        // the art instead of showing pine.
+        Screen.RULES -> RulesScreen(
+            modifier = Modifier
+                .background(Color.Black)
+                .safeDrawingPadding(),
+            onBack = { go(Screen.MENU) },
+        )
 
         Screen.SETTINGS -> SubScreen("Settings", onBack = { go(Screen.MENU) }) { content ->
             SettingsScreen(
