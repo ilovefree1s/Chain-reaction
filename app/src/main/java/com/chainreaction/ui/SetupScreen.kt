@@ -241,6 +241,13 @@ fun SetupScreen(
             },
             onDeleteCourse = onDeleteCourse,
             onDismiss = { parsOpen = false },
+            selectedCourse = courseName,
+            playEnabled = namesReady,
+            // Straight from the course list into the round, skipping the trip back
+            // through Setup's own Start button.
+            onPlayCourse = { course ->
+                onStart(trimmed, meIndex, course.holeCount, course.pars, course.name)
+            },
         )
     }
 }

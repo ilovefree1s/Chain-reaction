@@ -85,11 +85,13 @@
   }
   input[type=text]:focus { outline: none; border-color: var(--self); }
 
-  .me {
+  /* button.me, not bare .me: the highlighted score row is class "player me", and an
+     unscoped .me rule squashes that whole row to the toggle's 56px square. */
+  button.me {
     width: var(--tap); height: var(--tap); flex: 0 0 var(--tap); border-radius: 14px;
     background: var(--panel); color: var(--sage); font-weight: 900; font-size: 15px;
   }
-  .me.on { background: var(--self); color: var(--pine); }
+  button.me.on { background: var(--self); color: var(--pine); }
 
   .hole-title { text-align: center; flex: 1 1 auto; }
   .hole-title strong { display: block; font-size: 26px; font-weight: 900; }
@@ -152,6 +154,10 @@
   .courserow .pick { flex: 1 1 auto; min-width: 0; padding: 14px; cursor: pointer; }
   .courserow .del { flex: 0 0 var(--tap); width: var(--tap); background: none;
                     color: var(--attack); font-size: 28px; font-weight: 900; border-radius: 0; }
+  .courserow.sel { background: var(--raised); box-shadow: inset 0 0 0 2px var(--self); }
+  .courserow.sel .cname { color: var(--self); }
+  /* Tucked under its highlighted row rather than floating between neighbours. */
+  .courseplay { margin: -2px 0 12px; }
   .pargrid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; margin-bottom: 12px; }
   .parcell { height: 64px; min-height: 64px; border-radius: 12px; background: var(--panel);
              display: flex; flex-direction: column; align-items: center; justify-content: center; }
@@ -869,8 +875,12 @@ function renderWheel() {
 /* ---------- course & pars ---------- */
 function renderParGrid() {
   var list = allCourses();
+  var namesOk = setup.names.every(function (n) { return n.trim() !== ""; });
   var saved = list.map(function (c) {
-    return '<div class="courserow">' +
+    // Selection and the Play shortcut only make sense while setting up a round —
+    // the same sheet doubles as Settings' course manager.
+    var sel = screen === "setup" && c.name === setup.courseName;
+    return '<div class="courserow' + (sel ? " sel" : "") + '">' +
       '<div class="pick" data-act="loadCourse" data-course="' + esc(c.name) + '">' +
         '<div class="cname">' + esc(c.name) + '</div>' +
         '<div class="dim">' + c.holeCount + ' holes &middot; par ' + sum(c.pars) + '</div>' +
@@ -878,7 +888,12 @@ function renderParGrid() {
       (canDeleteCourse(c.name)
         ? '<button class="del" data-act="deleteCourse" data-course="' + esc(c.name) + '">&times;</button>'
         : "") +
-      '</div>';
+      '</div>' +
+      (sel
+        ? '<button class="big primary courseplay" data-act="playCourse"' +
+          (namesOk ? "" : " disabled") + '>Play</button>' +
+          (namesOk ? "" : '<p class="hint">Every player needs a name first.</p>')
+        : "");
   }).join("");
 
   var lengths = '<div class="label">' +
@@ -1049,6 +1064,11 @@ app.addEventListener("click", function (e) {
       if (setup.names.length > MIN_PLAYERS) setup.names.pop();
       if (setup.meIndex > setup.names.length - 1) setup.meIndex = setup.names.length - 1;
       render(); break;
+    // Straight from the course list into the round — the course is already loaded
+    // by the tap that selected it, so this is Start with the sheet closed.
+    case "playCourse":
+      parsUI.open = false;
+      /* falls through */
     case "start":
       commit(newRound(
         setup.names.map(function (x) { return x.trim(); }),

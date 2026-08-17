@@ -1,6 +1,7 @@
 package com.chainreaction.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -64,6 +65,11 @@ fun ParGridSheet(
     onSaveCourse: (String) -> Unit,
     onDeleteCourse: (String) -> Unit,
     onDismiss: () -> Unit,
+    /** The course currently chosen for the round, highlighted in the list. */
+    selectedCourse: String? = null,
+    /** Round-start shortcut on the selected row. Null (Settings) hides it. */
+    onPlayCourse: ((Course) -> Unit)? = null,
+    playEnabled: Boolean = true,
 ) {
     Dialog(
         onDismissRequest = onDismiss,
@@ -103,45 +109,72 @@ fun ParGridSheet(
                     SectionLabel("Saved courses")
                     Spacer(Modifier.height(10.dp))
                     courses.forEach { course ->
-                        Row(
+                        val selected = course.name == selectedCourse
+                        Column(
                             Modifier
                                 .fillMaxWidth()
                                 .padding(bottom = 8.dp)
                                 .clip(RoundedCornerShape(14.dp))
-                                .background(Panel),
-                            verticalAlignment = Alignment.CenterVertically,
+                                .background(if (selected) PanelRaised else Panel)
+                                .then(
+                                    if (selected) {
+                                        Modifier.border(2.dp, SelfCard, RoundedCornerShape(14.dp))
+                                    } else Modifier,
+                                ),
                         ) {
-                            Column(
-                                Modifier
-                                    .weight(1f)
-                                    .clickable { onLoadCourse(course) }
-                                    .padding(14.dp),
-                            ) {
-                                // Course names carry the tee too, so they need room to breathe.
-                                Text(
-                                    course.name,
-                                    style = MaterialTheme.typography.titleLarge,
-                                    color = OffWhite,
-                                    maxLines = 2,
-                                    overflow = TextOverflow.Ellipsis,
-                                )
-                                Text(
-                                    "${course.holeCount} holes · par ${course.totalPar}",
-                                    color = Sage,
-                                    style = MaterialTheme.typography.bodyLarge,
-                                )
-                            }
-                            // Courses that ship with the app have no delete — saving over
-                            // the same name is how you correct one.
-                            if (canDelete(course)) {
-                                Box(
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Column(
                                     Modifier
-                                        .size(TapTarget)
-                                        .clickable { onDeleteCourse(course.name) },
-                                    contentAlignment = Alignment.Center,
+                                        .weight(1f)
+                                        .clickable { onLoadCourse(course) }
+                                        .padding(14.dp),
                                 ) {
-                                    Text("×", fontSize = 28.sp, fontWeight = FontWeight.Black, color = Attack)
+                                    // Course names carry the tee too, so they need room to breathe.
+                                    Text(
+                                        course.name,
+                                        style = MaterialTheme.typography.titleLarge,
+                                        color = if (selected) SelfCard else OffWhite,
+                                        maxLines = 2,
+                                        overflow = TextOverflow.Ellipsis,
+                                    )
+                                    Text(
+                                        "${course.holeCount} holes · par ${course.totalPar}",
+                                        color = Sage,
+                                        style = MaterialTheme.typography.bodyLarge,
+                                    )
                                 }
+                                // Courses that ship with the app have no delete — saving over
+                                // the same name is how you correct one.
+                                if (canDelete(course)) {
+                                    Box(
+                                        Modifier
+                                            .size(TapTarget)
+                                            .clickable { onDeleteCourse(course.name) },
+                                        contentAlignment = Alignment.Center,
+                                    ) {
+                                        Text("×", fontSize = 28.sp, fontWeight = FontWeight.Black, color = Attack)
+                                    }
+                                }
+                            }
+                            // Straight from the list to the tee.
+                            if (selected && onPlayCourse != null) {
+                                BigButton(
+                                    text = "Play",
+                                    fill = SelfCard,
+                                    onFill = Pine,
+                                    enabled = playEnabled,
+                                    onClick = { onPlayCourse(course) },
+                                    modifier = Modifier.padding(horizontal = 12.dp),
+                                )
+                                if (!playEnabled) {
+                                    Text(
+                                        "Every player needs a name first.",
+                                        color = Sage,
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        modifier = Modifier.padding(horizontal = 14.dp),
+                                    )
+                                }
+                                Spacer(Modifier.height(12.dp))
                             }
                         }
                     }
