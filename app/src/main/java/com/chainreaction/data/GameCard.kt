@@ -90,7 +90,7 @@ object CardDeck {
         GameCard(41, "Before tee shot", CardKind.ATTACK, "Commentator", "Another player has to announce every shot you take this hole. If they forget one, they take +1 stroke."),
         GameCard(42, "Before shot", CardKind.ATTACK, "Trust Me Bro", "Give another player advice for their tee shot. They have to follow it as best they can."),
         GameCard(43, "Before tee shot", CardKind.GROUP, "WALK IT DOWN!!", "No other cards can be played once this hits the table. Everyone tees immediately from anywhere near the tee pad — no throw order. First and second to finish get birdie, third gets par, last gets bogey. No running, and no calling foot faults."),
-        GameCard(44, "After throw", CardKind.ATTACK, "Walk of Shame", "After a missed putt inside C1, that player carries their putter in their off hand until the next tee."),
+        GameCard(44, "After throw", CardKind.ATTACK, "Walk of Shame", "After a missed putt inside C1, that player carries their putter until they finish the next hole. If they drop it or put it in the bag, +1 stroke."),
         GameCard(45, "Before shot", CardKind.DUAL, "Shoe Golf", "On yourself: putt with your own shoe at no stroke cost. On another player: they putt with a shoe and it still counts as a stroke."),
         GameCard(46, "Before shot", CardKind.DUAL, "Globetrotter Shit", "On yourself: putt behind the back at no stroke cost. On another player: they putt behind the back and it counts as a normal stroke."),
         GameCard(47, "Before shot", CardKind.DUAL, "Spin to Win", "Spin rapidly 10 times, then putt within 3 seconds. Free on yourself, a normal stroke on an opponent."),
