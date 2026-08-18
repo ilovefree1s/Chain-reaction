@@ -15,7 +15,7 @@ If a PWA is easier to sideload, that's acceptable — but it must work offline, 
 - **Stroke play.** Lowest total wins.
 - **Starting hand:** 4 cards, dealt at round start.
 - **Hand cap:** 7. Cannot draw past it — must discard first.
-- **Each player has their own 53-card deck**, shuffled independently. Duplicate cards across players are expected and fine.
+- **Each player has their own 54-card deck**, shuffled independently. Duplicate cards across players are expected and fine.
 - **Played and discarded cards** go to that player's own discard pile. Reshuffle the discard back into the deck if the deck ever empties.
 - **Max 2 cards may be played on any one player per hole.** The app does not enforce this — players track it themselves — but show it in an in-app rules screen.
 
@@ -71,7 +71,7 @@ That named player is the **only one exempt**. Everyone else, including the playe
 **Exclude card ids 12, 18, and 27** from the wheel pool only — they're reaction cards with nothing to react to when drawn this way. They remain fully playable as normal cards.
 
 ### 5. Rules reference
-Static screen: the rules above, plus a browsable list of all 53 cards grouped by timing.
+Static screen: the rules above, plus a browsable list of all 54 cards grouped by timing.
 
 ## Design direction
 
@@ -169,7 +169,8 @@ Suggested palette: deep pine ground (`#0C1A14`), panels (`#132A21`), muted sage 
     { "id": 50, "timing": "Any time", "kind": "dual", "name": "Player 2's Turn!", "text": "On yourself: retake any shot for free. On another player: force them to re-throw a shot that was too good." },
     { "id": 51, "timing": "After a hole", "kind": "dual", "name": "Me and You", "text": "On yourself: take the best score made on the hole. On another player: they take the worst score made on the hole." },
     { "id": 52, "timing": "After throw", "kind": "self", "name": "Big Putt!", "text": "If you make a putt from outside C1 while a player still to putt is inside C1, they have to putt with their off hand." },
-    { "id": 53, "timing": "Before tee shot", "kind": "attack", "name": "Bag Exchange!", "text": "Pick a player to swap bags with. Swap back after the first bogey by either player." }
+    { "id": 53, "timing": "Before tee shot", "kind": "attack", "name": "Bag Exchange!", "text": "Pick a player to swap bags with. Swap back after the first bogey by either player." },
+    { "id": 54, "timing": "Before shot", "kind": "self", "name": "BIG BLUFF", "text": "Pick up your disc and throw your next shot from anyone else's disc, with them. If someone calls you out, you can claim you're holding this card even if you aren't. If they believe you, nothing happens. If they call your bluff and you don't have it, take +2 strokes." }
   ]
 }
 ```

@@ -77,14 +77,14 @@ class DrawRuleTest {
     // ---- deck integrity ----
 
     @Test
-    fun `deck is 53 cards with unique ids one through fifty-three`() {
-        assertEquals(53, CardDeck.ALL.size)
-        assertEquals((1..53).toSet(), CardDeck.ALL.map { it.id }.toSet())
+    fun `deck is 54 cards with unique ids one through fifty-four`() {
+        assertEquals(54, CardDeck.ALL.size)
+        assertEquals((1..54).toSet(), CardDeck.ALL.map { it.id }.toSet())
     }
 
     @Test
     fun `wheel pool never contains a blacklisted card`() {
-        assertEquals(37, CardDeck.WHEEL_POOL.size)
+        assertEquals(38, CardDeck.WHEEL_POOL.size)
         Rules.WHEEL_EXCLUDES.forEach { excluded ->
             assertTrue(
                 "card $excluded must not be in the wheel pool",
@@ -256,7 +256,7 @@ class DrawRuleTest {
                 assertNotEquals("draw made no progress", before, state.owed)
             }
             assertEquals(
-                "all 53 cards still accounted for",
+                "all 54 cards still accounted for",
                 ids,
                 (state.hand + state.deck + state.discard).toSet(),
             )

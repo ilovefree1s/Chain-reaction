@@ -38,7 +38,7 @@ private val houseRules = listOf(
     "Starting hand" to "4 cards, dealt at the start of the round.",
     "Hand cap" to "7 cards. You cannot draw past it — discard first.",
     "Your own deck" to
-        "Every player shuffles their own 53-card deck. Duplicates across players are " +
+        "Every player shuffles their own 54-card deck. Duplicates across players are " +
         "expected and fine. This phone only tracks your deck.",
     "Discard" to
         "Played and discarded cards go to your own discard pile. If your deck runs out, " +
@@ -106,7 +106,7 @@ fun LazyListScope.houseRulesItems() {
     items(drawTable) { (finish, cards) -> DrawRow(finish, cards) }
 }
 
-/** All 53 cards, grouped by timing. */
+/** All 54 cards, grouped by timing. */
 fun LazyListScope.cardLibraryItems() {
     Rules.TIMINGS.forEach { timing ->
         val group = CardDeck.ALL.filter { it.timing == timing }
