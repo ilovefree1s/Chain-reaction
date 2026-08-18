@@ -35,7 +35,6 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.toArgb
-import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.TextUnit
@@ -119,28 +118,11 @@ fun DoubleWheelSheet(players: List<String>, onDismiss: () -> Unit) {
                     .fillMaxSize()
                     .verticalScroll(rememberScrollState()),
             ) {
-                Spacer(Modifier.height(16.dp))
-                Text(
-                    "DOUBLE WHEEL",
-                    color = NeonIce,
-                    fontWeight = FontWeight.Black,
-                    fontStyle = FontStyle.Italic,
-                    fontSize = 28.sp,
-                    letterSpacing = 2.sp,
-                )
-                Spacer(Modifier.height(4.dp))
-                Text(
-                    "The name first, then the effect. The named player is the only one exempt.",
-                    color = NeonBody,
-                    fontSize = 16.sp,
-                )
-
                 // ---- stage 1: the name ----
-                NeonSectionLabel("1 · Who's exempt")
+                // No title block, and the stage collapses to one orange verdict
+                // line once the name lands — said once, cleanly, up top.
                 if (!nameSettled) {
-                    // The wheel only lives while there's something to spin for —
-                    // once the name lands it collapses to the verdict line, so
-                    // the effect wheel needs no scrolling.
+                    NeonSectionLabel("Who's exempt")
                     NeonWheel(
                         labels = nameLabels,
                         rotation = nameRot.value,
@@ -148,25 +130,24 @@ fun DoubleWheelSheet(players: List<String>, onDismiss: () -> Unit) {
                         labelSize = 15.sp,
                     )
                     Spacer(Modifier.height(12.dp))
-                }
-                if (stage == Stage.IDLE) {
-                    NeonBlueButton("Spin the name") { stage = Stage.NAME_SPIN }
-                }
-                if (nameSettled) {
+                } else {
+                    Spacer(Modifier.height(20.dp))
                     Text(
                         "${players[namePlayer]} is exempt",
                         color = NeonOrange,
-                        fontSize = 22.sp,
+                        fontSize = 24.sp,
                         fontWeight = FontWeight.Black,
                         textAlign = TextAlign.Center,
                         modifier = Modifier.fillMaxWidth(),
                     )
-                    Spacer(Modifier.height(4.dp))
+                }
+                if (stage == Stage.IDLE) {
+                    NeonBlueButton("Spin the name") { stage = Stage.NAME_SPIN }
                 }
 
                 // ---- stage 2: the effect ----
                 if (nameSettled) {
-                    NeonSectionLabel("2 · The effect")
+                    NeonSectionLabel("The effect")
                     NeonWheel(
                         labels = ringCards.map { it.name },
                         rotation = cardRot.value,

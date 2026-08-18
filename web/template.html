@@ -383,8 +383,8 @@
               width: 0; height: 0; border: 12px solid transparent; border-bottom: none;
               border-top: 20px solid var(--self); z-index: 1;
               filter: drop-shadow(0 0 6px rgba(255, 138, 30, 0.8)); }
-  .exempt { text-align: center; color: var(--self); font-size: 22px; font-weight: 900;
-            margin: 0 0 4px; }
+  .exempt { text-align: center; color: var(--self); font-size: 24px; font-weight: 900;
+            margin: 16px 0 4px; }
 </style>
 </head>
 <body>
@@ -1023,14 +1023,12 @@ function renderWheel() {
   var stage = wheel.stage;
   var nameSettled = stage === "nameDone" || stage === "done";
 
-  var html = '<div class="modal"><h1>DOUBLE WHEEL</h1>' +
-    '<p class="sub">The name first, then the effect. The named player is the only one exempt.</p>' +
-    '<div class="label">1 &middot; Who\'s exempt</div>';
-
-  // The wheel only lives while there's something to spin for — once the name
-  // lands it collapses to the verdict line, so the effect wheel needs no scroll.
+  // No title block, and the name stage collapses to one orange verdict line
+  // once the name lands — said once, cleanly, up top.
+  var html = '<div class="modal">';
   if (!nameSettled) {
-    html += '<div class="wheelbox"><div class="wheelptr"></div>' +
+    html += '<div class="label">Who\'s exempt</div>' +
+      '<div class="wheelbox"><div class="wheelptr"></div>' +
       wheelSvg("wheel-name", wheel.nameLabels, wheel.nameRot, null, 16) +
       '</div>';
   }
@@ -1039,7 +1037,7 @@ function renderWheel() {
   }
   if (nameSettled) {
     html += '<div class="exempt">' + esc(wheel.name) + ' is exempt</div>' +
-      '<div class="label">2 &middot; The effect</div>' +
+      '<div class="label">The effect</div>' +
       '<div class="wheelbox"><div class="wheelptr"></div>' +
       wheelSvg("wheel-card", wheel.cardLabels, wheel.cardRot, stage === "done" ? wheel.cardIdx : null, 7.5) +
       '</div>';
