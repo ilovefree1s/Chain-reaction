@@ -12,6 +12,10 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -29,6 +33,9 @@ fun HandScreen(
     onResolve: (cardId: Int) -> Unit,
     onOpenWheel: () -> Unit,
 ) {
+    // The card id awaiting a discard confirmation, if any.
+    var confirmDiscard by remember { mutableStateOf<Int?>(null) }
+
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
@@ -83,12 +90,36 @@ fun HandScreen(
         items(state.hand, key = { it }) { id ->
             val card = CardDeck.card(id)
             CardTile(card) {
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Box(Modifier.weight(1f)) {
-                        NeonBigButton("Play", enabled = true) { onResolve(id) }
+                if (confirmDiscard == id) {
+                    // A discard can't be un-tapped, so it asks once, in place.
+                    Column {
+                        Text(
+                            "Discard ${card.name}?",
+                            color = NeonWhite,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                        )
+                        Spacer(Modifier.height(10.dp))
+                        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                            Box(Modifier.weight(1f)) {
+                                NeonQuietButton("Keep it") { confirmDiscard = null }
+                            }
+                            Box(Modifier.weight(1f)) {
+                                NeonBigButton("Discard", enabled = true) {
+                                    confirmDiscard = null
+                                    onResolve(id)
+                                }
+                            }
+                        }
                     }
-                    Box(Modifier.weight(1f)) {
-                        NeonQuietButton("Discard") { onResolve(id) }
+                } else {
+                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Box(Modifier.weight(1f)) {
+                            NeonBigButton("Play", enabled = true) { onResolve(id) }
+                        }
+                        Box(Modifier.weight(1f)) {
+                            NeonQuietButton("Discard") { confirmDiscard = id }
+                        }
                     }
                 }
             }

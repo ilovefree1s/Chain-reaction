@@ -163,6 +163,8 @@
   .cardart { width: 100%; display: block; }
   .artacts { padding: 12px; }
   .artacts .acts { margin-top: 0; }
+  .confirmq { margin: 14px 0 0; font-weight: 700; }
+  .artacts .confirmq { margin-top: 0; }
   .card .acts button { flex: 1; margin: 0; }
 
   .hint { color: var(--sage); margin: 0 0 12px; }
@@ -579,6 +581,7 @@ var tab = "score";
 var screen = "menu";
 var setup = freshSetup();
 var wheel = null;
+var confirmDiscard = null; // card id awaiting a discard confirmation
 var confirming = false;
 var parsUI = { open: false, name: "" };
 var roundCourseName = "";
@@ -849,11 +852,18 @@ function counter(label, value) {
 }
 
 function cardHtml(c, withActions) {
-  var acts = withActions
-    ? '<div class="acts">' +
+  var acts = "";
+  if (withActions && confirmDiscard === c.id) {
+    // A discard can't be un-tapped, so it asks once, in place.
+    acts = '<p class="confirmq">Discard ' + esc(c.name) + '?</p>' +
+      '<div class="acts">' +
+      '<button class="big raised" data-act="keepCard">Keep it</button>' +
+      '<button class="big primary" data-act="resolve" data-i="' + c.id + '">Discard</button></div>';
+  } else if (withActions) {
+    acts = '<div class="acts">' +
       '<button class="big primary" data-act="resolve" data-i="' + c.id + '">Play</button>' +
-      '<button class="big raised" data-act="resolve" data-i="' + c.id + '">Discard</button></div>'
-    : "";
+      '<button class="big raised" data-act="askDiscard" data-i="' + c.id + '">Discard</button></div>';
+  }
   // Art, when it exists, IS the card face; any card without art keeps the
   // interim text tile, so faces can land one at a time.
   var art = CARD_ART[c.id];
@@ -1421,9 +1431,13 @@ app.addEventListener("click", function (e) {
     case "resolve":
       var at = s.hand.indexOf(i);
       if (at < 0) break;
+      confirmDiscard = null;
       s.hand.splice(at, 1);
       s.discard.push(i);
       commit(s); break;
+
+    case "askDiscard": confirmDiscard = i; render(); break;
+    case "keepCard": confirmDiscard = null; render(); break;
 
     case "openWheel": {
       // The whole pool rides the wheel — what you see is exactly what can hit.
