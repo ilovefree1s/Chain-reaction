@@ -73,8 +73,9 @@ fun DoubleWheelSheet(players: List<String>, onDismiss: () -> Unit) {
         var namePlayer by remember { mutableIntStateOf(-1) } // which player landed
         var nameSeg by remember { mutableIntStateOf(-1) } // which segment landed
 
-        // Each player twice around the wheel, so even 3 players fill it out.
-        val nameLabels = remember { List(players.size * 2) { "Player ${it % players.size + 1}" } }
+        // Each player's actual name, twice around the wheel, so even 3 players
+        // fill it out.
+        val nameLabels = remember { List(players.size * 2) { players[it % players.size] } }
 
         // The whole pool rides the wheel; the landing segment is decided at open.
         val ringCards = remember { CardDeck.WHEEL_POOL.shuffled() }

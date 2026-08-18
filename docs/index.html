@@ -1055,7 +1055,7 @@ function renderWheel() {
   if (!nameSettled) {
     html += '<div class="label">Who\'s exempt</div>' +
       '<div class="wheelbox"><div class="wheelptr"></div>' +
-      wheelSvg("wheel-name", wheel.nameLabels, wheel.nameRot, null, 16) +
+      wheelSvg("wheel-name", wheel.nameLabels, wheel.nameRot, null, 14) +
       '</div>';
   }
   if (stage === "idle") {
@@ -1445,9 +1445,10 @@ app.addEventListener("click", function (e) {
       var ringIdx = Math.floor(Math.random() * ring.length);
       var winner = ring[ringIdx];
       var nameLabels = [];
-      // Each player twice around the wheel, so even 3 players fill it out.
+      // Each player's actual name, twice around the wheel, so even 3 players
+      // fill it out.
       for (var pi = 0; pi < state.players.length * 2; pi++) {
-        nameLabels.push("Player " + (pi % state.players.length + 1));
+        nameLabels.push(state.players[pi % state.players.length]);
       }
       wheel = {
         stage: "idle", card: winner, name: null,
