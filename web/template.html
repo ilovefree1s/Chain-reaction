@@ -226,7 +226,8 @@
   .menu-buttons .sheet { position: relative; height: 100%; aspect-ratio: 1024 / 1536; }
   .menu-buttons img { height: 100%; width: 100%; display: block; }
   /* Measured off the artwork's pixels; boundaries fall between buttons. */
-  .hit { position: absolute; left: 0; right: 0; cursor: pointer; }
+  /* Clamped to the paint: the buttons span 5.1-94.5% of the sheet's width. */
+  .hit { position: absolute; left: 5.1%; right: 5.5%; cursor: pointer; }
   .menu-buttons-plain { position: absolute; left: 0; right: 0; z-index: 1;
                         bottom: env(safe-area-inset-bottom); padding: 0 20px; }
   .big.play { background: #F7941E; color: var(--pine); }

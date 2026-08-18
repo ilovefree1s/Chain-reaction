@@ -50,6 +50,9 @@ private const val BUTTONS_HEIGHT_FRACTION = 0.40f
 // buttons sit at 13.4-31.0, 32.7-49.9, 51.4-68.6 and 70.3-87.0 percent of its
 // height. Boundaries split the gaps at their midpoints so every tap snaps to
 // the nearest button with no dead zones.
+/** The painted buttons span 5.1-94.5% of the sheet's width, centred. */
+private const val BUTTON_WIDTH_FRACTION = 0.895f
+
 private val BUTTON_BANDS = listOf(
     0.1341f to 0.3184f, // play
     0.3184f to 0.5065f, // cards
@@ -149,14 +152,18 @@ fun MenuScreen(
                     contentScale = ContentScale.Fit,
                     modifier = Modifier.fillMaxSize(),
                 )
-                // Invisible tap targets tiled over the painted buttons.
-                Column(Modifier.fillMaxSize()) {
+                // Invisible tap targets tiled over the painted buttons — clamped
+                // to the paint's width too (the buttons span 5-94.5% of the sheet).
+                Column(
+                    Modifier.fillMaxSize(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
                     val actions = listOf(onPlay, onCards, onRules, onSettings)
                     Spacer(Modifier.weight(BUTTON_BANDS.first().first))
                     BUTTON_BANDS.forEachIndexed { i, (top, bottom) ->
                         Box(
                             Modifier
-                                .fillMaxWidth()
+                                .fillMaxWidth(BUTTON_WIDTH_FRACTION)
                                 .weight(bottom - top)
                                 .clickable(onClick = actions[i]),
                         )
