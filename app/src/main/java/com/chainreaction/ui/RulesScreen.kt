@@ -43,6 +43,8 @@ private val houseRules = listOf(
     "Discard" to
         "Played and discarded cards go to your own discard pile. If your deck runs out, " +
         "the discard is reshuffled back in.",
+    "Buy a spin" to
+        "Discard 2 cards to buy a spin on the Double Wheel. Spin it from the Hand tab.",
     "Two per player, per hole" to
         "At most ${Rules.MAX_CARDS_ON_ONE_PLAYER_PER_HOLE} cards may be played on any one " +
         "player per hole. The app does not enforce this — track it yourselves.",
@@ -61,7 +63,7 @@ private val drawTable = listOf(
 /** Icon per house rule, in the order of [houseRules]. */
 private val ruleIcons = listOf(
     NeonIcon.GOLF, NeonIcon.CARDS, NeonIcon.SEVEN, NeonIcon.DECK,
-    NeonIcon.RECYCLE, NeonIcon.PEOPLE, NeonIcon.SCALES,
+    NeonIcon.RECYCLE, NeonIcon.WHEEL, NeonIcon.PEOPLE, NeonIcon.SCALES,
 )
 
 @Composable

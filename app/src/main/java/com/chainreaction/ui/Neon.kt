@@ -127,7 +127,7 @@ fun NeonSectionLabel(text: String) {
     }
 }
 
-enum class NeonIcon { GOLF, CARDS, SEVEN, DECK, RECYCLE, PEOPLE, SCALES, CAP }
+enum class NeonIcon { GOLF, CARDS, SEVEN, DECK, RECYCLE, WHEEL, PEOPLE, SCALES, CAP }
 
 /** Octagonal icon chip, blue on near-black, like the art's row markers. */
 @Composable
@@ -221,6 +221,19 @@ private fun DrawScope.drawNeonIcon(icon: NeonIcon) {
                 close()
             }
             drawPath(arrow, NeonIce)
+        }
+        NeonIcon.WHEEL -> {
+            // A spoked wheel — the Double Wheel's marker.
+            drawCircle(NeonIce, radius = w * 0.42f, center = Offset(w * 0.5f, h * 0.5f), style = stroke)
+            drawCircle(NeonIce, radius = w * 0.08f, center = Offset(w * 0.5f, h * 0.5f))
+            line(0.5f, 0.5f, 0.5f, 0.10f)
+            line(0.5f, 0.5f, 0.90f, 0.5f)
+            line(0.5f, 0.5f, 0.5f, 0.90f)
+            line(0.5f, 0.5f, 0.10f, 0.5f)
+            line(0.5f, 0.5f, 0.78f, 0.22f)
+            line(0.5f, 0.5f, 0.78f, 0.78f)
+            line(0.5f, 0.5f, 0.22f, 0.78f)
+            line(0.5f, 0.5f, 0.22f, 0.22f)
         }
         NeonIcon.PEOPLE -> {
             drawCircle(NeonIce, w * 0.13f, Offset(w * 0.32f, h * 0.30f), style = stroke)

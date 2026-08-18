@@ -849,6 +849,7 @@ var HOUSE_RULES = [
   ["Hand cap", "7 cards. You cannot draw past it — discard first."],
   ["Your own deck", "Every player shuffles their own 52-card deck. Duplicates across players are expected and fine. This phone only tracks your deck."],
   ["Discard", "Played and discarded cards go to your own discard pile. If your deck runs out, the discard is reshuffled back in."],
+  ["Buy a spin", "Discard 2 cards to buy a spin on the Double Wheel. Spin it from the Hand tab."],
   ["Two per player, per hole", "At most 2 cards may be played on any one player per hole. The app does not enforce this — track it yourselves."],
   ["The app doesn't referee", "It deals cards and keeps score. It never applies card effects or stroke penalties. Cards that rewrite scores get entered by hand with the ± steppers."]
 ];
@@ -894,7 +895,8 @@ var NEON_ICONS = {
   recycle: '<path d="M19.5 8a8 8 0 1 0 .5 4"/><path d="M20 3v5h-5"/>',
   people: '<circle cx="8.5" cy="8.5" r="3"/><circle cx="15.5" cy="8.5" r="3"/><path d="M3.5 20a5 5 0 0 1 10 0"/><path d="M10.5 20a5 5 0 0 1 10 0"/>',
   scales: '<path d="M12 3v15M8 20h8M5 6h14"/><path d="M5 6l-2.5 5h5z"/><path d="M19 6l-2.5 5h5z"/>',
-  cap: '<path d="M2 9.5L12 5l10 4.5L12 14z"/><path d="M6.5 11.5v4.5c0 1.8 11 1.8 11 0v-4.5"/><path d="M22 9.5v5"/>'
+  cap: '<path d="M2 9.5L12 5l10 4.5L12 14z"/><path d="M6.5 11.5v4.5c0 1.8 11 1.8 11 0v-4.5"/><path d="M22 9.5v5"/>',
+  wheel: '<circle cx="12" cy="12" r="9.5"/><circle cx="12" cy="12" r="1.8" fill="#4DC3FF" stroke="none"/><path d="M12 12V2.5M12 12v9.5M12 12H2.5M12 12h9.5M12 12l6.7-6.7M12 12l6.7 6.7M12 12l-6.7 6.7M12 12l-6.7-6.7"/>'
 };
 function nchip(icon) {
   return '<div class="nchip"><div class="in">' +
@@ -907,7 +909,7 @@ function nheader(title) {
 }
 function nsec(text) { return '<div class="nsec">' + text + "</div>"; }
 
-var RULE_ICONS = ["golf", "cards", "seven", "deck", "recycle", "people", "scales"];
+var RULE_ICONS = ["golf", "cards", "seven", "deck", "recycle", "wheel", "people", "scales"];
 
 /* Menu destination: the rules in the neon style, drawn in code rather than shipped
    as artwork — text stays editable and the page costs kilobytes, not megabytes. */
