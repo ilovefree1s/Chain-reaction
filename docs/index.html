@@ -211,10 +211,52 @@
   /* Black ground: the artwork's own edges are near-black, and pine would show as
      green bands around it. Stretched to fill the screen — the art's proportions are
      close enough that the stretch is subtle, and it beats a dead band under the frame. */
-  body.rules-screen { background: #000; }
-  body.rules-screen #app { padding: 0; max-width: none; }
+  body.rules-screen, body.settings-screen { background: #000; }
+  body.rules-screen #app, body.settings-screen #app { padding: 0; max-width: none; }
   .rulesart { position: relative; height: 100vh; height: 100dvh; }
   .rulesart img { width: 100%; height: 100%; display: block; }
+
+  /* Settings keeps the art's own aspect (inputs must not shift under a stretched
+     layout when the keyboard opens); the black ground fills whatever is left. */
+  .settingsart { position: relative; max-width: 640px; margin: 0 auto; }
+  .settingsart img { width: 100%; display: block; }
+  .settingsart .hit { position: absolute; cursor: pointer; }
+  .settingsart .menuhit { left: 0; top: 0; width: 26%; height: 10%; }
+  .settingsart .slot {
+    position: absolute; left: 13%; width: 60%; height: 6.1%;
+    padding: 0 0 0 3.5%; background: transparent; border: none; border-radius: 14px;
+    color: var(--off); font-family: inherit; font-size: min(5vw, 24px);
+  }
+  .settingsart .slot:focus { outline: none; }
+  /* Typing covers the painted "Player N". Sampled from the slot interiors. */
+  .settingsart .slot.filled { background: #0A0A16; }
+  .settingsart .mehit {
+    position: absolute; left: 77.9%; width: 10%; height: 6.1%;
+    border-radius: 12px; cursor: pointer;
+  }
+  .settingsart .mehit.on { background: rgba(255, 210, 63, 0.30); }
+  .settingsart .removehit { left: 45.5%; top: 53.7%; width: 25.4%; height: 6%; }
+  .settingsart .savehit {
+    position: absolute; left: 11.5%; top: 62.1%; width: 77%; height: 5.9%;
+    border-radius: 16px; cursor: pointer;
+  }
+  .settingsart .savehit.valid {
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-weight: 800; letter-spacing: 0.16em;
+    font-size: calc(min(100vw, 640px) * 0.034);
+  }
+  /* Opaque dark gold, inset so the art's metallic frame still shows around it.
+     Translucent gold alone lets the painted grey label bleed through. */
+  .settingsart .savehit.valid::before {
+    content: ""; position: absolute; inset: 9% 1%;
+    border-radius: 10px; background: #544622;
+  }
+  .settingsart .savehit.valid::after { content: "SAVE GROUP"; position: relative; }
+  .settingsart .savedtag {
+    position: absolute; top: 68.3%; left: 0; right: 0; text-align: center;
+    color: var(--self); font-weight: 900; font-size: 15px; letter-spacing: 2px;
+  }
+  .settingsart .courseshit { left: 11.5%; top: 74.2%; width: 77%; height: 10.3%; }
   /* Over the painted "< Menu" in the art's top-left. */
   .rulesart .hit { position: absolute; left: 0; top: 0; width: 28%; height: 9%; cursor: pointer; }
 
@@ -285,6 +327,7 @@ var MENU_IMAGE = "assets/menu.png";
 var BUTTONS_IMAGE = "assets/buttons.png";
 var GRASS_IMAGE = "assets/grass.png";
 var RULES_IMAGE = "assets/rules.png";
+var SETTINGS_IMAGE = "assets/settings.png";
 
 /* ---------- persistence ---------- */
 /* Falls back to memory if the browser blocks storage (e.g. opened as a file:// URL). */
@@ -483,7 +526,7 @@ function render() {
     // The artwork paints its own header and Menu button.
     html = RULES_IMAGE ? renderRules() : backBar("Rules") + renderRules();
   } else if (screen === "settings") {
-    html = backBar("Settings") + renderSettings();
+    html = SETTINGS_IMAGE ? renderSettings() : backBar("Settings") + renderSettings();
   } else {
     // No title: the Score screen's own header already says which hole and par.
     var scoreTab = (roundComplete(state) && !showScorecard) ? renderResults() : renderScore();
@@ -497,6 +540,7 @@ function render() {
   app.innerHTML = html;
   document.body.classList.toggle("menu-screen", screen === "menu");
   document.body.classList.toggle("rules-screen", screen === "rules" && !!RULES_IMAGE);
+  document.body.classList.toggle("settings-screen", screen === "settings" && !!SETTINGS_IMAGE);
 }
 
 function backBar(title) {
@@ -820,8 +864,44 @@ function renderCards() {
   return '<div class="label">All ' + CARDS.length + ' cards</div>' + renderCardLibrary();
 }
 
-/* ---------- settings ---------- */
+/* ---------- settings ----------
+   The artwork paints the whole page; real controls sit over it at fractions measured
+   off its pixels. Empty inputs are transparent so the painted "Player N" shows through
+   as the placeholder; typing gives the input an opaque background that hides it.
+   The selected ME square and a valid SAVE GROUP get a translucent gold wash. */
+var groupSlots = ["", "", "", ""];
+var settingsMeSlot = 0;
+
+function settingsGroupValid() {
+  var filled = groupSlots.filter(function (s) { return s.trim() !== ""; });
+  return filled.length >= MIN_PLAYERS && groupSlots[settingsMeSlot].trim() !== "";
+}
+
+var SETTINGS_SLOT_TOP = [20.57, 28.83, 37.08, 45.34]; /* % of the art's height */
+
 function renderSettings() {
+  if (!SETTINGS_IMAGE) return renderSettingsPlain();
+  var valid = settingsGroupValid();
+
+  var slots = groupSlots.map(function (v, i) {
+    var top = SETTINGS_SLOT_TOP[i];
+    return '<input class="slot' + (v ? " filled" : "") + '" data-slot="' + i +
+      '" value="' + esc(v) + '" style="top:' + top + '%">' +
+      '<div class="mehit' + (settingsMeSlot === i ? " on" : "") +
+      '" data-act="meSlot" data-i="' + i + '" style="top:' + top + '%"></div>';
+  }).join("");
+
+  return '<div class="settingsart"><img src="' + SETTINGS_IMAGE + '" alt="Settings">' +
+    '<div class="hit menuhit" data-act="menu"></div>' +
+    slots +
+    '<div class="hit removehit" data-act="clearLast"></div>' +
+    '<div class="savehit' + (valid ? " valid" : "") + '" data-act="saveGroupArt"></div>' +
+    (savedGroup ? '<div class="savedtag">SAVED &check;</div>' : "") +
+    '<div class="hit courseshit" data-act="openPars"></div>' +
+    '</div>';
+}
+
+function renderSettingsPlain() {
   var rows = settings.players.length ? settings.players : ["", "", "", ""];
   var names = rows.map(function (n, i) {
     return '<div class="row" style="margin-bottom:10px">' +
@@ -1014,6 +1094,18 @@ app.addEventListener("input", function (e) {
     syncButton('[data-act="saveRoundCourse"]', roundCourseName.trim() !== "");
     return;
   }
+  var artSlot = e.target.getAttribute("data-slot");
+  if (artSlot !== null) {
+    groupSlots[+artSlot] = e.target.value;
+    savedGroup = false;
+    // Toggle in place rather than re-rendering, which would drop keyboard focus.
+    e.target.classList.toggle("filled", e.target.value !== "");
+    var save = app.querySelector('[data-act="saveGroupArt"]');
+    if (save) save.classList.toggle("valid", settingsGroupValid());
+    var tag = app.querySelector(".savedtag");
+    if (tag) tag.remove();
+    return;
+  }
   var slot = e.target.getAttribute("data-setting-name");
   if (slot !== null) {
     if (!settings.players.length) settings.players = ["", "", "", ""];
@@ -1117,7 +1209,27 @@ app.addEventListener("click", function (e) {
       render(); break;
     case "goCards": screen = "cards"; render(); break;
     case "goRules": screen = "rules"; render(); break;
-    case "goSettings": savedGroup = false; screen = "settings"; render(); break;
+    case "goSettings":
+      savedGroup = false;
+      groupSlots = [0, 1, 2, 3].map(function (k) { return (settings.players || [])[k] || ""; });
+      settingsMeSlot = Math.min(settings.meIndex || 0, 3);
+      screen = "settings"; render(); break;
+
+    // ---- settings over the artwork ----
+    case "meSlot": settingsMeSlot = i; savedGroup = false; render(); break;
+    case "clearLast":
+      for (var gl = groupSlots.length - 1; gl >= 0; gl--) {
+        if (groupSlots[gl].trim() !== "") { groupSlots[gl] = ""; break; }
+      }
+      savedGroup = false; render(); break;
+    case "saveGroupArt":
+      if (!settingsGroupValid()) break;
+      var filledNames = groupSlots.map(function (x) { return x.trim(); })
+        .filter(function (x) { return x !== ""; });
+      var meWithin = groupSlots.slice(0, settingsMeSlot)
+        .filter(function (x) { return x.trim() !== ""; }).length;
+      putSettings({ players: filledNames, meIndex: meWithin });
+      savedGroup = true; render(); break;
 
     // ---- settings ----
     case "settingMe": settings.meIndex = i; savedGroup = false; render(); break;

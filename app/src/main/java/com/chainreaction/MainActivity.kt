@@ -134,17 +134,19 @@ private fun App(vm: GameViewModel = viewModel()) {
             onBack = { go(Screen.MENU) },
         )
 
-        Screen.SETTINGS -> SubScreen("Settings", onBack = { go(Screen.MENU) }) { content ->
-            SettingsScreen(
-                settings = vm.settings,
-                courses = vm.courses,
-                canDelete = vm::canDelete,
-                modifier = content,
-                onSettingsChange = vm::updateSettings,
-                onSaveCourse = vm::saveCourse,
-                onDeleteCourse = vm::deleteCourse,
-            )
-        }
+        // Art-backed like Rules: painted header, black behind the safe areas.
+        Screen.SETTINGS -> SettingsScreen(
+            settings = vm.settings,
+            courses = vm.courses,
+            canDelete = vm::canDelete,
+            modifier = Modifier
+                .background(Color.Black)
+                .safeDrawingPadding(),
+            onSettingsChange = vm::updateSettings,
+            onSaveCourse = vm::saveCourse,
+            onDeleteCourse = vm::deleteCourse,
+            onBack = { go(Screen.MENU) },
+        )
 
         Screen.ROUND -> {
             val state = vm.state
