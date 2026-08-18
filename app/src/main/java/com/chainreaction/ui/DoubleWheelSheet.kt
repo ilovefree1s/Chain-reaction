@@ -52,15 +52,12 @@ private enum class Stage { IDLE, NAME_SPIN, NAME_DONE, CARD_SPIN, DONE }
 private const val SPIN_MS = 3600
 private val SpinEasing = CubicBezierEasing(0.12f, 0.8f, 0.08f, 1f)
 
-/** Ten real cards ride the effect wheel; the winner is drawn from the full pool. */
-private const val CARD_SEGMENTS = 10
-
 /**
  * Card #48's mechanic, staged on actual wheels. The name spins first: the group
- * learns who's exempt before anyone knows what they're exempt from. The name
- * wheel carries Player 1..N twice over so it reads as a full wheel; the effect
- * wheel shows ten real cards, but the landing card was drawn from the whole
- * pool up front — every card keeps its full-pool odds. The wheel is theatre.
+ * learns who's exempt before anyone knows what they're exempt from. Once the
+ * name lands its wheel gives way to the verdict line, so the effect wheel is on
+ * screen without scrolling. That wheel carries the entire pool — every card not
+ * on the house blacklist — so what you see is exactly what can hit.
  */
 @Composable
 fun DoubleWheelSheet(players: List<String>, onDismiss: () -> Unit) {
@@ -80,13 +77,10 @@ fun DoubleWheelSheet(players: List<String>, onDismiss: () -> Unit) {
         // Each player twice around the wheel, so even 3 players fill it out.
         val nameLabels = remember { List(players.size * 2) { "Player ${it % players.size + 1}" } }
 
-        // Decided at open, revealed by the spin.
-        val winningCard = remember { CardDeck.WHEEL_POOL.random() }
-        val ringCards = remember {
-            val others = (CardDeck.WHEEL_POOL - winningCard).shuffled().take(CARD_SEGMENTS - 1)
-            (others + winningCard).shuffled()
-        }
-        val cardIdx = remember { ringCards.indexOf(winningCard) }
+        // The whole pool rides the wheel; the landing segment is decided at open.
+        val ringCards = remember { CardDeck.WHEEL_POOL.shuffled() }
+        val cardIdx = remember { ringCards.indices.random() }
+        val winningCard = ringCards[cardIdx]
 
         val nameRot = remember { Animatable(0f) }
         val cardRot = remember { Animatable(0f) }
@@ -143,14 +137,18 @@ fun DoubleWheelSheet(players: List<String>, onDismiss: () -> Unit) {
 
                 // ---- stage 1: the name ----
                 NeonSectionLabel("1 · Who's exempt")
-                NeonWheel(
-                    labels = nameLabels,
-                    rotation = nameRot.value,
-                    winner = if (nameSettled) nameSeg else null,
-                    labelSize = 15.sp,
-                )
-                Spacer(Modifier.height(12.dp))
-
+                if (!nameSettled) {
+                    // The wheel only lives while there's something to spin for —
+                    // once the name lands it collapses to the verdict line, so
+                    // the effect wheel needs no scrolling.
+                    NeonWheel(
+                        labels = nameLabels,
+                        rotation = nameRot.value,
+                        winner = null,
+                        labelSize = 15.sp,
+                    )
+                    Spacer(Modifier.height(12.dp))
+                }
                 if (stage == Stage.IDLE) {
                     NeonBlueButton("Spin the name") { stage = Stage.NAME_SPIN }
                 }
@@ -173,7 +171,7 @@ fun DoubleWheelSheet(players: List<String>, onDismiss: () -> Unit) {
                         labels = ringCards.map { it.name },
                         rotation = cardRot.value,
                         winner = if (stage == Stage.DONE) cardIdx else null,
-                        labelSize = 11.sp,
+                        labelSize = 8.sp,
                     )
                     Spacer(Modifier.height(12.dp))
 

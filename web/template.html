@@ -1025,11 +1025,15 @@ function renderWheel() {
 
   var html = '<div class="modal"><h1>DOUBLE WHEEL</h1>' +
     '<p class="sub">The name first, then the effect. The named player is the only one exempt.</p>' +
-    '<div class="label">1 &middot; Who\'s exempt</div>' +
-    '<div class="wheelbox"><div class="wheelptr"></div>' +
-    wheelSvg("wheel-name", wheel.nameLabels, wheel.nameRot, nameSettled ? wheel.nameSeg : null, 16) +
-    '</div>';
+    '<div class="label">1 &middot; Who\'s exempt</div>';
 
+  // The wheel only lives while there's something to spin for — once the name
+  // lands it collapses to the verdict line, so the effect wheel needs no scroll.
+  if (!nameSettled) {
+    html += '<div class="wheelbox"><div class="wheelptr"></div>' +
+      wheelSvg("wheel-name", wheel.nameLabels, wheel.nameRot, null, 16) +
+      '</div>';
+  }
   if (stage === "idle") {
     html += '<button class="big wheel" data-act="spinName">Spin the name</button>';
   }
@@ -1037,7 +1041,7 @@ function renderWheel() {
     html += '<div class="exempt">' + esc(wheel.name) + ' is exempt</div>' +
       '<div class="label">2 &middot; The effect</div>' +
       '<div class="wheelbox"><div class="wheelptr"></div>' +
-      wheelSvg("wheel-card", wheel.cardLabels, wheel.cardRot, stage === "done" ? wheel.cardIdx : null, 11) +
+      wheelSvg("wheel-card", wheel.cardLabels, wheel.cardRot, stage === "done" ? wheel.cardIdx : null, 7.5) +
       '</div>';
     if (stage === "nameDone") {
       html += '<button class="big wheel" data-act="spinCard">Spin the effect</button>';
@@ -1069,7 +1073,7 @@ function wheelSvg(id, labels, rotation, winner, fontSize) {
       (C + R * Math.cos(a1)).toFixed(2) + ' ' + (C + R * Math.sin(a1)).toFixed(2) + ' Z"' +
       ' fill="' + (lit ? "#2A1503" : i % 2 ? "#061022" : "#0B1424") + '"' +
       ' stroke="' + (lit ? "#FF8A1E" : "#22304A") + '" stroke-width="2"/>' +
-      '<text x="' + (C + R * 0.28).toFixed(1) + '" y="' + C + '"' +
+      '<text x="' + (C + R * 0.42).toFixed(1) + '" y="' + C + '"' +
       ' transform="rotate(' + mid.toFixed(2) + ' ' + C + ' ' + C + ')"' +
       ' fill="' + (lit ? "#FF8A1E" : "#F4F8FF") + '" font-size="' + fontSize + '"' +
       ' font-weight="800" dominant-baseline="middle">' + esc(short) + '</text>';
@@ -1409,11 +1413,10 @@ app.addEventListener("click", function (e) {
       commit(s); break;
 
     case "openWheel": {
-      // Winner drawn from the full pool first — the ten-card ring is theatre.
-      var winner = pick(WHEEL_POOL);
-      var ring = shuffled(WHEEL_POOL.filter(function (c) { return c.id !== winner.id; })).slice(0, 9);
-      ring.push(winner);
-      ring = shuffled(ring);
+      // The whole pool rides the wheel — what you see is exactly what can hit.
+      var ring = shuffled(WHEEL_POOL);
+      var ringIdx = Math.floor(Math.random() * ring.length);
+      var winner = ring[ringIdx];
       var nameLabels = [];
       // Each player twice around the wheel, so even 3 players fill it out.
       for (var pi = 0; pi < state.players.length * 2; pi++) {
@@ -1423,7 +1426,7 @@ app.addEventListener("click", function (e) {
         stage: "idle", card: winner, name: null,
         nameLabels: nameLabels, nameSeg: null, nameRot: 0,
         cardLabels: ring.map(function (c) { return c.name; }),
-        cardIdx: ring.indexOf(winner), cardRot: 0,
+        cardIdx: ringIdx, cardRot: 0,
         spinning: false
       };
       render(); break;

@@ -83,8 +83,8 @@ class DrawRuleTest {
     }
 
     @Test
-    fun `wheel pool never contains the reaction cards`() {
-        assertEquals(49, CardDeck.WHEEL_POOL.size)
+    fun `wheel pool never contains a blacklisted card`() {
+        assertEquals(39, CardDeck.WHEEL_POOL.size)
         Rules.WHEEL_EXCLUDES.forEach { excluded ->
             assertTrue(
                 "card $excluded must not be in the wheel pool",

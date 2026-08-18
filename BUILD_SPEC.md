@@ -103,7 +103,7 @@ Suggested palette: deep pine ground (`#0C1A14`), panels (`#132A21`), muted sage 
   "handSize": 4,
   "handCap": 7,
   "maxCardsOnOnePlayerPerHole": 2,
-  "wheelExcludes": [12, 18, 27],
+  "wheelExcludes": [7, 8, 11, 12, 13, 15, 18, 19, 27, 31, 36, 39, 43],
   "timings": [
     "Before shot",
     "Before tee shot",
@@ -178,5 +178,5 @@ Suggested palette: deep pine ground (`#0C1A14`), panels (`#132A21`), muted sage 
 - Start a round, score 3 holes, force-quit the app, reopen — round state, hand, deck and discard all restored.
 - Come last on a hole → 2 cards owed. Tie for last → still 2. Everyone ties → 1. Win the hole → 0.
 - Hold 7 cards, come last, try to draw → blocked with a clear message until a card is discarded.
-- Spin the Double Wheel 30 times → cards 12, 18 and 27 never appear.
+- Spin the Double Wheel 30 times → no blacklisted card (7, 8, 11, 12, 13, 15, 18, 19, 27, 31, 36, 39, 43) ever appears.
 - Play through 18 holes drawing 2 every hole → deck reshuffles from discard without erroring.
