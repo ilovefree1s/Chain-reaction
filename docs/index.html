@@ -1224,9 +1224,7 @@ function spinWheel(kind) {
 /* ---------- actions ---------- */
 function commit(next) { state = next; save(state); render(); }
 
-function doDraw() {
-  var s = state;
-  if (s.owed <= 0 || handIsFull(s)) return;
+function drawOne(s) {
   var deck = s.deck, discard = s.discard;
   if (!deck.length) {
     if (!discard.length) return;
@@ -1237,6 +1235,12 @@ function doDraw() {
   s.deck = deck.slice(1);
   s.discard = discard;
   s.owed -= 1;
+}
+
+function doDraw() {
+  var s = state;
+  if (s.owed <= 0 || handIsFull(s)) return;
+  drawOne(s);
   commit(s);
 }
 
@@ -1406,6 +1410,11 @@ app.addEventListener("click", function (e) {
       s.owed += drawForHole(s, s.currentHole);
       s.locked[s.currentHole] = true;
       s.currentHole = Math.min(s.holeCount - 1, s.currentHole + 1);
+      // Draws land immediately — nothing banks between holes. Only what the
+      // hand cap blocks stays owed, drawable once a discard makes room.
+      while (s.owed > 0 && !handIsFull(s) && (s.deck.length || s.discard.length)) {
+        drawOne(s);
+      }
       showScorecard = false;
       commit(s); break;
 

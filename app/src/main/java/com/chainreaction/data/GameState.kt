@@ -82,17 +82,22 @@ data class GameState(
     }
 
     /**
-     * Freeze the hole, queue the local player's draw, and move to the next hole.
-     * On the final hole the round simply completes and stays put.
+     * Freeze the hole, resolve the local player's draw, and move to the next
+     * hole. Draws land in hand immediately — nothing banks between holes, so
+     * the hand cap keeps its teeth. Only what the cap blocks stays owed, and
+     * becomes drawable the moment a discard makes room. On the final hole the
+     * round simply completes and stays put.
      */
     fun lockAndAdvance(): GameState {
         val hole = currentHole
         if (locked[hole]) return this
-        return copy(
+        var next = copy(
             locked = locked.replaceAt(hole, true),
             owed = owed + drawForHole(hole),
             currentHole = (hole + 1).coerceAtMost(holeCount - 1),
         )
+        while (next.canDraw) next = next.withDraw()
+        return next
     }
 
     /**

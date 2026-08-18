@@ -168,13 +168,14 @@ class DrawRuleTest {
     // ---- locking ----
 
     @Test
-    fun `locking a hole queues the draw and advances`() {
+    fun `locking a hole draws immediately and advances`() {
         var state = GameState.newRound(listOf("A", "B", "C"), meIndex = 0, holeCount = 9)
-        // Me on 5, the others on 3 — I'm last, so two cards.
+        // Me on 5, the others on 3 — I'm last, so two cards, drawn on the spot.
         state = state.withScoreDelta(hole = 0, player = 0, delta = 2)
         state = state.lockAndAdvance()
 
-        assertEquals(2, state.owed)
+        assertEquals("nothing left owed", 0, state.owed)
+        assertEquals(Rules.HAND_SIZE + 2, state.hand.size)
         assertEquals(1, state.currentHole)
         assertTrue(state.locked[0])
         assertEquals(5, state.totalFor(0))
@@ -191,15 +192,27 @@ class DrawRuleTest {
     }
 
     @Test
-    fun `unlocking refunds the draw it granted`() {
-        var state = GameState.newRound(listOf("A", "B", "C"), meIndex = 0, holeCount = 9)
-        state = state.withScoreDelta(hole = 0, player = 0, delta = 2).lockAndAdvance()
-        assertEquals(2, state.owed)
+    fun `unlocking refunds only draws still owed`() {
+        // A full hand blocks the lock's auto-draw, so those stay owed —
+        // and unlocking refunds them.
+        var state = stateWith(
+            hand = CardDeck.ALL.take(Rules.HAND_CAP).map { it.id },
+            deck = CardDeck.ALL.drop(Rules.HAND_CAP).map { it.id },
+            discard = emptyList(),
+            owed = 0,
+        ).withScoreDelta(hole = 0, player = 0, delta = 2)
+
+        state = state.lockAndAdvance()
+        assertEquals("the cap blocked the auto-draw", 2, state.owed)
+        assertEquals(Rules.HAND_CAP, state.hand.size)
 
         state = state.unlock(0)
         assertEquals(0, state.owed)
         assertTrue(!state.locked[0])
         assertEquals(0, state.currentHole)
+
+        // Cards already in hand are never clawed back.
+        assertEquals(Rules.HAND_CAP, state.hand.size)
     }
 
     @Test
