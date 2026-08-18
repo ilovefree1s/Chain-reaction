@@ -94,7 +94,7 @@ Suggested palette: deep pine ground (`#0C1A14`), panels (`#132A21`), muted sage 
 - No sync, multiplayer, or networking.
 - No enforcement of card effects.
 - No stroke penalties applied automatically. Cards like GAMBLE!, Code Words!, Commentator, RUSH ATTACK!, Trade Offer and Me and You all rewrite scores — players enter those manually with the ± steppers.
-- No money tracking. FIVE DOLLARS! mentions a pot; it's honor-system.
+- No money tracking. FIVE FOR YOU, YOU, AND YOU! mentions a pot; it's honor-system.
 
 ## Card data
 
@@ -151,7 +151,7 @@ Suggested palette: deep pine ground (`#0C1A14`), panels (`#132A21`), muted sage 
     { "id": 32, "timing": "Before tee shot", "kind": "self", "name": "Tree Insurance", "text": "Play before your tee shot. If you hit a tree, take a free mulligan." },
     { "id": 33, "timing": "Before tee shot", "kind": "self", "name": "Call Your Shot", "text": "Call CTP. If you win it, nobody can play cards on you next hole, and your next attack card hits every opponent — not you." },
     { "id": 34, "timing": "After throw", "kind": "self", "name": "GAMBLE!", "text": "Take a second chance at a putt you just missed. Make it and it was a free mulligan. Miss and the second stroke counts too — play whichever disc landed farthest away, then add +1 stroke after the hole ends." },
-    { "id": 35, "timing": "After a hole", "kind": "self", "name": "FIVE DOLLARS!", "text": "Play after you birdie a hole nobody else birdied. Everyone else owes five dollars to the pot!" },
+    { "id": 35, "timing": "After a hole", "kind": "self", "name": "FIVE FOR YOU, YOU, AND YOU!", "text": "Play after you birdie a hole nobody else birdied. Everyone else owes five dollars to the pot!" },
     { "id": 36, "timing": "After all tee", "kind": "attack", "name": "I'm In Control", "text": "You decide who plays whose tee shots. More than one player can be sent to the same lie." },
     { "id": 37, "timing": "Before tee shot", "kind": "self", "name": "Not Today!", "text": "Remove any and all card effects currently on you." },
     { "id": 38, "timing": "Before tee shot", "kind": "self", "name": "GOOD GUYS VS. BAD GUYS!", "text": "Ask another player to team up for the next hole. Birdie counts as an eagle, no birdie is +1. Cards against one of you count against both, and you both take the same score. If they refuse, ask someone else — if everyone refuses, discard this card with no effect." },

@@ -197,7 +197,7 @@ No sync, no multiplayer, no accounts, no networking. No enforcement of card effe
 automatic stroke penalties — GAMBLE!, Code Words!, Commentator, WALK IT DOWN!!,
 GOOD GUYS VS. BAD GUYS! and Me and You all rewrite scores, and players enter those by hand
 with the ± steppers. No money
-tracking; FIVE DOLLARS! is honour-system.
+tracking; FIVE FOR YOU, YOU, AND YOU! is honour-system.
 
 The "max 2 cards on one player per hole" rule is shown on the Rules screen and tracked by the
 players, not the app.

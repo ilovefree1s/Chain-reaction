@@ -81,7 +81,7 @@ object CardDeck {
         GameCard(32, "Before tee shot", CardKind.SELF, "Tree Insurance", "Play before your tee shot. If you hit a tree, take a free mulligan."),
         GameCard(33, "Before tee shot", CardKind.SELF, "Call Your Shot", "Call CTP. If you win it, nobody can play cards on you next hole, and your next attack card hits every opponent — not you."),
         GameCard(34, "After throw", CardKind.SELF, "GAMBLE!", "Take a second chance at a putt you just missed. Make it and it was a free mulligan. Miss and the second stroke counts too — play whichever disc landed farthest away, then add +1 stroke after the hole ends."),
-        GameCard(35, "After a hole", CardKind.SELF, "FIVE DOLLARS!", "Play after you birdie a hole nobody else birdied. Everyone else owes five dollars to the pot!"),
+        GameCard(35, "After a hole", CardKind.SELF, "FIVE FOR YOU, YOU, AND YOU!", "Play after you birdie a hole nobody else birdied. Everyone else owes five dollars to the pot!"),
         GameCard(36, "After all tee", CardKind.ATTACK, "I'm In Control", "You decide who plays whose tee shots. More than one player can be sent to the same lie."),
         GameCard(37, "Before tee shot", CardKind.SELF, "Not Today!", "Remove any and all card effects currently on you."),
         GameCard(38, "Before tee shot", CardKind.SELF, "GOOD GUYS VS. BAD GUYS!", "Ask another player to team up for the next hole. Birdie counts as an eagle, no birdie is +1. Cards against one of you count against both, and you both take the same score. If they refuse, ask someone else — if everyone refuses, discard this card with no effect."),
