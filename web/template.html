@@ -677,8 +677,8 @@ function renderSetup() {
   var courseReady = setup.holes > 0;
   var ready = namesReady && courseReady;
 
-  return '<h1>CHAIN<br>REACTION</h1><p class="sub">Disc golf card game</p>' +
-    '<div class="label">Players</div>' +
+  // No title block — the back bar already says NEW ROUND.
+  return '<div class="label">Players</div>' +
     '<p class="hint">Tap ME on your own name.</p>' + rows + addRemove +
     '<div class="label">Course</div>' +
     '<div class="panel course' + (setup.courseName ? " sel" : "") + '" data-act="openPars">' +

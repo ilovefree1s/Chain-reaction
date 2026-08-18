@@ -23,7 +23,6 @@ import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -91,19 +90,7 @@ fun SetupScreen(
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 16.dp),
     ) {
-        Spacer(Modifier.height(12.dp))
-        Text(
-            "CHAIN\nREACTION",
-            color = NeonWhite,
-            fontSize = 34.sp,
-            fontWeight = FontWeight.Black,
-            fontStyle = FontStyle.Italic,
-            letterSpacing = 2.sp,
-            lineHeight = 36.sp,
-        )
-        Spacer(Modifier.height(4.dp))
-        Text("Disc golf card game", color = NeonBody, fontSize = 16.sp)
-
+        // No title block — the back bar already says NEW ROUND.
         NeonSectionLabel("Players")
         Text(
             "Tap ME on your own name.",
