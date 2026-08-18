@@ -374,6 +374,17 @@
             box-shadow: 0 0 14px rgba(30, 111, 255, 0.25); }
   .winner.done { color: var(--self); }
   .dim { color: var(--sage); }
+
+  /* ---- the double wheel itself ---- */
+  .wheelbox { position: relative; max-width: 340px; margin: 0 auto 12px; }
+  .wheelbox svg { display: block; width: 100%; }
+  .wheelbox svg.go { transition: transform 3.6s cubic-bezier(0.12, 0.8, 0.08, 1); }
+  .wheelptr { position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+              width: 0; height: 0; border: 12px solid transparent; border-bottom: none;
+              border-top: 20px solid var(--self); z-index: 1;
+              filter: drop-shadow(0 0 6px rgba(255, 138, 30, 0.8)); }
+  .exempt { text-align: center; color: var(--self); font-size: 22px; font-weight: 900;
+            margin: 0 0 4px; }
 </style>
 </head>
 <body>
@@ -1010,34 +1021,66 @@ function renderNav() {
 /* ---------- double wheel ---------- */
 function renderWheel() {
   var stage = wheel.stage;
-  // Once the name has landed it stays lit, through the effect spin and after.
-  var nameSettled = stage === "nameDone" || stage === "cardSpin" || stage === "done";
-  var effect = wheel.card
-    ? cardHtml(wheel.card, false)
-    : '<div class="placeholder">Spin to reveal the effect</div>';
+  var nameSettled = stage === "nameDone" || stage === "done";
 
   var html = '<div class="modal"><h1>DOUBLE WHEEL</h1>' +
     '<p class="sub">The name first, then the effect. The named player is the only one exempt.</p>' +
     '<div class="label">1 &middot; Who\'s exempt</div>' +
-    '<div class="winner' + (nameSettled ? " done" : "") + '">' +
-    esc(wheel.name || "—") + '</div>';
+    '<div class="wheelbox"><div class="wheelptr"></div>' +
+    wheelSvg("wheel-name", wheel.nameLabels, wheel.nameRot, nameSettled ? wheel.nameSeg : null, 16) +
+    '</div>';
 
   if (stage === "idle") {
     html += '<button class="big wheel" data-act="spinName">Spin the name</button>';
   }
   if (nameSettled) {
-    html += '<div class="label">2 &middot; The effect</div>' + effect;
+    html += '<div class="exempt">' + esc(wheel.name) + ' is exempt</div>' +
+      '<div class="label">2 &middot; The effect</div>' +
+      '<div class="wheelbox"><div class="wheelptr"></div>' +
+      wheelSvg("wheel-card", wheel.cardLabels, wheel.cardRot, stage === "done" ? wheel.cardIdx : null, 11) +
+      '</div>';
     if (stage === "nameDone") {
       html += '<button class="big wheel" data-act="spinCard">Spin the effect</button>';
     }
   }
   if (stage === "done") {
-    html += '<p>' + esc(wheel.name) + ' sits this one out. Everyone else — including whoever ' +
+    html += cardHtml(wheel.card, false) +
+      '<p>' + esc(wheel.name) + ' sits this one out. Everyone else — including whoever ' +
       'played the card — carries out the effect.</p>';
   }
   html += '<button class="big quiet" data-act="closeWheel">' +
     (stage === "done" ? "Done" : "Close") + "</button></div>";
   return html;
+}
+
+/* The wheel: alternating near-black wedges, labels along each spoke, a gradient
+   rim and a hub. The svg itself rotates; the pointer div above it stays put. */
+function wheelSvg(id, labels, rotation, winner, fontSize) {
+  var n = labels.length, seg = 360 / n, C = 160, R = 152;
+  var parts = labels.map(function (label, i) {
+    var lit = i === winner;
+    var a0 = (i * seg - 90) * Math.PI / 180;
+    var a1 = ((i + 1) * seg - 90) * Math.PI / 180;
+    var mid = i * seg + seg / 2 - 90;
+    var short = label.length > 15 ? label.slice(0, 14) + "…" : label;
+    return '<path d="M' + C + ' ' + C +
+      ' L' + (C + R * Math.cos(a0)).toFixed(2) + ' ' + (C + R * Math.sin(a0)).toFixed(2) +
+      ' A' + R + ' ' + R + ' 0 0 1 ' +
+      (C + R * Math.cos(a1)).toFixed(2) + ' ' + (C + R * Math.sin(a1)).toFixed(2) + ' Z"' +
+      ' fill="' + (lit ? "#2A1503" : i % 2 ? "#061022" : "#0B1424") + '"' +
+      ' stroke="' + (lit ? "#FF8A1E" : "#22304A") + '" stroke-width="2"/>' +
+      '<text x="' + (C + R * 0.28).toFixed(1) + '" y="' + C + '"' +
+      ' transform="rotate(' + mid.toFixed(2) + ' ' + C + ' ' + C + ')"' +
+      ' fill="' + (lit ? "#FF8A1E" : "#F4F8FF") + '" font-size="' + fontSize + '"' +
+      ' font-weight="800" dominant-baseline="middle">' + esc(short) + '</text>';
+  }).join("");
+  return '<svg id="' + id + '" viewBox="0 0 320 320" style="transform:rotate(' + rotation + 'deg)">' +
+    '<defs><linearGradient id="' + id + '-rim" x1="0" y1="0" x2="1" y2="1">' +
+    '<stop offset="0" stop-color="#1E6FFF"/><stop offset="0.5" stop-color="#3FA9FF"/>' +
+    '<stop offset="1" stop-color="#FF8A1E"/></linearGradient></defs>' + parts +
+    '<circle cx="160" cy="160" r="' + R + '" fill="none" stroke="url(#' + id + '-rim)" stroke-width="4"/>' +
+    '<circle cx="160" cy="160" r="15" fill="#061022" stroke="#4DC3FF" stroke-width="2"/>' +
+    '</svg>';
 }
 
 /* ---------- course & pars ---------- */
@@ -1099,25 +1142,56 @@ function renderParGrid() {
 
 function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 
-function spin(kind) {
-  // Tuned to land in roughly 1.6s per stage — long enough to build, short enough to play.
-  var ticks = kind === "card" ? 18 : 16;
-  var step = kind === "card" ? 30 : 40;
-  var grow = kind === "card" ? 7 : 9;
-  wheel.stage = kind === "card" ? "cardSpin" : "nameSpin";
+function shuffled(arr) {
+  var a = arr.slice();
+  for (var i = a.length - 1; i > 0; i--) {
+    var j = Math.floor(Math.random() * (i + 1));
+    var tmp = a[i]; a[i] = a[j]; a[j] = tmp;
+  }
+  return a;
+}
 
-  (function tick(n, delay) {
-    if (n >= ticks) {
-      if (kind === "card") { wheel.card = pick(WHEEL_POOL); wheel.stage = "done"; }
-      else { wheel.name = pick(state.players); wheel.stage = "nameDone"; }
-      render();
-      return;
-    }
-    if (kind === "card") wheel.card = pick(WHEEL_POOL);
-    else wheel.name = pick(state.players);
+/* Physical spin: five full turns easing out, landing the winner under the
+   pointer a little off-centre so the stop does not look rigged. CSS animates
+   the rotation; state advances only on settle. The timeout is a fallback for
+   throttled tabs where transitionend never fires. */
+function spinWheel(kind) {
+  if (!wheel || wheel.spinning) return;
+  var el = document.getElementById(kind === "name" ? "wheel-name" : "wheel-card");
+  if (!el) return;
+  wheel.spinning = true;
+
+  var n, idx;
+  if (kind === "name") {
+    var p = Math.floor(Math.random() * state.players.length);
+    wheel.name = state.players[p];
+    // The player owns two opposite segments — land on either.
+    wheel.nameSeg = p + state.players.length * (Math.random() < 0.5 ? 0 : 1);
+    n = wheel.nameLabels.length; idx = wheel.nameSeg;
+  } else {
+    n = wheel.cardLabels.length; idx = wheel.cardIdx;
+  }
+  var seg = 360 / n;
+  var target = 5 * 360 + (360 - (idx * seg + seg / 2)) + (Math.random() - 0.5) * 0.6 * seg;
+  if (kind === "name") wheel.nameRot = target; else wheel.cardRot = target;
+
+  var btn = document.querySelector(kind === "name" ? '[data-act="spinName"]' : '[data-act="spinCard"]');
+  if (btn) btn.style.visibility = "hidden";
+
+  var w = wheel, settled = false;
+  function settle() {
+    if (settled || wheel !== w) return;
+    settled = true;
+    wheel.spinning = false;
+    wheel.stage = kind === "name" ? "nameDone" : "done";
     render();
-    setTimeout(function () { tick(n + 1, delay + grow); }, delay);
-  })(0, step);
+  }
+  el.addEventListener("transitionend", settle, { once: true });
+  setTimeout(settle, 3900);
+  el.classList.add("go");
+  requestAnimationFrame(function () {
+    requestAnimationFrame(function () { el.style.transform = "rotate(" + target + "deg)"; });
+  });
 }
 
 /* ---------- actions ---------- */
@@ -1334,9 +1408,28 @@ app.addEventListener("click", function (e) {
       s.discard.push(i);
       commit(s); break;
 
-    case "openWheel": wheel = { stage: "idle", card: null, name: null }; render(); break;
-    case "spinCard": spin("card"); break;
-    case "spinName": spin("name"); break;
+    case "openWheel": {
+      // Winner drawn from the full pool first — the ten-card ring is theatre.
+      var winner = pick(WHEEL_POOL);
+      var ring = shuffled(WHEEL_POOL.filter(function (c) { return c.id !== winner.id; })).slice(0, 9);
+      ring.push(winner);
+      ring = shuffled(ring);
+      var nameLabels = [];
+      // Each player twice around the wheel, so even 3 players fill it out.
+      for (var pi = 0; pi < state.players.length * 2; pi++) {
+        nameLabels.push("Player " + (pi % state.players.length + 1));
+      }
+      wheel = {
+        stage: "idle", card: winner, name: null,
+        nameLabels: nameLabels, nameSeg: null, nameRot: 0,
+        cardLabels: ring.map(function (c) { return c.name; }),
+        cardIdx: ring.indexOf(winner), cardRot: 0,
+        spinning: false
+      };
+      render(); break;
+    }
+    case "spinCard": spinWheel("card"); break;
+    case "spinName": spinWheel("name"); break;
     case "closeWheel": wheel = null; render(); break;
 
     case "endAsk": confirming = true; render(); break;
