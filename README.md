@@ -195,7 +195,7 @@ deliberately no `withPar` on `GameState`.
 
 No sync, no multiplayer, no accounts, no networking. No enforcement of card effects and no
 automatic stroke penalties — GAMBLE!, Code Words!, Commentator, WALK IT DOWN!!,
-Good Guys vs Bad Guys and Me and You all rewrite scores, and players enter those by hand
+GOOD GUYS VS. BAD GUYS! and Me and You all rewrite scores, and players enter those by hand
 with the ± steppers. No money
 tracking; FIVE DOLLARS! is honour-system.
 
