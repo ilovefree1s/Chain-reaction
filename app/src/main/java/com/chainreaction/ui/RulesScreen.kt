@@ -58,6 +58,7 @@ private val drawTable = listOf(
     "Middle of the pack" to "1",
     "Last, or tied for last" to "2",
     "Everyone tied" to "1 each",
+    "Double bogey or worse" to "+1 bonus",
 )
 
 /** Icon per house rule, in the order of [houseRules]. */

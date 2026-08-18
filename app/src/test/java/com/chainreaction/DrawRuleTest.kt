@@ -46,6 +46,18 @@ class DrawRuleTest {
     }
 
     @Test
+    fun `double bogey or worse earns a bonus card`() {
+        // Par 3: a 5 is a double bogey, a 6 worse — both add one to the base draw.
+        assertEquals(3, drawCount(listOf(5, 3, 3, 3), meIndex = 0, par = 3)) // last + bonus
+        assertEquals(2, drawCount(listOf(5, 3, 3, 6), meIndex = 0, par = 3)) // middle + bonus
+        assertEquals(2, drawCount(listOf(5, 5, 5, 5), meIndex = 0, par = 3)) // all tied + bonus
+        assertEquals(1, drawCount(listOf(5, 4, 4, 6), meIndex = 0, par = 4)) // bogey: no bonus
+        assertEquals(0, drawCount(listOf(3, 4, 4, 5), meIndex = 0, par = 3)) // best: untouched
+        // Without a par there is no bonus — the base table stands alone.
+        assertEquals(2, drawCount(listOf(5, 3, 3, 3), meIndex = 0))
+    }
+
+    @Test
     fun `everyone tied draws one each, overriding best-draws-nothing`() {
         val scores = listOf(4, 4, 4, 4)
         scores.indices.forEach { i ->
@@ -170,12 +182,13 @@ class DrawRuleTest {
     @Test
     fun `locking a hole draws immediately and advances`() {
         var state = GameState.newRound(listOf("A", "B", "C"), meIndex = 0, holeCount = 9)
-        // Me on 5, the others on 3 — I'm last, so two cards, drawn on the spot.
+        // Me on 5, the others on 3 — last (2) plus the double-bogey bonus (1),
+        // drawn on the spot.
         state = state.withScoreDelta(hole = 0, player = 0, delta = 2)
         state = state.lockAndAdvance()
 
         assertEquals("nothing left owed", 0, state.owed)
-        assertEquals(Rules.HAND_SIZE + 2, state.hand.size)
+        assertEquals(Rules.HAND_SIZE + 3, state.hand.size)
         assertEquals(1, state.currentHole)
         assertTrue(state.locked[0])
         assertEquals(5, state.totalFor(0))
@@ -203,7 +216,7 @@ class DrawRuleTest {
         ).withScoreDelta(hole = 0, player = 0, delta = 2)
 
         state = state.lockAndAdvance()
-        assertEquals("the cap blocked the auto-draw", 2, state.owed)
+        assertEquals("the cap blocked the auto-draw", 3, state.owed)
         assertEquals(Rules.HAND_CAP, state.hand.size)
 
         state = state.unlock(0)

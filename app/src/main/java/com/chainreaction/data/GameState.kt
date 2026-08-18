@@ -57,7 +57,7 @@ data class GameState(
         }
 
     /** What the local player would draw for [hole] given the scores currently entered. */
-    fun drawForHole(hole: Int): Int = drawCount(scores[hole], meIndex)
+    fun drawForHole(hole: Int): Int = drawCount(scores[hole], meIndex, pars[hole])
 
     val handIsFull: Boolean get() = hand.size >= Rules.HAND_CAP
 

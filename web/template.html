@@ -519,14 +519,14 @@ var settings = loadSettings();
 
 
 /* ---------- the one piece of real logic ---------- */
-function drawCount(holeScores, meIndex) {
+function drawCount(holeScores, meIndex, par) {
   var lo = Math.min.apply(null, holeScores);
   var hi = Math.max.apply(null, holeScores);
   var mine = holeScores[meIndex];
-  if (lo === hi) return 1;
-  if (mine === lo) return 0;
-  if (mine === hi) return 2;
-  return 1;
+  var base = lo === hi ? 1 : mine === lo ? 0 : mine === hi ? 2 : 1;
+  // A rough hole feeds the hand: double bogey or worse earns a bonus card.
+  var bonus = par != null && mine - par >= 2 ? 1 : 0;
+  return base + bonus;
 }
 
 function shuffled(arr) {
@@ -573,7 +573,7 @@ function relFor(s, p) {
 function lockedCount(s) {
   return s.locked.filter(function (v) { return v; }).length;
 }
-function drawForHole(s, h) { return drawCount(s.scores[h], s.meIndex); }
+function drawForHole(s, h) { return drawCount(s.scores[h], s.meIndex, s.pars[h]); }
 function roundComplete(s) { return s.locked.every(function (v) { return v; }); }
 /* Player indices, best (lowest total) first. */
 function standings(s) {
@@ -930,7 +930,8 @@ var DRAW_TABLE = [
   ["Best score, or tied for best", "0"],
   ["Middle of the pack", "1"],
   ["Last, or tied for last", "2"],
-  ["Everyone tied", "1 each"]
+  ["Everyone tied", "1 each"],
+  ["Double bogey or worse", "+1 bonus"]
 ];
 
 /* The in-round Rules tab carries everything plus the round-specific actions;
