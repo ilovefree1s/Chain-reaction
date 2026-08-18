@@ -1,14 +1,10 @@
 package com.chainreaction.ui
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -31,13 +27,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.chainreaction.R
+import androidx.compose.ui.unit.sp
 import com.chainreaction.data.CardDeck
 import com.chainreaction.data.CardKind
 import com.chainreaction.data.Rules
@@ -160,35 +155,89 @@ fun LazyListScope.cardLibraryItems() {
     }
 }
 
+/** Icon per house rule, in the order of [houseRules]. */
+private val ruleIcons = listOf(
+    NeonIcon.GOLF, NeonIcon.CARDS, NeonIcon.SEVEN, NeonIcon.DECK,
+    NeonIcon.RECYCLE, NeonIcon.PEOPLE, NeonIcon.SCALES,
+)
+
 /**
- * Menu destination: the rules as a single full-page graphic, stretched to fill the
- * screen — the art's proportions are close enough that the stretch is subtle, and it
- * beats a dead band under the frame. The painted "Menu" in its top-left gets an
- * invisible tap target; the text version of these rules still lives in the in-round
- * Rules tab, which also carries the colour key.
+ * Menu destination: the rules in the neon style, drawn in code rather than shipped
+ * as artwork — text stays editable and the page costs kilobytes, not megabytes.
+ * The in-round Rules tab keeps its own full version with the card list and the
+ * round actions.
  */
 @Composable
 fun RulesScreen(modifier: Modifier = Modifier, onBack: () -> Unit) {
-    Box(
+    Column(
         modifier
             .fillMaxSize()
-            // Black, not pine: the artwork's own edges are near-black, and the pine
-            // ground would show as green bands around it.
-            .background(Color.Black),
+            .background(NeonBg)
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 16.dp),
     ) {
-        Image(
-            painter = painterResource(R.drawable.rules),
-            contentDescription = "Rules",
-            contentScale = ContentScale.FillBounds,
-            modifier = Modifier.fillMaxSize(),
-        )
-        // Over the painted "< Menu".
-        Box(
-            Modifier
-                .fillMaxWidth(0.28f)
-                .fillMaxHeight(0.09f)
-                .clickable(onClick = onBack),
-        )
+        NeonHeader("RULES", onBack)
+
+        NeonSectionLabel("How it works")
+        houseRules.forEachIndexed { i, (title, body) ->
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 12.dp)
+                    .neonPanel()
+                    .padding(14.dp),
+            ) {
+                NeonChip(ruleIcons[i])
+                Column(Modifier.padding(start = 14.dp)) {
+                    Text(title, color = NeonWhite, fontSize = 20.sp, fontWeight = FontWeight.ExtraBold)
+                    Spacer(Modifier.height(2.dp))
+                    Text(body, color = NeonBody, fontSize = 16.sp, lineHeight = 22.sp)
+                }
+            }
+        }
+
+        NeonSectionLabel("Cards drawn at the end of a hole")
+        drawTable.forEach { (finish, cards) ->
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 10.dp)
+                    .neonPanel()
+                    .padding(horizontal = 16.dp, vertical = 14.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(finish, color = NeonBody, fontSize = 16.sp, modifier = Modifier.weight(1f))
+                Text(cards, color = NeonOrange, fontSize = 20.sp, fontWeight = FontWeight.Black)
+            }
+        }
+
+        // The colour key rides along again — the artwork version had to drop it.
+        NeonSectionLabel("What the colours mean")
+        CardKind.entries.forEach { kind ->
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 10.dp)
+                    .neonPanel()
+                    .padding(14.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Tag(kind.label.uppercase(), fg = Pine, bg = kind.color)
+                Spacer(Modifier.width(12.dp))
+                Text(
+                    when (kind) {
+                        CardKind.ATTACK -> "Played on an opponent"
+                        CardKind.SELF -> "Benefits you"
+                        CardKind.DUAL -> "Self-help or attack, depending on the target"
+                        CardKind.REACT -> "Played in response to another card"
+                        CardKind.GROUP -> "Affects everyone"
+                    },
+                    color = NeonBody,
+                    fontSize = 16.sp,
+                )
+            }
+        }
+        Spacer(Modifier.height(28.dp))
     }
 }
 

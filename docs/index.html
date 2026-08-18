@@ -211,54 +211,65 @@
   /* Black ground: the artwork's own edges are near-black, and pine would show as
      green bands around it. Stretched to fill the screen — the art's proportions are
      close enough that the stretch is subtle, and it beats a dead band under the frame. */
-  body.rules-screen, body.settings-screen { background: #000; }
-  body.rules-screen #app, body.settings-screen #app { padding: 0; max-width: none; }
-  .rulesart { position: relative; height: 100vh; height: 100dvh; }
-  .rulesart img { width: 100%; height: 100%; display: block; }
-
-  /* Settings keeps the art's own aspect (inputs must not shift under a stretched
-     layout when the keyboard opens); the black ground fills whatever is left. */
-  .settingsart { position: relative; max-width: 640px; margin: 0 auto; }
-  .settingsart img { width: 100%; display: block; }
-  .settingsart .hit { position: absolute; cursor: pointer; }
-  .settingsart .menuhit { left: 0; top: 0; width: 26%; height: 10%; }
-  .settingsart .slot {
-    position: absolute; left: 13%; width: 60%; height: 6.1%;
-    padding: 0 0 0 3.5%; background: transparent; border: none; border-radius: 14px;
-    color: var(--off); font-family: inherit; font-size: min(5vw, 24px);
-  }
-  .settingsart .slot:focus { outline: none; }
-  /* Typing covers the painted "Player N". Sampled from the slot interiors. */
-  .settingsart .slot.filled { background: #0A0A16; }
-  .settingsart .mehit {
-    position: absolute; left: 77.9%; width: 10%; height: 6.1%;
-    border-radius: 12px; cursor: pointer;
-  }
-  .settingsart .mehit.on { background: rgba(255, 210, 63, 0.30); }
-  .settingsart .removehit { left: 45.5%; top: 53.7%; width: 25.4%; height: 6%; }
-  .settingsart .savehit {
-    position: absolute; left: 11.5%; top: 62.1%; width: 77%; height: 5.9%;
-    border-radius: 16px; cursor: pointer;
-  }
-  .settingsart .savehit.valid {
-    display: flex; align-items: center; justify-content: center;
-    color: #fff; font-weight: 800; letter-spacing: 0.16em;
-    font-size: calc(min(100vw, 640px) * 0.034);
-  }
-  /* Opaque dark gold, inset so the art's metallic frame still shows around it.
-     Translucent gold alone lets the painted grey label bleed through. */
-  .settingsart .savehit.valid::before {
-    content: ""; position: absolute; inset: 9% 1%;
-    border-radius: 10px; background: #544622;
-  }
-  .settingsart .savehit.valid::after { content: "SAVE GROUP"; position: relative; }
-  .settingsart .savedtag {
-    position: absolute; top: 68.3%; left: 0; right: 0; text-align: center;
-    color: var(--self); font-weight: 900; font-size: 15px; letter-spacing: 2px;
-  }
-  .settingsart .courseshit { left: 11.5%; top: 74.2%; width: 77%; height: 10.3%; }
-  /* Over the painted "< Menu" in the art's top-left. */
-  .rulesart .hit { position: absolute; left: 0; top: 0; width: 28%; height: 9%; cursor: pointer; }
+  /* Neon pages keep #app's normal padding — only the ground colour changes. */
+  body.rules-screen, body.settings-screen { background: #05070C; }
+  /* ---- neon pages (rules, settings): the menu's black/orange/blue, in code ---- */
+  .nheader { position: relative; display: flex; align-items: center; justify-content: center;
+             min-height: 64px; }
+  .nheader .back { position: absolute; left: 0; background: none; color: #A9B8D4;
+                   font-weight: 700; font-size: 17px; padding: 0 10px; }
+  .nheader h1 { margin: 0 76px; white-space: nowrap; font-style: italic; font-weight: 900; font-size: 32px;
+                letter-spacing: 3px; color: #F4F8FF;
+                text-shadow: 0 0 16px rgba(63, 169, 255, 0.55); }
+  .nsec { display: flex; align-items: center; color: #4DC3FF; font-weight: 900;
+          letter-spacing: 3px; font-size: 13px; margin: 20px 0 12px; text-transform: uppercase; }
+  .nsec::before { content: ""; flex: 1; height: 2px; margin-right: 12px;
+                  background: linear-gradient(90deg, transparent, #1E6FFF); }
+  .nsec::after { content: ""; flex: 1; height: 2px; margin-left: 12px;
+                 background: linear-gradient(90deg, #FF8A1E, transparent); }
+  .npanel { border: 2px solid transparent; border-radius: 14px; padding: 14px;
+            margin-bottom: 12px;
+            background: linear-gradient(#070B14, #070B14) padding-box,
+                        linear-gradient(100deg, #1E6FFF, #3FA9FF 45%, #FF8A1E) border-box;
+            box-shadow: 0 0 14px rgba(30, 111, 255, 0.25); }
+  .nrow { display: flex; align-items: flex-start; gap: 14px; }
+  .nrow.center { align-items: center; }
+  .nchip { flex: 0 0 56px; width: 56px; height: 56px; padding: 2px;
+           background: linear-gradient(#3FA9FF, #1E6FFF);
+           clip-path: polygon(27% 0, 73% 0, 100% 27%, 100% 73%, 73% 100%, 27% 100%, 0 73%, 0 27%); }
+  .nchip .in { width: 100%; height: 100%; background: #061022;
+           display: flex; align-items: center; justify-content: center;
+           clip-path: polygon(27% 0, 73% 0, 100% 27%, 100% 73%, 73% 100%, 27% 100%, 0 73%, 0 27%);
+           color: #4DC3FF; font-weight: 900; font-size: 24px; }
+  .nchip svg { width: 30px; height: 30px; stroke: #4DC3FF; fill: none; stroke-width: 2;
+               stroke-linecap: round; stroke-linejoin: round; }
+  .ntitle { color: #F4F8FF; font-size: 20px; font-weight: 800; }
+  .nbody { color: #A9B8D4; margin-top: 2px; }
+  .nnum { color: #FF8A1E; font-size: 20px; font-weight: 900; }
+  .nslot input { flex: 1 1 auto; min-width: 0; background: transparent; border: none;
+                 color: #F4F8FF; font-family: inherit; font-size: 18px; min-height: 28px; }
+  .nslot input:focus { outline: none; }
+  .nslot input::placeholder { color: #5E6C88; }
+  .nme { flex: 0 0 56px; width: 56px; height: 56px; min-height: 56px; padding: 2px;
+         border: none; border-radius: 0; cursor: pointer;
+         background: linear-gradient(#3FA9FF, #1E6FFF);
+         clip-path: polygon(27% 0, 73% 0, 100% 27%, 100% 73%, 73% 100%, 27% 100%, 0 73%, 0 27%); }
+  .nme .in { width: 100%; height: 100%; background: #061022;
+             display: flex; align-items: center; justify-content: center;
+             clip-path: polygon(27% 0, 73% 0, 100% 27%, 100% 73%, 73% 100%, 27% 100%, 0 73%, 0 27%);
+             font-size: 15px; font-weight: 900; color: #A9B8D4; }
+  .nme.on { background: linear-gradient(#FF9A2E, #F7791E); }
+  .nme.on .in { background: #20140A; color: #FF8A1E; }
+  .nact { min-height: 56px; padding: 0 18px; color: #F4F8FF; font-weight: 700; font-size: 16px; }
+  .nsave { display: block; width: 100%; min-height: 56px; border-radius: 14px;
+           font-weight: 800; font-size: 16px; letter-spacing: 2px; text-transform: uppercase;
+           margin: 16px 0 0; }
+  .nsave.on { background: linear-gradient(180deg, #FF9A2E, #F7791E); color: #fff; border: none;
+              box-shadow: 0 0 18px rgba(247, 148, 30, 0.4); }
+  .nsave.off { background: #070B14; color: #5E6C88; border: 2px solid #22304A; }
+  .nsavedtag { text-align: center; color: #FF8A1E; font-weight: 900; letter-spacing: 2px;
+               font-size: 14px; margin-top: 8px; }
+  .nchev { margin-left: auto; color: #4DC3FF; font-size: 28px; font-weight: 900; }
 
   .backbar { position: relative; display: flex; align-items: center; justify-content: center;
              min-height: 48px; margin-bottom: 4px; }
@@ -326,8 +337,6 @@ var BUILT_IN_COURSES = [{"name":"W.S. Gibbs Memorial Disc Golf Course — White/
 var MENU_IMAGE = "assets/menu.png";
 var BUTTONS_IMAGE = "assets/buttons.png";
 var GRASS_IMAGE = "assets/grass.png";
-var RULES_IMAGE = "assets/rules.png";
-var SETTINGS_IMAGE = "assets/settings.png";
 
 /* ---------- persistence ---------- */
 /* Falls back to memory if the browser blocks storage (e.g. opened as a file:// URL). */
@@ -523,10 +532,9 @@ function render() {
   } else if (screen === "cards") {
     html = backBar("Cards") + renderCards();
   } else if (screen === "rules") {
-    // The artwork paints its own header and Menu button.
-    html = RULES_IMAGE ? renderRules() : backBar("Rules") + renderRules();
+    html = renderRules(); // draws its own neon header
   } else if (screen === "settings") {
-    html = SETTINGS_IMAGE ? renderSettings() : backBar("Settings") + renderSettings();
+    html = renderSettings(); // draws its own neon header
   } else {
     // No title: the Score screen's own header already says which hole and par.
     var scoreTab = (roundComplete(state) && !showScorecard) ? renderResults() : renderScore();
@@ -539,8 +547,8 @@ function render() {
   if (parsUI.open) html += renderParGrid();
   app.innerHTML = html;
   document.body.classList.toggle("menu-screen", screen === "menu");
-  document.body.classList.toggle("rules-screen", screen === "rules" && !!RULES_IMAGE);
-  document.body.classList.toggle("settings-screen", screen === "settings" && !!SETTINGS_IMAGE);
+  document.body.classList.toggle("rules-screen", screen === "rules");
+  document.body.classList.toggle("settings-screen", screen === "settings");
 }
 
 function backBar(title) {
@@ -821,13 +829,48 @@ function renderRoundRules() {
     '<div style="height:16px"></div>' + danger;
 }
 
-/* Menu destination: the rules as a single full-page graphic with its own painted
-   header and Menu button — an invisible tap target covers the painted Menu. The
-   text version still lives in the in-round Rules tab, which also has the colour key. */
+/* ---- neon page helpers ---- */
+var NEON_ICONS = {
+  golf: '<path d="M9 3v18"/><path d="M9 3l8 3-8 3" fill="#4DC3FF" stroke="none"/><circle cx="14" cy="20" r="1.6"/>',
+  deck: '<path d="M4 8l8-4 8 4-8 4z"/><path d="M4 12l8 4 8-4"/><path d="M4 16l8 4 8-4"/>',
+  cards: '<rect x="4.5" y="5" width="9" height="13" rx="1.5" transform="rotate(-8 9 11.5)"/><rect x="10.5" y="6" width="9" height="13" rx="1.5" transform="rotate(8 15 12.5)"/>',
+  recycle: '<path d="M19.5 8a8 8 0 1 0 .5 4"/><path d="M20 3v5h-5"/>',
+  people: '<circle cx="8.5" cy="8.5" r="3"/><circle cx="15.5" cy="8.5" r="3"/><path d="M3.5 20a5 5 0 0 1 10 0"/><path d="M10.5 20a5 5 0 0 1 10 0"/>',
+  scales: '<path d="M12 3v15M8 20h8M5 6h14"/><path d="M5 6l-2.5 5h5z"/><path d="M19 6l-2.5 5h5z"/>',
+  cap: '<path d="M2 9.5L12 5l10 4.5L12 14z"/><path d="M6.5 11.5v4.5c0 1.8 11 1.8 11 0v-4.5"/><path d="M22 9.5v5"/>'
+};
+function nchip(icon) {
+  return '<div class="nchip"><div class="in">' +
+    (icon === "seven" ? "7" : '<svg viewBox="0 0 24 24">' + NEON_ICONS[icon] + "</svg>") +
+    "</div></div>";
+}
+function nheader(title) {
+  return '<div class="nheader"><button class="back" data-act="menu">&lsaquo;&nbsp; Menu</button><h1>' +
+    title + "</h1></div>";
+}
+function nsec(text) { return '<div class="nsec">' + text + "</div>"; }
+
+var RULE_ICONS = ["golf", "cards", "seven", "deck", "recycle", "people", "scales"];
+
+/* Menu destination: the rules in the neon style, drawn in code rather than shipped
+   as artwork — text stays editable and the page costs kilobytes, not megabytes. */
 function renderRules() {
-  if (!RULES_IMAGE) return renderHouseRules(); // fallback if the art is missing
-  return '<div class="rulesart"><img src="' + RULES_IMAGE + '" alt="Rules">' +
-    '<div class="hit" data-act="menu"></div></div>';
+  var rules = HOUSE_RULES.map(function (r, i) {
+    return '<div class="npanel nrow">' + nchip(RULE_ICONS[i]) +
+      '<div><div class="ntitle">' + esc(r[0]) + '</div><div class="nbody">' + esc(r[1]) +
+      "</div></div></div>";
+  }).join("");
+  var table = DRAW_TABLE.map(function (r) {
+    return '<div class="npanel nrow center"><div class="nbody" style="flex:1;margin:0">' +
+      esc(r[0]) + '</div><div class="nnum">' + r[1] + "</div></div>";
+  }).join("");
+  var kinds = Object.keys(KIND_MEANING).map(function (k) {
+    return '<div class="npanel nrow center"><span class="tag k-' + k + '">' + k +
+      '</span><span class="nbody" style="margin:0">' + esc(KIND_MEANING[k]) + "</span></div>";
+  }).join("");
+  return nheader("RULES") + nsec("How it works") + rules +
+    nsec("Cards drawn at the end of a hole") + table +
+    nsec("What the colours mean") + kinds;
 }
 
 function renderHouseRules() {
@@ -865,71 +908,44 @@ function renderCards() {
 }
 
 /* ---------- settings ----------
-   The artwork paints the whole page; real controls sit over it at fractions measured
-   off its pixels. Empty inputs are transparent so the painted "Player N" shows through
-   as the placeholder; typing gives the input an opaque background that hides it.
-   The selected ME square and a valid SAVE GROUP get a translucent gold wash. */
+   Neon page drawn in code. Real controls mean real behaviour: placeholders are
+   actual placeholders, SAVE GROUP arms itself when every name is filled, the
+   course count stays live, and Add/Remove genuinely resize the group (3-5). */
 var groupSlots = ["", "", "", ""];
 var settingsMeSlot = 0;
 
 function settingsGroupValid() {
-  var filled = groupSlots.filter(function (s) { return s.trim() !== ""; });
-  return filled.length >= MIN_PLAYERS && groupSlots[settingsMeSlot].trim() !== "";
+  return groupSlots.length >= MIN_PLAYERS &&
+    groupSlots.every(function (s) { return s.trim() !== ""; });
 }
-
-var SETTINGS_SLOT_TOP = [20.57, 28.83, 37.08, 45.34]; /* % of the art's height */
 
 function renderSettings() {
-  if (!SETTINGS_IMAGE) return renderSettingsPlain();
   var valid = settingsGroupValid();
-
-  var slots = groupSlots.map(function (v, i) {
-    var top = SETTINGS_SLOT_TOP[i];
-    return '<input class="slot' + (v ? " filled" : "") + '" data-slot="' + i +
-      '" value="' + esc(v) + '" style="top:' + top + '%">' +
-      '<div class="mehit' + (settingsMeSlot === i ? " on" : "") +
-      '" data-act="meSlot" data-i="' + i + '" style="top:' + top + '%"></div>';
+  var rows = groupSlots.map(function (v, i) {
+    return '<div class="nrow center" style="margin-bottom:10px">' +
+      '<div class="npanel nslot nrow center" style="flex:1;margin:0;min-height:56px;padding:0 16px">' +
+      '<input data-slot="' + i + '" value="' + esc(v) + '" placeholder="Player ' + (i + 1) + '">' +
+      "</div>" +
+      '<button class="nme' + (settingsMeSlot === i ? " on" : "") +
+      '" data-act="meSlot" data-i="' + i + '"><span class="in">ME</span></button></div>';
   }).join("");
-
-  return '<div class="settingsart"><img src="' + SETTINGS_IMAGE + '" alt="Settings">' +
-    '<div class="hit menuhit" data-act="menu"></div>' +
-    slots +
-    '<div class="hit removehit" data-act="clearLast"></div>' +
-    '<div class="savehit' + (valid ? " valid" : "") + '" data-act="saveGroupArt"></div>' +
-    (savedGroup ? '<div class="savedtag">SAVED &check;</div>' : "") +
-    '<div class="hit courseshit" data-act="openPars"></div>' +
-    '</div>';
-}
-
-function renderSettingsPlain() {
-  var rows = settings.players.length ? settings.players : ["", "", "", ""];
-  var names = rows.map(function (n, i) {
-    return '<div class="row" style="margin-bottom:10px">' +
-      '<input type="text" class="grow" data-setting-name="' + i + '" value="' + esc(n) +
-      '" placeholder="Player ' + (i + 1) + '">' +
-      '<button class="me' + ((settings.meIndex || 0) === i ? " on" : "") +
-      '" data-act="settingMe" data-i="' + i + '">ME</button></div>';
-  }).join("");
-
-  var addRemove = '<div class="row">' +
-    (rows.length < MAX_PLAYERS ? '<button data-act="settingAdd" style="padding:0 18px">+ Add player</button>' : "") +
-    (rows.length > MIN_PLAYERS ? '<button data-act="settingRemove" style="padding:0 18px">&minus; Remove</button>' : "") +
+  var addRemove = '<div class="nrow center" style="gap:10px">' +
+    (groupSlots.length < MAX_PLAYERS
+      ? '<button class="npanel nact" data-act="settingAdd" style="margin:0">+ Add player</button>' : "") +
+    (groupSlots.length > MIN_PLAYERS
+      ? '<button class="npanel nact" data-act="settingRemove" style="margin:0">&minus; Remove</button>' : "") +
     "</div>";
-
-  return '<div class="label">Your usual group</div>' +
-    '<p class="hint">Saved here, these names pre-fill every new round.</p>' +
-    names + addRemove +
-    '<div style="height:12px"></div>' +
-    '<button class="big primary" data-act="saveGroup"' +
-      (rows.every(function (n) { return n.trim() !== ""; }) ? "" : " disabled") +
-      '>Save group</button>' +
-    (savedGroup ? '<p class="hint" style="color:var(--react)">Saved.</p>' : "") +
-
-    '<div class="label">Courses</div>' +
-    '<div class="panel course" data-act="openPars">' +
-      '<div class="cname">Manage courses</div>' +
-      '<div class="dim">' + allCourses().length + ' saved &middot; add, edit or delete</div>' +
-    '</div>';
+  return nheader("SETTINGS") + nsec("Your usual group") +
+    '<p class="nbody" style="margin:0 0 12px">Saved here, these names pre-fill every new round.</p>' +
+    rows + addRemove +
+    '<button class="nsave ' + (valid ? "on" : "off") + '" data-act="saveGroupArt"' +
+    (valid ? "" : " disabled") + ">Save group</button>" +
+    (savedGroup ? '<div class="nsavedtag">SAVED &check;</div>' : "") +
+    nsec("Courses") +
+    '<div class="npanel nrow center" data-act="openPars" style="cursor:pointer">' + nchip("cap") +
+    '<div style="flex:1"><div class="ntitle">Manage courses</div><div class="nbody">' +
+    allCourses().length + ' saved &middot; add, edit or delete</div></div>' +
+    '<span class="nchev">&rsaquo;</span></div>';
 }
 
 /* ---------- nav ---------- */
@@ -1098,23 +1114,17 @@ app.addEventListener("input", function (e) {
   if (artSlot !== null) {
     groupSlots[+artSlot] = e.target.value;
     savedGroup = false;
-    // Toggle in place rather than re-rendering, which would drop keyboard focus.
-    e.target.classList.toggle("filled", e.target.value !== "");
+    // Arm the save button in place rather than re-rendering, which would drop focus.
     var save = app.querySelector('[data-act="saveGroupArt"]');
-    if (save) save.classList.toggle("valid", settingsGroupValid());
-    var tag = app.querySelector(".savedtag");
+    if (save) {
+      var ok = settingsGroupValid();
+      save.classList.toggle("on", ok);
+      save.classList.toggle("off", !ok);
+      save.disabled = !ok;
+    }
+    var tag = app.querySelector(".nsavedtag");
     if (tag) tag.remove();
     return;
-  }
-  var slot = e.target.getAttribute("data-setting-name");
-  if (slot !== null) {
-    if (!settings.players.length) settings.players = ["", "", "", ""];
-    settings.players[+slot] = e.target.value;
-    savedGroup = false;
-    syncButton(
-      '[data-act="saveGroup"]',
-      settings.players.every(function (n) { return n.trim() !== ""; }),
-    );
   }
 });
 
@@ -1211,42 +1221,26 @@ app.addEventListener("click", function (e) {
     case "goRules": screen = "rules"; render(); break;
     case "goSettings":
       savedGroup = false;
-      groupSlots = [0, 1, 2, 3].map(function (k) { return (settings.players || [])[k] || ""; });
-      settingsMeSlot = Math.min(settings.meIndex || 0, 3);
+      groupSlots = (settings.players && settings.players.length)
+        ? settings.players.slice()
+        : ["", "", "", ""];
+      settingsMeSlot = Math.min(settings.meIndex || 0, groupSlots.length - 1);
       screen = "settings"; render(); break;
 
-    // ---- settings over the artwork ----
+    // ---- settings ----
     case "meSlot": settingsMeSlot = i; savedGroup = false; render(); break;
-    case "clearLast":
-      for (var gl = groupSlots.length - 1; gl >= 0; gl--) {
-        if (groupSlots[gl].trim() !== "") { groupSlots[gl] = ""; break; }
-      }
+    case "settingAdd":
+      if (groupSlots.length < MAX_PLAYERS) groupSlots.push("");
+      savedGroup = false; render(); break;
+    case "settingRemove":
+      if (groupSlots.length > MIN_PLAYERS) groupSlots.pop();
+      if (settingsMeSlot > groupSlots.length - 1) settingsMeSlot = groupSlots.length - 1;
       savedGroup = false; render(); break;
     case "saveGroupArt":
       if (!settingsGroupValid()) break;
-      var filledNames = groupSlots.map(function (x) { return x.trim(); })
-        .filter(function (x) { return x !== ""; });
-      var meWithin = groupSlots.slice(0, settingsMeSlot)
-        .filter(function (x) { return x.trim() !== ""; }).length;
-      putSettings({ players: filledNames, meIndex: meWithin });
-      savedGroup = true; render(); break;
-
-    // ---- settings ----
-    case "settingMe": settings.meIndex = i; savedGroup = false; render(); break;
-    case "settingAdd":
-      if (!settings.players.length) settings.players = ["", "", "", ""];
-      if (settings.players.length < MAX_PLAYERS) settings.players.push("");
-      savedGroup = false; render(); break;
-    case "settingRemove":
-      if (settings.players.length > MIN_PLAYERS) settings.players.pop();
-      if (settings.meIndex > settings.players.length - 1) {
-        settings.meIndex = settings.players.length - 1;
-      }
-      savedGroup = false; render(); break;
-    case "saveGroup":
       putSettings({
-        players: settings.players.map(function (n) { return n.trim(); }),
-        meIndex: settings.meIndex,
+        players: groupSlots.map(function (x) { return x.trim(); }),
+        meIndex: settingsMeSlot,
       });
       savedGroup = true; render(); break;
 
