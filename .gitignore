@@ -13,3 +13,8 @@
 .externalNativeBuild
 .cxx
 local.properties
+
+# Release signing — never commit the key or its passwords
+release.keystore
+keystore.properties
+chainreaction-test.apk
