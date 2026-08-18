@@ -1,5 +1,6 @@
 package com.chainreaction.ui
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -15,10 +16,14 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -28,7 +33,10 @@ import com.chainreaction.data.GameCard
 val TapTarget = 56.dp
 
 /**
- * A full-bleed card in the neon frame: kind and timing tags, name, full effect text.
+ * A full-bleed card in the neon frame. If artwork named `card_NN` exists in the
+ * drawables it IS the card face; otherwise the interim text tile renders — kind
+ * and timing tags, name, full effect text. Art is looked up by name so faces
+ * can land one at a time with zero code changes.
  * [actions] hangs Play / Discard off the bottom when the card is in hand.
  */
 @Composable
@@ -37,6 +45,34 @@ fun CardTile(
     modifier: Modifier = Modifier,
     actions: @Composable (() -> Unit)? = null,
 ) {
+    val context = LocalContext.current
+    val artId = remember(card.id) {
+        context.resources.getIdentifier(
+            "card_%02d".format(card.id),
+            "drawable",
+            context.packageName,
+        )
+    }
+    if (artId != 0) {
+        Column(
+            modifier
+                .fillMaxWidth()
+                .neonPanel(),
+        ) {
+            Image(
+                painter = painterResource(artId),
+                // The art carries the face; the description keeps it readable.
+                contentDescription = "${card.name}. ${card.text}",
+                modifier = Modifier.fillMaxWidth(),
+                contentScale = ContentScale.FillWidth,
+            )
+            if (actions != null) {
+                Box(Modifier.padding(12.dp)) { actions() }
+            }
+        }
+        return
+    }
+
     Column(
         modifier
             .fillMaxWidth()

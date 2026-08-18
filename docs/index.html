@@ -159,6 +159,10 @@
   .card h3 { margin: 0 0 6px; font-size: 26px; font-weight: 900; letter-spacing: -.3px; }
   .card p { margin: 0; color: var(--sage); }
   .card .acts { display: flex; gap: 10px; margin-top: 14px; }
+  .card.artcard { display: block; }
+  .cardart { width: 100%; display: block; }
+  .artacts { padding: 12px; }
+  .artacts .acts { margin-top: 0; }
   .card .acts button { flex: 1; margin: 0; }
 
   .hint { color: var(--sage); margin: 0 0 12px; }
@@ -403,6 +407,10 @@ var PAR_CYCLE = [3, 4, 5];
 /* Courses that ship with the app, from shared/courses.json — the same file the
    Android build reads. */
 var BUILT_IN_COURSES = [{"name":"W.S. Gibbs Memorial Disc Golf Course — White/Shorts","holeCount":18,"pars":[3,4,3,3,4,3,4,3,3,4,3,3,3,3,3,4,3,3]},{"name":"Pioneer Park","holeCount":18,"pars":[3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3]},{"name":"Mt. Gilead","holeCount":18,"pars":[3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3]},{"name":"Washington Township Park","holeCount":18,"pars":[3,3,3,3,3,3,4,3,3,3,4,3,5,4,3,4,3,4]},{"name":"Walnut Ridge","holeCount":18,"pars":[3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,5]},{"name":"Hawks Nest","holeCount":18,"pars":[3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3]},{"name":"Avon Town Hall","holeCount":9,"pars":[3,3,3,3,3,3,3,3,3]},{"name":"Faith Baptist","holeCount":18,"pars":[3,3,3,3,3,3,3,3,3,3,3,4,3,4,3,3,3,3]},{"name":"Jimmy Nash Park","holeCount":18,"pars":[3,3,3,3,3,4,3,3,3,3,3,3,3,3,3,4,3,3]},{"name":"Masters 9","holeCount":9,"pars":[3,3,3,3,3,3,3,3,3]},{"name":"Masters 18","holeCount":18,"pars":[4,3,3,3,3,3,3,3,3,3,3,3,3,3,4,3,3,3]}];
+
+/* Card faces present in the Android drawables, id -> asset path. Injected by
+   web/build.js; empty until artwork lands. */
+var CARD_ART = {};
 
 /* Artwork, inlined as data URIs by web/build.js so this stays one file. */
 var MENU_IMAGE = "assets/menu.png";
@@ -841,15 +849,23 @@ function counter(label, value) {
 }
 
 function cardHtml(c, withActions) {
+  var acts = withActions
+    ? '<div class="acts">' +
+      '<button class="big primary" data-act="resolve" data-i="' + c.id + '">Play</button>' +
+      '<button class="big raised" data-act="resolve" data-i="' + c.id + '">Discard</button></div>'
+    : "";
+  // Art, when it exists, IS the card face; any card without art keeps the
+  // interim text tile, so faces can land one at a time.
+  var art = CARD_ART[c.id];
+  if (art) {
+    return '<div class="card artcard"><img class="cardart" src="' + art + '" alt="' +
+      esc(c.name) + '. ' + esc(c.text) + '">' +
+      (acts ? '<div class="artacts">' + acts + '</div>' : "") + '</div>';
+  }
   return '<div class="card"><div class="body">' +
     '<div class="tags"><span class="tag timing">' + c.kind + '</span>' +
     '<span class="tag timing">' + esc(c.timing) + '</span></div>' +
-    '<h3>' + esc(c.name) + '</h3><p>' + esc(c.text) + '</p>' +
-    (withActions
-      ? '<div class="acts">' +
-        '<button class="big primary" data-act="resolve" data-i="' + c.id + '">Play</button>' +
-        '<button class="big raised" data-act="resolve" data-i="' + c.id + '">Discard</button></div>'
-      : "") +
+    '<h3>' + esc(c.name) + '</h3><p>' + esc(c.text) + '</p>' + acts +
     '</div></div>';
 }
 

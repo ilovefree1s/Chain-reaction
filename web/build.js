@@ -99,11 +99,33 @@ const buttonsImage = copyArt("mainbuttons.png", "buttons.png");
 const grassImage = copyArt("moregrass.png", "grass.png");
 const iconImage = copyArt("chainreactionicon.png", "icon.png");
 
+// ---- card faces: card_01 .. card_52, dropped into the Android drawables ----
+// Optional, per card — any card without art keeps its text tile. Alphabetical
+// order means .webp beats .png beats .jpg when the same card has several.
+const cardArt = {};
+fs.readdirSync(artDir).sort().forEach((f) => {
+  const m = /^card_(\d{2})\.(png|webp|jpe?g)$/.exec(f);
+  if (!m) return;
+  const id = parseInt(m[1], 10);
+  if (id < 1 || id > 52) {
+    problems.push(`card art ${f} does not match any card id`);
+    return;
+  }
+  fs.copyFileSync(path.join(artDir, f), path.join(assetsDir, f));
+  copied.push(f);
+  cardArt[id] = "assets/" + f;
+});
+if (problems.length) {
+  problems.forEach((p) => console.error("  - " + p));
+  process.exit(1);
+}
+
 // ---- the page ----
 const template = fs.readFileSync(path.join(__dirname, "template.html"), "utf8");
 [
   "/*__CARD_DATA__*/",
   "/*__COURSE_DATA__*/",
+  "/*__CARD_ART__*/",
   "__MENU_IMAGE__",
   "__BUTTONS_IMAGE__",
   "__GRASS_IMAGE__",
@@ -117,6 +139,7 @@ const template = fs.readFileSync(path.join(__dirname, "template.html"), "utf8");
 const html = template
   .replace("/*__CARD_DATA__*/", JSON.stringify(data))
   .replace("/*__COURSE_DATA__*/", JSON.stringify(courses))
+  .replace("/*__CARD_ART__*/", JSON.stringify(cardArt))
   .replace("__MENU_IMAGE__", menuImage)
   .replace("__BUTTONS_IMAGE__", buttonsImage)
   .replace("__GRASS_IMAGE__", grassImage)
@@ -192,7 +215,8 @@ function kb(bytes) { return (bytes / 1024).toFixed(0) + " KB"; }
 const assetBytes = copied.reduce((n, f) => n + fs.statSync(path.join(assetsDir, f)).size, 0);
 const htmlBytes = Buffer.byteLength(html, "utf8");
 
+const faces = Object.keys(cardArt).length;
 console.log(`Wrote ${path.relative(root, dist)}/ — installable, offline-capable.`);
-console.log(`  index.html   ${kb(htmlBytes)}  (${data.cards.length} cards, ${courses.length} courses)`);
+console.log(`  index.html   ${kb(htmlBytes)}  (${data.cards.length} cards, ${faces} with art, ${courses.length} courses)`);
 console.log(`  assets/      ${kb(assetBytes)}  (${copied.length} file${copied.length === 1 ? "" : "s"})`);
 console.log(`  total        ${kb(htmlBytes + assetBytes)}   cache ${version}`);

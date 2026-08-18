@@ -125,6 +125,16 @@ adaptive icon. Adaptive layers are 108dp but launchers only show the middle 72dp
 artwork's corners so circular masks blend seamlessly. `mipmap-anydpi/` carries a plain
 layer-list fallback for API 24–25, which predate adaptive icons.
 
+## Card artwork
+
+Card faces are drop-in. Put an image named `card_01` … `card_52` (the number is the
+card's id in the spec) into `app/src/main/res/drawable-nodpi/` — PNG, WebP or JPEG —
+and both builds pick it up: Android looks the drawable up by name at runtime, and
+`web/build.js` copies whatever faces exist into `docs/assets/` and tells the page about
+them. A card with art shows the art as its whole face (Play/Discard still hang off the
+bottom in hand); a card without art keeps the interim text tile. Faces can land one at
+a time — no code changes, just rebuild.
+
 ## Courses
 
 [shared/courses.json](shared/courses.json) is the built-in course library. Both builds read
