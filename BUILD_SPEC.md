@@ -103,7 +103,7 @@ Suggested palette: deep pine ground (`#0C1A14`), panels (`#132A21`), muted sage 
   "handSize": 4,
   "handCap": 7,
   "maxCardsOnOnePlayerPerHole": 2,
-  "wheelExcludes": [7, 8, 11, 12, 13, 15, 18, 19, 27, 31, 36, 37, 39, 43, 48, 51],
+  "wheelExcludes": [7, 8, 11, 12, 13, 15, 18, 19, 27, 31, 36, 37, 39, 43, 48, 51, 54],
   "timings": [
     "Before shot",
     "Before tee shot",
@@ -170,7 +170,7 @@ Suggested palette: deep pine ground (`#0C1A14`), panels (`#132A21`), muted sage 
     { "id": 51, "timing": "After a hole", "kind": "dual", "name": "Me and You", "text": "On yourself: take the best score made on the hole. On another player: they take the worst score made on the hole." },
     { "id": 52, "timing": "After throw", "kind": "self", "name": "Big Putt!", "text": "If you make a putt from outside C1 while a player still to putt is inside C1, they have to putt with their off hand." },
     { "id": 53, "timing": "Before tee shot", "kind": "attack", "name": "Bag Exchange!", "text": "Pick a player to swap bags with. Swap back after the first bogey by either player." },
-    { "id": 54, "timing": "Before shot", "kind": "self", "name": "BIG BLUFF", "text": "Pick up your disc and throw your next shot from anyone else's disc, with them. If someone calls you out, you can claim you're holding this card even if you aren't. If they believe you, nothing happens. If they call your bluff and you don't have it, take +2 strokes." }
+    { "id": 54, "timing": "Before shot", "kind": "self", "name": "BIG BLUFF", "text": "Pick up your disc and throw your next shot from anyone else's disc, with them. If someone calls you out, you can claim you're holding this card even if you aren't. If they believe you, nothing happens. If they call your bluff and you have it, they take +1 stroke. If they call it and you don't, you take +2 strokes and they take -1." }
   ]
 }
 ```
@@ -180,5 +180,5 @@ Suggested palette: deep pine ground (`#0C1A14`), panels (`#132A21`), muted sage 
 - Start a round, score 3 holes, force-quit the app, reopen — round state, hand, deck and discard all restored.
 - Come last on a hole → 2 cards owed. Tie for last → still 2. Everyone ties → 1. Win the hole → 0.
 - Hold 7 cards, come last, try to draw → blocked with a clear message until a card is discarded.
-- Spin the Double Wheel 30 times → no blacklisted card (7, 8, 11, 12, 13, 15, 18, 19, 27, 31, 36, 37, 39, 43, 48, 51) ever appears.
+- Spin the Double Wheel 30 times → no blacklisted card (7, 8, 11, 12, 13, 15, 18, 19, 27, 31, 36, 37, 39, 43, 48, 51, 54) ever appears.
 - Play through 18 holes drawing 2 every hole → deck reshuffles from discard without erroring.

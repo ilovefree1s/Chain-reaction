@@ -28,7 +28,7 @@ object Rules {
     // The house blacklist: reaction cards plus everything too situational,
     // too group-shaped or too slow to land as a wheel result — and the Double
     // Wheel itself, so the wheel can never demand another wheel.
-    val WHEEL_EXCLUDES = setOf(7, 8, 11, 12, 13, 15, 18, 19, 27, 31, 36, 37, 39, 43, 48, 51)
+    val WHEEL_EXCLUDES = setOf(7, 8, 11, 12, 13, 15, 18, 19, 27, 31, 36, 37, 39, 43, 48, 51, 54)
 
     /** Display order for the rules reference. */
     val TIMINGS = listOf(
@@ -100,7 +100,7 @@ object CardDeck {
         GameCard(51, "After a hole", CardKind.DUAL, "Me and You", "On yourself: take the best score made on the hole. On another player: they take the worst score made on the hole."),
         GameCard(52, "After throw", CardKind.SELF, "Big Putt!", "If you make a putt from outside C1 while a player still to putt is inside C1, they have to putt with their off hand."),
         GameCard(53, "Before tee shot", CardKind.ATTACK, "Bag Exchange!", "Pick a player to swap bags with. Swap back after the first bogey by either player."),
-        GameCard(54, "Before shot", CardKind.SELF, "BIG BLUFF", "Pick up your disc and throw your next shot from anyone else's disc, with them. If someone calls you out, you can claim you're holding this card even if you aren't. If they believe you, nothing happens. If they call your bluff and you don't have it, take +2 strokes."),
+        GameCard(54, "Before shot", CardKind.SELF, "BIG BLUFF", "Pick up your disc and throw your next shot from anyone else's disc, with them. If someone calls you out, you can claim you're holding this card even if you aren't. If they believe you, nothing happens. If they call your bluff and you have it, they take +1 stroke. If they call it and you don't, you take +2 strokes and they take -1."),
     )
 
     private val byId: Map<Int, GameCard> = ALL.associateBy { it.id }
