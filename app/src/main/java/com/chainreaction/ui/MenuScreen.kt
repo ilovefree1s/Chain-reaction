@@ -46,11 +46,15 @@ private const val BUTTONS_HEIGHT_FRACTION = 0.40f
  * brightness) rather than eyeballed. Boundaries fall at the midpoints between buttons
  * so every tap lands on the nearest one.
  */
+// Measured off the sheet's actual pixels (per-row alpha scan of mainbuttons.png):
+// buttons sit at 13.4-31.0, 32.7-49.9, 51.4-68.6 and 70.3-87.0 percent of its
+// height. Boundaries split the gaps at their midpoints so every tap snaps to
+// the nearest button with no dead zones.
 private val BUTTON_BANDS = listOf(
-    0.130f to 0.3177f, // play
-    0.3177f to 0.4984f, // cards
-    0.4984f to 0.6781f, // rules
-    0.6781f to 0.840f, // settings
+    0.1341f to 0.3184f, // play
+    0.3184f to 0.5065f, // cards
+    0.5065f to 0.6947f, // rules
+    0.6947f to 0.8698f, // settings
 )
 
 @Composable
