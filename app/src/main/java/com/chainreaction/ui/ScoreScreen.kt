@@ -91,11 +91,16 @@ fun ScoreScreen(
 
         Spacer(Modifier.height(16.dp))
 
-        // ---- one row per player ----
+        // ---- one row per player: hole score entry plus the running total ----
+        // The old separate Totals list said the same names again; the LEAD tag
+        // and running score live here now instead.
+        val bestTotal = state.players.indices.minOfOrNull { state.totalFor(it) }
         state.players.forEachIndexed { i, name ->
             val isMe = i == state.meIndex
             val score = state.scores[hole][i]
-            val rel = score - par
+            val total = state.totalFor(i)
+            val rel = state.relativeToParFor(i)
+            val leading = state.lockedHoleCount > 0 && total == bestTotal
 
             Row(
                 Modifier
@@ -106,15 +111,34 @@ fun ScoreScreen(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Column(Modifier.weight(1f)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            name,
+                            color = if (isMe) NeonOrange else NeonWhite,
+                            fontSize = 22.sp,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            modifier = Modifier.weight(1f, fill = false),
+                        )
+                        if (leading) {
+                            Spacer(Modifier.width(8.dp))
+                            Box(
+                                Modifier
+                                    .clip(RoundedCornerShape(4.dp))
+                                    .background(NeonBlue),
+                            ) {
+                                Text(
+                                    "LEAD",
+                                    color = NeonBg,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Black,
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                                )
+                            }
+                        }
+                    }
                     Text(
-                        name,
-                        color = if (isMe) NeonOrange else NeonWhite,
-                        fontSize = 22.sp,
-                        fontWeight = FontWeight.Bold,
-                        maxLines = 1,
-                    )
-                    Text(
-                        formatRelative(rel),
+                        "${formatRelative(rel)}  ·  $total total",
                         color = relativeColor(rel),
                         fontSize = 15.sp,
                         fontWeight = FontWeight.Black,
@@ -152,66 +176,6 @@ fun ScoreScreen(
                 color = NeonBody,
                 fontSize = 16.sp,
             )
-        }
-
-        NeonSectionLabel("Totals · ${state.lockedHoleCount} of ${state.holeCount} holes locked")
-
-        val ranked = state.players.indices.sortedBy { state.totalFor(it) }
-        val bestTotal = ranked.firstOrNull()?.let { state.totalFor(it) }
-
-        ranked.forEach { i ->
-            val total = state.totalFor(i)
-            val rel = state.relativeToParFor(i)
-            val leading = state.lockedHoleCount > 0 && total == bestTotal
-            Row(
-                Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 10.dp)
-                    .neonPanel()
-                    .padding(horizontal = 14.dp, vertical = 12.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                if (leading) {
-                    Box(
-                        Modifier
-                            .clip(RoundedCornerShape(4.dp))
-                            .background(NeonBlue),
-                    ) {
-                        Text(
-                            "LEAD",
-                            color = NeonBg,
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Black,
-                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                        )
-                    }
-                    Spacer(Modifier.width(8.dp))
-                }
-                Text(
-                    state.players[i],
-                    color = if (i == state.meIndex) NeonOrange else NeonWhite,
-                    fontSize = 22.sp,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.weight(1f),
-                    maxLines = 1,
-                )
-                Text(
-                    formatRelative(rel),
-                    color = relativeColor(rel),
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Black,
-                    textAlign = TextAlign.End,
-                    modifier = Modifier.width(48.dp),
-                )
-                Text(
-                    "$total",
-                    color = NeonWhite,
-                    fontSize = 22.sp,
-                    fontWeight = FontWeight.Bold,
-                    textAlign = TextAlign.End,
-                    modifier = Modifier.width(52.dp),
-                )
-            }
         }
 
         Spacer(Modifier.height(32.dp))
