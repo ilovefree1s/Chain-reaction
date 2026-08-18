@@ -1086,8 +1086,7 @@ function renderParGrid() {
       (parsUI.name.trim() ? "" : " disabled") + '>Save as course</button>';
   }
 
-  return '<div class="modal nmodal"><h1>COURSE &amp; PARS</h1>' +
-    '<p class="sub">Tap a hole to cycle its par: 3 &rarr; 4 &rarr; 5.</p>' +
+  return '<div class="modal nmodal">' +
     (list.length ? '<div class="label">Saved courses</div>' + saved : "") +
     lengths + editor +
     '<div style="height:16px"></div>' +

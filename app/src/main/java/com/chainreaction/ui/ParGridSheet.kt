@@ -27,7 +27,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -84,22 +83,7 @@ fun ParGridSheet(
                     .fillMaxSize()
                     .verticalScroll(rememberScrollState()),
             ) {
-                Spacer(Modifier.height(16.dp))
-                Text(
-                    "COURSE & PARS",
-                    color = NeonWhite,
-                    fontWeight = FontWeight.Black,
-                    fontStyle = FontStyle.Italic,
-                    fontSize = 28.sp,
-                    letterSpacing = 2.sp,
-                )
-                Spacer(Modifier.height(4.dp))
-                Text(
-                    "Tap a hole to cycle its par: 3 → 4 → 5.",
-                    color = NeonBody,
-                    fontSize = 16.sp,
-                )
-
+                // No header — straight into the list; the section labels say it all.
                 if (courses.isNotEmpty()) {
                     NeonSectionLabel("Saved courses")
                     courses.forEach { course ->
