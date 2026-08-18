@@ -137,7 +137,7 @@ fun ScoreScreen(
                             Spacer(Modifier.width(6.dp))
                         }
                         Text(
-                            "${formatRelative(rel)}  ·  $total total",
+                            "${formatRelative(rel)}  ·  $total total strokes",
                             color = relativeColor(rel),
                             fontSize = 15.sp,
                             fontWeight = FontWeight.Black,

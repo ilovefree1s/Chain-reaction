@@ -760,7 +760,7 @@ function renderScore() {
     return '<div class="player' + (me ? " me" : "") + '"><div class="row">' +
       '<div class="grow"><div class="name">' + esc(name) + '</div>' +
         '<div class="rel ' + relClass(rel) + '">' +
-        (lead ? '<span class="lead">LEAD</span>' : "") + fmtRel(rel) + '  &middot;  ' + total + ' total</div></div>' +
+        (lead ? '<span class="lead">LEAD</span>' : "") + fmtRel(rel) + '  &middot;  ' + total + ' total strokes</div></div>' +
       '<button class="step" data-act="score" data-i="' + i + '" data-n="-1"' +
         (locked || score <= 1 ? " disabled" : "") + '>&minus;</button>' +
       '<div class="num">' + score + '</div>' +
