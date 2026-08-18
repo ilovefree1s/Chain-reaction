@@ -135,8 +135,8 @@ fs.writeFileSync(
       scope: ".",
       display: "standalone",
       orientation: "portrait",
-      background_color: "#0C1A14",
-      theme_color: "#0C1A14",
+      background_color: "#05070C",
+      theme_color: "#05070C",
       icons: iconImage
         ? [{ src: iconImage, sizes: "1254x1254", type: "image/png", purpose: "any maskable" }]
         : [],

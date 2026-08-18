@@ -54,15 +54,15 @@ import com.chainreaction.ui.RulesScreen
 import com.chainreaction.ui.ScoreScreen
 import com.chainreaction.ui.SettingsScreen
 import com.chainreaction.ui.SetupScreen
-import com.chainreaction.ui.theme.Attack
+import com.chainreaction.ui.NeonBg
+import com.chainreaction.ui.NeonBlue
+import com.chainreaction.ui.NeonBody
+import com.chainreaction.ui.NeonDim
+import com.chainreaction.ui.NeonIce
+import com.chainreaction.ui.NeonOrange
+import com.chainreaction.ui.NeonPanelBg
+import com.chainreaction.ui.NeonWhite
 import com.chainreaction.ui.theme.ChainReactionTheme
-import com.chainreaction.ui.theme.Group
-import com.chainreaction.ui.theme.OffWhite
-import com.chainreaction.ui.theme.Panel
-import com.chainreaction.ui.theme.Pine
-import com.chainreaction.ui.theme.React
-import com.chainreaction.ui.theme.Sage
-import com.chainreaction.ui.theme.SelfCard
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -70,7 +70,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             ChainReactionTheme {
-                Surface(Modifier.fillMaxSize(), color = Pine) {
+                Surface(Modifier.fillMaxSize(), color = NeonBg) {
                     App()
                 }
             }
@@ -81,9 +81,9 @@ class MainActivity : ComponentActivity() {
 private enum class Screen { MENU, SETUP, ROUND, CARDS, RULES, SETTINGS }
 
 private enum class Tab(val label: String, val accent: Color) {
-    SCORE("Score", SelfCard),
-    HAND("Hand", React),
-    RULES("Rules", Group),
+    SCORE("Score", NeonOrange),
+    HAND("Hand", NeonIce),
+    RULES("Rules", NeonBlue),
 }
 
 @Composable
@@ -129,7 +129,7 @@ private fun App(vm: GameViewModel = viewModel()) {
         // the art instead of showing pine.
         Screen.RULES -> RulesScreen(
             modifier = Modifier
-                .background(Color.Black)
+                .background(NeonBg)
                 .safeDrawingPadding(),
             onBack = { go(Screen.MENU) },
         )
@@ -140,7 +140,7 @@ private fun App(vm: GameViewModel = viewModel()) {
             courses = vm.courses,
             canDelete = vm::canDelete,
             modifier = Modifier
-                .background(Color.Black)
+                .background(NeonBg)
                 .safeDrawingPadding(),
             onSettingsChange = vm::updateSettings,
             onSaveCourse = vm::saveCourse,
@@ -202,14 +202,15 @@ private fun BackBar(title: String, onBack: () -> Unit) {
                 .padding(horizontal = 12.dp),
             contentAlignment = Alignment.Center,
         ) {
-            Text("‹  Menu", color = Sage, fontWeight = FontWeight.Bold, fontSize = 17.sp)
+            Text("‹  Menu", color = NeonBody, fontWeight = FontWeight.Bold, fontSize = 17.sp)
         }
         // Centred on the screen, not on the leftover space; the side padding keeps a
         // long course name from running under the Menu button.
         Text(
             title.uppercase(),
-            color = OffWhite,
+            color = NeonWhite,
             fontWeight = FontWeight.Black,
+            fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
             fontSize = 18.sp,
             letterSpacing = 1.5.sp,
             maxLines = 1,
@@ -242,9 +243,9 @@ private fun Round(
     }
 
     Scaffold(
-        containerColor = Pine,
+        containerColor = NeonBg,
         bottomBar = {
-            NavigationBar(containerColor = Panel) {
+            NavigationBar(containerColor = NeonPanelBg) {
                 Tab.entries.forEach { t ->
                     NavigationBarItem(
                         selected = tab == t,
@@ -258,9 +259,9 @@ private fun Round(
                         },
                         label = { Text(t.label) },
                         colors = NavigationBarItemDefaults.colors(
-                            selectedTextColor = OffWhite,
-                            unselectedTextColor = Sage,
-                            indicatorColor = Panel,
+                            selectedTextColor = NeonWhite,
+                            unselectedTextColor = NeonDim,
+                            indicatorColor = NeonPanelBg,
                         ),
                     )
                 }
@@ -331,7 +332,7 @@ private fun TabIcon(accent: Color, selected: Boolean, badge: Int) {
             Modifier
                 .size(if (selected) 14.dp else 10.dp)
                 .clip(CircleShape)
-                .background(if (selected) accent else Sage),
+                .background(if (selected) accent else NeonDim),
         )
         if (badge > 0) {
             Box(
@@ -339,12 +340,12 @@ private fun TabIcon(accent: Color, selected: Boolean, badge: Int) {
                     .align(Alignment.TopEnd)
                     .size(18.dp)
                     .clip(CircleShape)
-                    .background(Attack),
+                    .background(NeonOrange),
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
                     "$badge",
-                    color = Pine,
+                    color = NeonBg,
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Black,
                 )

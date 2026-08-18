@@ -1,10 +1,8 @@
 package com.chainreaction.ui
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -12,11 +10,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CutCornerShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -29,11 +23,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -101,43 +90,25 @@ fun SettingsScreen(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                Box(
-                    Modifier
-                        .weight(1f)
-                        .height(TapTarget)
-                        .neonPanel()
-                        .padding(horizontal = 16.dp),
-                    contentAlignment = Alignment.CenterStart,
-                ) {
-                    if (value.isEmpty()) {
-                        Text("Player ${i + 1}", color = NeonDim, fontSize = 18.sp)
-                    }
-                    BasicTextField(
-                        value = value,
-                        onValueChange = { slots[i] = it; saved = false },
-                        singleLine = true,
-                        textStyle = TextStyle(
-                            color = NeonWhite,
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Medium,
-                        ),
-                        cursorBrush = SolidColor(NeonOrange),
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                }
-                MeChip(selected = meSlot == i) { meSlot = i; saved = false }
+                NeonTextField(
+                    value = value,
+                    onValueChange = { slots[i] = it; saved = false },
+                    placeholder = "Player ${i + 1}",
+                    modifier = Modifier.weight(1f),
+                )
+                NeonMeChip(selected = meSlot == i) { meSlot = i; saved = false }
             }
         }
 
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             if (slots.size < Rules.MAX_PLAYERS) {
-                SmallNeonAction("+ Add player") {
+                NeonSmallAction("+ Add player") {
                     slots.add("")
                     saved = false
                 }
             }
             if (slots.size > Rules.MIN_PLAYERS) {
-                SmallNeonAction("− Remove") {
+                NeonSmallAction("− Remove") {
                     slots.removeAt(slots.lastIndex)
                     if (meSlot > slots.lastIndex) meSlot = slots.lastIndex
                     saved = false
@@ -213,49 +184,5 @@ fun SettingsScreen(
             onDeleteCourse = onDeleteCourse,
             onDismiss = { coursesOpen = false },
         )
-    }
-}
-
-/** Octagonal ME toggle; orange when it's you. */
-@Composable
-private fun MeChip(selected: Boolean, onClick: () -> Unit) {
-    val shape = CutCornerShape(14.dp)
-    Box(
-        Modifier
-            .size(TapTarget)
-            .clip(shape)
-            .background(if (selected) NeonOrange.copy(alpha = 0.18f) else NeonChipBg)
-            .border(
-                2.dp,
-                if (selected) {
-                    Brush.verticalGradient(listOf(NeonOrange, Color(0xFFF7791E)))
-                } else {
-                    Brush.verticalGradient(listOf(NeonBlue, NeonBlueDeep))
-                },
-                shape,
-            )
-            .clickable(onClick = onClick),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(
-            "ME",
-            color = if (selected) NeonOrange else NeonBody,
-            fontWeight = FontWeight.Black,
-            fontSize = 15.sp,
-        )
-    }
-}
-
-@Composable
-private fun SmallNeonAction(text: String, onClick: () -> Unit) {
-    Box(
-        Modifier
-            .height(TapTarget)
-            .neonPanel()
-            .clickable(onClick = onClick)
-            .padding(horizontal = 18.dp),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(text, color = NeonWhite, fontWeight = FontWeight.Bold, fontSize = 16.sp)
     }
 }

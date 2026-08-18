@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -28,8 +27,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -212,30 +209,11 @@ fun ParGridSheet(
                     }
 
                     NeonSectionLabel("Save for next time")
-                    Box(
-                        Modifier
-                            .fillMaxWidth()
-                            .height(TapTarget)
-                            .neonPanel()
-                            .padding(horizontal = 16.dp),
-                        contentAlignment = Alignment.CenterStart,
-                    ) {
-                        if (name.isEmpty()) {
-                            Text("Course name", color = NeonDim, fontSize = 18.sp)
-                        }
-                        BasicTextField(
-                            value = name,
-                            onValueChange = { name = it },
-                            singleLine = true,
-                            textStyle = TextStyle(
-                                color = NeonWhite,
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.Medium,
-                            ),
-                            cursorBrush = SolidColor(NeonOrange),
-                            modifier = Modifier.fillMaxWidth(),
-                        )
-                    }
+                    NeonTextField(
+                        value = name,
+                        onValueChange = { name = it },
+                        placeholder = "Course name",
+                    )
                     Spacer(Modifier.height(10.dp))
                     NeonBigButton("Save as course", enabled = name.isNotBlank()) {
                         onSaveCourse(name.trim())

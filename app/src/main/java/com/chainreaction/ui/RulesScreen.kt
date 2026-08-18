@@ -1,7 +1,9 @@
 package com.chainreaction.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -13,12 +15,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -28,20 +26,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.chainreaction.data.CardDeck
 import com.chainreaction.data.Rules
 import com.chainreaction.ui.theme.Attack
-import com.chainreaction.ui.theme.OffWhite
-import com.chainreaction.ui.theme.Panel
-import com.chainreaction.ui.theme.PanelRaised
-import com.chainreaction.ui.theme.Pine
-import com.chainreaction.ui.theme.React
-import com.chainreaction.ui.theme.Sage
-import com.chainreaction.ui.theme.SelfCard
 
 private val houseRules = listOf(
     "Stroke play" to "Lowest total wins.",
@@ -68,46 +58,50 @@ private val drawTable = listOf(
     "Everyone tied" to "1 each",
 )
 
-/** The house rules, the draw table and the colour key. Shared by the menu and the round tab. */
+/** Icon per house rule, in the order of [houseRules]. */
+private val ruleIcons = listOf(
+    NeonIcon.GOLF, NeonIcon.CARDS, NeonIcon.SEVEN, NeonIcon.DECK,
+    NeonIcon.RECYCLE, NeonIcon.PEOPLE, NeonIcon.SCALES,
+)
+
+@Composable
+private fun RuleRow(index: Int, title: String, body: String) {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .neonPanel()
+            .padding(14.dp),
+    ) {
+        NeonChip(ruleIcons[index])
+        Column(Modifier.padding(start = 14.dp)) {
+            Text(title, color = NeonWhite, fontSize = 20.sp, fontWeight = FontWeight.ExtraBold)
+            Spacer(Modifier.height(2.dp))
+            Text(body, color = NeonBody, fontSize = 16.sp, lineHeight = 22.sp)
+        }
+    }
+}
+
+@Composable
+private fun DrawRow(finish: String, cards: String) {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .neonPanel()
+            .padding(horizontal = 16.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(finish, color = NeonBody, fontSize = 16.sp, modifier = Modifier.weight(1f))
+        Text(cards, color = NeonOrange, fontSize = 20.sp, fontWeight = FontWeight.Black)
+    }
+}
+
+/** The house rules and the draw table, for the in-round Rules tab. */
 fun LazyListScope.houseRulesItems() {
-    item {
-        Spacer(Modifier.height(12.dp))
-        SectionLabel("How it works")
-    }
+    item { NeonSectionLabel("How it works") }
+    items(houseRules.size) { i -> RuleRow(i, houseRules[i].first, houseRules[i].second) }
 
-    items(houseRules) { (title, body) ->
-        Column(
-            Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(14.dp))
-                .background(Panel)
-                .padding(14.dp),
-        ) {
-            Text(title, style = MaterialTheme.typography.titleLarge, color = OffWhite)
-            Spacer(Modifier.height(4.dp))
-            Text(body, style = MaterialTheme.typography.bodyLarge, color = Sage)
-        }
-    }
-
-    item {
-        Spacer(Modifier.height(8.dp))
-        SectionLabel("Cards drawn at the end of a hole")
-    }
-
-    items(drawTable) { (finish, cards) ->
-        Row(
-            Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(12.dp))
-                .background(Panel)
-                .padding(horizontal = 14.dp, vertical = 12.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-        ) {
-            Text(finish, style = MaterialTheme.typography.bodyLarge, color = Sage)
-            Text(cards, style = MaterialTheme.typography.titleLarge, color = OffWhite)
-        }
-    }
-
+    item { NeonSectionLabel("Cards drawn at the end of a hole") }
+    items(drawTable) { (finish, cards) -> DrawRow(finish, cards) }
 }
 
 /** All 52 cards, grouped by timing. */
@@ -115,20 +109,11 @@ fun LazyListScope.cardLibraryItems() {
     Rules.TIMINGS.forEach { timing ->
         val group = CardDeck.ALL.filter { it.timing == timing }
         if (group.isNotEmpty()) {
-            item {
-                Spacer(Modifier.height(8.dp))
-                SectionLabel("$timing · ${group.size}")
-            }
+            item { NeonSectionLabel("$timing · ${group.size}") }
             items(group, key = { it.id }) { card -> CardTile(card) }
         }
     }
 }
-
-/** Icon per house rule, in the order of [houseRules]. */
-private val ruleIcons = listOf(
-    NeonIcon.GOLF, NeonIcon.CARDS, NeonIcon.SEVEN, NeonIcon.DECK,
-    NeonIcon.RECYCLE, NeonIcon.PEOPLE, NeonIcon.SCALES,
-)
 
 /**
  * Menu destination: the rules in the neon style, drawn in code rather than shipped
@@ -149,35 +134,14 @@ fun RulesScreen(modifier: Modifier = Modifier, onBack: () -> Unit) {
 
         NeonSectionLabel("How it works")
         houseRules.forEachIndexed { i, (title, body) ->
-            Row(
-                Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 12.dp)
-                    .neonPanel()
-                    .padding(14.dp),
-            ) {
-                NeonChip(ruleIcons[i])
-                Column(Modifier.padding(start = 14.dp)) {
-                    Text(title, color = NeonWhite, fontSize = 20.sp, fontWeight = FontWeight.ExtraBold)
-                    Spacer(Modifier.height(2.dp))
-                    Text(body, color = NeonBody, fontSize = 16.sp, lineHeight = 22.sp)
-                }
-            }
+            RuleRow(i, title, body)
+            Spacer(Modifier.height(12.dp))
         }
 
         NeonSectionLabel("Cards drawn at the end of a hole")
         drawTable.forEach { (finish, cards) ->
-            Row(
-                Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 10.dp)
-                    .neonPanel()
-                    .padding(horizontal = 16.dp, vertical = 14.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(finish, color = NeonBody, fontSize = 16.sp, modifier = Modifier.weight(1f))
-                Text(cards, color = NeonOrange, fontSize = 20.sp, fontWeight = FontWeight.Black)
-            }
+            DrawRow(finish, cards)
+            Spacer(Modifier.height(10.dp))
         }
 
         Spacer(Modifier.height(28.dp))
@@ -193,10 +157,7 @@ fun CardsScreen(modifier: Modifier = Modifier) {
             .padding(horizontal = 16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        item {
-            Spacer(Modifier.height(12.dp))
-            SectionLabel("All ${CardDeck.ALL.size} cards")
-        }
+        item { NeonSectionLabel("All ${CardDeck.ALL.size} cards") }
         cardLibraryItems()
         item { Spacer(Modifier.height(32.dp)) }
     }
@@ -229,86 +190,86 @@ fun RoundRulesScreen(
         // You usually learn a course's real pars by playing it. Capture them here,
         // once, and the next round on this course starts already set up.
         item {
-            Spacer(Modifier.height(8.dp))
-            SectionLabel("Save this course")
-            Spacer(Modifier.height(4.dp))
+            NeonSectionLabel("Save this course")
             Text(
                 "Keeps these $holeCount pars (par ${pars.sum()}) for next time.",
-                color = Sage,
-                style = MaterialTheme.typography.bodyLarge,
+                color = NeonBody,
+                fontSize = 16.sp,
             )
             Spacer(Modifier.height(10.dp))
-            OutlinedTextField(
+            NeonTextField(
                 value = courseName,
                 onValueChange = { courseName = it; savedAs = null },
-                singleLine = true,
-                placeholder = { Text("Course name", color = Sage.copy(alpha = 0.6f)) },
-                textStyle = MaterialTheme.typography.bodyLarge,
-                shape = RoundedCornerShape(14.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedTextColor = OffWhite,
-                    unfocusedTextColor = OffWhite,
-                    focusedContainerColor = Panel,
-                    unfocusedContainerColor = Panel,
-                    focusedBorderColor = SelfCard,
-                    unfocusedBorderColor = PanelRaised,
-                    cursorColor = SelfCard,
-                ),
-                modifier = Modifier.fillMaxWidth(),
+                placeholder = "Course name",
             )
             Spacer(Modifier.height(10.dp))
-            BigButton(
-                text = "Save course",
-                fill = SelfCard,
-                onFill = Pine,
-                enabled = courseName.isNotBlank(),
-                onClick = {
-                    val name = courseName.trim()
-                    onSaveCourse(name)
-                    savedAs = name
-                    courseName = ""
-                },
-            )
+            NeonBigButton("Save course", enabled = courseName.isNotBlank()) {
+                val name = courseName.trim()
+                onSaveCourse(name)
+                savedAs = name
+                courseName = ""
+            }
             savedAs?.let {
-                Text(
-                    "Saved as \"$it\".",
-                    color = React,
-                    style = MaterialTheme.typography.bodyLarge,
-                )
+                Spacer(Modifier.height(8.dp))
+                Text("Saved as \"$it\".", color = NeonIce, fontSize = 16.sp)
             }
         }
 
         item {
             Spacer(Modifier.height(16.dp))
-            BigButton(
-                text = "End round",
-                fill = Panel,
-                onFill = Attack,
-                onClick = { confirming = true },
-            )
+            EndRoundButton { confirming = true }
             Spacer(Modifier.height(32.dp))
         }
     }
 
     if (confirming) {
-        AlertDialog(
-            onDismissRequest = { confirming = false },
-            containerColor = Panel,
-            titleContentColor = OffWhite,
-            textContentColor = Sage,
-            title = { Text("End the round?") },
-            text = {
-                Text("Scores, your hand, deck and discard are all cleared. This can't be undone.")
-            },
-            confirmButton = {
-                TextButton(onClick = {
-                    confirming = false
-                    onEndRound()
-                }) { Text("End round", color = Attack) }
-            },
-            dismissButton = {
-                TextButton(onClick = { confirming = false }) { Text("Keep playing", color = Sage) }
-            },
+        EndRoundDialog(
+            onConfirm = onEndRound,
+            onDismiss = { confirming = false },
         )
     }
+}
+
+/** Quiet frame, red verb — destructive, but it still has a confirm behind it. */
+@Composable
+private fun EndRoundButton(onClick: () -> Unit) {
+    Box(
+        Modifier
+            .fillMaxWidth()
+            .height(TapTarget)
+            .neonPanel()
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            "END ROUND",
+            color = Attack,
+            fontWeight = FontWeight.ExtraBold,
+            fontSize = 15.sp,
+            letterSpacing = 2.sp,
+        )
+    }
+}
+
+@Composable
+private fun EndRoundDialog(onConfirm: () -> Unit, onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = NeonPanelBg,
+        titleContentColor = NeonWhite,
+        textContentColor = NeonBody,
+        title = { Text("End the round?") },
+        text = {
+            Text("Scores, your hand, deck and discard are all cleared. This can't be undone.")
+        },
+        confirmButton = {
+            TextButton(onClick = {
+                onDismiss()
+                onConfirm()
+            }) { Text("End round", color = Attack) }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Keep playing", color = NeonBody) }
+        },
+    )
 }

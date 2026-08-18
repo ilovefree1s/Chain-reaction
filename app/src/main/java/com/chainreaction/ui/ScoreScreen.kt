@@ -1,7 +1,6 @@
 package com.chainreaction.ui
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,7 +14,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -26,15 +24,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.chainreaction.data.GameState
-import com.chainreaction.ui.theme.Attack
-import com.chainreaction.ui.theme.Group
-import com.chainreaction.ui.theme.OffWhite
-import com.chainreaction.ui.theme.Panel
-import com.chainreaction.ui.theme.PanelRaised
-import com.chainreaction.ui.theme.Pine
-import com.chainreaction.ui.theme.React
-import com.chainreaction.ui.theme.Sage
-import com.chainreaction.ui.theme.SelfCard
 
 /** "E", "+2", "-1" — how golfers read a score. */
 fun formatRelative(v: Int): String = when {
@@ -43,10 +32,11 @@ fun formatRelative(v: Int): String = when {
     else -> "$v"
 }
 
+/** Under par cool blue, even quiet, over par hot orange — the palette does the talking. */
 fun relativeColor(v: Int) = when {
-    v < 0 -> React
-    v == 0 -> Sage
-    else -> Attack
+    v < 0 -> NeonIce
+    v == 0 -> NeonBody
+    else -> NeonOrange
 }
 
 @Composable
@@ -83,13 +73,14 @@ fun ScoreScreen(
             ) {
                 Text(
                     "HOLE ${hole + 1}",
-                    style = MaterialTheme.typography.headlineMedium,
-                    color = OffWhite,
+                    color = NeonWhite,
+                    fontSize = 26.sp,
+                    fontWeight = FontWeight.Black,
                 )
                 // Par is fixed by the course — shown, not editable.
                 Text(
                     "PAR $par  ·  OF ${state.holeCount}${if (locked) "  ·  LOCKED" else ""}",
-                    color = if (locked) SelfCard else Sage,
+                    color = if (locked) NeonOrange else NeonBody,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,
                     letterSpacing = 1.sp,
@@ -110,20 +101,16 @@ fun ScoreScreen(
                 Modifier
                     .fillMaxWidth()
                     .padding(bottom = 10.dp)
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(if (isMe) PanelRaised else Panel)
-                    .then(
-                        if (isMe) Modifier.border(2.dp, SelfCard, RoundedCornerShape(16.dp))
-                        else Modifier,
-                    )
+                    .then(if (isMe) Modifier.neonPanelOrange() else Modifier.neonPanel())
                     .padding(12.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Column(Modifier.weight(1f)) {
                     Text(
                         name,
-                        style = MaterialTheme.typography.titleLarge,
-                        color = if (isMe) SelfCard else OffWhite,
+                        color = if (isMe) NeonOrange else NeonWhite,
+                        fontSize = 22.sp,
+                        fontWeight = FontWeight.Bold,
                         maxLines = 1,
                     )
                     Text(
@@ -136,8 +123,9 @@ fun ScoreScreen(
                 StepperButton("−", enabled = !locked && score > 1) { onScore(i, -1) }
                 Text(
                     "$score",
-                    style = MaterialTheme.typography.displaySmall,
-                    color = OffWhite,
+                    color = NeonWhite,
+                    fontSize = 34.sp,
+                    fontWeight = FontWeight.Black,
                     textAlign = TextAlign.Center,
                     modifier = Modifier.width(56.dp),
                 )
@@ -151,36 +139,22 @@ fun ScoreScreen(
         if (locked) {
             Text(
                 "You drew ${state.drawForHole(hole)} on this hole.",
-                color = Sage,
-                style = MaterialTheme.typography.bodyLarge,
+                color = NeonBody,
+                fontSize = 16.sp,
             )
             Spacer(Modifier.height(8.dp))
-            BigButton(
-                text = "Unlock hole ${hole + 1}",
-                fill = Panel,
-                onFill = OffWhite,
-                onClick = onUnlock,
-            )
+            NeonQuietButton("Unlock hole ${hole + 1}", onClick = onUnlock)
         } else {
-            BigButton(
-                text = "Lock hole & draw",
-                fill = SelfCard,
-                onFill = Pine,
-                onClick = onLock,
-            )
+            NeonBigButton("Lock hole & draw", enabled = true, onClick = onLock)
             Spacer(Modifier.height(8.dp))
             Text(
                 "Locking gives you ${state.drawForHole(hole)} card(s).",
-                color = Sage,
-                style = MaterialTheme.typography.bodyLarge,
+                color = NeonBody,
+                fontSize = 16.sp,
             )
         }
 
-        Spacer(Modifier.height(28.dp))
-
-        // ---- running totals ----
-        SectionLabel("Totals · ${state.lockedHoleCount} of ${state.holeCount} holes locked")
-        Spacer(Modifier.height(10.dp))
+        NeonSectionLabel("Totals · ${state.lockedHoleCount} of ${state.holeCount} holes locked")
 
         val ranked = state.players.indices.sortedBy { state.totalFor(it) }
         val bestTotal = ranked.firstOrNull()?.let { state.totalFor(it) }
@@ -192,9 +166,8 @@ fun ScoreScreen(
             Row(
                 Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 8.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(Panel)
+                    .padding(bottom = 10.dp)
+                    .neonPanel()
                     .padding(horizontal = 14.dp, vertical = 12.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
@@ -202,17 +175,23 @@ fun ScoreScreen(
                     Box(
                         Modifier
                             .clip(RoundedCornerShape(4.dp))
-                            .background(Group)
-                            .padding(horizontal = 6.dp, vertical = 2.dp),
+                            .background(NeonBlue),
                     ) {
-                        Text("LEAD", color = Pine, fontSize = 11.sp, fontWeight = FontWeight.Black)
+                        Text(
+                            "LEAD",
+                            color = NeonBg,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Black,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                        )
                     }
                     Spacer(Modifier.width(8.dp))
                 }
                 Text(
                     state.players[i],
-                    style = MaterialTheme.typography.titleLarge,
-                    color = if (i == state.meIndex) SelfCard else OffWhite,
+                    color = if (i == state.meIndex) NeonOrange else NeonWhite,
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.Bold,
                     modifier = Modifier.weight(1f),
                     maxLines = 1,
                 )
@@ -226,8 +205,9 @@ fun ScoreScreen(
                 )
                 Text(
                     "$total",
-                    style = MaterialTheme.typography.titleLarge,
-                    color = OffWhite,
+                    color = NeonWhite,
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.Bold,
                     textAlign = TextAlign.End,
                     modifier = Modifier.width(52.dp),
                 )

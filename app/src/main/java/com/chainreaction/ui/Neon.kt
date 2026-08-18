@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CutCornerShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -26,6 +27,8 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -340,6 +343,109 @@ fun NeonToggle(text: String, on: Boolean, modifier: Modifier = Modifier, onClick
             fontSize = 15.sp,
             letterSpacing = 1.5.sp,
         )
+    }
+}
+
+/** Blue sibling of [NeonBigButton], for the wheel's spins — playful, not primary. */
+@Composable
+fun NeonBlueButton(text: String, modifier: Modifier = Modifier, onClick: () -> Unit) {
+    val shape = RoundedCornerShape(14.dp)
+    Box(
+        modifier
+            .fillMaxWidth()
+            .height(TapTarget)
+            .shadow(10.dp, shape, ambientColor = NeonBlueDeep, spotColor = NeonBlueDeep)
+            .clip(shape)
+            .background(Brush.verticalGradient(listOf(NeonBlue, NeonBlueDeep)))
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text.uppercase(),
+            color = Color.White,
+            fontWeight = FontWeight.ExtraBold,
+            fontSize = 16.sp,
+            letterSpacing = 2.sp,
+        )
+    }
+}
+
+/** Single-line text entry in a framed panel: dim placeholder, orange caret. */
+@Composable
+fun NeonTextField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    placeholder: String,
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier
+            .fillMaxWidth()
+            .height(TapTarget)
+            .neonPanel()
+            .padding(horizontal = 16.dp),
+        contentAlignment = Alignment.CenterStart,
+    ) {
+        if (value.isEmpty()) {
+            Text(placeholder, color = NeonDim, fontSize = 18.sp)
+        }
+        BasicTextField(
+            value = value,
+            onValueChange = onValueChange,
+            singleLine = true,
+            textStyle = TextStyle(
+                color = NeonWhite,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Medium,
+            ),
+            cursorBrush = SolidColor(NeonOrange),
+            modifier = Modifier.fillMaxWidth(),
+        )
+    }
+}
+
+/** Octagonal ME toggle; orange when it's you. */
+@Composable
+fun NeonMeChip(selected: Boolean, onClick: () -> Unit) {
+    val shape = CutCornerShape(14.dp)
+    Box(
+        Modifier
+            .size(TapTarget)
+            .clip(shape)
+            .background(if (selected) NeonOrange.copy(alpha = 0.18f) else NeonChipBg)
+            .border(
+                2.dp,
+                if (selected) {
+                    Brush.verticalGradient(listOf(NeonOrange, Color(0xFFF7791E)))
+                } else {
+                    Brush.verticalGradient(listOf(NeonBlue, NeonBlueDeep))
+                },
+                shape,
+            )
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            "ME",
+            color = if (selected) NeonOrange else NeonBody,
+            fontWeight = FontWeight.Black,
+            fontSize = 15.sp,
+        )
+    }
+}
+
+/** Self-sizing framed action for the small verbs — add a player, remove one. */
+@Composable
+fun NeonSmallAction(text: String, onClick: () -> Unit) {
+    Box(
+        Modifier
+            .height(TapTarget)
+            .neonPanel()
+            .clickable(onClick = onClick)
+            .padding(horizontal = 18.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(text, color = NeonWhite, fontWeight = FontWeight.Bold, fontSize = 16.sp)
     }
 }
 

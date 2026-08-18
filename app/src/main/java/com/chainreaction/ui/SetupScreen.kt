@@ -1,9 +1,7 @@
 package com.chainreaction.ui
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -11,18 +9,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -31,19 +23,12 @@ import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.chainreaction.data.Course
 import com.chainreaction.data.Rules
-import com.chainreaction.ui.theme.OffWhite
-import com.chainreaction.ui.theme.Panel
-import com.chainreaction.ui.theme.PanelRaised
-import com.chainreaction.ui.theme.Pine
-import com.chainreaction.ui.theme.React
-import com.chainreaction.ui.theme.Sage
-import com.chainreaction.ui.theme.SelfCard
 
 @Composable
 fun SetupScreen(
@@ -104,29 +89,28 @@ fun SetupScreen(
         modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(20.dp),
+            .padding(horizontal = 16.dp),
     ) {
+        Spacer(Modifier.height(12.dp))
         Text(
             "CHAIN\nREACTION",
-            style = MaterialTheme.typography.displaySmall,
-            color = OffWhite,
+            color = NeonWhite,
+            fontSize = 34.sp,
+            fontWeight = FontWeight.Black,
+            fontStyle = FontStyle.Italic,
+            letterSpacing = 2.sp,
+            lineHeight = 36.sp,
         )
         Spacer(Modifier.height(4.dp))
-        Text(
-            "Disc golf card game",
-            color = Sage,
-            style = MaterialTheme.typography.bodyLarge,
-        )
+        Text("Disc golf card game", color = NeonBody, fontSize = 16.sp)
 
-        Spacer(Modifier.height(28.dp))
-        SectionLabel("Players")
-        Spacer(Modifier.height(4.dp))
+        NeonSectionLabel("Players")
         Text(
             "Tap ME on your own name.",
-            color = Sage,
-            style = MaterialTheme.typography.bodyLarge,
+            color = NeonBody,
+            fontSize = 16.sp,
+            modifier = Modifier.padding(bottom = 12.dp),
         )
-        Spacer(Modifier.height(12.dp))
 
         names.forEachIndexed { i, value ->
             Row(
@@ -136,55 +120,41 @@ fun SetupScreen(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                OutlinedTextField(
+                NeonTextField(
                     value = value,
                     onValueChange = { names[i] = it },
-                    singleLine = true,
-                    placeholder = { Text("Player ${i + 1}", color = Sage.copy(alpha = 0.6f)) },
-                    textStyle = MaterialTheme.typography.bodyLarge,
-                    shape = RoundedCornerShape(14.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = OffWhite,
-                        unfocusedTextColor = OffWhite,
-                        focusedContainerColor = Panel,
-                        unfocusedContainerColor = Panel,
-                        focusedBorderColor = SelfCard,
-                        unfocusedBorderColor = PanelRaised,
-                        cursorColor = SelfCard,
-                    ),
+                    placeholder = "Player ${i + 1}",
                     modifier = Modifier.weight(1f),
                 )
-                MeToggle(selected = meIndex == i, onClick = { meIndex = i })
+                NeonMeChip(selected = meIndex == i) { meIndex = i }
             }
         }
 
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             if (names.size < Rules.MAX_PLAYERS) {
-                SmallAction("+ Add player") { names.add("") }
+                NeonSmallAction("+ Add player") { names.add("") }
             }
             if (names.size > Rules.MIN_PLAYERS) {
-                SmallAction("− Remove") {
+                NeonSmallAction("− Remove") {
                     names.removeAt(names.lastIndex)
                     if (meIndex > names.lastIndex) meIndex = names.lastIndex
                 }
             }
         }
 
-        Spacer(Modifier.height(28.dp))
-        SectionLabel("Course")
-        Spacer(Modifier.height(12.dp))
+        NeonSectionLabel("Course")
         Column(
             Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(16.dp))
-                .background(Panel)
+                .then(if (courseName != null) Modifier.neonPanelOrange() else Modifier.neonPanel())
                 .clickable { parsOpen = true }
                 .padding(16.dp),
         ) {
             Text(
                 courseName ?: if (courseReady) "Custom pars" else "Choose a course",
-                style = MaterialTheme.typography.titleLarge,
-                color = if (courseName != null) SelfCard else OffWhite,
+                color = if (courseName != null) NeonOrange else NeonWhite,
+                fontSize = 20.sp,
+                fontWeight = FontWeight.ExtraBold,
             )
             Spacer(Modifier.height(2.dp))
             Text(
@@ -193,25 +163,21 @@ fun SetupScreen(
                 } else {
                     "Pick one, or set the pars yourself"
                 },
-                color = Sage,
-                style = MaterialTheme.typography.bodyLarge,
+                color = NeonBody,
+                fontSize = 15.sp,
             )
         }
 
         Spacer(Modifier.height(36.dp))
-        BigButton(
-            text = "Start round",
-            fill = SelfCard,
-            onFill = Pine,
-            enabled = ready,
-            onClick = { onStart(trimmed, meIndex, holeCount, pars.take(holeCount), courseName) },
-        )
+        NeonBigButton("Start round", enabled = ready) {
+            onStart(trimmed, meIndex, holeCount, pars.take(holeCount), courseName)
+        }
         if (!ready) {
             Spacer(Modifier.height(10.dp))
             Text(
                 if (!namesReady) "Every player needs a name." else "Choose a course first.",
-                color = Sage,
-                style = MaterialTheme.typography.bodyLarge,
+                color = NeonBody,
+                fontSize = 16.sp,
             )
         }
         Spacer(Modifier.height(24.dp))
@@ -249,39 +215,5 @@ fun SetupScreen(
                 onStart(trimmed, meIndex, course.holeCount, course.pars, course.name)
             },
         )
-    }
-}
-
-@Composable
-private fun MeToggle(selected: Boolean, onClick: () -> Unit) {
-    Box(
-        Modifier
-            .size(TapTarget)
-            .clip(RoundedCornerShape(14.dp))
-            .background(if (selected) SelfCard else Panel)
-            .clickable(onClick = onClick),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(
-            "ME",
-            color = if (selected) Pine else Sage,
-            fontWeight = FontWeight.Black,
-            fontSize = 15.sp,
-        )
-    }
-}
-
-@Composable
-private fun SmallAction(text: String, onClick: () -> Unit) {
-    Box(
-        Modifier
-            .height(TapTarget)
-            .clip(RoundedCornerShape(14.dp))
-            .background(Panel)
-            .clickable(onClick = onClick)
-            .padding(horizontal = 18.dp),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(text, color = OffWhite, fontWeight = FontWeight.Bold, fontSize = 16.sp)
     }
 }

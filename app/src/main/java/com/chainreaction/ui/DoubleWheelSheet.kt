@@ -10,9 +10,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -22,18 +20,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.chainreaction.data.CardDeck
 import com.chainreaction.data.GameCard
-import com.chainreaction.ui.theme.Group
-import com.chainreaction.ui.theme.OffWhite
-import com.chainreaction.ui.theme.Panel
-import com.chainreaction.ui.theme.Pine
-import com.chainreaction.ui.theme.Sage
 import kotlinx.coroutines.delay
 
 private enum class Stage { IDLE, CARD_SPIN, CARD_DONE, NAME_SPIN, DONE }
@@ -86,31 +81,32 @@ fun DoubleWheelSheet(players: List<String>, onDismiss: () -> Unit) {
         Box(
             Modifier
                 .fillMaxSize()
-                .background(Pine)
+                .background(NeonBg)
                 .safeDrawingPadding()
-                .padding(20.dp),
+                .padding(horizontal = 16.dp),
         ) {
             Column(
                 Modifier
                     .fillMaxSize()
                     .verticalScroll(rememberScrollState()),
             ) {
+                Spacer(Modifier.height(16.dp))
                 Text(
                     "DOUBLE WHEEL",
-                    style = MaterialTheme.typography.displaySmall,
-                    color = Group,
+                    color = NeonIce,
+                    fontWeight = FontWeight.Black,
+                    fontStyle = FontStyle.Italic,
+                    fontSize = 28.sp,
+                    letterSpacing = 2.sp,
                 )
                 Spacer(Modifier.height(4.dp))
                 Text(
                     "Effect first, then the name. The named player is the only one exempt.",
-                    color = Sage,
-                    style = MaterialTheme.typography.bodyLarge,
+                    color = NeonBody,
+                    fontSize = 16.sp,
                 )
-                Spacer(Modifier.height(24.dp))
 
-                // ---- stage 1: the effect ----
-                SectionLabel("1 · The effect")
-                Spacer(Modifier.height(10.dp))
+                NeonSectionLabel("1 · The effect")
                 when {
                     cardShown == null -> Placeholder("Spin to reveal the effect")
                     else -> CardTile(cardShown!!)
@@ -119,42 +115,31 @@ fun DoubleWheelSheet(players: List<String>, onDismiss: () -> Unit) {
                 Spacer(Modifier.height(20.dp))
 
                 if (stage == Stage.IDLE) {
-                    BigButton(
-                        text = "Spin the effect",
-                        fill = Group,
-                        onFill = Pine,
-                        onClick = { stage = Stage.CARD_SPIN },
-                    )
+                    NeonBlueButton("Spin the effect") { stage = Stage.CARD_SPIN }
                 }
 
                 // ---- stage 2: the name ----
                 if (stage == Stage.CARD_DONE || stage == Stage.NAME_SPIN || stage == Stage.DONE) {
-                    SectionLabel("2 · Who's exempt")
-                    Spacer(Modifier.height(10.dp))
+                    NeonSectionLabel("2 · Who's exempt")
                     Box(
                         Modifier
                             .fillMaxWidth()
-                            .clip(RoundedCornerShape(18.dp))
-                            .background(Panel)
+                            .neonPanel()
                             .padding(vertical = 32.dp),
                         contentAlignment = Alignment.Center,
                     ) {
                         Text(
                             nameShown ?: "—",
-                            style = MaterialTheme.typography.displaySmall,
-                            color = if (stage == Stage.DONE) Group else OffWhite,
+                            color = if (stage == Stage.DONE) NeonOrange else NeonWhite,
+                            fontSize = 34.sp,
+                            fontWeight = FontWeight.Black,
                             textAlign = TextAlign.Center,
                         )
                     }
                     Spacer(Modifier.height(16.dp))
 
                     if (stage == Stage.CARD_DONE) {
-                        BigButton(
-                            text = "Spin the name",
-                            fill = Group,
-                            onFill = Pine,
-                            onClick = { stage = Stage.NAME_SPIN },
-                        )
+                        NeonBlueButton("Spin the name") { stage = Stage.NAME_SPIN }
                     }
                 }
 
@@ -162,19 +147,14 @@ fun DoubleWheelSheet(players: List<String>, onDismiss: () -> Unit) {
                     Text(
                         "${nameShown} sits this one out. Everyone else — including whoever " +
                             "played the card — carries out the effect.",
-                        color = OffWhite,
-                        style = MaterialTheme.typography.bodyLarge,
+                        color = NeonWhite,
+                        fontSize = 16.sp,
                     )
                     Spacer(Modifier.height(16.dp))
                 }
 
                 Spacer(Modifier.height(12.dp))
-                BigButton(
-                    text = if (stage == Stage.DONE) "Done" else "Close",
-                    fill = Panel,
-                    onFill = OffWhite,
-                    onClick = onDismiss,
-                )
+                NeonQuietButton(if (stage == Stage.DONE) "Done" else "Close", onClick = onDismiss)
                 Spacer(Modifier.height(24.dp))
             }
         }
@@ -186,11 +166,10 @@ private fun Placeholder(text: String) {
     Box(
         Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(18.dp))
-            .background(Panel)
+            .neonPanel()
             .padding(vertical = 40.dp),
         contentAlignment = Alignment.Center,
     ) {
-        Text(text, color = Sage, style = MaterialTheme.typography.bodyLarge)
+        Text(text, color = NeonBody, fontSize = 16.sp)
     }
 }

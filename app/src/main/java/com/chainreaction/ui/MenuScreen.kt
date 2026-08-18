@@ -28,7 +28,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.chainreaction.R
-import com.chainreaction.ui.theme.Pine
 
 /** The button sheet is 1024x1536 with a transparent background, so it just sits on the photo. */
 private const val SHEET_ASPECT = 1536f / 1024f
@@ -65,7 +64,7 @@ fun MenuScreen(
     BoxWithConstraints(
         modifier
             .fillMaxSize()
-            .background(Pine)
+            .background(NeonBg)
             .clipToBounds(),
     ) {
         // FillWidth, not Crop: cropping to fill a tall screen trims the sides and cuts

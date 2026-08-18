@@ -6,22 +6,24 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Chain Reaction">
-<meta name="theme-color" content="#0C1A14">
+<meta name="theme-color" content="#05070C">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="assets/icon.png">
 <title>Chain Reaction</title>
 <style>
+  /* The neon palette everywhere: black ground, blue structure, orange action.
+     Variable names kept from the pine era so every rule below stays wired up. */
   :root {
-    --pine: #0C1A14;
-    --panel: #132A21;
-    --raised: #1B3B2E;
-    --sage: #8AA79A;
-    --off: #F2F5F1;
+    --pine: #05070C;
+    --panel: #070B14;
+    --raised: #111E33;
+    --sage: #A9B8D4;
+    --off: #F4F8FF;
     --attack: #FF5A4D;
-    --self: #FFD23F;
-    --dual: #FF57C1;
-    --react: #4DD9E8;
-    --group: #A78BFA;
+    --self: #FF8A1E;
+    --react: #4DC3FF;
+    --group: #3FA9FF;
+    --edge: #22304A;
     --tap: 56px;
   }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -39,17 +41,28 @@
   }
   #app { padding: 16px 16px 96px; max-width: 640px; margin: 0 auto; }
   h1 {
-    font-size: 34px; line-height: 1.05; font-weight: 900;
+    font-size: 34px; line-height: 1.05; font-weight: 900; font-style: italic;
     letter-spacing: -0.5px; margin: 0 0 4px;
   }
   .sub { color: var(--sage); margin: 0 0 28px; }
   .label {
-    text-transform: uppercase; color: var(--sage); font-size: 14px;
-    font-weight: 900; letter-spacing: 1.5px; margin: 24px 0 10px;
+    display: flex; align-items: center; text-transform: uppercase; color: #4DC3FF;
+    font-size: 13px; font-weight: 900; letter-spacing: 3px; margin: 20px 0 12px;
   }
+  .label::before { content: ""; flex: 1; height: 2px; margin-right: 12px;
+                   background: linear-gradient(90deg, transparent, #1E6FFF); }
+  .label::after { content: ""; flex: 1; height: 2px; margin-left: 12px;
+                  background: linear-gradient(90deg, #FF8A1E, transparent); }
   .label:first-child { margin-top: 0; }
 
-  .panel { background: var(--panel); border-radius: 16px; padding: 14px; margin-bottom: 10px; }
+  .panel { border: 2px solid transparent; border-radius: 14px; padding: 14px; margin-bottom: 10px;
+           background: linear-gradient(var(--panel), var(--panel)) padding-box,
+                       linear-gradient(100deg, #1E6FFF, #3FA9FF 45%, #FF8A1E) border-box;
+           box-shadow: 0 0 14px rgba(30, 111, 255, 0.25); }
+  /* Orange variant for the picked thing — same frame, hot instead of cool. */
+  .panel.sel { background: linear-gradient(#130C05, #130C05) padding-box,
+                           linear-gradient(100deg, #FF8A1E, #F7791E) border-box;
+               box-shadow: 0 0 14px rgba(247, 148, 30, 0.35); }
 
   button {
     font-family: inherit; border: 0; cursor: pointer; color: var(--off);
@@ -62,17 +75,23 @@
     font-weight: 700; font-size: 15px; letter-spacing: .8px; text-transform: uppercase;
     margin-bottom: 10px;
   }
-  .big.primary { background: var(--self); color: var(--pine); }
-  .big.wheel { background: var(--group); color: var(--pine); }
-  .big.quiet { background: var(--panel); color: var(--off); }
+  .big.primary { background: linear-gradient(180deg, #FF9A2E, #F7791E); color: #fff;
+                 box-shadow: 0 0 16px rgba(247, 148, 30, 0.35); }
+  /* Mirrors the armed/dark states of the Android NeonBigButton. */
+  .big.primary:disabled { background: var(--panel); color: #5E6C88;
+                          border: 2px solid var(--edge); box-shadow: none; opacity: 1; }
+  .big.wheel { background: linear-gradient(180deg, #3FA9FF, #1E6FFF); color: #fff;
+               box-shadow: 0 0 16px rgba(30, 111, 255, 0.35); }
+  .big.quiet { background: var(--panel); color: var(--sage); border: 2px solid var(--edge); }
   /* For use *on* a panel, where .quiet would vanish into the background. */
-  .big.raised { background: var(--raised); color: var(--off); }
-  .big.danger { background: var(--panel); color: var(--attack); }
+  .big.raised { background: #0B1526; color: var(--sage); border: 2px solid var(--edge); }
+  .big.danger { background: var(--panel); color: var(--attack); border: 2px solid var(--edge); }
 
   .step {
     width: var(--tap); height: var(--tap); min-height: var(--tap); flex: 0 0 var(--tap);
     font-size: 30px; font-weight: 900; line-height: 1; border-radius: 14px;
-    background: var(--raised); display: flex; align-items: center; justify-content: center;
+    background: #061022; border: 2px solid var(--edge);
+    display: flex; align-items: center; justify-content: center;
   }
   .row { display: flex; align-items: center; gap: 10px; }
   .grow { flex: 1 1 auto; min-width: 0; }
@@ -80,35 +99,37 @@
 
   input[type=text] {
     width: 100%; min-height: var(--tap); background: var(--panel); color: var(--off);
-    border: 2px solid var(--raised); border-radius: 14px; padding: 0 14px;
+    border: 2px solid var(--edge); border-radius: 14px; padding: 0 14px;
     font-family: inherit; font-size: 17px;
   }
   input[type=text]:focus { outline: none; border-color: var(--self); }
-
-  /* button.me, not bare .me: the highlighted score row is class "player me", and an
-     unscoped .me rule squashes that whole row to the toggle's 56px square. */
-  button.me {
-    width: var(--tap); height: var(--tap); flex: 0 0 var(--tap); border-radius: 14px;
-    background: var(--panel); color: var(--sage); font-weight: 900; font-size: 15px;
-  }
-  button.me.on { background: var(--self); color: var(--pine); }
+  input::placeholder { color: #5E6C88; }
 
   .hole-title { text-align: center; flex: 1 1 auto; }
   .hole-title strong { display: block; font-size: 26px; font-weight: 900; }
   .hole-title span { font-size: 14px; font-weight: 700; letter-spacing: 1px; color: var(--sage); }
   .hole-title span.locked { color: var(--self); }
 
-  .player { background: var(--panel); border-radius: 16px; padding: 12px; margin-bottom: 10px; }
-  .player.me { background: var(--raised); outline: 2px solid var(--self); }
+  .player { border: 2px solid transparent; border-radius: 14px; padding: 12px; margin-bottom: 10px;
+            background: linear-gradient(var(--panel), var(--panel)) padding-box,
+                        linear-gradient(100deg, #1E6FFF, #3FA9FF 45%, #FF8A1E) border-box;
+            box-shadow: 0 0 14px rgba(30, 111, 255, 0.25); }
+  .player.me { background: linear-gradient(#130C05, #130C05) padding-box,
+                           linear-gradient(100deg, #FF8A1E, #F7791E) border-box;
+               box-shadow: 0 0 14px rgba(247, 148, 30, 0.35); }
   .player .name { font-size: 22px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .player.me .name { color: var(--self); }
   .rel { font-size: 15px; font-weight: 900; }
+  /* Under par cool blue, even quiet, over par hot orange — the palette does the talking. */
   .rel.under { color: var(--react); }
   .rel.even { color: var(--sage); }
-  .rel.over { color: var(--attack); }
+  .rel.over { color: var(--self); }
 
-  .total { display: flex; align-items: center; gap: 10px; background: var(--panel);
-           border-radius: 12px; padding: 12px 14px; margin-bottom: 8px; }
+  .total { display: flex; align-items: center; gap: 10px; border: 2px solid transparent;
+           border-radius: 14px; padding: 12px 14px; margin-bottom: 10px;
+           background: linear-gradient(var(--panel), var(--panel)) padding-box,
+                       linear-gradient(100deg, #1E6FFF, #3FA9FF 45%, #FF8A1E) border-box;
+           box-shadow: 0 0 10px rgba(30, 111, 255, 0.2); }
   .total .name { flex: 1 1 auto; font-size: 22px; font-weight: 700; overflow: hidden;
                  text-overflow: ellipsis; white-space: nowrap; }
   .total .v { font-size: 22px; font-weight: 700; text-align: right; width: 52px; }
@@ -116,17 +137,25 @@
           border-radius: 4px; padding: 2px 6px; }
 
   .counters { display: flex; gap: 10px; margin-bottom: 12px; }
-  .counter { flex: 1; background: var(--panel); border-radius: 14px; padding: 12px 4px; text-align: center; }
+  .counter { flex: 1; border: 2px solid transparent; border-radius: 14px; padding: 12px 4px;
+             text-align: center;
+             background: linear-gradient(var(--panel), var(--panel)) padding-box,
+                         linear-gradient(100deg, #1E6FFF, #3FA9FF 45%, #FF8A1E) border-box;
+             box-shadow: 0 0 10px rgba(30, 111, 255, 0.2); }
   .counter b { display: block; font-size: 26px; font-weight: 900; }
   .counter span { font-size: 12px; font-weight: 900; letter-spacing: 1px; color: var(--sage);
                   text-transform: uppercase; }
 
-  .card { display: flex; background: var(--panel); border-radius: 18px; overflow: hidden; margin-bottom: 12px; }
+  .card { display: flex; border: 2px solid transparent; border-radius: 18px; overflow: hidden;
+          margin-bottom: 12px;
+          background: linear-gradient(var(--panel), var(--panel)) padding-box,
+                      linear-gradient(100deg, #1E6FFF, #3FA9FF 45%, #FF8A1E) border-box;
+          box-shadow: 0 0 14px rgba(30, 111, 255, 0.25); }
   .card .body { padding: 16px; flex: 1 1 auto; min-width: 0; }
   .tags { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
   .tag { font-size: 13px; font-weight: 900; letter-spacing: 1px; border-radius: 6px;
          padding: 4px 8px; text-transform: uppercase; }
-  .tag.timing { background: var(--raised); color: var(--sage); }
+  .tag.timing { background: #061022; color: #4DC3FF; }
   .card h3 { margin: 0 0 6px; font-size: 26px; font-weight: 900; letter-spacing: -.3px; }
   .card p { margin: 0; color: var(--sage); }
   .card .acts { display: flex; gap: 10px; margin-top: 14px; }
@@ -153,7 +182,8 @@
   .parcell b { font-size: 24px; font-weight: 900; }
   .parcell.off b { color: var(--self); }
   .parcell span { font-size: 12px; font-weight: 900; color: var(--sage); }
-  .total-par { float: right; color: var(--react); }
+  /* Lives inside the flex .label now, so it rides along instead of floating. */
+  .total-par { margin-left: 8px; color: var(--react); }
   .place { flex: 0 0 32px; width: 32px; text-align: center; font-size: 20px;
            font-weight: 900; color: var(--sage); }
   .place.won { color: var(--self); }
@@ -301,14 +331,15 @@
                    padding: 0 12px; color: var(--sage); font-weight: 700; font-size: 17px; }
   /* Centred on the bar, not the leftover space; side margins keep a long course name
      from running under the Menu button. */
-  .backbar span { color: var(--off); font-weight: 900; font-size: 18px; letter-spacing: 1.5px;
-                  margin: 0 88px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .backbar span { color: var(--off); font-weight: 900; font-style: italic; font-size: 18px;
+                  letter-spacing: 1.5px; margin: 0 88px; overflow: hidden;
+                  text-overflow: ellipsis; white-space: nowrap; }
 
 
   nav {
     position: fixed; left: 0; right: 0; bottom: 0; display: flex; background: var(--panel);
     padding-bottom: env(safe-area-inset-bottom);
-    border-top: 1px solid var(--raised);
+    border-top: 1px solid var(--edge);
   }
   nav button {
     flex: 1; background: none; border-radius: 0; min-height: 64px; color: var(--sage);
@@ -323,7 +354,7 @@
   nav button.on .dot.rules { background: var(--group); }
   .badge {
     position: absolute; top: -9px; left: 8px; min-width: 18px; height: 18px;
-    border-radius: 9px; background: var(--attack); color: var(--pine);
+    border-radius: 9px; background: var(--self); color: var(--pine);
     font-size: 11px; font-weight: 900; line-height: 18px; text-align: center; padding: 0 4px;
   }
 
@@ -332,11 +363,16 @@
     padding: calc(20px + env(safe-area-inset-top)) 20px calc(24px + env(safe-area-inset-bottom));
   }
   .modal h1 { color: var(--group); }
-  .placeholder { background: var(--panel); border-radius: 18px; padding: 40px 16px;
-                 text-align: center; color: var(--sage); margin-bottom: 12px; }
-  .winner { background: var(--panel); border-radius: 18px; padding: 32px 16px; text-align: center;
-            font-size: 34px; font-weight: 900; margin-bottom: 16px; }
-  .winner.done { color: var(--group); }
+  .placeholder { border: 2px solid transparent; border-radius: 18px; padding: 40px 16px;
+                 text-align: center; color: var(--sage); margin-bottom: 12px;
+                 background: linear-gradient(var(--panel), var(--panel)) padding-box,
+                             linear-gradient(100deg, #1E6FFF, #3FA9FF 45%, #FF8A1E) border-box; }
+  .winner { border: 2px solid transparent; border-radius: 18px; padding: 32px 16px;
+            text-align: center; font-size: 34px; font-weight: 900; margin-bottom: 16px;
+            background: linear-gradient(var(--panel), var(--panel)) padding-box,
+                        linear-gradient(100deg, #1E6FFF, #3FA9FF 45%, #FF8A1E) border-box;
+            box-shadow: 0 0 14px rgba(30, 111, 255, 0.25); }
+  .winner.done { color: var(--self); }
   .dim { color: var(--sage); }
 </style>
 </head>
@@ -620,17 +656,21 @@ function renderMenu() {
 
 /* ---------- setup ---------- */
 function renderSetup() {
+  // Same framed-slot + octagonal ME markup as Settings, so the two read as one app.
   var rows = setup.names.map(function (n, i) {
-    return '<div class="row" style="margin-bottom:10px">' +
-      '<input type="text" class="grow" data-name="' + i + '" value="' + esc(n) +
-      '" placeholder="Player ' + (i + 1) + '">' +
-      '<button class="me' + (setup.meIndex === i ? " on" : "") + '" data-act="me" data-i="' + i + '">ME</button>' +
-      '</div>';
+    return '<div class="nrow center" style="margin-bottom:10px">' +
+      '<div class="npanel nslot nrow center" style="flex:1;margin:0;min-height:56px;padding:0 16px">' +
+      '<input data-name="' + i + '" value="' + esc(n) + '" placeholder="Player ' + (i + 1) + '">' +
+      '</div>' +
+      '<button class="nme' + (setup.meIndex === i ? " on" : "") + '" data-act="me" data-i="' + i +
+      '"><span class="in">ME</span></button></div>';
   }).join("");
 
-  var addRemove = '<div class="row">' +
-    (setup.names.length < MAX_PLAYERS ? '<button data-act="addPlayer" style="padding:0 18px">+ Add player</button>' : "") +
-    (setup.names.length > MIN_PLAYERS ? '<button data-act="removePlayer" style="padding:0 18px">&minus; Remove</button>' : "") +
+  var addRemove = '<div class="nrow center" style="gap:10px">' +
+    (setup.names.length < MAX_PLAYERS
+      ? '<button class="npanel nact" data-act="addPlayer" style="margin:0">+ Add player</button>' : "") +
+    (setup.names.length > MIN_PLAYERS
+      ? '<button class="npanel nact" data-act="removePlayer" style="margin:0">&minus; Remove</button>' : "") +
     "</div>";
 
   var namesReady = setup.names.every(function (n) { return n.trim() !== ""; });
@@ -641,7 +681,7 @@ function renderSetup() {
     '<div class="label">Players</div>' +
     '<p class="hint">Tap ME on your own name.</p>' + rows + addRemove +
     '<div class="label">Course</div>' +
-    '<div class="panel course" data-act="openPars">' +
+    '<div class="panel course' + (setup.courseName ? " sel" : "") + '" data-act="openPars">' +
       '<div class="cname' + (setup.courseName ? " picked" : "") + '">' +
         esc(setup.courseName || (courseReady ? "Custom pars" : "Choose a course")) + '</div>' +
       '<div class="dim">' + (courseReady

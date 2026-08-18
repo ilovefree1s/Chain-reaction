@@ -1,9 +1,5 @@
 package com.chainreaction.ui
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -13,25 +9,17 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.chainreaction.data.GameState
-import com.chainreaction.ui.theme.OffWhite
-import com.chainreaction.ui.theme.Panel
-import com.chainreaction.ui.theme.PanelRaised
-import com.chainreaction.ui.theme.Pine
-import com.chainreaction.ui.theme.Sage
-import com.chainreaction.ui.theme.SelfCard
 
 /**
  * Shown in place of the scorecard once every hole is locked. A finished round should
@@ -54,29 +42,29 @@ fun ResultsScreen(
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 16.dp),
     ) {
-        Spacer(Modifier.height(20.dp))
-        SectionLabel(
+        Spacer(Modifier.height(8.dp))
+        NeonSectionLabel(
             state.courseName?.let { "$it · round complete" }
                 ?: "${state.holeCount} holes · round complete",
         )
-        Spacer(Modifier.height(10.dp))
 
         Text(
             winnerLine(winnerNames),
-            style = MaterialTheme.typography.displaySmall,
-            color = SelfCard,
+            color = NeonOrange,
+            fontSize = 34.sp,
+            fontWeight = FontWeight.Black,
+            fontStyle = FontStyle.Italic,
+            lineHeight = 38.sp,
         )
         Spacer(Modifier.height(4.dp))
         Text(
             "$winningTotal  ·  ${formatRelative(state.relativeToParFor(winners.first()))} " +
                 "to a par of ${state.pars.sum()}",
-            color = Sage,
-            style = MaterialTheme.typography.bodyLarge,
+            color = NeonBody,
+            fontSize = 16.sp,
         )
 
-        Spacer(Modifier.height(24.dp))
-        SectionLabel("Final scores")
-        Spacer(Modifier.height(10.dp))
+        NeonSectionLabel("Final scores")
 
         state.standings.forEachIndexed { place, player ->
             val total = state.totalFor(player)
@@ -87,18 +75,13 @@ fun ResultsScreen(
                 Modifier
                     .fillMaxWidth()
                     .padding(bottom = 10.dp)
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(if (won) PanelRaised else Panel)
-                    .then(
-                        if (won) Modifier.border(2.dp, SelfCard, RoundedCornerShape(16.dp))
-                        else Modifier,
-                    )
+                    .then(if (won) Modifier.neonPanelOrange() else Modifier.neonPanel())
                     .padding(14.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
                     "${place + 1}",
-                    color = if (won) SelfCard else Sage,
+                    color = if (won) NeonOrange else NeonDim,
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Black,
                     textAlign = TextAlign.Center,
@@ -107,8 +90,9 @@ fun ResultsScreen(
                 Column(Modifier.weight(1f)) {
                     Text(
                         state.players[player],
-                        style = MaterialTheme.typography.titleLarge,
-                        color = if (won) SelfCard else OffWhite,
+                        color = if (won) NeonOrange else NeonWhite,
+                        fontSize = 22.sp,
+                        fontWeight = FontWeight.Bold,
                         maxLines = 1,
                     )
                     Text(
@@ -123,28 +107,19 @@ fun ResultsScreen(
                 }
                 Text(
                     "$total",
-                    style = MaterialTheme.typography.displaySmall,
-                    color = OffWhite,
+                    color = NeonWhite,
+                    fontSize = 34.sp,
+                    fontWeight = FontWeight.Black,
                 )
             }
         }
 
         Spacer(Modifier.height(14.dp))
         // Clears the round and returns to the menu, so Play means play again.
-        BigButton(
-            text = "Finish round",
-            fill = SelfCard,
-            onFill = Pine,
-            onClick = onFinishRound,
-        )
+        NeonBigButton("Finish round", enabled = true, onClick = onFinishRound)
         Spacer(Modifier.height(10.dp))
         // Escape hatch: a mis-scored final hole is still fixable from the scorecard.
-        BigButton(
-            text = "Back to scorecard",
-            fill = Panel,
-            onFill = OffWhite,
-            onClick = onViewScorecard,
-        )
+        NeonQuietButton("Back to scorecard", onClick = onViewScorecard)
         Spacer(Modifier.height(32.dp))
     }
 }
