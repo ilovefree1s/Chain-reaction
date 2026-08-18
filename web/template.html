@@ -1008,23 +1008,25 @@ function renderNav() {
 /* ---------- double wheel ---------- */
 function renderWheel() {
   var stage = wheel.stage;
+  // Once the name has landed it stays lit, through the effect spin and after.
+  var nameSettled = stage === "nameDone" || stage === "cardSpin" || stage === "done";
   var effect = wheel.card
     ? cardHtml(wheel.card, false)
     : '<div class="placeholder">Spin to reveal the effect</div>';
 
   var html = '<div class="modal"><h1>DOUBLE WHEEL</h1>' +
-    '<p class="sub">Effect first, then the name. The named player is the only one exempt.</p>' +
-    '<div class="label">1 &middot; The effect</div>' + effect;
+    '<p class="sub">The name first, then the effect. The named player is the only one exempt.</p>' +
+    '<div class="label">1 &middot; Who\'s exempt</div>' +
+    '<div class="winner' + (nameSettled ? " done" : "") + '">' +
+    esc(wheel.name || "—") + '</div>';
 
   if (stage === "idle") {
-    html += '<button class="big wheel" data-act="spinCard">Spin the effect</button>';
+    html += '<button class="big wheel" data-act="spinName">Spin the name</button>';
   }
-  if (stage === "cardDone" || stage === "nameSpin" || stage === "done") {
-    html += '<div class="label">2 &middot; Who\'s exempt</div>' +
-      '<div class="winner' + (stage === "done" ? " done" : "") + '">' +
-      esc(wheel.name || "—") + '</div>';
-    if (stage === "cardDone") {
-      html += '<button class="big wheel" data-act="spinName">Spin the name</button>';
+  if (nameSettled) {
+    html += '<div class="label">2 &middot; The effect</div>' + effect;
+    if (stage === "nameDone") {
+      html += '<button class="big wheel" data-act="spinCard">Spin the effect</button>';
     }
   }
   if (stage === "done") {
@@ -1104,8 +1106,8 @@ function spin(kind) {
 
   (function tick(n, delay) {
     if (n >= ticks) {
-      if (kind === "card") { wheel.card = pick(WHEEL_POOL); wheel.stage = "cardDone"; }
-      else { wheel.name = pick(state.players); wheel.stage = "done"; }
+      if (kind === "card") { wheel.card = pick(WHEEL_POOL); wheel.stage = "done"; }
+      else { wheel.name = pick(state.players); wheel.stage = "nameDone"; }
       render();
       return;
     }

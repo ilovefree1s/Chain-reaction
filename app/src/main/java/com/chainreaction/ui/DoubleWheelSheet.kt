@@ -31,12 +31,12 @@ import com.chainreaction.data.CardDeck
 import com.chainreaction.data.GameCard
 import kotlinx.coroutines.delay
 
-private enum class Stage { IDLE, CARD_SPIN, CARD_DONE, NAME_SPIN, DONE }
+private enum class Stage { IDLE, NAME_SPIN, NAME_DONE, CARD_SPIN, DONE }
 
 /**
- * Card #48's mechanic. Order matters: the whole group sees what's at stake
- * *before* the name lands, so the effect is revealed first and the exempt
- * player second.
+ * Card #48's mechanic. The name spins first: the group learns who's exempt
+ * before anyone knows what they're exempt from, so the effect lands on a
+ * table that already knows who it's aimed at.
  */
 @Composable
 fun DoubleWheelSheet(players: List<String>, onDismiss: () -> Unit) {
@@ -53,19 +53,8 @@ fun DoubleWheelSheet(players: List<String>, onDismiss: () -> Unit) {
         var cardShown by remember { mutableStateOf<GameCard?>(null) }
         var nameShown by remember { mutableStateOf<String?>(null) }
 
-        // Spin the card wheel — reaction cards are already filtered out of the pool.
         LaunchedEffect(stage) {
             // Tuned to land in roughly 1.6s per stage — long enough to build, short enough to play.
-            if (stage == Stage.CARD_SPIN) {
-                var step = 30L
-                repeat(18) {
-                    cardShown = CardDeck.WHEEL_POOL.random()
-                    delay(step)
-                    step += 7
-                }
-                cardShown = CardDeck.WHEEL_POOL.random()
-                stage = Stage.CARD_DONE
-            }
             if (stage == Stage.NAME_SPIN) {
                 var step = 40L
                 repeat(16) {
@@ -74,9 +63,23 @@ fun DoubleWheelSheet(players: List<String>, onDismiss: () -> Unit) {
                     step += 9
                 }
                 nameShown = players.random()
+                stage = Stage.NAME_DONE
+            }
+            // Reaction cards are already filtered out of the wheel pool.
+            if (stage == Stage.CARD_SPIN) {
+                var step = 30L
+                repeat(18) {
+                    cardShown = CardDeck.WHEEL_POOL.random()
+                    delay(step)
+                    step += 7
+                }
+                cardShown = CardDeck.WHEEL_POOL.random()
                 stage = Stage.DONE
             }
         }
+
+        // Once the name has landed it stays lit, through the effect spin and after.
+        val nameSettled = stage == Stage.NAME_DONE || stage == Stage.CARD_SPIN || stage == Stage.DONE
 
         Box(
             Modifier
@@ -101,45 +104,46 @@ fun DoubleWheelSheet(players: List<String>, onDismiss: () -> Unit) {
                 )
                 Spacer(Modifier.height(4.dp))
                 Text(
-                    "Effect first, then the name. The named player is the only one exempt.",
+                    "The name first, then the effect. The named player is the only one exempt.",
                     color = NeonBody,
                     fontSize = 16.sp,
                 )
 
-                NeonSectionLabel("1 · The effect")
-                when {
-                    cardShown == null -> Placeholder("Spin to reveal the effect")
-                    else -> CardTile(cardShown!!)
+                // ---- stage 1: the name ----
+                NeonSectionLabel("1 · Who's exempt")
+                Box(
+                    Modifier
+                        .fillMaxWidth()
+                        .neonPanel()
+                        .padding(vertical = 32.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        nameShown ?: "—",
+                        color = if (nameSettled) NeonOrange else NeonWhite,
+                        fontSize = 34.sp,
+                        fontWeight = FontWeight.Black,
+                        textAlign = TextAlign.Center,
+                    )
                 }
 
                 Spacer(Modifier.height(20.dp))
 
                 if (stage == Stage.IDLE) {
-                    NeonBlueButton("Spin the effect") { stage = Stage.CARD_SPIN }
+                    NeonBlueButton("Spin the name") { stage = Stage.NAME_SPIN }
                 }
 
-                // ---- stage 2: the name ----
-                if (stage == Stage.CARD_DONE || stage == Stage.NAME_SPIN || stage == Stage.DONE) {
-                    NeonSectionLabel("2 · Who's exempt")
-                    Box(
-                        Modifier
-                            .fillMaxWidth()
-                            .neonPanel()
-                            .padding(vertical = 32.dp),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Text(
-                            nameShown ?: "—",
-                            color = if (stage == Stage.DONE) NeonOrange else NeonWhite,
-                            fontSize = 34.sp,
-                            fontWeight = FontWeight.Black,
-                            textAlign = TextAlign.Center,
-                        )
+                // ---- stage 2: the effect ----
+                if (nameSettled) {
+                    NeonSectionLabel("2 · The effect")
+                    when {
+                        cardShown == null -> Placeholder("Spin to reveal the effect")
+                        else -> CardTile(cardShown!!)
                     }
                     Spacer(Modifier.height(16.dp))
 
-                    if (stage == Stage.CARD_DONE) {
-                        NeonBlueButton("Spin the name") { stage = Stage.NAME_SPIN }
+                    if (stage == Stage.NAME_DONE) {
+                        NeonBlueButton("Spin the effect") { stage = Stage.CARD_SPIN }
                     }
                 }
 
