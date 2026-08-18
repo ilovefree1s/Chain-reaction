@@ -181,8 +181,8 @@ Five, all decided deliberately:
    card identity, and interim cards show neutral kind/timing tags instead.
 5. **Wheel order.** The spec spins the effect first, then the name. Reversed on request:
    the name lands first, so the table knows who is exempt before it learns what from.
-   Card #48's printed text still describes the spec's order — the physical cards are
-   unchanged, so the app follows the house call rather than rewriting the deck.
+   (Card #48's text has since been rewritten as a free spin, so nothing describes the
+   old order anymore.)
 
 Scores default to the hole's par, so a par round needs no tapping at all.
 
@@ -194,8 +194,9 @@ deliberately no `withPar` on `GameState`.
 ## What is deliberately absent
 
 No sync, no multiplayer, no accounts, no networking. No enforcement of card effects and no
-automatic stroke penalties — GAMBLE!, Code Words!, Commentator, RUSH ATTACK!, Trade Offer and
-Me and You all rewrite scores, and players enter those by hand with the ± steppers. No money
+automatic stroke penalties — GAMBLE!, Code Words!, Commentator, WALK IT DOWN!!,
+Good Guys vs Bad Guys and Me and You all rewrite scores, and players enter those by hand
+with the ± steppers. No money
 tracking; FIVE DOLLARS! is honour-system.
 
 The "max 2 cards on one player per hole" rule is shown on the Rules screen and tracked by the
