@@ -43,9 +43,10 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.chainreaction.data.CardDeck
+import com.chainreaction.data.CardKind
 import kotlin.random.Random
 
-private enum class Stage { IDLE, NAME_SPIN, NAME_DONE, CARD_SPIN, DONE }
+private enum class Stage { IDLE, NAME_SPIN, NAME_DONE, CARD_SPIN, CARD_DONE, FATE_SPIN, DONE }
 
 /** One long decelerating sweep — most of the drama is in the last quarter turn. */
 private const val SPIN_MS = 3600
@@ -82,8 +83,15 @@ fun DoubleWheelSheet(players: List<String>, onDismiss: () -> Unit) {
         val cardIdx = remember { ringCards.indices.random() }
         val winningCard = ringCards[cardIdx]
 
+        // Dual cards get a third spin: good half or bad half, decided by fate.
+        val isDual = winningCard.kind == CardKind.DUAL
+        val fateLabels = remember { List(8) { if (it % 2 == 0) "GOOD" else "BAD" } }
+        var fateIdx by remember { mutableIntStateOf(-1) }
+        val fateGood = fateIdx >= 0 && fateIdx % 2 == 0
+
         val nameRot = remember { Animatable(0f) }
         val cardRot = remember { Animatable(0f) }
+        val fateRot = remember { Animatable(0f) }
 
         LaunchedEffect(stage) {
             if (stage == Stage.NAME_SPIN) {
@@ -101,11 +109,20 @@ fun DoubleWheelSheet(players: List<String>, onDismiss: () -> Unit) {
                     targetRotation(ringCards.size, cardIdx),
                     tween(SPIN_MS, easing = SpinEasing),
                 )
+                stage = if (isDual) Stage.CARD_DONE else Stage.DONE
+            }
+            if (stage == Stage.FATE_SPIN) {
+                fateIdx = fateLabels.indices.random()
+                fateRot.animateTo(
+                    targetRotation(fateLabels.size, fateIdx),
+                    tween(SPIN_MS, easing = SpinEasing),
+                )
                 stage = Stage.DONE
             }
         }
 
-        val nameSettled = stage == Stage.NAME_DONE || stage == Stage.CARD_SPIN || stage == Stage.DONE
+        val nameSettled = stage != Stage.IDLE && stage != Stage.NAME_SPIN
+        val cardSettled = stage == Stage.CARD_DONE || stage == Stage.FATE_SPIN || stage == Stage.DONE
 
         Box(
             Modifier
@@ -147,12 +164,14 @@ fun DoubleWheelSheet(players: List<String>, onDismiss: () -> Unit) {
                 }
 
                 // ---- stage 2: the effect ----
-                if (nameSettled) {
+                // Like the name wheel, it collapses to its result — the card —
+                // once it lands, keeping the sheet one screen tall.
+                if (stage == Stage.NAME_DONE || stage == Stage.CARD_SPIN) {
                     NeonSectionLabel("The effect")
                     NeonWheel(
                         labels = ringCards.map { it.name },
                         rotation = cardRot.value,
-                        winner = if (stage == Stage.DONE) cardIdx else null,
+                        winner = null,
                         labelSize = 8.sp,
                     )
                     Spacer(Modifier.height(12.dp))
@@ -162,14 +181,57 @@ fun DoubleWheelSheet(players: List<String>, onDismiss: () -> Unit) {
                     }
                 }
 
-                if (stage == Stage.DONE) {
+                if (cardSettled) {
                     CardTile(winningCard)
                     Spacer(Modifier.height(12.dp))
-                    Text(
-                        "${players[namePlayer]} sits this one out. Everyone else carries out the effect.",
-                        color = NeonWhite,
-                        fontSize = 16.sp,
+                }
+
+                // ---- stage 3, dual cards only: which half? ----
+                if (stage == Stage.CARD_DONE || stage == Stage.FATE_SPIN) {
+                    NeonSectionLabel("Good or bad?")
+                    NeonWheel(
+                        labels = fateLabels,
+                        rotation = fateRot.value,
+                        winner = null,
+                        labelSize = 16.sp,
+                        duo = true,
                     )
+                    Spacer(Modifier.height(12.dp))
+
+                    if (stage == Stage.CARD_DONE) {
+                        NeonBlueButton("Spin good or bad") { stage = Stage.FATE_SPIN }
+                    }
+                }
+
+                if (stage == Stage.DONE) {
+                    if (isDual) {
+                        Text(
+                            if (fateGood) "GOOD EFFECT" else "BAD EFFECT",
+                            color = if (fateGood) NeonIce else NeonOrange,
+                            fontSize = 24.sp,
+                            fontWeight = FontWeight.Black,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            if (fateGood) {
+                                "${players[namePlayer]} sits this one out. Everyone else gets " +
+                                    "the good half — the on-yourself version, free."
+                            } else {
+                                "${players[namePlayer]} sits this one out. Everyone else takes " +
+                                    "the bad half — the attack version."
+                            },
+                            color = NeonWhite,
+                            fontSize = 16.sp,
+                        )
+                    } else {
+                        Text(
+                            "${players[namePlayer]} sits this one out. Everyone else carries out the effect.",
+                            color = NeonWhite,
+                            fontSize = 16.sp,
+                        )
+                    }
                     Spacer(Modifier.height(16.dp))
                 }
 
@@ -203,6 +265,8 @@ private fun NeonWheel(
     rotation: Float,
     winner: Int?,
     labelSize: TextUnit,
+    /** Good-or-bad mode: even wedges read ice blue, odd wedges orange. */
+    duo: Boolean = false,
 ) {
     val textPaint = remember {
         android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
@@ -231,14 +295,16 @@ private fun NeonWheel(
 
             labels.forEachIndexed { i, label ->
                 val lit = i == winner
+                val goodSide = duo && i % 2 == 0
                 val start = i * seg - 90f
                 drawArc(
-                    color = if (lit) {
-                        Color(0xFF2A1503)
-                    } else if (i % 2 == 0) {
-                        Color(0xFF0B1424)
-                    } else {
-                        NeonChipBg
+                    color = when {
+                        lit && goodSide -> Color(0xFF0A2C4A)
+                        lit -> Color(0xFF2A1503)
+                        duo && goodSide -> Color(0xFF08131F)
+                        duo -> Color(0xFF170D06)
+                        i % 2 == 0 -> Color(0xFF0B1424)
+                        else -> NeonChipBg
                     },
                     startAngle = start,
                     sweepAngle = seg,
@@ -247,7 +313,11 @@ private fun NeonWheel(
                     size = wedgeSize,
                 )
                 drawArc(
-                    color = if (lit) NeonOrange else Color(0xFF22304A),
+                    color = if (lit) {
+                        if (goodSide) NeonIce else NeonOrange
+                    } else {
+                        Color(0xFF22304A)
+                    },
                     startAngle = start,
                     sweepAngle = seg,
                     useCenter = true,
@@ -260,7 +330,12 @@ private fun NeonWheel(
                 // half, exactly like a real prize wheel.
                 val short = if (label.length > 15) label.take(14) + "…" else label
                 textPaint.textSize = labelSize.toPx()
-                textPaint.color = (if (lit) NeonOrange else NeonWhite).toArgb()
+                textPaint.color = when {
+                    duo && goodSide -> NeonIce
+                    duo -> NeonOrange
+                    lit -> NeonOrange
+                    else -> NeonWhite
+                }.toArgb()
                 drawContext.canvas.nativeCanvas.apply {
                     save()
                     rotate(start + seg / 2f, c.x, c.y)

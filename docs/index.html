@@ -1061,19 +1061,42 @@ function renderWheel() {
   if (stage === "idle") {
     html += '<button class="big wheel" data-act="spinName">Spin the name</button>';
   }
+  var cardSettled = stage === "cardDone" || stage === "done";
   if (nameSettled) {
-    html += '<div class="exempt">' + esc(wheel.name) + ' is exempt</div>' +
-      '<div class="label">The effect</div>' +
-      '<div class="wheelbox"><div class="wheelptr"></div>' +
-      wheelSvg("wheel-card", wheel.cardLabels, wheel.cardRot, stage === "done" ? wheel.cardIdx : null, 7.5) +
-      '</div>';
-    if (stage === "nameDone") {
-      html += '<button class="big wheel" data-act="spinCard">Spin the effect</button>';
+    html += '<div class="exempt">' + esc(wheel.name) + ' is exempt</div>';
+    // Like the name wheel, the effect wheel collapses to its result — the
+    // card — once it lands, keeping the sheet one screen tall.
+    if (!cardSettled) {
+      html += '<div class="label">The effect</div>' +
+        '<div class="wheelbox"><div class="wheelptr"></div>' +
+        wheelSvg("wheel-card", wheel.cardLabels, wheel.cardRot, null, 7.5) +
+        '</div>';
+      if (stage === "nameDone") {
+        html += '<button class="big wheel" data-act="spinCard">Spin the effect</button>';
+      }
     }
   }
+  if (cardSettled) {
+    html += cardHtml(wheel.card, false);
+  }
+  // Dual cards only: which half applies?
+  if (stage === "cardDone") {
+    html += '<div class="label">Good or bad?</div>' +
+      '<div class="wheelbox"><div class="wheelptr"></div>' +
+      wheelSvg("wheel-fate", wheel.fateLabels, wheel.fateRot, null, 16, true) +
+      '</div>' +
+      '<button class="big wheel" data-act="spinFate">Spin good or bad</button>';
+  }
   if (stage === "done") {
-    html += cardHtml(wheel.card, false) +
-      '<p>' + esc(wheel.name) + ' sits this one out. Everyone else carries out the effect.</p>';
+    if (wheel.isDual) {
+      html += '<div class="exempt" style="color:' + (wheel.fateGood ? '#4DC3FF' : '#FF8A1E') + '">' +
+        (wheel.fateGood ? 'GOOD EFFECT' : 'BAD EFFECT') + '</div>' +
+        '<p>' + esc(wheel.name) + (wheel.fateGood
+          ? ' sits this one out. Everyone else gets the good half — the on-yourself version, free.'
+          : ' sits this one out. Everyone else takes the bad half — the attack version.') + '</p>';
+    } else {
+      html += '<p>' + esc(wheel.name) + ' sits this one out. Everyone else carries out the effect.</p>';
+    }
   }
   html += '<button class="big quiet" data-act="closeWheel">' +
     (stage === "done" ? "Done" : "Close") + "</button></div>";
@@ -1082,10 +1105,11 @@ function renderWheel() {
 
 /* The wheel: alternating near-black wedges, labels along each spoke, a gradient
    rim and a hub. The svg itself rotates; the pointer div above it stays put. */
-function wheelSvg(id, labels, rotation, winner, fontSize) {
+function wheelSvg(id, labels, rotation, winner, fontSize, duo) {
   var n = labels.length, seg = 360 / n, C = 160, R = 152;
   var parts = labels.map(function (label, i) {
     var lit = i === winner;
+    var good = duo && i % 2 === 0;
     var a0 = (i * seg - 90) * Math.PI / 180;
     var a1 = ((i + 1) * seg - 90) * Math.PI / 180;
     var mid = i * seg + seg / 2 - 90;
@@ -1094,11 +1118,14 @@ function wheelSvg(id, labels, rotation, winner, fontSize) {
       ' L' + (C + R * Math.cos(a0)).toFixed(2) + ' ' + (C + R * Math.sin(a0)).toFixed(2) +
       ' A' + R + ' ' + R + ' 0 0 1 ' +
       (C + R * Math.cos(a1)).toFixed(2) + ' ' + (C + R * Math.sin(a1)).toFixed(2) + ' Z"' +
-      ' fill="' + (lit ? "#2A1503" : i % 2 ? "#061022" : "#0B1424") + '"' +
-      ' stroke="' + (lit ? "#FF8A1E" : "#22304A") + '" stroke-width="2"/>' +
+      ' fill="' + (lit ? (good ? "#0A2C4A" : "#2A1503")
+        : duo ? (good ? "#08131F" : "#170D06")
+        : i % 2 ? "#061022" : "#0B1424") + '"' +
+      ' stroke="' + (lit ? (good ? "#4DC3FF" : "#FF8A1E") : "#22304A") + '" stroke-width="2"/>' +
       '<text x="' + (C + R * 0.42).toFixed(1) + '" y="' + C + '"' +
       ' transform="rotate(' + mid.toFixed(2) + ' ' + C + ' ' + C + ')"' +
-      ' fill="' + (lit ? "#FF8A1E" : "#F4F8FF") + '" font-size="' + fontSize + '"' +
+      ' fill="' + (duo ? (good ? "#4DC3FF" : "#FF8A1E") : lit ? "#FF8A1E" : "#F4F8FF") +
+      '" font-size="' + fontSize + '"' +
       ' font-weight="800" dominant-baseline="middle">' + esc(short) + '</text>';
   }).join("");
   return '<svg id="' + id + '" viewBox="0 0 320 320" style="transform:rotate(' + rotation + 'deg)">' +
@@ -1184,7 +1211,8 @@ function shuffled(arr) {
    throttled tabs where transitionend never fires. */
 function spinWheel(kind) {
   if (!wheel || wheel.spinning) return;
-  var el = document.getElementById(kind === "name" ? "wheel-name" : "wheel-card");
+  var el = document.getElementById(
+    kind === "name" ? "wheel-name" : kind === "fate" ? "wheel-fate" : "wheel-card");
   if (!el) return;
   wheel.spinning = true;
 
@@ -1195,14 +1223,23 @@ function spinWheel(kind) {
     // The player owns two opposite segments — land on either.
     wheel.nameSeg = p + state.players.length * (Math.random() < 0.5 ? 0 : 1);
     n = wheel.nameLabels.length; idx = wheel.nameSeg;
+  } else if (kind === "fate") {
+    wheel.fateIdx = Math.floor(Math.random() * wheel.fateLabels.length);
+    wheel.fateGood = wheel.fateIdx % 2 === 0;
+    n = wheel.fateLabels.length; idx = wheel.fateIdx;
   } else {
     n = wheel.cardLabels.length; idx = wheel.cardIdx;
   }
   var seg = 360 / n;
   var target = 5 * 360 + (360 - (idx * seg + seg / 2)) + (Math.random() - 0.5) * 0.6 * seg;
-  if (kind === "name") wheel.nameRot = target; else wheel.cardRot = target;
+  if (kind === "name") wheel.nameRot = target;
+  else if (kind === "fate") wheel.fateRot = target;
+  else wheel.cardRot = target;
 
-  var btn = document.querySelector(kind === "name" ? '[data-act="spinName"]' : '[data-act="spinCard"]');
+  var btn = document.querySelector(
+    kind === "name" ? '[data-act="spinName"]'
+      : kind === "fate" ? '[data-act="spinFate"]'
+      : '[data-act="spinCard"]');
   if (btn) btn.style.visibility = "hidden";
 
   var w = wheel, settled = false;
@@ -1210,7 +1247,9 @@ function spinWheel(kind) {
     if (settled || wheel !== w) return;
     settled = true;
     wheel.spinning = false;
-    wheel.stage = kind === "name" ? "nameDone" : "done";
+    wheel.stage = kind === "name" ? "nameDone"
+      : kind === "card" && wheel.isDual ? "cardDone"
+      : "done";
     render();
   }
   el.addEventListener("transitionend", settle, { once: true });
@@ -1459,16 +1498,22 @@ app.addEventListener("click", function (e) {
       for (var pi = 0; pi < state.players.length * 2; pi++) {
         nameLabels.push(state.players[pi % state.players.length]);
       }
+      var fateLabels = [];
+      for (var fi = 0; fi < 8; fi++) fateLabels.push(fi % 2 ? "BAD" : "GOOD");
       wheel = {
         stage: "idle", card: winner, name: null,
         nameLabels: nameLabels, nameSeg: null, nameRot: 0,
         cardLabels: ring.map(function (c) { return c.name; }),
         cardIdx: ringIdx, cardRot: 0,
+        // Dual cards get a third spin: good half or bad half.
+        isDual: winner.kind === "dual",
+        fateLabels: fateLabels, fateIdx: null, fateRot: 0, fateGood: null,
         spinning: false
       };
       render(); break;
     }
     case "spinCard": spinWheel("card"); break;
+    case "spinFate": spinWheel("fate"); break;
     case "spinName": spinWheel("name"); break;
     case "closeWheel": wheel = null; render(); break;
 
