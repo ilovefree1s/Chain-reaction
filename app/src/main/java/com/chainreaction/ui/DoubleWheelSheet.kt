@@ -165,8 +165,7 @@ fun DoubleWheelSheet(players: List<String>, onDismiss: () -> Unit) {
                     CardTile(winningCard)
                     Spacer(Modifier.height(12.dp))
                     Text(
-                        "${players[namePlayer]} sits this one out. Everyone else — including whoever " +
-                            "played the card — carries out the effect.",
+                        "${players[namePlayer]} sits this one out. Everyone else carries out the effect.",
                         color = NeonWhite,
                         fontSize = 16.sp,
                     )
