@@ -35,10 +35,10 @@ const data = JSON.parse(match[1]);
 
 // ---- sanity checks, so a bad edit fails here and not on a course ----
 const problems = [];
-if (data.cards.length !== 52) problems.push(`expected 52 cards, found ${data.cards.length}`);
+if (data.cards.length !== 53) problems.push(`expected 53 cards, found ${data.cards.length}`);
 
 const ids = data.cards.map((c) => c.id);
-const expected = Array.from({ length: 52 }, (_, i) => i + 1);
+const expected = Array.from({ length: 53 }, (_, i) => i + 1);
 const missing = expected.filter((i) => !ids.includes(i));
 if (missing.length) problems.push(`missing card ids: ${missing.join(", ")}`);
 if (new Set(ids).size !== ids.length) problems.push("duplicate card ids");
@@ -107,7 +107,7 @@ fs.readdirSync(artDir).sort().forEach((f) => {
   const m = /^card_(\d{2})\.(png|webp|jpe?g)$/.exec(f);
   if (!m) return;
   const id = parseInt(m[1], 10);
-  if (id < 1 || id > 52) {
+  if (id < 1 || id > 53) {
     problems.push(`card art ${f} does not match any card id`);
     return;
   }

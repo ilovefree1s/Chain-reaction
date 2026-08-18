@@ -77,14 +77,14 @@ class DrawRuleTest {
     // ---- deck integrity ----
 
     @Test
-    fun `deck is 52 cards with unique ids one through fifty-two`() {
-        assertEquals(52, CardDeck.ALL.size)
-        assertEquals((1..52).toSet(), CardDeck.ALL.map { it.id }.toSet())
+    fun `deck is 53 cards with unique ids one through fifty-three`() {
+        assertEquals(53, CardDeck.ALL.size)
+        assertEquals((1..53).toSet(), CardDeck.ALL.map { it.id }.toSet())
     }
 
     @Test
     fun `wheel pool never contains a blacklisted card`() {
-        assertEquals(36, CardDeck.WHEEL_POOL.size)
+        assertEquals(37, CardDeck.WHEEL_POOL.size)
         Rules.WHEEL_EXCLUDES.forEach { excluded ->
             assertTrue(
                 "card $excluded must not be in the wheel pool",
@@ -107,10 +107,10 @@ class DrawRuleTest {
     // ---- hand, deck and discard ----
 
     @Test
-    fun `new round deals four cards and leaves forty-eight in the deck`() {
+    fun `new round deals four cards and leaves the rest in the deck`() {
         val state = GameState.newRound(listOf("A", "B", "C"), meIndex = 0, holeCount = 18)
         assertEquals(Rules.HAND_SIZE, state.hand.size)
-        assertEquals(52 - Rules.HAND_SIZE, state.deck.size)
+        assertEquals(CardDeck.ALL.size - Rules.HAND_SIZE, state.deck.size)
         assertTrue(state.discard.isEmpty())
         assertEquals(0, state.owed)
     }
@@ -256,7 +256,7 @@ class DrawRuleTest {
                 assertNotEquals("draw made no progress", before, state.owed)
             }
             assertEquals(
-                "all 52 cards still accounted for",
+                "all 53 cards still accounted for",
                 ids,
                 (state.hand + state.deck + state.discard).toSet(),
             )

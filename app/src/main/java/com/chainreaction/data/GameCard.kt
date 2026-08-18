@@ -99,6 +99,7 @@ object CardDeck {
         GameCard(50, "Any time", CardKind.DUAL, "Player 2's Turn!", "On yourself: retake any shot for free. On another player: force them to re-throw a shot that was too good."),
         GameCard(51, "After a hole", CardKind.DUAL, "Me and You", "On yourself: take the best score made on the hole. On another player: they take the worst score made on the hole."),
         GameCard(52, "After throw", CardKind.SELF, "Big Putt!", "If you make a putt from outside C1 while a player still to putt is inside C1, they have to putt with their off hand."),
+        GameCard(53, "Before tee shot", CardKind.ATTACK, "Bag Exchange!", "Pick a player to swap bags with. Swap back after the first bogey by either player."),
     )
 
     private val byId: Map<Int, GameCard> = ALL.associateBy { it.id }
@@ -108,6 +109,6 @@ object CardDeck {
 
     fun card(id: Int): GameCard = byId.getValue(id)
 
-    /** A fresh 52-card deck, shuffled. Every player has their own. */
+    /** A fresh 53-card deck, shuffled. Every player has their own. */
     fun freshShuffledDeck(): List<Int> = ALL.map { it.id }.shuffled()
 }

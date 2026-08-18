@@ -11,11 +11,11 @@ its own copy of the scorecard, exactly as [BUILD_SPEC.md](BUILD_SPEC.md) describ
 
 ## Where the rules live
 
-[BUILD_SPEC.md](BUILD_SPEC.md) is the source of truth for the 52 cards. The web build reads
+[BUILD_SPEC.md](BUILD_SPEC.md) is the source of truth for the 53 cards. The web build reads
 its card data straight out of the spec's ```json block at build time, so the spec and the web
 app can't drift. The Android build has the same data transcribed into
 [GameCard.kt](app/src/main/java/com/chainreaction/data/GameCard.kt), verified against the spec
-by unit test (`deck is 52 cards with unique ids one through fifty-two`).
+by unit test (`deck is 53 cards with unique ids one through fifty-three`).
 
 The one piece of real logic — how many cards you draw at the end of a hole — is in
 [DrawRule.kt](app/src/main/java/com/chainreaction/data/DrawRule.kt), deliberately free of
@@ -127,7 +127,7 @@ layer-list fallback for API 24–25, which predate adaptive icons.
 
 ## Card artwork
 
-Card faces are drop-in. Put an image named `card_01` … `card_52` (the number is the
+Card faces are drop-in. Put an image named `card_01` … `card_53` (the number is the
 card's id in the spec) into `app/src/main/res/drawable-nodpi/` — PNG, WebP or JPEG —
 and both builds pick it up: Android looks the drawable up by name at runtime, and
 `web/build.js` copies whatever faces exist into `docs/assets/` and tells the page about
