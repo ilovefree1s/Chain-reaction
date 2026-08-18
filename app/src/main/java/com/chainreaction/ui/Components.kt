@@ -43,6 +43,8 @@ val TapTarget = 56.dp
 fun CardTile(
     card: GameCard,
     modifier: Modifier = Modifier,
+    /** Tap anywhere on the tile (buttons aside) — used to open the full face. */
+    onTap: (() -> Unit)? = null,
     actions: @Composable (() -> Unit)? = null,
 ) {
     val context = LocalContext.current
@@ -53,11 +55,13 @@ fun CardTile(
             context.packageName,
         )
     }
+    val tappable = if (onTap != null) Modifier.clickable(onClick = onTap) else Modifier
     if (artId != 0) {
         Column(
             modifier
                 .fillMaxWidth()
-                .neonPanel(),
+                .neonPanel()
+                .then(tappable),
         ) {
             Image(
                 painter = painterResource(artId),
@@ -77,6 +81,7 @@ fun CardTile(
         modifier
             .fillMaxWidth()
             .neonPanel()
+            .then(tappable)
             .padding(16.dp),
     ) {
         Row(

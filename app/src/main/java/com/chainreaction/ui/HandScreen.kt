@@ -36,6 +36,9 @@ fun HandScreen(
     // The card id awaiting a discard confirmation, if any.
     var confirmDiscard by remember { mutableStateOf<Int?>(null) }
 
+    // The card enlarged to its full face, if any.
+    var enlarged by remember { mutableStateOf<Int?>(null) }
+
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
@@ -89,7 +92,7 @@ fun HandScreen(
 
         items(state.hand, key = { it }) { id ->
             val card = CardDeck.card(id)
-            CardTile(card) {
+            CardTile(card, onTap = { enlarged = id }) {
                 if (confirmDiscard == id) {
                     // A discard can't be un-tapped, so it asks once, in place.
                     Column {
@@ -126,6 +129,15 @@ fun HandScreen(
         }
 
         item { Spacer(Modifier.height(24.dp)) }
+    }
+
+    // Tap-to-enlarge: the full face, with Play / Discard right there.
+    enlarged?.let { id ->
+        CardFaceDialog(
+            card = CardDeck.card(id),
+            onDismiss = { enlarged = null },
+            onResolve = { onResolve(id) },
+        )
     }
 }
 
