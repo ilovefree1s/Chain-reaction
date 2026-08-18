@@ -111,17 +111,16 @@ fun ScoreScreen(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Column(Modifier.weight(1f)) {
+                    Text(
+                        name,
+                        color = if (isMe) NeonOrange else NeonWhite,
+                        fontSize = 22.sp,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                    )
+                    // LEAD · E · 3 total — the whole story on one line.
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            name,
-                            color = if (isMe) NeonOrange else NeonWhite,
-                            fontSize = 22.sp,
-                            fontWeight = FontWeight.Bold,
-                            maxLines = 1,
-                            modifier = Modifier.weight(1f, fill = false),
-                        )
                         if (leading) {
-                            Spacer(Modifier.width(8.dp))
                             Box(
                                 Modifier
                                     .clip(RoundedCornerShape(4.dp))
@@ -135,14 +134,15 @@ fun ScoreScreen(
                                     modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
                                 )
                             }
+                            Spacer(Modifier.width(6.dp))
                         }
+                        Text(
+                            "${formatRelative(rel)}  ·  $total total",
+                            color = relativeColor(rel),
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Black,
+                        )
                     }
-                    Text(
-                        "${formatRelative(rel)}  ·  $total total",
-                        color = relativeColor(rel),
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.Black,
-                    )
                 }
                 StepperButton("−", enabled = !locked && score > 1) { onScore(i, -1) }
                 Text(

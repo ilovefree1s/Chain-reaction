@@ -135,8 +135,7 @@
   .total .v { font-size: 22px; font-weight: 700; text-align: right; width: 52px; }
   .lead { background: var(--group); color: var(--pine); font-size: 11px; font-weight: 900;
           border-radius: 4px; padding: 2px 6px; }
-  .namerow { display: flex; align-items: center; gap: 8px; min-width: 0; }
-  .namerow .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .rel .lead { margin-right: 7px; }
 
   .counters { display: flex; gap: 10px; margin-bottom: 12px; }
   .counter { flex: 1; border: 2px solid transparent; border-radius: 14px; padding: 12px 4px;
@@ -759,9 +758,9 @@ function renderScore() {
     var total = totalFor(s, i), rel = relFor(s, i);
     var lead = lockedCount(s) > 0 && total === best;
     return '<div class="player' + (me ? " me" : "") + '"><div class="row">' +
-      '<div class="grow"><div class="namerow"><span class="name">' + esc(name) + '</span>' +
-        (lead ? '<span class="lead">LEAD</span>' : "") + '</div>' +
-        '<div class="rel ' + relClass(rel) + '">' + fmtRel(rel) + '  &middot;  ' + total + ' total</div></div>' +
+      '<div class="grow"><div class="name">' + esc(name) + '</div>' +
+        '<div class="rel ' + relClass(rel) + '">' +
+        (lead ? '<span class="lead">LEAD</span>' : "") + fmtRel(rel) + '  &middot;  ' + total + ' total</div></div>' +
       '<button class="step" data-act="score" data-i="' + i + '" data-n="-1"' +
         (locked || score <= 1 ? " disabled" : "") + '>&minus;</button>' +
       '<div class="num">' + score + '</div>' +
