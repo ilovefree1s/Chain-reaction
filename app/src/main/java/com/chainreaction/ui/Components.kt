@@ -25,6 +25,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.chainreaction.data.GameCard
@@ -110,6 +111,63 @@ fun CardTile(
             actions()
         }
     }
+}
+
+/**
+ * Half-width hand tile: tags, name, a taste of the text. No buttons — tapping
+ * opens the full face, where Play and Discard live.
+ */
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+@Composable
+fun CardMiniTile(card: GameCard, modifier: Modifier = Modifier, onTap: () -> Unit) {
+    Column(
+        modifier
+            .neonPanel()
+            .clickable(onClick = onTap)
+            .padding(12.dp),
+    ) {
+        androidx.compose.foundation.layout.FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            MiniTag(card.kind.label.uppercase())
+            MiniTag(card.timing.uppercase())
+        }
+        Spacer(Modifier.height(8.dp))
+        Text(
+            card.name,
+            color = NeonWhite,
+            fontSize = 17.sp,
+            fontWeight = FontWeight.Bold,
+            lineHeight = 21.sp,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+        )
+        Spacer(Modifier.height(4.dp))
+        Text(
+            card.text,
+            color = NeonBody,
+            fontSize = 13.sp,
+            lineHeight = 18.sp,
+            maxLines = 3,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
+}
+
+@Composable
+private fun MiniTag(text: String) {
+    Text(
+        text = text,
+        color = NeonIce,
+        fontSize = 10.sp,
+        fontWeight = FontWeight.Black,
+        letterSpacing = 0.5.sp,
+        modifier = Modifier
+            .clip(RoundedCornerShape(5.dp))
+            .background(NeonChipBg)
+            .padding(horizontal = 6.dp, vertical = 3.dp),
+    )
 }
 
 @Composable

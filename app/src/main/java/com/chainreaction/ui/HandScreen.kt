@@ -1,11 +1,13 @@
 package com.chainreaction.ui
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -33,10 +35,7 @@ fun HandScreen(
     onResolve: (cardId: Int) -> Unit,
     onOpenWheel: () -> Unit,
 ) {
-    // The card id awaiting a discard confirmation, if any.
-    var confirmDiscard by remember { mutableStateOf<Int?>(null) }
-
-    // The card enlarged to its full face, if any.
+    // The card enlarged to its full face, if any. Play and Discard live there.
     var enlarged by remember { mutableStateOf<Int?>(null) }
 
     LazyColumn(
@@ -90,40 +89,24 @@ fun HandScreen(
             }
         }
 
-        items(state.hand, key = { it }) { id ->
-            val card = CardDeck.card(id)
-            CardTile(card, onTap = { enlarged = id }) {
-                if (confirmDiscard == id) {
-                    // A discard can't be un-tapped, so it asks once, in place.
-                    Column {
-                        Text(
-                            "Discard ${card.name}?",
-                            color = NeonWhite,
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold,
-                        )
-                        Spacer(Modifier.height(10.dp))
-                        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                            Box(Modifier.weight(1f)) {
-                                NeonQuietButton("Keep it") { confirmDiscard = null }
-                            }
-                            Box(Modifier.weight(1f)) {
-                                NeonBigButton("Discard", enabled = true) {
-                                    confirmDiscard = null
-                                    onResolve(id)
-                                }
-                            }
-                        }
-                    }
-                } else {
-                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        Box(Modifier.weight(1f)) {
-                            NeonBigButton("Play", enabled = true) { onResolve(id) }
-                        }
-                        Box(Modifier.weight(1f)) {
-                            NeonQuietButton("Discard") { confirmDiscard = id }
-                        }
-                    }
+        // Two compact tiles per row; tap one to read it big and play it.
+        items(state.hand.chunked(2), key = { it.first() }) { pair ->
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .height(IntrinsicSize.Max),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                pair.forEach { id ->
+                    CardMiniTile(
+                        card = CardDeck.card(id),
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxHeight(),
+                    ) { enlarged = id }
+                }
+                if (pair.size == 1) {
+                    Spacer(Modifier.weight(1f))
                 }
             }
         }
