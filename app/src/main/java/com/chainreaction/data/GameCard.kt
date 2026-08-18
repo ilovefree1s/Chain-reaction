@@ -28,7 +28,7 @@ object Rules {
     // The house blacklist: reaction cards plus everything too situational,
     // too group-shaped or too slow to land as a wheel result — and the Double
     // Wheel itself, so the wheel can never demand another wheel.
-    val WHEEL_EXCLUDES = setOf(7, 8, 11, 12, 13, 15, 18, 19, 27, 31, 36, 39, 43, 48)
+    val WHEEL_EXCLUDES = setOf(7, 8, 11, 12, 13, 15, 18, 19, 27, 31, 36, 37, 39, 43, 48)
 
     /** Display order for the rules reference. */
     val TIMINGS = listOf(
