@@ -154,7 +154,7 @@ Starting scores follow the pars, so a par round needs no tapping at all.
 
 ## Deviations from the spec
 
-Three, all decided deliberately:
+Four, all decided deliberately:
 
 1. **Stack.** The spec says Expo / React Native. Built as native Android + a separate web app
    instead, per the brief. The trade is two codebases rather than one; they're kept honest by
@@ -166,6 +166,9 @@ Three, all decided deliberately:
    be unrecoverable, so a locked hole can be unlocked. It refunds the draw that hole granted,
    floored at zero; cards already drawn stay in hand, which matches the app's honour-system
    stance everywhere else.
+4. **No colour-coding.** The spec calls per-function card colours "the main visual system";
+   they were built, then removed once per-card artwork became the plan — the art will carry
+   card identity, and interim cards show neutral kind/timing tags instead.
 
 Scores default to the hole's par, so a par round needs no tapping at all.
 

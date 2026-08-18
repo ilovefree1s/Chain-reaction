@@ -275,6 +275,74 @@ private fun DrawScope.drawNeonIcon(icon: NeonIcon) {
     }
 }
 
+/** Orange selected-state variant of [neonPanel] — for the picked row in a list. */
+fun Modifier.neonPanelOrange(): Modifier = this
+    .shadow(8.dp, PanelShape, ambientColor = NeonOrange, spotColor = NeonOrange)
+    .clip(PanelShape)
+    .background(Color(0xFF130C05))
+    .border(
+        2.dp,
+        Brush.horizontalGradient(listOf(NeonOrange, Color(0xFFF7791E))),
+        PanelShape,
+    )
+
+/** Full-width secondary action: dark panel, quiet border. */
+@Composable
+fun NeonQuietButton(text: String, modifier: Modifier = Modifier, onClick: () -> Unit) {
+    val shape = RoundedCornerShape(14.dp)
+    Box(
+        modifier
+            .fillMaxWidth()
+            .height(TapTarget)
+            .clip(shape)
+            .background(NeonPanelBg)
+            .border(2.dp, Color(0xFF22304A), shape)
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text.uppercase(),
+            color = NeonBody,
+            fontWeight = FontWeight.ExtraBold,
+            fontSize = 15.sp,
+            letterSpacing = 2.sp,
+        )
+    }
+}
+
+/** A two-state choice chip row member: orange when chosen, quiet when not. */
+@Composable
+fun NeonToggle(text: String, on: Boolean, modifier: Modifier = Modifier, onClick: () -> Unit) {
+    val shape = RoundedCornerShape(14.dp)
+    Box(
+        modifier
+            .height(TapTarget)
+            .then(
+                if (on) {
+                    Modifier
+                        .shadow(8.dp, shape, ambientColor = NeonOrange, spotColor = NeonOrange)
+                        .clip(shape)
+                        .background(Brush.verticalGradient(listOf(Color(0xFFFF9A2E), Color(0xFFF7791E))))
+                } else {
+                    Modifier
+                        .clip(shape)
+                        .background(NeonPanelBg)
+                        .border(2.dp, Color(0xFF22304A), shape)
+                },
+            )
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text.uppercase(),
+            color = if (on) Color.White else NeonBody,
+            fontWeight = FontWeight.ExtraBold,
+            fontSize = 15.sp,
+            letterSpacing = 1.5.sp,
+        )
+    }
+}
+
 /** The full-width primary action: live orange when armed, dark and quiet when not. */
 @Composable
 fun NeonBigButton(

@@ -30,9 +30,7 @@ import com.chainreaction.data.GameCard
 import com.chainreaction.ui.theme.OffWhite
 import com.chainreaction.ui.theme.Panel
 import com.chainreaction.ui.theme.PanelRaised
-import com.chainreaction.ui.theme.Pine
 import com.chainreaction.ui.theme.Sage
-import com.chainreaction.ui.theme.color
 
 /** Minimum comfortable tap target, gloved and mid-round. Well past the 44pt floor. */
 val TapTarget = 56.dp
@@ -47,44 +45,34 @@ fun CardTile(
     modifier: Modifier = Modifier,
     actions: @Composable (() -> Unit)? = null,
 ) {
-    val accent = card.kind.color
     Surface(
         color = Panel,
         shape = RoundedCornerShape(18.dp),
         modifier = modifier.fillMaxWidth(),
     ) {
-        Row(Modifier.height(IntrinsicSize.Min)) {
-            // Colour stripe — the fastest read of what kind of card this is.
-            Box(
-                Modifier
-                    .width(8.dp)
-                    .fillMaxHeight()
-                    .background(accent),
+        Column(Modifier.padding(16.dp)) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Tag(text = card.kind.label.uppercase(), fg = Sage, bg = PanelRaised)
+                Tag(text = card.timing.uppercase(), fg = Sage, bg = PanelRaised)
+            }
+            Spacer(Modifier.height(10.dp))
+            Text(
+                text = card.name,
+                style = MaterialTheme.typography.headlineMedium,
+                color = OffWhite,
             )
-            Column(Modifier.padding(16.dp)) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    Tag(text = card.kind.label.uppercase(), fg = Pine, bg = accent)
-                    Tag(text = card.timing.uppercase(), fg = Sage, bg = PanelRaised)
-                }
-                Spacer(Modifier.height(10.dp))
-                Text(
-                    text = card.name,
-                    style = MaterialTheme.typography.headlineMedium,
-                    color = OffWhite,
-                )
-                Spacer(Modifier.height(6.dp))
-                Text(
-                    text = card.text,
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = Sage,
-                )
-                if (actions != null) {
-                    Spacer(Modifier.height(14.dp))
-                    actions()
-                }
+            Spacer(Modifier.height(6.dp))
+            Text(
+                text = card.text,
+                style = MaterialTheme.typography.bodyLarge,
+                color = Sage,
+            )
+            if (actions != null) {
+                Spacer(Modifier.height(14.dp))
+                actions()
             }
         }
     }

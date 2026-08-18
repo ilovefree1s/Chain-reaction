@@ -122,7 +122,6 @@
                   text-transform: uppercase; }
 
   .card { display: flex; background: var(--panel); border-radius: 18px; overflow: hidden; margin-bottom: 12px; }
-  .card .stripe { width: 8px; flex: 0 0 8px; }
   .card .body { padding: 16px; flex: 1 1 auto; min-width: 0; }
   .tags { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
   .tag { font-size: 13px; font-weight: 900; letter-spacing: 1px; border-radius: 6px;
@@ -132,17 +131,6 @@
   .card p { margin: 0; color: var(--sage); }
   .card .acts { display: flex; gap: 10px; margin-top: 14px; }
   .card .acts button { flex: 1; margin: 0; }
-
-  .k-attack { background: var(--attack); color: var(--pine); }
-  .k-self   { background: var(--self);   color: var(--pine); }
-  .k-dual   { background: var(--dual);   color: var(--pine); }
-  .k-react  { background: var(--react);  color: var(--pine); }
-  .k-group  { background: var(--group);  color: var(--pine); }
-  .s-attack { background: var(--attack); }
-  .s-self   { background: var(--self); }
-  .s-dual   { background: var(--dual); }
-  .s-react  { background: var(--react); }
-  .s-group  { background: var(--group); }
 
   .hint { color: var(--sage); margin: 0 0 12px; }
 
@@ -270,6 +258,42 @@
   .nsavedtag { text-align: center; color: #FF8A1E; font-weight: 900; letter-spacing: 2px;
                font-size: 14px; margin-top: 8px; }
   .nchev { margin-left: auto; color: #4DC3FF; font-size: 28px; font-weight: 900; }
+
+  /* ---- course & pars sheet, neon ---- */
+  .modal.nmodal { background: #05070C; } /* .modal alone would win otherwise */
+  .nmodal h1 { font-style: italic; font-weight: 900; letter-spacing: 2px; color: #F4F8FF;
+               text-shadow: 0 0 14px rgba(63, 169, 255, 0.5); }
+  .nmodal .sub { color: #A9B8D4; }
+  .nmodal .label { color: #4DC3FF; letter-spacing: 3px; }
+  .nmodal .total-par { color: #4DC3FF; }
+  .nmodal .courserow {
+    border: 2px solid transparent; border-radius: 14px;
+    background: linear-gradient(#070B14, #070B14) padding-box,
+                linear-gradient(100deg, #1E6FFF, #3FA9FF 45%, #FF8A1E) border-box;
+    box-shadow: 0 0 14px rgba(30, 111, 255, 0.25);
+  }
+  .nmodal .courserow.sel {
+    background: linear-gradient(#130C05, #130C05) padding-box,
+                linear-gradient(100deg, #FF8A1E, #F7791E) border-box;
+    box-shadow: 0 0 14px rgba(247, 148, 30, 0.35);
+  }
+  .nmodal .cname { color: #F4F8FF; }
+  .nmodal .courserow.sel .cname { color: #FF8A1E; }
+  .nmodal .dim { color: #A9B8D4; }
+  .nmodal .big.primary {
+    background: linear-gradient(180deg, #FF9A2E, #F7791E); color: #fff; border: none;
+    box-shadow: 0 0 16px rgba(247, 148, 30, 0.35);
+  }
+  .nmodal .big.quiet { background: #070B14; color: #A9B8D4; border: 2px solid #22304A; }
+  .nmodal .parcell { background: #061022; border: 2px solid #22304A; }
+  .nmodal .parcell span { color: #5E6C88; }
+  .nmodal .parcell b { color: #F4F8FF; }
+  .nmodal .parcell.off { background: #130C05; border-color: #FF8A1E; }
+  .nmodal .parcell.off b { color: #FF8A1E; }
+  .nmodal input[type=text] { background: #070B14; border: 2px solid #22304A; color: #F4F8FF; }
+  .nmodal input[type=text]:focus { border-color: #FF8A1E; }
+  .nmodal input[type=text]::placeholder { color: #5E6C88; }
+  .nmodal .hint { color: #A9B8D4; }
 
   .backbar { position: relative; display: flex; align-items: center; justify-content: center;
              min-height: 48px; margin-bottom: 4px; }
@@ -766,8 +790,8 @@ function counter(label, value) {
 }
 
 function cardHtml(c, withActions) {
-  return '<div class="card"><div class="stripe s-' + c.kind + '"></div><div class="body">' +
-    '<div class="tags"><span class="tag k-' + c.kind + '">' + c.kind + '</span>' +
+  return '<div class="card"><div class="body">' +
+    '<div class="tags"><span class="tag timing">' + c.kind + '</span>' +
     '<span class="tag timing">' + esc(c.timing) + '</span></div>' +
     '<h3>' + esc(c.name) + '</h3><p>' + esc(c.text) + '</p>' +
     (withActions
@@ -794,13 +818,6 @@ var DRAW_TABLE = [
   ["Last, or tied for last", "2"],
   ["Everyone tied", "1 each"]
 ];
-var KIND_MEANING = {
-  attack: "Played on an opponent",
-  self: "Benefits you",
-  dual: "Self-help or attack, depending on the target",
-  react: "Played in response to another card",
-  group: "Affects everyone"
-};
 
 /* The in-round Rules tab carries everything plus the round-specific actions;
    the menu splits the same content into separate Rules and Cards destinations. */
@@ -864,13 +881,8 @@ function renderRules() {
     return '<div class="npanel nrow center"><div class="nbody" style="flex:1;margin:0">' +
       esc(r[0]) + '</div><div class="nnum">' + r[1] + "</div></div>";
   }).join("");
-  var kinds = Object.keys(KIND_MEANING).map(function (k) {
-    return '<div class="npanel nrow center"><span class="tag k-' + k + '">' + k +
-      '</span><span class="nbody" style="margin:0">' + esc(KIND_MEANING[k]) + "</span></div>";
-  }).join("");
   return nheader("RULES") + nsec("How it works") + rules +
-    nsec("Cards drawn at the end of a hole") + table +
-    nsec("What the colours mean") + kinds;
+    nsec("Cards drawn at the end of a hole") + table;
 }
 
 function renderHouseRules() {
@@ -884,14 +896,8 @@ function renderHouseRules() {
       esc(r[0]) + '</span><span class="v">' + r[1] + '</span></div>';
   }).join("");
 
-  var kinds = Object.keys(KIND_MEANING).map(function (k) {
-    return '<div class="panel row" style="gap:12px"><span class="tag k-' + k + '">' + k + '</span>' +
-      '<span style="color:var(--sage)">' + esc(KIND_MEANING[k]) + '</span></div>';
-  }).join("");
-
   return '<div class="label">How it works</div>' + rules +
-    '<div class="label">Cards drawn at the end of a hole</div>' + table +
-    '<div class="label">What the colours mean</div>' + kinds;
+    '<div class="label">Cards drawn at the end of a hole</div>' + table;
 }
 
 function renderCardLibrary() {
@@ -1040,7 +1046,7 @@ function renderParGrid() {
       (parsUI.name.trim() ? "" : " disabled") + '>Save as course</button>';
   }
 
-  return '<div class="modal"><h1 style="color:var(--off)">COURSE &amp; PARS</h1>' +
+  return '<div class="modal nmodal"><h1>COURSE &amp; PARS</h1>' +
     '<p class="sub">Tap a hole to cycle its par: 3 &rarr; 4 &rarr; 5.</p>' +
     (list.length ? '<div class="label">Saved courses</div>' + saved : "") +
     lengths + editor +

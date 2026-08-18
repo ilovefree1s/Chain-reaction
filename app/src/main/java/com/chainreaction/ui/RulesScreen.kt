@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
@@ -34,7 +33,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.chainreaction.data.CardDeck
-import com.chainreaction.data.CardKind
 import com.chainreaction.data.Rules
 import com.chainreaction.ui.theme.Attack
 import com.chainreaction.ui.theme.OffWhite
@@ -44,7 +42,6 @@ import com.chainreaction.ui.theme.Pine
 import com.chainreaction.ui.theme.React
 import com.chainreaction.ui.theme.Sage
 import com.chainreaction.ui.theme.SelfCard
-import com.chainreaction.ui.theme.color
 
 private val houseRules = listOf(
     "Stroke play" to "Lowest total wins.",
@@ -111,34 +108,6 @@ fun LazyListScope.houseRulesItems() {
         }
     }
 
-    item {
-        Spacer(Modifier.height(8.dp))
-        SectionLabel("What the colours mean")
-    }
-
-    items(CardKind.entries.toList()) { kind ->
-        Row(
-            Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(12.dp))
-                .background(Panel)
-                .padding(14.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            Tag(kind.label.uppercase(), fg = Pine, bg = kind.color)
-            Text(
-                when (kind) {
-                    CardKind.ATTACK -> "Played on an opponent"
-                    CardKind.SELF -> "Benefits you"
-                    CardKind.DUAL -> "Self-help or attack, depending on the target"
-                    CardKind.REACT -> "Played in response to another card"
-                    CardKind.GROUP -> "Affects everyone"
-                },
-                style = MaterialTheme.typography.bodyLarge,
-                color = Sage,
-            )
-        }
-    }
 }
 
 /** All 52 cards, grouped by timing. */
@@ -211,32 +180,6 @@ fun RulesScreen(modifier: Modifier = Modifier, onBack: () -> Unit) {
             }
         }
 
-        // The colour key rides along again — the artwork version had to drop it.
-        NeonSectionLabel("What the colours mean")
-        CardKind.entries.forEach { kind ->
-            Row(
-                Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 10.dp)
-                    .neonPanel()
-                    .padding(14.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Tag(kind.label.uppercase(), fg = Pine, bg = kind.color)
-                Spacer(Modifier.width(12.dp))
-                Text(
-                    when (kind) {
-                        CardKind.ATTACK -> "Played on an opponent"
-                        CardKind.SELF -> "Benefits you"
-                        CardKind.DUAL -> "Self-help or attack, depending on the target"
-                        CardKind.REACT -> "Played in response to another card"
-                        CardKind.GROUP -> "Affects everyone"
-                    },
-                    color = NeonBody,
-                    fontSize = 16.sp,
-                )
-            }
-        }
         Spacer(Modifier.height(28.dp))
     }
 }

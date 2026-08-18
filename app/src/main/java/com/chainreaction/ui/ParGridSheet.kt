@@ -16,10 +16,8 @@ import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -29,6 +27,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -38,20 +40,13 @@ import androidx.compose.ui.window.DialogProperties
 import com.chainreaction.data.Course
 import com.chainreaction.data.Rules
 import com.chainreaction.ui.theme.Attack
-import com.chainreaction.ui.theme.OffWhite
-import com.chainreaction.ui.theme.Panel
-import com.chainreaction.ui.theme.PanelRaised
-import com.chainreaction.ui.theme.Pine
-import com.chainreaction.ui.theme.React
-import com.chainreaction.ui.theme.Sage
-import com.chainreaction.ui.theme.SelfCard
 
 private const val COLUMNS = 6
 
 /**
- * Set every hole's par in one screen. Tapping a cell cycles 3 → 4 → 5, so a course
- * is a handful of taps rather than a trip through eighteen steppers. Anything more
- * exotic than a par 5 is still reachable from the Score screen's ± steppers.
+ * Course & pars, in the neon style. Tapping a cell cycles its par 3 → 4 → 5, so a
+ * course is a handful of taps rather than a trip through eighteen steppers; anything
+ * more exotic is still reachable from the Score screen's ± steppers.
  */
 @Composable
 fun ParGridSheet(
@@ -83,44 +78,40 @@ fun ParGridSheet(
         Box(
             Modifier
                 .fillMaxSize()
-                .background(Pine)
+                .background(NeonBg)
                 .safeDrawingPadding()
-                .padding(20.dp),
+                .padding(horizontal = 16.dp),
         ) {
             Column(
                 Modifier
                     .fillMaxSize()
                     .verticalScroll(rememberScrollState()),
             ) {
+                Spacer(Modifier.height(16.dp))
                 Text(
                     "COURSE & PARS",
-                    style = MaterialTheme.typography.displaySmall,
-                    color = OffWhite,
+                    color = NeonWhite,
+                    fontWeight = FontWeight.Black,
+                    fontStyle = FontStyle.Italic,
+                    fontSize = 28.sp,
+                    letterSpacing = 2.sp,
                 )
                 Spacer(Modifier.height(4.dp))
                 Text(
                     "Tap a hole to cycle its par: 3 → 4 → 5.",
-                    color = Sage,
-                    style = MaterialTheme.typography.bodyLarge,
+                    color = NeonBody,
+                    fontSize = 16.sp,
                 )
 
                 if (courses.isNotEmpty()) {
-                    Spacer(Modifier.height(24.dp))
-                    SectionLabel("Saved courses")
-                    Spacer(Modifier.height(10.dp))
+                    NeonSectionLabel("Saved courses")
                     courses.forEach { course ->
                         val selected = course.name == selectedCourse
                         Column(
                             Modifier
                                 .fillMaxWidth()
-                                .padding(bottom = 8.dp)
-                                .clip(RoundedCornerShape(14.dp))
-                                .background(if (selected) PanelRaised else Panel)
-                                .then(
-                                    if (selected) {
-                                        Modifier.border(2.dp, SelfCard, RoundedCornerShape(14.dp))
-                                    } else Modifier,
-                                ),
+                                .padding(bottom = 10.dp)
+                                .then(if (selected) Modifier.neonPanelOrange() else Modifier.neonPanel()),
                         ) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Column(
@@ -129,22 +120,22 @@ fun ParGridSheet(
                                         .clickable { onLoadCourse(course) }
                                         .padding(14.dp),
                                 ) {
-                                    // Course names carry the tee too, so they need room to breathe.
+                                    // Course names carry the tee too — room to breathe.
                                     Text(
                                         course.name,
-                                        style = MaterialTheme.typography.titleLarge,
-                                        color = if (selected) SelfCard else OffWhite,
+                                        color = if (selected) NeonOrange else NeonWhite,
+                                        fontSize = 19.sp,
+                                        fontWeight = FontWeight.ExtraBold,
                                         maxLines = 2,
                                         overflow = TextOverflow.Ellipsis,
                                     )
                                     Text(
                                         "${course.holeCount} holes · par ${course.totalPar}",
-                                        color = Sage,
-                                        style = MaterialTheme.typography.bodyLarge,
+                                        color = NeonBody,
+                                        fontSize = 15.sp,
                                     )
                                 }
-                                // Courses that ship with the app have no delete — saving over
-                                // the same name is how you correct one.
+                                // Built-ins have no delete — saving over the name corrects one.
                                 if (canDelete(course)) {
                                     Box(
                                         Modifier
@@ -158,20 +149,17 @@ fun ParGridSheet(
                             }
                             // Straight from the list to the tee.
                             if (selected && onPlayCourse != null) {
-                                BigButton(
-                                    text = "Play",
-                                    fill = SelfCard,
-                                    onFill = Pine,
+                                NeonBigButton(
+                                    "Play",
                                     enabled = playEnabled,
-                                    onClick = { onPlayCourse(course) },
                                     modifier = Modifier.padding(horizontal = 12.dp),
-                                )
+                                ) { onPlayCourse(course) }
                                 if (!playEnabled) {
                                     Text(
                                         "Every player needs a name first.",
-                                        color = Sage,
-                                        style = MaterialTheme.typography.bodyLarge,
-                                        modifier = Modifier.padding(horizontal = 14.dp),
+                                        color = NeonBody,
+                                        fontSize = 15.sp,
+                                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 4.dp),
                                     )
                                 }
                                 Spacer(Modifier.height(12.dp))
@@ -180,35 +168,20 @@ fun ParGridSheet(
                     }
                 }
 
-                Spacer(Modifier.height(24.dp))
-                SectionLabel(if (courses.isEmpty()) "Set up a course" else "Or set up a new one")
-                Spacer(Modifier.height(10.dp))
+                NeonSectionLabel(if (courses.isEmpty()) "Set up a course" else "Or set up a new one")
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     listOf(9, 18).forEach { n ->
-                        Box(Modifier.weight(1f)) {
-                            BigButton(
-                                text = "$n holes",
-                                fill = if (holeCount == n) SelfCard else Panel,
-                                onFill = if (holeCount == n) Pine else OffWhite,
-                                onClick = { onHoleCount(n) },
-                            )
-                        }
+                        NeonToggle(
+                            "$n holes",
+                            on = holeCount == n,
+                            modifier = Modifier.weight(1f),
+                        ) { onHoleCount(n) }
                     }
                 }
 
                 // Nothing to edit until we know how long the course is.
                 if (holeCount > 0) {
-                    Spacer(Modifier.height(20.dp))
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        SectionLabel("Pars", Modifier.weight(1f))
-                        Text(
-                            "Total ${pars.sum()}",
-                            color = React,
-                            fontSize = 15.sp,
-                            fontWeight = FontWeight.Black,
-                        )
-                    }
-                    Spacer(Modifier.height(10.dp))
+                    NeonSectionLabel("Pars · total ${pars.sum()}")
 
                     (0 until holeCount).chunked(COLUMNS).forEach { rowHoles ->
                         Row(
@@ -226,7 +199,7 @@ fun ParGridSheet(
                                     onParsChange(pars.cycledAt(hole))
                                 }
                             }
-                            // Keep the last row's cells the same width as every other row's.
+                            // Keep the last row's cells the same width as the others'.
                             repeat(COLUMNS - rowHoles.size) {
                                 Spacer(Modifier.weight(1f))
                             }
@@ -234,54 +207,44 @@ fun ParGridSheet(
                     }
 
                     Spacer(Modifier.height(6.dp))
-                    BigButton(
-                        text = "Reset to all par 3",
-                        fill = Panel,
-                        onFill = OffWhite,
-                        onClick = { onParsChange(List(holeCount) { Rules.DEFAULT_PAR }) },
-                    )
+                    NeonQuietButton("Reset to all par 3") {
+                        onParsChange(List(holeCount) { Rules.DEFAULT_PAR })
+                    }
 
-                    Spacer(Modifier.height(24.dp))
-                    SectionLabel("Save for next time")
+                    NeonSectionLabel("Save for next time")
+                    Box(
+                        Modifier
+                            .fillMaxWidth()
+                            .height(TapTarget)
+                            .neonPanel()
+                            .padding(horizontal = 16.dp),
+                        contentAlignment = Alignment.CenterStart,
+                    ) {
+                        if (name.isEmpty()) {
+                            Text("Course name", color = NeonDim, fontSize = 18.sp)
+                        }
+                        BasicTextField(
+                            value = name,
+                            onValueChange = { name = it },
+                            singleLine = true,
+                            textStyle = TextStyle(
+                                color = NeonWhite,
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Medium,
+                            ),
+                            cursorBrush = SolidColor(NeonOrange),
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
                     Spacer(Modifier.height(10.dp))
-                    OutlinedTextField(
-                        value = name,
-                        onValueChange = { name = it },
-                        singleLine = true,
-                        placeholder = { Text("Course name", color = Sage.copy(alpha = 0.6f)) },
-                        textStyle = MaterialTheme.typography.bodyLarge,
-                        shape = RoundedCornerShape(14.dp),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedTextColor = OffWhite,
-                            unfocusedTextColor = OffWhite,
-                            focusedContainerColor = Panel,
-                            unfocusedContainerColor = Panel,
-                            focusedBorderColor = SelfCard,
-                            unfocusedBorderColor = PanelRaised,
-                            cursorColor = SelfCard,
-                        ),
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                    Spacer(Modifier.height(10.dp))
-                    BigButton(
-                        text = "Save as course",
-                        fill = SelfCard,
-                        onFill = Pine,
-                        enabled = name.isNotBlank(),
-                        onClick = {
-                            onSaveCourse(name.trim())
-                            name = ""
-                        },
-                    )
+                    NeonBigButton("Save as course", enabled = name.isNotBlank()) {
+                        onSaveCourse(name.trim())
+                        name = ""
+                    }
                 }
 
                 Spacer(Modifier.height(24.dp))
-                BigButton(
-                    text = "Done",
-                    fill = Panel,
-                    onFill = OffWhite,
-                    onClick = onDismiss,
-                )
+                NeonQuietButton("Done", onClick = onDismiss)
                 Spacer(Modifier.height(24.dp))
             }
         }
@@ -290,31 +253,34 @@ fun ParGridSheet(
 
 @Composable
 private fun ParCell(hole: Int, par: Int, modifier: Modifier = Modifier, onClick: () -> Unit) {
-    // Anything off the default reads as raised, so a glance finds the long holes.
+    // Anything off the default reads as lit orange, so a glance finds the long holes.
     val isDefault = par == Rules.DEFAULT_PAR
+    val shape = RoundedCornerShape(12.dp)
     Column(
         modifier
             .height(64.dp)
-            .clip(RoundedCornerShape(12.dp))
-            .background(if (isDefault) Panel else PanelRaised)
+            .clip(shape)
+            .background(if (isDefault) NeonChipBg else Color(0xFF130C05))
+            .border(2.dp, if (isDefault) Color(0xFF22304A) else NeonOrange, shape)
             .clickable(onClick = onClick),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
         Text(
             "${hole + 1}",
-            color = Sage,
+            color = NeonDim,
             fontSize = 12.sp,
             fontWeight = FontWeight.Black,
         )
         Text(
             "$par",
-            color = if (isDefault) OffWhite else SelfCard,
+            color = if (isDefault) NeonWhite else NeonOrange,
             fontSize = 24.sp,
             fontWeight = FontWeight.Black,
         )
     }
 }
 
+/** 3 → 4 → 5 → 3. Values outside the cycle (set from the Score screen) snap back to 3. */
 private fun List<Int>.cycledAt(index: Int): List<Int> =
     toMutableList().also { it[index] = Course.nextPar(getOrElse(index) { Rules.DEFAULT_PAR }) }
