@@ -184,6 +184,10 @@
   .faceinner { width: 100%; max-width: 440px; }
   .cardface { width: 100%; display: block; border-radius: 18px;
               box-shadow: 0 0 22px rgba(30, 111, 255, 0.3); }
+  .facenav { display: flex; align-items: center; justify-content: center; gap: 26px;
+             margin-top: 10px; color: #5E6C88; font-weight: 700; font-size: 14px; }
+  .facenav span[data-act] { font-size: 30px; line-height: 1; padding: 0 14px;
+                            color: #4DC3FF; cursor: pointer; }
   .artacts .confirmq { margin-top: 0; }
   .card .acts button { flex: 1; margin: 0; }
 
@@ -1190,8 +1194,31 @@ function renderFaceModal() {
         '<button class="big primary" data-act="resolve" data-i="' + c.id + '">Play</button>' +
         '<button class="big raised" data-act="askDiscard" data-i="' + c.id + '">Discard</button></div>';
   }
-  return '<div class="modal facemodal"><div class="faceinner">' + face + acts +
+  // Swiping left/right (or the chevrons) walks the rest of the hand — whole
+  // pages only, so showing the table one card still shows exactly one.
+  var nav = "";
+  if (inHand && state.hand.length > 1) {
+    var at = state.hand.indexOf(c.id);
+    nav = '<div class="facenav">' +
+      '<span data-act="prevCard"' + (at > 0 ? "" : ' style="visibility:hidden"') + '>&lsaquo;</span>' +
+      '<span class="facepos">' + (at + 1) + ' / ' + state.hand.length + '</span>' +
+      '<span data-act="nextCard"' + (at < state.hand.length - 1 ? "" : ' style="visibility:hidden"') + '>&rsaquo;</span>' +
+      '</div>';
+  }
+  return '<div class="modal facemodal"><div class="faceinner">' + face + nav + acts +
     '<button class="big quiet" data-act="closeView" style="margin-top:12px">Close</button></div></div>';
+}
+
+/* Step the enlarged view to a neighbouring hand card. Clamped at the ends. */
+function stepViewCard(dir) {
+  if (viewCard == null || !state) return;
+  var at = state.hand.indexOf(viewCard);
+  if (at < 0) return;
+  var next = at + dir;
+  if (next < 0 || next >= state.hand.length) return;
+  viewCard = state.hand[next];
+  confirmDiscard = null;
+  render();
 }
 
 /* ---------- double wheel ---------- */
@@ -1476,6 +1503,19 @@ function syncButton(selector, enabled) {
   if (btn) btn.disabled = !enabled;
 }
 
+var faceTouchX = null;
+app.addEventListener("touchstart", function (e) {
+  if (viewCard == null) return;
+  faceTouchX = e.touches[0].clientX;
+}, { passive: true });
+app.addEventListener("touchend", function (e) {
+  if (viewCard == null || faceTouchX == null) return;
+  var dx = e.changedTouches[0].clientX - faceTouchX;
+  faceTouchX = null;
+  if (Math.abs(dx) < 50) return;
+  stepViewCard(dx < 0 ? 1 : -1);
+}, { passive: true });
+
 app.addEventListener("click", function (e) {
   var el = e.target.closest("[data-act]");
   if (!el) return;
@@ -1638,6 +1678,8 @@ app.addEventListener("click", function (e) {
     case "askDiscard": confirmDiscard = i; render(); break;
     case "keepCard": confirmDiscard = null; render(); break;
     case "viewCard": viewCard = i; render(); break;
+    case "prevCard": stepViewCard(-1); break;
+    case "nextCard": stepViewCard(1); break;
     case "closeView": viewCard = null; confirmDiscard = null; render(); break;
 
     case "openWheel": {

@@ -115,11 +115,13 @@ fun HandScreen(
     }
 
     // Tap-to-enlarge: the full face, with Play / Discard right there.
+    // Swiping left and right walks the rest of the hand.
     enlarged?.let { id ->
         CardFaceDialog(
-            card = CardDeck.card(id),
+            cardIds = state.hand,
+            initialCardId = id,
             onDismiss = { enlarged = null },
-            onResolve = { onResolve(id) },
+            onResolve = onResolve,
         )
     }
 }

@@ -15,12 +15,15 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CutCornerShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -215,16 +218,44 @@ private fun DrawScope.drawKindGlyph(kind: CardKind) {
     }
 }
 
+/** Real artwork when it exists, the code-drawn face otherwise. */
+@Composable
+private fun CardFaceOrArt(card: GameCard) {
+    val context = LocalContext.current
+    val artId = remember(card.id) {
+        context.resources.getIdentifier(
+            "card_%02d".format(card.id),
+            "drawable",
+            context.packageName,
+        )
+    }
+    if (artId != 0) {
+        Image(
+            painter = painterResource(artId),
+            contentDescription = "${card.name}. ${card.text}",
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(26.dp)),
+            contentScale = ContentScale.FillWidth,
+        )
+    } else {
+        CardFace(card)
+    }
+}
+
 /**
- * Full-screen viewer for one card: real artwork when it exists, the code-drawn
- * face otherwise. [onResolve] non-null adds Play / Discard (with the usual
- * discard confirmation) for a card being viewed from the hand.
+ * Full-screen viewer, paged: swipe left and right to walk the whole list
+ * (usually the hand). Swipes turn whole pages — nothing of the neighbouring
+ * cards peeks out, so showing the table one card still shows exactly one.
+ * [onResolve] non-null adds Play / Discard (with the usual confirmation),
+ * acting on whichever card is in front.
  */
 @Composable
 fun CardFaceDialog(
-    card: GameCard,
+    cardIds: List<Int>,
+    initialCardId: Int,
     onDismiss: () -> Unit,
-    onResolve: (() -> Unit)? = null,
+    onResolve: ((Int) -> Unit)? = null,
 ) {
     Dialog(
         onDismissRequest = onDismiss,
@@ -233,15 +264,13 @@ fun CardFaceDialog(
             decorFitsSystemWindows = false,
         ),
     ) {
+        val pagerState = rememberPagerState(
+            initialPage = cardIds.indexOf(initialCardId).coerceAtLeast(0),
+        ) { cardIds.size }
         var confirmingDiscard by remember { mutableStateOf(false) }
-        val context = LocalContext.current
-        val artId = remember(card.id) {
-            context.resources.getIdentifier(
-                "card_%02d".format(card.id),
-                "drawable",
-                context.packageName,
-            )
-        }
+        // A half-typed discard shouldn't follow you to the next card.
+        LaunchedEffect(pagerState.currentPage) { confirmingDiscard = false }
+        val card = CardDeck.card(cardIds[pagerState.currentPage])
 
         Box(
             Modifier
@@ -256,17 +285,23 @@ fun CardFaceDialog(
                     .verticalScroll(rememberScrollState()),
             ) {
                 Spacer(Modifier.height(16.dp))
-                if (artId != 0) {
-                    Image(
-                        painter = painterResource(artId),
-                        contentDescription = "${card.name}. ${card.text}",
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(26.dp)),
-                        contentScale = ContentScale.FillWidth,
+                HorizontalPager(
+                    state = pagerState,
+                    pageSpacing = 24.dp,
+                    verticalAlignment = Alignment.Top,
+                ) { page ->
+                    CardFaceOrArt(CardDeck.card(cardIds[page]))
+                }
+                if (cardIds.size > 1) {
+                    Spacer(Modifier.height(10.dp))
+                    Text(
+                        "‹   ${pagerState.currentPage + 1} / ${cardIds.size}   ›",
+                        color = NeonDim,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth(),
                     )
-                } else {
-                    CardFace(card)
                 }
 
                 Spacer(Modifier.height(16.dp))
@@ -286,7 +321,7 @@ fun CardFaceDialog(
                             }
                             Box(Modifier.weight(1f)) {
                                 NeonBigButton("Discard", enabled = true) {
-                                    onResolve()
+                                    onResolve(card.id)
                                     onDismiss()
                                 }
                             }
@@ -295,7 +330,7 @@ fun CardFaceDialog(
                         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                             Box(Modifier.weight(1f)) {
                                 NeonBigButton("Play", enabled = true) {
-                                    onResolve()
+                                    onResolve(card.id)
                                     onDismiss()
                                 }
                             }
