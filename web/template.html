@@ -180,8 +180,9 @@
               margin-bottom: 4px; }
   .minitext { color: #A9B8D4; font-size: 13px; line-height: 1.35; display: -webkit-box;
               -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
-  .facemodal { display: flex; align-items: flex-start; justify-content: center; }
-  .faceinner { width: 100%; max-width: 440px; }
+  .facemodal { display: flex; }
+  /* margin:auto centres the card cluster when it fits and stays scrollable when not */
+  .faceinner { width: 100%; max-width: 420px; margin: auto; }
   .cardface { width: 100%; display: block; border-radius: 18px;
               box-shadow: 0 0 22px rgba(30, 111, 255, 0.3); }
   .facenav { display: flex; align-items: center; justify-content: center; gap: 26px;

@@ -6,6 +6,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -65,6 +66,8 @@ fun CardFace(card: GameCard, modifier: Modifier = Modifier) {
     Column(
         modifier
             .fillMaxWidth()
+            // A real card: 2.5 x 3.5. The height comes from the width.
+            .aspectRatio(0.72f)
             .shadow(10.dp, shape, ambientColor = NeonBlueDeep, spotColor = NeonBlueDeep)
             .clip(shape)
             .background(NeonPanelBg)
@@ -119,17 +122,29 @@ fun CardFace(card: GameCard, modifier: Modifier = Modifier) {
 
         Spacer(Modifier.height(20.dp))
         KindEmblem(card.kind)
-        Spacer(Modifier.height(20.dp))
 
-        Text(
-            card.text,
-            color = NeonBody,
-            fontSize = 17.sp,
-            lineHeight = 24.sp,
-            textAlign = TextAlign.Center,
-        )
+        // The wordiest cards shrink a step rather than bursting the card.
+        val bodySize = when {
+            card.text.length > 240 -> 14.sp
+            card.text.length > 160 -> 15.sp
+            else -> 17.sp
+        }
+        Box(
+            Modifier
+                .weight(1f)
+                .fillMaxWidth()
+                .padding(vertical = 12.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                card.text,
+                color = NeonBody,
+                fontSize = bodySize,
+                lineHeight = bodySize * 1.4f,
+                textAlign = TextAlign.Center,
+            )
+        }
 
-        Spacer(Modifier.height(22.dp))
         Row(
             Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -283,6 +298,8 @@ fun CardFaceDialog(
                 Modifier
                     .fillMaxSize()
                     .verticalScroll(rememberScrollState()),
+                // Centred: the empty space splits above and below the card.
+                verticalArrangement = Arrangement.Center,
             ) {
                 Spacer(Modifier.height(16.dp))
                 HorizontalPager(
