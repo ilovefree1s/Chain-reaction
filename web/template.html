@@ -1145,8 +1145,8 @@ function cardFaceSvg(c) {
     ' 260,' + (octTop + 54) + '" fill="#061022" stroke="url(#facechip)" stroke-width="5"/>' +
     kindGlyph(c.kind, 360, octTop + 100);
 
-  var textLines = wrapWords(c.text, 44);
-  var bf = textLines.length > 7 ? 24 : 27;
+  var textLines = wrapWords(c.text, 40);
+  var bf = textLines.length > 7 ? 27 : 30;
   var ty = octTop + 250;
   var body = textLines.map(function (l) {
     var s = '<text x="360" y="' + ty + '" text-anchor="middle" fill="#A9B8D4" font-size="' + bf + '">' +

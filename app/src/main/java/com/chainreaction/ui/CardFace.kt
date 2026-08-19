@@ -125,9 +125,9 @@ fun CardFace(card: GameCard, modifier: Modifier = Modifier) {
 
         // The wordiest cards shrink a step rather than bursting the card.
         val bodySize = when {
-            card.text.length > 240 -> 14.sp
-            card.text.length > 160 -> 15.sp
-            else -> 17.sp
+            card.text.length > 240 -> 16.sp
+            card.text.length > 160 -> 17.sp
+            else -> 19.sp
         }
         Box(
             Modifier
