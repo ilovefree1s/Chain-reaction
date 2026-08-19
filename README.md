@@ -173,9 +173,9 @@ Five, all decided deliberately:
    The draw rule generalises unchanged — "middle" is anyone neither outright best nor outright
    worst — and the name wheel spins over whoever is actually in the round.
 3. **Unlock.** Not in the spec. A mis-tapped "Lock hole & draw" on hole 3 of 18 would otherwise
-   be unrecoverable, so a locked hole can be unlocked. It refunds the draw that hole granted,
-   floored at zero; cards already drawn stay in hand, which matches the app's honour-system
-   stance everywhere else.
+   be unrecoverable, so a locked hole can be unlocked to fix its scores. A hole only ever
+   deals cards the FIRST time it's locked — unlocking keeps what was dealt and re-locking
+   grants nothing new, so the lock/unlock cycle can't farm cards.
 4. **No colour-coding.** The spec calls per-function card colours "the main visual system";
    they were built, then removed once per-card artwork became the plan — the art will carry
    card identity, and interim cards show neutral kind/timing tags instead.

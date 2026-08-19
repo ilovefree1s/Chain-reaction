@@ -205,9 +205,31 @@ class DrawRuleTest {
     }
 
     @Test
-    fun `unlocking refunds only draws still owed`() {
-        // A full hand blocks the lock's auto-draw, so those stay owed —
-        // and unlocking refunds them.
+    fun `a hole only deals cards the first time it is locked`() {
+        var state = GameState.newRound(listOf("A", "B", "C"), meIndex = 0, holeCount = 9)
+        state = state.withScoreDelta(hole = 0, player = 0, delta = 2)
+        val startHand = state.hand.size
+
+        state = state.lockAndAdvance()
+        assertEquals(startHand + 3, state.hand.size)
+
+        state = state.unlock(0)
+        assertEquals("cards stay after unlock", startHand + 3, state.hand.size)
+        assertEquals(0, state.owed)
+
+        state = state.unlock(0).lockAndAdvance()
+        assertEquals("re-lock deals nothing", startHand + 3, state.hand.size)
+        assertEquals(0, state.owed)
+        assertEquals(
+            CardDeck.ALL.size,
+            state.hand.size + state.deck.size + state.discard.size,
+        )
+    }
+
+    @Test
+    fun `a capped grant survives unlock — granted is granted`() {
+        // A full hand blocks the lock's auto-draw; those cards stay owed
+        // through unlock and re-lock, and are never granted twice.
         var state = stateWith(
             hand = CardDeck.ALL.take(Rules.HAND_CAP).map { it.id },
             deck = CardDeck.ALL.drop(Rules.HAND_CAP).map { it.id },
@@ -220,12 +242,10 @@ class DrawRuleTest {
         assertEquals(Rules.HAND_CAP, state.hand.size)
 
         state = state.unlock(0)
-        assertEquals(0, state.owed)
-        assertTrue(!state.locked[0])
-        assertEquals(0, state.currentHole)
+        assertEquals("no refund — the deal already happened", 3, state.owed)
 
-        // Cards already in hand are never clawed back.
-        assertEquals(Rules.HAND_CAP, state.hand.size)
+        state = state.lockAndAdvance()
+        assertEquals("re-lock grants nothing new", 3, state.owed)
     }
 
     @Test

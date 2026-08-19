@@ -172,7 +172,11 @@ fun ScoreScreen(
             NeonBigButton("Lock hole & draw", enabled = true, onClick = onLock)
             Spacer(Modifier.height(8.dp))
             Text(
-                "Locking gives you ${state.drawForHole(hole)} card(s).",
+                if (state.wasDealt(hole)) {
+                    "Already dealt — locking again gives no new cards."
+                } else {
+                    "Locking gives you ${state.drawForHole(hole)} card(s)."
+                },
                 color = NeonBody,
                 fontSize = 16.sp,
             )

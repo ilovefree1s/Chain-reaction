@@ -23,6 +23,8 @@ data class GameState(
     val deck: List<Int>,
     val discard: List<Int>,
     val owed: Int,
+    /** Holes that have dealt their draw. A hole only ever deals once. */
+    val dealt: List<Boolean> = emptyList(),
     /** The course being played, when one was chosen rather than pars set by hand. */
     val courseName: String? = null,
 ) {
@@ -63,6 +65,13 @@ data class GameState(
 
     val canDraw: Boolean get() = owed > 0 && !handIsFull && (deck.isNotEmpty() || discard.isNotEmpty())
 
+    fun wasDealt(hole: Int): Boolean = dealt.getOrElse(hole) { false }
+
+    private fun withDealt(hole: Int): List<Boolean> {
+        val base = if (dealt.size == holeCount) dealt else List(holeCount) { false }
+        return base.replaceAt(hole, true)
+    }
+
     // ---- transitions -----------------------------------------------------
 
     fun withHole(hole: Int): GameState =
@@ -85,7 +94,10 @@ data class GameState(
      * Freeze the hole, resolve the local player's draw, and move to the next
      * hole. Draws land in hand immediately — nothing banks between holes, so
      * the hand cap keeps its teeth. Only what the cap blocks stays owed, and
-     * becomes drawable the moment a discard makes room. On the final hole the
+     * becomes drawable the moment a discard makes room.
+     *
+     * A hole only ever deals ONCE: unlocking and re-locking grants nothing
+     * new, so the lock/unlock cycle can't farm cards. On the final hole the
      * round simply completes and stays put.
      */
     fun lockAndAdvance(): GameState {
@@ -93,8 +105,9 @@ data class GameState(
         if (locked[hole]) return this
         var next = copy(
             locked = locked.replaceAt(hole, true),
-            owed = owed + drawForHole(hole),
+            owed = if (wasDealt(hole)) owed else owed + drawForHole(hole),
             currentHole = (hole + 1).coerceAtMost(holeCount - 1),
+            dealt = withDealt(hole),
         )
         while (next.canDraw) next = next.withDraw()
         return next
@@ -102,14 +115,14 @@ data class GameState(
 
     /**
      * Undo a lock — for the mis-tap that would otherwise ruin a round.
-     * Refunds the draw that hole granted, floored at zero: any cards already
-     * drawn stay in hand, which matches the app's honour-system stance elsewhere.
+     * Scores reopen; the cards stay exactly where they are. The hole's deal
+     * already happened and will not happen again, so there is nothing to
+     * refund and nothing to farm.
      */
     fun unlock(hole: Int): GameState {
         if (!locked[hole]) return this
         return copy(
             locked = locked.replaceAt(hole, false),
-            owed = (owed - drawForHole(hole)).coerceAtLeast(0),
             currentHole = hole,
         )
     }
@@ -157,6 +170,7 @@ data class GameState(
         put("deck", deck.toJsonArray())
         put("discard", discard.toJsonArray())
         put("owed", owed)
+        put("dealt", JSONArray().apply { (0 until holeCount).forEach { put(dealt.getOrElse(it) { false }) } })
         if (courseName != null) put("courseName", courseName)
     }.toString()
 
@@ -214,6 +228,12 @@ data class GameState(
                     deck = o.getJSONArray("deck").toIntList(),
                     discard = o.getJSONArray("discard").toIntList(),
                     owed = o.getInt("owed"),
+                    // Old saves predate the dealt list — a locked hole has dealt.
+                    dealt = o.optJSONArray("dealt")?.let { arr ->
+                        List(arr.length()) { arr.getBoolean(it) }
+                    } ?: o.getJSONArray("locked").let { arr ->
+                        List(arr.length()) { arr.getBoolean(it) }
+                    },
                     // Optional, so rounds saved before courses were named still load.
                     courseName = o.optString("courseName").takeIf { it.isNotBlank() },
                 )
