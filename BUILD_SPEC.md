@@ -176,7 +176,9 @@ Suggested palette: deep pine ground (`#0C1A14`), panels (`#132A21`), muted sage 
     { "id": 53, "timing": "Before tee shot", "kind": "attack", "name": "Bag Exchange!", "text": "Pick a player to swap bags with. Swap back after the first bogey by either player." },
     { "id": 54, "timing": "Before shot", "kind": "self", "name": "BIG BLUFF", "text": "Pick up your disc and throw your next shot from anyone else's disc, with them. If someone calls you out, you can claim you're holding this card even if you aren't. If they believe you, nothing happens. If they call your bluff and you have it, they take +1 stroke. If they call it and you don't, you take +2 strokes and they take -1." },
     { "id": 55, "timing": "After throw", "kind": "gift", "name": "Buddy Buddy", "text": "Bless someone with a free mulligan after a bad throw." },
-    { "id": 56, "timing": "After throw", "kind": "gift", "name": "Doesn't Look OB to Me", "text": "Play on a shot that just went OB. Instead of actually being OB (or in a hazard) they can just play it where it lies, with no penalty at all." }
+    { "id": 56, "timing": "After throw", "kind": "gift", "name": "Doesn't Look OB to Me", "text": "Play on a shot that just went OB. Instead of actually being OB (or in a hazard) they can just play it where it lies, with no penalty at all." },
+    { "id": 57, "timing": "Before tee shot", "kind": "gift", "name": "Lefty Off the Box", "text": "Allow a player to tee off left handed for free. Their first throw after that is their real tee shot." },
+    { "id": 58, "timing": "Before shot", "kind": "gift", "name": "That's Definitely a Gimme", "text": "Allow a player to pick up a putt as a gimme, as long as it's inside C1. They definitely woulda made it." }
   ]
 }
 ```
