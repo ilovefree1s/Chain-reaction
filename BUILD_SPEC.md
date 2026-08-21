@@ -15,7 +15,7 @@ If a PWA is easier to sideload, that's acceptable — but it must work offline, 
 - **Stroke play.** Lowest total wins.
 - **Starting hand:** 4 cards, dealt at round start.
 - **Hand cap:** 7. Cannot draw past it — must discard first.
-- **Each player has their own 54-card deck**, shuffled independently. Duplicate cards across players are expected and fine.
+- **Each player has their own 55-card deck**, shuffled independently. Duplicate cards across players are expected and fine.
 - **Played and discarded cards** go to that player's own discard pile. Reshuffle the discard back into the deck if the deck ever empties.
 - **Max 2 cards may be played on any one player per hole.** The app does not enforce this — players track it themselves — but show it in an in-app rules screen.
 
@@ -72,7 +72,7 @@ That named player is the **only one exempt**. Everyone else, including the playe
 **Exclude card ids 12, 18, and 27** from the wheel pool only — they're reaction cards with nothing to react to when drawn this way. They remain fully playable as normal cards.
 
 ### 5. Rules reference
-Static screen: the rules above, plus a browsable list of all 54 cards grouped by timing.
+Static screen: the rules above, plus a browsable list of all 55 cards grouped by timing.
 
 ## Design direction
 
@@ -87,6 +87,7 @@ Color-code cards by function — this is the main visual system:
 | `dual` | works either as self-help or as an attack, depending on target |
 | `react` | played in response to another card |
 | `group` | affects everyone |
+| `gift` | played on another player to help them |
 
 Suggested palette: deep pine ground (`#0C1A14`), panels (`#132A21`), muted sage text (`#8AA79A`), off-white (`#F2F5F1`). Function colors: attack `#FF5A4D`, self `#FFD23F`, dual `#FF57C1`, react `#4DD9E8`, group `#A78BFA`. Condensed heavy display face for card names, plain sans for body.
 
@@ -104,7 +105,9 @@ Suggested palette: deep pine ground (`#0C1A14`), panels (`#132A21`), muted sage 
   "handSize": 4,
   "handCap": 7,
   "maxCardsOnOnePlayerPerHole": 2,
-  "wheelExcludes": [7, 8, 11, 12, 13, 15, 18, 19, 27, 31, 36, 37, 39, 43, 48, 51, 54],
+  "wheelCost": 2,
+  "freeSpinCard": 48,
+  "wheelExcludes": [7, 8, 11, 12, 13, 15, 18, 19, 24, 27, 31, 36, 37, 39, 43, 48, 51, 54],
   "timings": [
     "Before shot",
     "Before tee shot",
@@ -141,7 +144,7 @@ Suggested palette: deep pine ground (`#0C1A14`), panels (`#132A21`), muted sage 
     { "id": 21, "timing": "Before tee shot", "kind": "attack", "name": "It's Like a Stranger Is Doing It!", "text": "Force an opponent to take the upcoming drive with their off hand." },
     { "id": 22, "timing": "Before tee shot", "kind": "attack", "name": "Your Tee Pad Is Over There!", "text": "Use 2 of your discs to mark a new tee for an opponent of your choice, within 10 paces (30 ft) of the original. They tee from it." },
     { "id": 23, "timing": "Before tee shot", "kind": "self", "name": "My Tee Pad Is Over Here!", "text": "Use 2 of your discs to mark a new tee for yourself, within 10 paces (30 ft) of the original. Feeling nice? You may pick 1 player to join you." },
-    { "id": 24, "timing": "Before tee shot", "kind": "attack", "name": "Thief'n", "text": "Steal someone's disc. It's yours to throw for the rest of the round." },
+    { "id": 24, "timing": "Any time", "kind": "attack", "name": "Finders Keepers", "text": "If you pick up a disc a player forgot, play this to keep it for the rest of the round. You have to hold it for a full hole without them asking about it." },
     { "id": 25, "timing": "After throw", "kind": "attack", "name": "Big Ooof, Bud.", "text": "Move an opponent's lie 10 paces (30 ft) in any direction, as long as it isn't out of bounds." },
     { "id": 26, "timing": "After throw", "kind": "self", "name": "Foot Wedge!", "text": "Move your own lie 10 paces (30 ft) in any direction." },
     { "id": 27, "timing": "After card", "kind": "react", "name": "No Way", "text": "Cancel any card just played. That card goes to the discard pile." },
@@ -165,13 +168,14 @@ Suggested palette: deep pine ground (`#0C1A14`), panels (`#132A21`), muted sage 
     { "id": 45, "timing": "Before shot", "kind": "dual", "name": "Shoe Golf", "text": "On yourself: putt with your own shoe at no stroke cost. On another player: they putt with a shoe and it still counts as a stroke." },
     { "id": 46, "timing": "Before shot", "kind": "dual", "name": "Globetrotter Shit", "text": "On yourself: putt behind the back at no stroke cost. On another player: they putt behind the back and it counts as a normal stroke." },
     { "id": 47, "timing": "Before shot", "kind": "dual", "name": "Spin to Win", "text": "Spin rapidly 10 times, then putt within 3 seconds. Free on yourself, a normal stroke on an opponent." },
-    { "id": 48, "timing": "Before tee shot", "kind": "group", "name": "Double Wheel", "text": "Free spin on the Double Wheel. If you get a negative effect, just ignore it." },
+    { "id": 48, "timing": "Before tee shot", "kind": "group", "name": "Double Wheel", "text": "Free spin on the Double Wheel. The name doesn't matter — you choose who gets the benefit or the punishment." },
     { "id": 49, "timing": "Before shot", "kind": "dual", "name": "Aerobie", "text": "On yourself: use an aerobie for your drive. On another player: they drive with the aerobie using their off hand. Normal stroke either way." },
     { "id": 50, "timing": "Any time", "kind": "dual", "name": "Player 2's Turn!", "text": "On yourself: retake any shot for free. On another player: force them to re-throw a shot that was too good." },
     { "id": 51, "timing": "After a hole", "kind": "dual", "name": "Me and You", "text": "On yourself: take the best score made on the hole. On another player: they take the worst score made on the hole." },
     { "id": 52, "timing": "After throw", "kind": "self", "name": "Big Putt!", "text": "If you make a putt from outside C1 while a player still to putt is inside C1, they have to putt with their off hand." },
     { "id": 53, "timing": "Before tee shot", "kind": "attack", "name": "Bag Exchange!", "text": "Pick a player to swap bags with. Swap back after the first bogey by either player." },
-    { "id": 54, "timing": "Before shot", "kind": "self", "name": "BIG BLUFF", "text": "Pick up your disc and throw your next shot from anyone else's disc, with them. If someone calls you out, you can claim you're holding this card even if you aren't. If they believe you, nothing happens. If they call your bluff and you have it, they take +1 stroke. If they call it and you don't, you take +2 strokes and they take -1." }
+    { "id": 54, "timing": "Before shot", "kind": "self", "name": "BIG BLUFF", "text": "Pick up your disc and throw your next shot from anyone else's disc, with them. If someone calls you out, you can claim you're holding this card even if you aren't. If they believe you, nothing happens. If they call your bluff and you have it, they take +1 stroke. If they call it and you don't, you take +2 strokes and they take -1." },
+    { "id": 55, "timing": "After throw", "kind": "gift", "name": "Buddy Buddy", "text": "Bless someone with a free mulligan after a bad throw." }
   ]
 }
 ```
@@ -180,6 +184,8 @@ Suggested palette: deep pine ground (`#0C1A14`), panels (`#132A21`), muted sage 
 
 - Start a round, score 3 holes, force-quit the app, reopen — round state, hand, deck and discard all restored.
 - Come last on a hole → 2 cards owed. Tie for last → still 2. Everyone ties → 1. Win the hole → 0. Double bogey → +1 on top of any of these.
+- Sit on a full hand for several holes without drawing → the owed count never banks up; each hole's deal replaces the last one's leftovers.
+- Tap "Spin the Double Wheel" → asked to pick 2 cards to discard first. Holding fewer than 2 → the button is disabled. Playing card 48 → the wheel opens with nothing else discarded, straight onto the effect wheel with no name spin.
 - Hold 7 cards, come last, try to draw → blocked with a clear message until a card is discarded.
-- Spin the Double Wheel 30 times → no blacklisted card (7, 8, 11, 12, 13, 15, 18, 19, 27, 31, 36, 37, 39, 43, 48, 51, 54) ever appears.
+- Spin the Double Wheel 30 times → no blacklisted card (7, 8, 11, 12, 13, 15, 18, 19, 24, 27, 31, 36, 37, 39, 43, 48, 51, 54) ever appears.
 - Play through 18 holes drawing 2 every hole → deck reshuffles from discard without erroring.

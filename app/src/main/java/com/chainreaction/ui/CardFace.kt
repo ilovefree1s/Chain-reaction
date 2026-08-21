@@ -32,6 +32,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -46,6 +47,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -54,9 +56,12 @@ import com.chainreaction.data.CardDeck
 import com.chainreaction.data.CardKind
 import com.chainreaction.data.GameCard
 
+/** The floor for the shrink-to-fit body text: below this it stops being readable. */
+private val MIN_BODY_SIZE = 11.sp
+
 /**
  * The full card face, drawn entirely from the card's own data — the poster
- * version of a tile. Because it's code, all 54 faces exist automatically and
+ * version of a tile. Because it's code, every face exists automatically and
  * can never drift from the spec. If real artwork lands for a card, the
  * enlarged view shows that instead (see [CardFaceDialog]).
  */
@@ -123,12 +128,18 @@ fun CardFace(card: GameCard, modifier: Modifier = Modifier) {
         Spacer(Modifier.height(20.dp))
         KindEmblem(card.kind)
 
-        // The wordiest cards shrink a step rather than bursting the card.
-        val bodySize = when {
+        // The card is a fixed 2.5 x 3.5, so the words have to fit the space rather
+        // than the space stretching to the words. Start at the size the length
+        // suggests, then step down until it fits — a wordy card used to run on
+        // underneath the footer and lose its last line.
+        val startSize = when {
             card.text.length > 240 -> 16.sp
             card.text.length > 160 -> 17.sp
             else -> 19.sp
         }
+        var bodySize by remember(card.id) { mutableStateOf(startSize) }
+        var fitted by remember(card.id) { mutableStateOf(false) }
+
         Box(
             Modifier
                 .weight(1f)
@@ -142,6 +153,20 @@ fun CardFace(card: GameCard, modifier: Modifier = Modifier) {
                 fontSize = bodySize,
                 lineHeight = bodySize * 1.4f,
                 textAlign = TextAlign.Center,
+                overflow = TextOverflow.Clip,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    // Held back until it fits, so the step-down never flickers on screen.
+                    .drawWithContent { if (fitted) drawContent() },
+                onTextLayout = { result ->
+                    if (!fitted) {
+                        if (result.hasVisualOverflow && bodySize > MIN_BODY_SIZE) {
+                            bodySize *= 0.94f
+                        } else {
+                            fitted = true
+                        }
+                    }
+                },
             )
         }
 
@@ -150,7 +175,15 @@ fun CardFace(card: GameCard, modifier: Modifier = Modifier) {
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Tag(card.kind.label.uppercase())
+            // Plain text, not a filled chip: on a card this size the chip reads as a
+            // solid block sitting on top of the explanation's last line.
+            Text(
+                card.kind.label.uppercase(),
+                color = NeonIce,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Black,
+                letterSpacing = 1.sp,
+            )
             Text(
                 "${card.id} / ${CardDeck.ALL.size}",
                 color = NeonDim,
@@ -229,6 +262,23 @@ private fun DrawScope.drawKindGlyph(kind: CardKind) {
             person(0.26f, 0.52f, 1.0f, NeonIce)
             person(0.74f, 0.52f, 1.0f, NeonIce)
             person(0.5f, 0.66f, 1.15f, NeonOrange)
+        }
+        // A wrapped present: this one is aimed at somebody, but as a favour.
+        CardKind.GIFT -> {
+            drawRect(
+                NeonIce,
+                topLeft = Offset(w * 0.14f, h * 0.36f),
+                size = Size(w * 0.72f, h * 0.50f),
+                style = stroke,
+            )
+            drawLine(
+                NeonOrange,
+                Offset(w * 0.5f, h * 0.36f),
+                Offset(w * 0.5f, h * 0.86f),
+                stroke.width,
+            )
+            drawCircle(NeonOrange, radius = w * 0.11f, center = Offset(w * 0.37f, h * 0.24f), style = stroke)
+            drawCircle(NeonOrange, radius = w * 0.11f, center = Offset(w * 0.63f, h * 0.24f), style = stroke)
         }
     }
 }

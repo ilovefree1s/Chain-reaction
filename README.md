@@ -11,11 +11,11 @@ its own copy of the scorecard, exactly as [BUILD_SPEC.md](BUILD_SPEC.md) describ
 
 ## Where the rules live
 
-[BUILD_SPEC.md](BUILD_SPEC.md) is the source of truth for the 54 cards. The web build reads
+[BUILD_SPEC.md](BUILD_SPEC.md) is the source of truth for the 55 cards. The web build reads
 its card data straight out of the spec's ```json block at build time, so the spec and the web
 app can't drift. The Android build has the same data transcribed into
 [GameCard.kt](app/src/main/java/com/chainreaction/data/GameCard.kt), verified against the spec
-by unit test (`deck is 54 cards with unique ids one through fifty-four`).
+by unit test (`deck is 55 cards with unique ids one through fifty-five`).
 
 The one piece of real logic — how many cards you draw at the end of a hole — is in
 [DrawRule.kt](app/src/main/java/com/chainreaction/data/DrawRule.kt), deliberately free of
@@ -33,8 +33,9 @@ Install on a connected device or running emulator:
 adb install -r app/build/outputs/apk/debug/app-debug.apk
 ```
 
-Run the tests (34 of them, covering the draw table, the hand cap, deck reshuffling, locking,
-finishing a round and the course library):
+Run the tests (44 of them, covering the draw table, the hand cap and its use-it-or-lose-it
+debt, deck reshuffling, locking, finishing a round, the course library and the character
+roster):
 
 ```bash
 ./gradlew testDebugUnitTest
@@ -57,9 +58,9 @@ docs/
   assets/               artwork, copied from the Android drawables
 ```
 
-The build validates the spec's card data (52 unique ids, known kinds, listed timings, wheel
-exclusions that exist) and the course library, and fails loudly rather than shipping a broken
-deck. Images are separate files rather than base64 in the HTML: with 50+ card images inlined
+The build validates the spec's card data (ids running 1-N with no gaps, known kinds, listed timings, wheel
+exclusions that exist), the course library and the character roster, and fails loudly rather
+than shipping a broken deck. Images are separate files rather than base64 in the HTML: with 50+ card images inlined
 the page would be tens of megabytes and slow to first paint.
 
 To test locally — a service worker only registers on https or localhost, so opening
@@ -135,6 +136,35 @@ them. A card with art shows the art as its whole face (Play/Discard still hang o
 bottom in hand); a card without art keeps the interim text tile. Faces can land one at
 a time — no code changes, just rebuild.
 
+## Characters
+
+[shared/characters.json](shared/characters.json) is the pickable roster, read by both builds
+the same way the course library is. A character is **personalisation and nothing else** — a
+face and a name beside a player on the scorecard. There is no ability, no modifier and nothing
+extra for the group to remember at the course.
+
+```json
+{ "id": 9, "name": "Character Name", "color": "#FF8A1E" }
+```
+
+`id` is 1–99 and must be unique; `color` is `#RRGGBB`. `node web/build.js` fails the build on a
+duplicate id, a missing name or a malformed colour.
+
+Faces are drop-in exactly like the card art: put an image named `character_01` … `character_99`
+(the number is the character's id) into `app/src/main/res/drawable-nodpi/` — PNG, WebP or JPEG —
+and both builds pick it up. Until a character has art it draws as its own colour with its
+initial, so the roster is playable before any of it is drawn. Art that matches no character in
+the roster fails the web build rather than shipping unreferenced.
+
+Characters are picked on **Setup**, by tapping the face beside a name, and in
+**Settings → your usual group**, where they save with the group and pre-fill every new round.
+One character per player: a face already taken is shown greyed out with its owner's name, since
+the whole point is telling everyone apart on one scorecard. Tapping your own pick clears it.
+
+An empty roster is a supported state — no picker appears and a round plays on names alone.
+So is a round that predates characters, or a saved character id that has since left the roster:
+both fall back to just the name rather than refusing to load.
+
 ## Courses
 
 [shared/courses.json](shared/courses.json) is the built-in course library. Both builds read
@@ -164,7 +194,7 @@ Starting scores follow the pars, so a par round needs no tapping at all.
 
 ## Deviations from the spec
 
-Five, all decided deliberately:
+Eight, all decided deliberately:
 
 1. **Stack.** The spec says Expo / React Native. Built as native Android + a separate web app
    instead, per the brief. The trade is two codebases rather than one; they're kept honest by
@@ -175,7 +205,8 @@ Five, all decided deliberately:
 3. **Unlock.** Not in the spec. A mis-tapped "Lock hole & draw" on hole 3 of 18 would otherwise
    be unrecoverable, so a locked hole can be unlocked to fix its scores. A hole only ever
    deals cards the FIRST time it's locked — unlocking keeps what was dealt and re-locking
-   grants nothing new, so the lock/unlock cycle can't farm cards.
+   grants nothing new, so the lock/unlock cycle can't farm cards. A re-lock isn't a fresh
+   deal, so it doesn't wipe an outstanding debt either.
 4. **No colour-coding.** The spec calls per-function card colours "the main visual system";
    they were built, then removed once per-card artwork became the plan — the art will carry
    card identity, and interim cards show neutral kind/timing tags instead.
@@ -183,6 +214,21 @@ Five, all decided deliberately:
    the name lands first, so the table knows who is exempt before it learns what from.
    (Card #48's text has since been rewritten as a free spin, so nothing describes the
    old order anymore.)
+6. **Characters.** Not in the spec. A pickable face per player, added purely for
+   personalisation — deliberately cosmetic, so the rules the group has to carry stay exactly
+   as the spec describes them.
+7. **The wheel costs cards.** The Rules screen has always said "discard 2 cards to buy a
+   spin", but nothing enforced it — the wheel was free and unlimited, which made the hand cap
+   beside the point. Tapping *Spin the Double Wheel* now asks which two cards to give up, and
+   the button is disabled when you're holding fewer than two. Playing card #48 still spins
+   for free, since that card's whole text is a free spin — the card is the payment. That
+   spin also skips the name wheel: #48 says the name doesn't matter and hands the choice to
+   whoever spun, so asking for a spin the card just told you to disregard would be theatre.
+8. **Owed cards expire.** Not in the spec. Cards you're owed but can't hold because the hand
+   is at 7 stay owed only until the next hole deals — that hole's draw *replaces* the debt
+   rather than adding to it. Without this, sitting on a full hand for a few holes banks a
+   pile of cards to cash in later, which is exactly what the hand cap exists to prevent. The
+   Hand screen warns while a debt is outstanding.
 
 Scores default to the hole's par, so a par round needs no tapping at all.
 

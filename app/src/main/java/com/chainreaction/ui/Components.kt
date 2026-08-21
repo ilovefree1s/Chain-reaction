@@ -16,10 +16,14 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -32,6 +36,10 @@ import com.chainreaction.data.GameCard
 
 /** Minimum comfortable tap target, gloved and mid-round. Well past the 44pt floor. */
 val TapTarget = 56.dp
+
+/** The tile's kind-and-timing line: where it starts, and how small it may go to fit. */
+private val META_SIZE = 10.sp
+private val META_MIN_SIZE = 7.sp
 
 /**
  * A full-bleed card in the neon frame. If artwork named `card_NN` exists in the
@@ -117,22 +125,20 @@ fun CardTile(
  * Half-width hand tile: tags, name, a taste of the text. No buttons — tapping
  * opens the full face, where Play and Discard live.
  */
-@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
-fun CardMiniTile(card: GameCard, modifier: Modifier = Modifier, onTap: () -> Unit) {
+fun CardMiniTile(
+    card: GameCard,
+    modifier: Modifier = Modifier,
+    selected: Boolean = false,
+    onTap: () -> Unit,
+) {
     Column(
         modifier
-            .neonPanel()
+            .then(if (selected) Modifier.neonPanelOrange() else Modifier.neonPanel())
             .clickable(onClick = onTap)
             .padding(12.dp),
     ) {
-        androidx.compose.foundation.layout.FlowRow(
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp),
-        ) {
-            MiniTag(card.kind.label.uppercase())
-            MiniTag(card.timing.uppercase())
-        }
+        MetaLine(card)
         Spacer(Modifier.height(8.dp))
         Text(
             card.name,
@@ -155,20 +161,38 @@ fun CardMiniTile(card: GameCard, modifier: Modifier = Modifier, onTap: () -> Uni
     }
 }
 
+/**
+ * Kind and timing on one line, always. As a pair of chips on a half-width tile the
+ * longer timings wrapped to a second row and pushed the card's own words out of
+ * sight — and the whole point of the tile is starting to read without opening it.
+ * Plain text rather than chips buys the room; shrinking beats wrapping.
+ */
 @Composable
-private fun MiniTag(text: String) {
+private fun MetaLine(card: GameCard) {
+    var size by remember(card.id) { mutableStateOf(META_SIZE) }
+    var fitted by remember(card.id) { mutableStateOf(false) }
+
     Text(
-        text = text,
+        "${card.kind.label.uppercase()}  ·  ${card.timing.uppercase()}",
         color = NeonIce,
-        fontSize = 10.sp,
+        fontSize = size,
         fontWeight = FontWeight.Black,
         letterSpacing = 0.5.sp,
+        maxLines = 1,
+        softWrap = false,
+        overflow = TextOverflow.Clip,
         modifier = Modifier
-            .clip(RoundedCornerShape(5.dp))
-            .background(NeonChipBg)
-            .padding(horizontal = 6.dp, vertical = 3.dp),
+            .fillMaxWidth()
+            // Held back until it fits, so the step-down never shows.
+            .drawWithContent { if (fitted) drawContent() },
+        onTextLayout = { result ->
+            if (!fitted) {
+                if (result.hasVisualOverflow && size > META_MIN_SIZE) size *= 0.94f else fitted = true
+            }
+        },
     )
 }
+
 
 @Composable
 fun Tag(text: String) {

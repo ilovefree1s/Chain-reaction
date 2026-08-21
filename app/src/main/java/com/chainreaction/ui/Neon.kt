@@ -66,7 +66,7 @@ fun Modifier.neonPanel(): Modifier = this
 
 /** Painted-header stand-in: back control on the left, italic display title centred. */
 @Composable
-fun NeonHeader(title: String, onBack: () -> Unit) {
+fun NeonHeader(title: String, backLabel: String = "Menu", onBack: () -> Unit) {
     Box(
         Modifier
             .fillMaxWidth()
@@ -81,7 +81,7 @@ fun NeonHeader(title: String, onBack: () -> Unit) {
                 .padding(horizontal = 10.dp),
             contentAlignment = Alignment.Center,
         ) {
-            Text("‹  Menu", color = NeonBody, fontWeight = FontWeight.Bold, fontSize = 17.sp)
+            Text("‹  $backLabel", color = NeonBody, fontWeight = FontWeight.Bold, fontSize = 17.sp)
         }
         Text(
             title,
@@ -361,21 +361,38 @@ fun NeonToggle(text: String, on: Boolean, modifier: Modifier = Modifier, onClick
 
 /** Blue sibling of [NeonBigButton], for the wheel's spins — playful, not primary. */
 @Composable
-fun NeonBlueButton(text: String, modifier: Modifier = Modifier, onClick: () -> Unit) {
+fun NeonBlueButton(
+    text: String,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    onClick: () -> Unit,
+) {
     val shape = RoundedCornerShape(14.dp)
     Box(
         modifier
             .fillMaxWidth()
             .height(TapTarget)
-            .shadow(10.dp, shape, ambientColor = NeonBlueDeep, spotColor = NeonBlueDeep)
+            .then(
+                if (enabled) {
+                    Modifier.shadow(10.dp, shape, ambientColor = NeonBlueDeep, spotColor = NeonBlueDeep)
+                } else {
+                    Modifier
+                },
+            )
             .clip(shape)
-            .background(Brush.verticalGradient(listOf(NeonBlue, NeonBlueDeep)))
-            .clickable(onClick = onClick),
+            .background(
+                if (enabled) {
+                    Brush.verticalGradient(listOf(NeonBlue, NeonBlueDeep))
+                } else {
+                    Brush.verticalGradient(listOf(NeonChipBg, NeonChipBg))
+                },
+            )
+            .clickable(enabled = enabled, onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
         Text(
             text.uppercase(),
-            color = Color.White,
+            color = if (enabled) Color.White else NeonDim,
             fontWeight = FontWeight.ExtraBold,
             fontSize = 16.sp,
             letterSpacing = 2.sp,

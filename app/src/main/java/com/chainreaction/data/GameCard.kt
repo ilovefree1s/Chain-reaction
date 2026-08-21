@@ -7,6 +7,7 @@ enum class CardKind(val label: String) {
     DUAL("dual"),
     REACT("react"),
     GROUP("group"),
+    GIFT("gift"),
 }
 
 data class GameCard(
@@ -25,10 +26,19 @@ object Rules {
     const val MAX_PLAYERS = 5
     const val DEFAULT_PAR = 3
 
+    /** Cards you pay to spin the Double Wheel off your own bat. */
+    const val WHEEL_COST = 2
+
+    /**
+     * Card #48 — its whole text is a free spin, so playing it opens the wheel
+     * without the usual [WHEEL_COST]. The card itself is the payment.
+     */
+    const val FREE_SPIN_CARD = 48
+
     // The house blacklist: reaction cards plus everything too situational,
     // too group-shaped or too slow to land as a wheel result — and the Double
     // Wheel itself, so the wheel can never demand another wheel.
-    val WHEEL_EXCLUDES = setOf(7, 8, 11, 12, 13, 15, 18, 19, 27, 31, 36, 37, 39, 43, 48, 51, 54)
+    val WHEEL_EXCLUDES = setOf(7, 8, 11, 12, 13, 15, 18, 19, 24, 27, 31, 36, 37, 39, 43, 48, 51, 54)
 
     /** Display order for the rules reference. */
     val TIMINGS = listOf(
@@ -70,7 +80,7 @@ object CardDeck {
         GameCard(21, "Before tee shot", CardKind.ATTACK, "It's Like a Stranger Is Doing It!", "Force an opponent to take the upcoming drive with their off hand."),
         GameCard(22, "Before tee shot", CardKind.ATTACK, "Your Tee Pad Is Over There!", "Use 2 of your discs to mark a new tee for an opponent of your choice, within 10 paces (30 ft) of the original. They tee from it."),
         GameCard(23, "Before tee shot", CardKind.SELF, "My Tee Pad Is Over Here!", "Use 2 of your discs to mark a new tee for yourself, within 10 paces (30 ft) of the original. Feeling nice? You may pick 1 player to join you."),
-        GameCard(24, "Before tee shot", CardKind.ATTACK, "Thief'n", "Steal someone's disc. It's yours to throw for the rest of the round."),
+        GameCard(24, "Any time", CardKind.ATTACK, "Finders Keepers", "If you pick up a disc a player forgot, play this to keep it for the rest of the round. You have to hold it for a full hole without them asking about it."),
         GameCard(25, "After throw", CardKind.ATTACK, "Big Ooof, Bud.", "Move an opponent's lie 10 paces (30 ft) in any direction, as long as it isn't out of bounds."),
         GameCard(26, "After throw", CardKind.SELF, "Foot Wedge!", "Move your own lie 10 paces (30 ft) in any direction."),
         GameCard(27, "After card", CardKind.REACT, "No Way", "Cancel any card just played. That card goes to the discard pile."),
@@ -94,13 +104,14 @@ object CardDeck {
         GameCard(45, "Before shot", CardKind.DUAL, "Shoe Golf", "On yourself: putt with your own shoe at no stroke cost. On another player: they putt with a shoe and it still counts as a stroke."),
         GameCard(46, "Before shot", CardKind.DUAL, "Globetrotter Shit", "On yourself: putt behind the back at no stroke cost. On another player: they putt behind the back and it counts as a normal stroke."),
         GameCard(47, "Before shot", CardKind.DUAL, "Spin to Win", "Spin rapidly 10 times, then putt within 3 seconds. Free on yourself, a normal stroke on an opponent."),
-        GameCard(48, "Before tee shot", CardKind.GROUP, "Double Wheel", "Free spin on the Double Wheel. If you get a negative effect, just ignore it."),
+        GameCard(48, "Before tee shot", CardKind.GROUP, "Double Wheel", "Free spin on the Double Wheel. The name doesn't matter — you choose who gets the benefit or the punishment."),
         GameCard(49, "Before shot", CardKind.DUAL, "Aerobie", "On yourself: use an aerobie for your drive. On another player: they drive with the aerobie using their off hand. Normal stroke either way."),
         GameCard(50, "Any time", CardKind.DUAL, "Player 2's Turn!", "On yourself: retake any shot for free. On another player: force them to re-throw a shot that was too good."),
         GameCard(51, "After a hole", CardKind.DUAL, "Me and You", "On yourself: take the best score made on the hole. On another player: they take the worst score made on the hole."),
         GameCard(52, "After throw", CardKind.SELF, "Big Putt!", "If you make a putt from outside C1 while a player still to putt is inside C1, they have to putt with their off hand."),
         GameCard(53, "Before tee shot", CardKind.ATTACK, "Bag Exchange!", "Pick a player to swap bags with. Swap back after the first bogey by either player."),
         GameCard(54, "Before shot", CardKind.SELF, "BIG BLUFF", "Pick up your disc and throw your next shot from anyone else's disc, with them. If someone calls you out, you can claim you're holding this card even if you aren't. If they believe you, nothing happens. If they call your bluff and you have it, they take +1 stroke. If they call it and you don't, you take +2 strokes and they take -1."),
+        GameCard(55, "After throw", CardKind.GIFT, "Buddy Buddy", "Bless someone with a free mulligan after a bad throw."),
     )
 
     private val byId: Map<Int, GameCard> = ALL.associateBy { it.id }
@@ -110,6 +121,6 @@ object CardDeck {
 
     fun card(id: Int): GameCard = byId.getValue(id)
 
-    /** A fresh 54-card deck, shuffled. Every player has their own. */
+    /** A fresh deck, shuffled. Every player has their own. */
     fun freshShuffledDeck(): List<Int> = ALL.map { it.id }.shuffled()
 }

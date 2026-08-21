@@ -26,6 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.chainreaction.data.Character
 import com.chainreaction.data.Course
 import com.chainreaction.data.Rules
 import com.chainreaction.data.Settings
@@ -41,6 +42,7 @@ fun SettingsScreen(
     settings: Settings,
     courses: List<Course>,
     canDelete: (Course) -> Boolean,
+    characters: List<Character> = emptyList(),
     modifier: Modifier = Modifier,
     onSettingsChange: (Settings) -> Unit,
     onSaveCourse: (Course) -> Unit,
@@ -53,6 +55,12 @@ fun SettingsScreen(
     var meSlot by remember(settings.defaultMeIndex) {
         mutableIntStateOf(settings.defaultMeIndex.coerceIn(0, slots.lastIndex))
     }
+    // Parallel to [slots]. Saved with the group, so the usual four keep their faces
+    // and a new round starts already personalised.
+    val charSlots = remember(settings.defaultCharacters, settings.defaultPlayers) {
+        List(slots.size) { settings.characterFor(it) ?: NO_CHARACTER }.toMutableStateList()
+    }
+    var picking by remember { mutableIntStateOf(-1) }
     var saved by remember { mutableStateOf(false) }
 
     var coursesOpen by remember { mutableStateOf(false) }
@@ -72,11 +80,12 @@ fun SettingsScreen(
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 16.dp),
     ) {
-        NeonHeader("SETTINGS", onBack)
+        NeonHeader("SETTINGS", onBack = onBack)
 
         NeonSectionLabel("Your usual group")
         Text(
-            "Saved here, these names pre-fill every new round.",
+            if (characters.isEmpty()) "Saved here, these names pre-fill every new round."
+            else "Saved here, these names and faces pre-fill every new round.",
             color = NeonBody,
             fontSize = 16.sp,
             modifier = Modifier.padding(bottom = 12.dp),
@@ -90,6 +99,11 @@ fun SettingsScreen(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
             ) {
+                if (characters.isNotEmpty()) {
+                    CharacterPickerButton(
+                        characters.character(charSlots.getOrNull(i)?.takeIf { it != NO_CHARACTER }),
+                    ) { picking = i }
+                }
                 NeonTextField(
                     value = value,
                     onValueChange = { slots[i] = it; saved = false },
@@ -104,12 +118,14 @@ fun SettingsScreen(
             if (slots.size < Rules.MAX_PLAYERS) {
                 NeonSmallAction("+ Add player") {
                     slots.add("")
+                    charSlots.add(NO_CHARACTER)
                     saved = false
                 }
             }
             if (slots.size > Rules.MIN_PLAYERS) {
                 NeonSmallAction("− Remove") {
                     slots.removeAt(slots.lastIndex)
+                    if (charSlots.size > slots.size) charSlots.removeAt(charSlots.lastIndex)
                     if (meSlot > slots.lastIndex) meSlot = slots.lastIndex
                     saved = false
                 }
@@ -122,6 +138,9 @@ fun SettingsScreen(
                 Settings(
                     defaultPlayers = slots.map { it.trim() },
                     defaultMeIndex = meSlot,
+                    defaultCharacters = slots.indices.map { i ->
+                        charSlots.getOrNull(i)?.takeIf { it != NO_CHARACTER }
+                    },
                 ),
             )
             saved = true
@@ -183,6 +202,22 @@ fun SettingsScreen(
             onSaveCourse = { name -> onSaveCourse(Course(name, holeCount, pars.take(holeCount))) },
             onDeleteCourse = onDeleteCourse,
             onDismiss = { coursesOpen = false },
+        )
+    }
+
+    if (picking in slots.indices) {
+        val slot = picking
+        CharacterSheet(
+            characters = characters,
+            selected = charSlots.getOrNull(slot)?.takeIf { it != NO_CHARACTER },
+            playerName = slots[slot],
+            takenBy = takenBy(charSlots, slots, slot),
+            onPick = { id ->
+                while (charSlots.size <= slot) charSlots.add(NO_CHARACTER)
+                charSlots[slot] = id ?: NO_CHARACTER
+                saved = false
+            },
+            onDismiss = { picking = -1 },
         )
     }
 }

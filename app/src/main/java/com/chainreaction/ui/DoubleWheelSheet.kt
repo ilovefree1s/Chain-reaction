@@ -58,9 +58,18 @@ private val SpinEasing = CubicBezierEasing(0.12f, 0.8f, 0.08f, 1f)
  * name lands its wheel gives way to the verdict line, so the effect wheel is on
  * screen without scrolling. That wheel carries the entire pool — every card not
  * on the house blacklist — so what you see is exactly what can hit.
+ *
+ * [freeSpin] is the spin you get from playing card #48 rather than paying for one.
+ * That card says the name doesn't matter — the spinner hands out the result — so the
+ * name wheel is skipped entirely rather than asking for a spin it just told you to
+ * disregard.
  */
 @Composable
-fun DoubleWheelSheet(players: List<String>, onDismiss: () -> Unit) {
+fun DoubleWheelSheet(
+    players: List<String>,
+    freeSpin: Boolean = false,
+    onDismiss: () -> Unit,
+) {
     Dialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(
@@ -70,7 +79,8 @@ fun DoubleWheelSheet(players: List<String>, onDismiss: () -> Unit) {
             decorFitsSystemWindows = false,
         ),
     ) {
-        var stage by remember { mutableStateOf(Stage.IDLE) }
+        // A free spin starts where the paid one gets to after its first wheel.
+        var stage by remember { mutableStateOf(if (freeSpin) Stage.NAME_DONE else Stage.IDLE) }
         var namePlayer by remember { mutableIntStateOf(-1) } // which player landed
         var nameSeg by remember { mutableIntStateOf(-1) } // which segment landed
 
@@ -138,8 +148,20 @@ fun DoubleWheelSheet(players: List<String>, onDismiss: () -> Unit) {
             ) {
                 // ---- stage 1: the name ----
                 // No title block, and the stage collapses to one orange verdict
-                // line once the name lands — said once, cleanly, up top.
-                if (!nameSettled) {
+                // line once the name lands — said once, cleanly, up top. A free
+                // spin has no stage 1 at all; a line up top says why.
+                if (freeSpin) {
+                    Spacer(Modifier.height(20.dp))
+                    Text(
+                        "Free spin — the name doesn't matter",
+                        color = NeonOrange,
+                        fontSize = 22.sp,
+                        fontWeight = FontWeight.Black,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    Spacer(Modifier.height(4.dp))
+                } else if (!nameSettled) {
                     NeonSectionLabel("Who's exempt")
                     NeonWheel(
                         labels = nameLabels,
@@ -215,19 +237,28 @@ fun DoubleWheelSheet(players: List<String>, onDismiss: () -> Unit) {
                         )
                         Spacer(Modifier.height(8.dp))
                         Text(
-                            if (fateGood) {
-                                "${players[namePlayer]} sits this one out. Everyone else gets " +
-                                    "the good half — the on-yourself version, free."
-                            } else {
-                                "${players[namePlayer]} sits this one out. Everyone else takes " +
-                                    "the bad half — the attack version."
+                            when {
+                                freeSpin && fateGood ->
+                                    "You choose who gets the good half — the on-yourself version, free."
+                                freeSpin ->
+                                    "You choose who takes the bad half — the attack version."
+                                fateGood ->
+                                    "${players[namePlayer]} sits this one out. Everyone else gets " +
+                                        "the good half — the on-yourself version, free."
+                                else ->
+                                    "${players[namePlayer]} sits this one out. Everyone else takes " +
+                                        "the bad half — the attack version."
                             },
                             color = NeonWhite,
                             fontSize = 16.sp,
                         )
                     } else {
                         Text(
-                            "${players[namePlayer]} sits this one out. Everyone else carries out the effect.",
+                            if (freeSpin) {
+                                "You choose who gets the benefit or the punishment."
+                            } else {
+                                "${players[namePlayer]} sits this one out. Everyone else carries out the effect."
+                            },
                             color = NeonWhite,
                             fontSize = 16.sp,
                         )

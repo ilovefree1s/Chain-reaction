@@ -23,6 +23,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.chainreaction.data.Character
 import com.chainreaction.data.GameState
 
 /** "E", "+2", "-1" — how golfers read a score. */
@@ -42,6 +43,7 @@ fun relativeColor(v: Int) = when {
 @Composable
 fun ScoreScreen(
     state: GameState,
+    characters: List<Character> = emptyList(),
     modifier: Modifier = Modifier,
     onHole: (Int) -> Unit,
     onScore: (player: Int, delta: Int) -> Unit,
@@ -110,6 +112,11 @@ fun ScoreScreen(
                     .padding(12.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
+                // Only takes up room once somebody has actually picked a character.
+                characters.character(state.characterFor(i))?.let {
+                    CharacterBadge(it, size = 40.dp)
+                    Spacer(Modifier.width(10.dp))
+                }
                 Column(Modifier.weight(1f)) {
                     Text(
                         name,

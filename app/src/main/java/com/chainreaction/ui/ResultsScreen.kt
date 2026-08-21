@@ -19,6 +19,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.chainreaction.data.Character
 import com.chainreaction.data.GameState
 
 /**
@@ -28,6 +29,7 @@ import com.chainreaction.data.GameState
 @Composable
 fun ResultsScreen(
     state: GameState,
+    characters: List<Character> = emptyList(),
     modifier: Modifier = Modifier,
     onViewScorecard: () -> Unit,
     onFinishRound: () -> Unit,
@@ -87,6 +89,10 @@ fun ResultsScreen(
                     textAlign = TextAlign.Center,
                     modifier = Modifier.width(32.dp),
                 )
+                characters.character(state.characterFor(player))?.let {
+                    CharacterBadge(it, size = 40.dp)
+                    Spacer(Modifier.width(10.dp))
+                }
                 Column(Modifier.weight(1f)) {
                     Text(
                         state.players[player],

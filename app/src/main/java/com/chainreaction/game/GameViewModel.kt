@@ -5,6 +5,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
+import com.chainreaction.data.Character
+import com.chainreaction.data.CharacterLibrary
 import com.chainreaction.data.Course
 import com.chainreaction.data.CourseLibrary
 import com.chainreaction.data.GameRepository
@@ -20,6 +22,9 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
         private set
 
     private val builtInCourses = CourseLibrary.builtIn(app)
+
+    /** The pickable roster. Fixed for the life of the app — it ships in the assets. */
+    val characters: List<Character> = CharacterLibrary.builtIn(app)
 
     var settings by mutableStateOf(repo.loadSettings())
         private set
@@ -43,8 +48,9 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
         holeCount: Int,
         coursePars: List<Int>? = null,
         courseName: String? = null,
+        characterIds: List<Int?> = emptyList(),
     ) {
-        val fresh = GameState.newRound(players, meIndex, holeCount, coursePars, courseName)
+        val fresh = GameState.newRound(players, meIndex, holeCount, coursePars, courseName, characterIds)
         state = fresh
         repo.save(fresh)
     }

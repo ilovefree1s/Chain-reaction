@@ -62,7 +62,8 @@ fun HandScreen(
                         Spacer(Modifier.height(8.dp))
                         Text(
                             "You're owed ${state.owed} card(s) but you're holding the " +
-                                "maximum of ${Rules.HAND_CAP}. Discard, then draw.",
+                                "maximum of ${Rules.HAND_CAP}. Discard, then draw — " +
+                                "locking the next hole loses whatever you haven't taken.",
                             color = NeonBody,
                             fontSize = 16.sp,
                         )
@@ -74,7 +75,25 @@ fun HandScreen(
         }
 
         item {
-            NeonBlueButton("Spin the Double Wheel", onClick = onOpenWheel)
+            // The wheel is no longer free: it costs cards, and you can't pay what
+            // you don't hold. Card #48 is the way round that.
+            val canAfford = state.hand.size >= Rules.WHEEL_COST
+            Column {
+                NeonBlueButton(
+                    "Spin the Double Wheel  (${Rules.WHEEL_COST} cards)",
+                    enabled = canAfford,
+                    onClick = onOpenWheel,
+                )
+                if (!canAfford) {
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        "Spinning costs ${Rules.WHEEL_COST} cards and you're holding " +
+                            "${state.hand.size}. Playing Double Wheel spins for free.",
+                        color = NeonBody,
+                        fontSize = 16.sp,
+                    )
+                }
+            }
         }
 
         item { NeonSectionLabel("Your hand") }

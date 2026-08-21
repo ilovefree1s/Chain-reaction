@@ -26,8 +26,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.chainreaction.data.Character
 import com.chainreaction.data.Course
 import com.chainreaction.data.Rules
+
+/** No character picked. A sentinel rather than null so the list survives rememberSaveable. */
+internal const val NO_CHARACTER = -1
 
 @Composable
 fun SetupScreen(
@@ -35,6 +39,8 @@ fun SetupScreen(
     canDelete: (Course) -> Boolean,
     defaultPlayers: List<String>,
     defaultMeIndex: Int,
+    characters: List<Character>,
+    defaultCharacters: List<Int?>,
     modifier: Modifier = Modifier,
     onSaveCourse: (Course) -> Unit,
     onDeleteCourse: (String) -> Unit,
@@ -44,6 +50,7 @@ fun SetupScreen(
         holeCount: Int,
         pars: List<Int>,
         courseName: String?,
+        characterIds: List<Int?>,
     ) -> Unit,
 ) {
     val names = rememberSaveable(
@@ -60,6 +67,18 @@ fun SetupScreen(
             restore = { it.toMutableStateList() },
         ),
     ) { List(18) { Rules.DEFAULT_PAR }.toMutableStateList() }
+
+    // Parallel to [names]. Pre-filled from the saved group, so the usual four keep
+    // the characters they picked last time.
+    val picks: SnapshotStateList<Int> = rememberSaveable(
+        saver = listSaver<SnapshotStateList<Int>, Int>(
+            save = { it.toList() },
+            restore = { it.toMutableStateList() },
+        ),
+    ) {
+        List(names.size) { defaultCharacters.getOrNull(it) ?: NO_CHARACTER }.toMutableStateList()
+    }
+    var picking by rememberSaveable { mutableIntStateOf(-1) }
 
     var meIndex by rememberSaveable { mutableIntStateOf(defaultMeIndex) }
     // 0 until a course is picked or its length is chosen — the course decides how
@@ -79,6 +98,10 @@ fun SetupScreen(
         courseName = null // hand-edited pars are no longer "that saved course"
     }
 
+    /** The sentinel back to null at the boundary — the round stores "none" as null. */
+    fun chosenCharacters(): List<Int?> =
+        names.indices.map { i -> picks.getOrNull(i)?.takeIf { it != NO_CHARACTER } }
+
     val trimmed = names.map { it.trim() }
     val namesReady = trimmed.all { it.isNotEmpty() } && meIndex in trimmed.indices
     val courseReady = holeCount > 0
@@ -93,7 +116,8 @@ fun SetupScreen(
         // No title block — the back bar already says NEW ROUND.
         NeonSectionLabel("Players")
         Text(
-            "Tap ME on your own name.",
+            if (characters.isEmpty()) "Tap ME on your own name."
+            else "Tap a face to pick a character, and ME on your own name.",
             color = NeonBody,
             fontSize = 16.sp,
             modifier = Modifier.padding(bottom = 12.dp),
@@ -107,6 +131,11 @@ fun SetupScreen(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
             ) {
+                if (characters.isNotEmpty()) {
+                    CharacterPickerButton(
+                        characters.character(picks.getOrNull(i)?.takeIf { it != NO_CHARACTER }),
+                    ) { picking = i }
+                }
                 NeonTextField(
                     value = value,
                     onValueChange = { names[i] = it },
@@ -119,11 +148,15 @@ fun SetupScreen(
 
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             if (names.size < Rules.MAX_PLAYERS) {
-                NeonSmallAction("+ Add player") { names.add("") }
+                NeonSmallAction("+ Add player") {
+                    names.add("")
+                    picks.add(NO_CHARACTER)
+                }
             }
             if (names.size > Rules.MIN_PLAYERS) {
                 NeonSmallAction("− Remove") {
                     names.removeAt(names.lastIndex)
+                    if (picks.size > names.size) picks.removeAt(picks.lastIndex)
                     if (meIndex > names.lastIndex) meIndex = names.lastIndex
                 }
             }
@@ -157,7 +190,7 @@ fun SetupScreen(
 
         Spacer(Modifier.height(36.dp))
         NeonBigButton("Start round", enabled = ready) {
-            onStart(trimmed, meIndex, holeCount, pars.take(holeCount), courseName)
+            onStart(trimmed, meIndex, holeCount, pars.take(holeCount), courseName, chosenCharacters())
         }
         if (!ready) {
             Spacer(Modifier.height(10.dp))
@@ -199,8 +232,32 @@ fun SetupScreen(
             // Straight from the course list into the round, skipping the trip back
             // through Setup's own Start button.
             onPlayCourse = { course ->
-                onStart(trimmed, meIndex, course.holeCount, course.pars, course.name)
+                onStart(trimmed, meIndex, course.holeCount, course.pars, course.name, chosenCharacters())
             },
         )
     }
+
+    if (picking in names.indices) {
+        val slot = picking
+        CharacterSheet(
+            characters = characters,
+            selected = picks.getOrNull(slot)?.takeIf { it != NO_CHARACTER },
+            playerName = names[slot],
+            takenBy = takenBy(picks, names, slot),
+            onPick = { id ->
+                while (picks.size <= slot) picks.add(NO_CHARACTER)
+                picks[slot] = id ?: NO_CHARACTER
+            },
+            onDismiss = { picking = -1 },
+        )
+    }
 }
+
+/**
+ * Who already holds each character, excluding [slot] itself. Two players sharing a face
+ * would defeat the point, so the picker greys those out.
+ */
+internal fun takenBy(picks: List<Int>, names: List<String>, slot: Int): Map<Int, String> =
+    picks.indices
+        .filter { it != slot && picks[it] != NO_CHARACTER }
+        .associate { picks[it] to (names.getOrNull(it)?.trim()?.takeIf(String::isNotEmpty) ?: "Player ${it + 1}") }

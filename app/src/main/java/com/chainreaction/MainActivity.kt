@@ -41,8 +41,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.chainreaction.data.Character
 import com.chainreaction.data.Course
 import com.chainreaction.data.GameState
+import com.chainreaction.data.Rules
 import com.chainreaction.game.GameViewModel
 import com.chainreaction.ui.CardsScreen
 import com.chainreaction.ui.DoubleWheelSheet
@@ -54,6 +56,7 @@ import com.chainreaction.ui.RulesScreen
 import com.chainreaction.ui.ScoreScreen
 import com.chainreaction.ui.SettingsScreen
 import com.chainreaction.ui.SetupScreen
+import com.chainreaction.ui.WheelCostSheet
 import com.chainreaction.ui.NeonBg
 import com.chainreaction.ui.NeonBlue
 import com.chainreaction.ui.NeonBody
@@ -110,11 +113,13 @@ private fun App(vm: GameViewModel = viewModel()) {
                 canDelete = vm::canDelete,
                 defaultPlayers = vm.settings.defaultPlayers,
                 defaultMeIndex = vm.settings.defaultMeIndex,
+                characters = vm.characters,
+                defaultCharacters = vm.settings.defaultCharacters,
                 modifier = content,
                 onSaveCourse = vm::saveCourse,
                 onDeleteCourse = vm::deleteCourse,
-                onStart = { players, me, holes, pars, course ->
-                    vm.startRound(players, me, holes, pars, course)
+                onStart = { players, me, holes, pars, course, picks ->
+                    vm.startRound(players, me, holes, pars, course, picks)
                     go(Screen.ROUND)
                 },
             )
@@ -139,6 +144,7 @@ private fun App(vm: GameViewModel = viewModel()) {
             settings = vm.settings,
             courses = vm.courses,
             canDelete = vm::canDelete,
+            characters = vm.characters,
             modifier = Modifier
                 .background(NeonBg)
                 .safeDrawingPadding(),
@@ -157,6 +163,7 @@ private fun App(vm: GameViewModel = viewModel()) {
                 Round(
                     state = state,
                     vm = vm,
+                    characters = vm.characters,
                     onMenu = { go(Screen.MENU) },
                     onFinishRound = {
                         vm.endRound()
@@ -228,12 +235,17 @@ private fun BackBar(title: String, onBack: () -> Unit) {
 private fun Round(
     state: GameState,
     vm: GameViewModel,
+    characters: List<Character>,
     onMenu: () -> Unit,
     onFinishRound: () -> Unit,
 ) {
     var tabIndex by rememberSaveable { mutableIntStateOf(Tab.SCORE.ordinal) }
     val tab = Tab.entries[tabIndex]
     var wheelOpen by remember { mutableStateOf(false) }
+    // Between tapping Spin and the wheel appearing: choosing which cards to pay with.
+    var payingForWheel by remember { mutableStateOf(false) }
+    // A spin off card #48 skips the name wheel — that card hands the choice to you.
+    var wheelIsFree by remember { mutableStateOf(false) }
 
     // Results take over the Score tab once every hole is locked. Reopening the scorecard
     // is a deliberate act; finishing the round again puts the result back in front.
@@ -276,6 +288,7 @@ private fun Round(
                 Tab.SCORE -> if (state.roundComplete && !showScorecard) {
                     ResultsScreen(
                         state = state,
+                        characters = characters,
                         modifier = content,
                         onViewScorecard = { showScorecard = true },
                         onFinishRound = onFinishRound,
@@ -283,6 +296,7 @@ private fun Round(
                 } else {
                     ScoreScreen(
                         state = state,
+                        characters = characters,
                         modifier = content,
                         onHole = vm::goToHole,
                         onScore = { player, delta -> vm.adjustScore(state.currentHole, player, delta) },
@@ -295,8 +309,16 @@ private fun Round(
                     state = state,
                     modifier = content,
                     onDraw = vm::draw,
-                    onResolve = vm::resolveCard,
-                    onOpenWheel = { wheelOpen = true },
+                    onResolve = { id ->
+                        vm.resolveCard(id)
+                        // Card #48 IS the spin — playing it opens the wheel with no
+                        // further cost, which is exactly what its text promises.
+                        if (id == Rules.FREE_SPIN_CARD) {
+                            wheelIsFree = true
+                            wheelOpen = true
+                        }
+                    },
+                    onOpenWheel = { payingForWheel = true },
                 )
 
                 Tab.RULES -> RoundRulesScreen(
@@ -316,9 +338,23 @@ private fun Round(
         }
     }
 
+    if (payingForWheel) {
+        WheelCostSheet(
+            hand = state.hand,
+            onPaid = { paid ->
+                paid.forEach(vm::resolveCard)
+                payingForWheel = false
+                wheelIsFree = false
+                wheelOpen = true
+            },
+            onDismiss = { payingForWheel = false },
+        )
+    }
+
     if (wheelOpen) {
         DoubleWheelSheet(
             players = state.players,
+            freeSpin = wheelIsFree,
             onDismiss = { wheelOpen = false },
         )
     }

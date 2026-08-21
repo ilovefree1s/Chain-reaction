@@ -1,0 +1,13 @@
+{
+  "_comment": "Pickable characters, shared by the Android app and the web build. Art is drop-in: put character_01.png (the number is the id) into app/src/main/res/drawable-nodpi/ and both builds find it. Until a character has art it draws as its colour with its initial. PLACEHOLDER NAMES — replace with the real roster.",
+  "characters": [
+    { "id": 1, "name": "The Ace", "color": "#FF8A1E" },
+    { "id": 2, "name": "Tree Magnet", "color": "#3FA9FF" },
+    { "id": 3, "name": "Rollercoaster", "color": "#4DC3FF" },
+    { "id": 4, "name": "Sky God", "color": "#B47CFF" },
+    { "id": 5, "name": "Scramble King", "color": "#3FE08A" },
+    { "id": 6, "name": "Bag Mule", "color": "#FFD23F" },
+    { "id": 7, "name": "Deep Six", "color": "#FF5E7A" },
+    { "id": 8, "name": "Chain Music", "color": "#1E6FFF" }
+  ]
+}

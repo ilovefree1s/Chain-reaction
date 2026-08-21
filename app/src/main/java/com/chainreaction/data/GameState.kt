@@ -27,9 +27,17 @@ data class GameState(
     val dealt: List<Boolean> = emptyList(),
     /** The course being played, when one was chosen rather than pars set by hand. */
     val courseName: String? = null,
+    /**
+     * Chosen character per player, parallel to [players]. Null — or a short list, on a
+     * round saved before characters existed — means that player just goes by their name.
+     */
+    val characterIds: List<Int?> = emptyList(),
 ) {
 
     val playerCount: Int get() = players.size
+
+    /** The character [player] picked, if any. Safe for rounds that predate characters. */
+    fun characterFor(player: Int): Int? = characterIds.getOrNull(player)
 
     // ---- derived scoring -------------------------------------------------
 
@@ -96,16 +104,22 @@ data class GameState(
      * the hand cap keeps its teeth. Only what the cap blocks stays owed, and
      * becomes drawable the moment a discard makes room.
      *
+     * That debt is use-it-or-lose-it: a fresh hole's deal REPLACES whatever is
+     * still owed rather than adding to it. Otherwise playing a full hand for a
+     * few holes banks a pile of cards to cash in later, which is exactly what
+     * the hand cap exists to prevent.
+     *
      * A hole only ever deals ONCE: unlocking and re-locking grants nothing
-     * new, so the lock/unlock cycle can't farm cards. On the final hole the
-     * round simply completes and stays put.
+     * new, so the lock/unlock cycle can't farm cards — and because a re-lock
+     * isn't a fresh deal, it doesn't wipe the debt either. On the final hole
+     * the round simply completes and stays put.
      */
     fun lockAndAdvance(): GameState {
         val hole = currentHole
         if (locked[hole]) return this
         var next = copy(
             locked = locked.replaceAt(hole, true),
-            owed = if (wasDealt(hole)) owed else owed + drawForHole(hole),
+            owed = if (wasDealt(hole)) owed else drawForHole(hole),
             currentHole = (hole + 1).coerceAtMost(holeCount - 1),
             dealt = withDealt(hole),
         )
@@ -170,6 +184,12 @@ data class GameState(
         put("deck", deck.toJsonArray())
         put("discard", discard.toJsonArray())
         put("owed", owed)
+        put(
+            "characters",
+            JSONArray().apply {
+                players.indices.forEach { put(characterFor(it) ?: JSONObject.NULL) }
+            },
+        )
         put("dealt", JSONArray().apply { (0 until holeCount).forEach { put(dealt.getOrElse(it) { false }) } })
         if (courseName != null) put("courseName", courseName)
     }.toString()
@@ -183,6 +203,7 @@ data class GameState(
             holeCount: Int,
             coursePars: List<Int>? = null,
             courseName: String? = null,
+            characterIds: List<Int?> = emptyList(),
         ): GameState {
             val shuffled = CardDeck.freshShuffledDeck()
             // Fall back to all-par-3 if no course was chosen, or if a saved course
@@ -203,6 +224,7 @@ data class GameState(
                 discard = emptyList(),
                 owed = 0,
                 courseName = courseName,
+                characterIds = List(players.size) { characterIds.getOrNull(it) },
             )
         }
 
@@ -236,6 +258,11 @@ data class GameState(
                     },
                     // Optional, so rounds saved before courses were named still load.
                     courseName = o.optString("courseName").takeIf { it.isNotBlank() },
+                    // Likewise optional: a round in progress when characters shipped
+                    // keeps playing on names alone rather than being thrown away.
+                    characterIds = o.optJSONArray("characters")?.let { arr ->
+                        List(arr.length()) { if (arr.isNull(it)) null else arr.getInt(it) }
+                    } ?: emptyList(),
                 )
                 if (state.isConsistent()) state else null
             }

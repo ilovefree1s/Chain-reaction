@@ -38,13 +38,15 @@ private val houseRules = listOf(
     "Starting hand" to "4 cards, dealt at the start of the round.",
     "Hand cap" to "7 cards. You cannot draw past it — discard first.",
     "Your own deck" to
-        "Every player shuffles their own 54-card deck. Duplicates across players are " +
+        "Every player shuffles their own ${CardDeck.ALL.size}-card deck. Duplicates across " +
+        "players are " +
         "expected and fine. This phone only tracks your deck.",
     "Discard" to
         "Played and discarded cards go to your own discard pile. If your deck runs out, " +
         "the discard is reshuffled back in.",
     "Buy a spin" to
-        "Discard 2 cards to buy a spin on the Double Wheel. Spin it from the Hand tab.",
+        "Discard ${Rules.WHEEL_COST} cards to buy a spin on the Double Wheel. Spin it from " +
+        "the Hand tab. Playing Double Wheel spins for free instead.",
     "Two per player, per hole" to
         "At most ${Rules.MAX_CARDS_ON_ONE_PLAYER_PER_HOLE} cards may be played on any one " +
         "player per hole. The app does not enforce this — track it yourselves.",
@@ -133,7 +135,7 @@ fun RulesScreen(modifier: Modifier = Modifier, onBack: () -> Unit) {
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 16.dp),
     ) {
-        NeonHeader("RULES", onBack)
+        NeonHeader("RULES", onBack = onBack)
 
         NeonSectionLabel("How it works")
         houseRules.forEachIndexed { i, (title, body) ->

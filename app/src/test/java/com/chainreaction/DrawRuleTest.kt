@@ -1,6 +1,8 @@
 package com.chainreaction
 
 import com.chainreaction.data.CardDeck
+import com.chainreaction.data.Character
+import com.chainreaction.data.CharacterLibrary
 import com.chainreaction.data.Course
 import com.chainreaction.data.CourseLibrary
 import com.chainreaction.data.GameState
@@ -89,14 +91,16 @@ class DrawRuleTest {
     // ---- deck integrity ----
 
     @Test
-    fun `deck is 54 cards with unique ids one through fifty-four`() {
-        assertEquals(54, CardDeck.ALL.size)
-        assertEquals((1..54).toSet(), CardDeck.ALL.map { it.id }.toSet())
+    fun `deck is 55 cards with unique ids one through fifty-five`() {
+        assertEquals(55, CardDeck.ALL.size)
+        assertEquals((1..55).toSet(), CardDeck.ALL.map { it.id }.toSet())
     }
 
     @Test
     fun `wheel pool never contains a blacklisted card`() {
-        assertEquals(37, CardDeck.WHEEL_POOL.size)
+        // Derived, not hardcoded: adding a card to the deck shouldn't fail this test,
+        // only adding one that quietly slips past the blacklist should.
+        assertEquals(CardDeck.ALL.size - Rules.WHEEL_EXCLUDES.size, CardDeck.WHEEL_POOL.size)
         Rules.WHEEL_EXCLUDES.forEach { excluded ->
             assertTrue(
                 "card $excluded must not be in the wheel pool",
@@ -249,6 +253,47 @@ class DrawRuleTest {
     }
 
     @Test
+    fun `an unclaimed draw is wasted when the next hole deals`() {
+        // A full hand blocks the auto-draw, so hole 1's cards sit owed. Locking
+        // hole 2 REPLACES that debt rather than adding to it — otherwise a full
+        // hand banks a pile of cards to cash in later.
+        var state = stateWith(
+            hand = CardDeck.ALL.take(Rules.HAND_CAP).map { it.id },
+            deck = CardDeck.ALL.drop(Rules.HAND_CAP).map { it.id },
+            discard = emptyList(),
+            owed = 0,
+        ).withScoreDelta(hole = 0, player = 0, delta = 2)
+
+        state = state.lockAndAdvance()
+        assertEquals("last, and a double bogey on top", 3, state.owed)
+
+        // Hole 2 played level with everyone: one card, and only one.
+        state = state.lockAndAdvance()
+        assertEquals("the old debt is gone, not added to", 1, state.owed)
+    }
+
+    @Test
+    fun `owed never banks up over a whole round`() {
+        // Never draw a single card: the debt must still never exceed what one
+        // hole can grant, however many holes go by.
+        var state = stateWith(
+            hand = CardDeck.ALL.take(Rules.HAND_CAP).map { it.id },
+            deck = CardDeck.ALL.drop(Rules.HAND_CAP).map { it.id },
+            discard = emptyList(),
+            owed = 0,
+        )
+        val mostOneHoleCanGrant = 3
+
+        repeat(9) {
+            state = state.withScoreDelta(state.currentHole, 0, 2).lockAndAdvance()
+            assertTrue(
+                "owed banked up to ${state.owed}",
+                state.owed <= mostOneHoleCanGrant,
+            )
+        }
+    }
+
+    @Test
     fun `a locked hole rejects score edits`() {
         val state = GameState.newRound(listOf("A", "B", "C"), meIndex = 0, holeCount = 9)
             .lockAndAdvance()
@@ -289,7 +334,7 @@ class DrawRuleTest {
                 assertNotEquals("draw made no progress", before, state.owed)
             }
             assertEquals(
-                "all 54 cards still accounted for",
+                "every card still accounted for",
                 ids,
                 (state.hand + state.deck + state.discard).toSet(),
             )
@@ -423,6 +468,63 @@ class DrawRuleTest {
         val builtIn = listOf(Course("A", 9, List(9) { 3 }), Course("B", 9, List(9) { 3 }))
         assertEquals(2, CourseLibrary.merge(builtIn, emptyList()).size)
         assertEquals(3, CourseLibrary.merge(builtIn, listOf(Course("C", 9, List(9) { 3 }))).size)
+    }
+
+    // ---- characters: personalisation only, so the tests are about it staying
+    // attached to the right player and never touching the rules -------------
+
+    @Test
+    fun `characters ride along with the round, one per player`() {
+        val s = GameState.newRound(
+            listOf("A", "B", "C"), 0, 9,
+            characterIds = listOf(4, null, 7),
+        )
+        assertEquals(4, s.characterFor(0))
+        assertEquals(null, s.characterFor(1))
+        assertEquals(7, s.characterFor(2))
+    }
+
+    @Test
+    fun `a round started without characters reports none for every player`() {
+        val s = GameState.newRound(listOf("A", "B", "C"), 0, 9)
+        assertTrue(s.players.indices.all { s.characterFor(it) == null })
+    }
+
+    @Test
+    fun `a short character list still covers every player`() {
+        val s = GameState.newRound(listOf("A", "B", "C"), 0, 9, characterIds = listOf(2))
+        assertEquals(3, s.characterIds.size)
+        assertEquals(2, s.characterFor(0))
+        assertEquals(null, s.characterFor(2))
+    }
+
+    @Test
+    fun `characters change nothing about the deal`() {
+        val plain = GameState.newRound(listOf("A", "B", "C"), 0, 9)
+        val fancy = GameState.newRound(
+            listOf("A", "B", "C"), 0, 9,
+            characterIds = listOf(1, 2, 3),
+        )
+        assertEquals(plain.hand.size, fancy.hand.size)
+        assertEquals(plain.deck.size, fancy.deck.size)
+        assertEquals(plain.drawForHole(0), fancy.drawForHole(0))
+        assertEquals(plain.scores, fancy.scores)
+    }
+
+    @Test
+    fun `a character badge falls back to its initial and its numbered art name`() {
+        val c = Character(3, "Tree Magnet", 0xFF3FA9FFL)
+        assertEquals("T", c.initial)
+        assertEquals("character_03", c.artName)
+    }
+
+    @Test
+    fun `character colours parse from hex, and anything unreadable falls back`() {
+        assertEquals(0xFFFF8A1EL, CharacterLibrary.parseColor("#FF8A1E"))
+        assertEquals(0x80FF8A1EL, CharacterLibrary.parseColor("#80FF8A1E"))
+        assertEquals(CharacterLibrary.FALLBACK, CharacterLibrary.parseColor(""))
+        assertEquals(CharacterLibrary.FALLBACK, CharacterLibrary.parseColor("orange"))
+        assertEquals(CharacterLibrary.FALLBACK, CharacterLibrary.parseColor("#FFF"))
     }
 
     private fun stateWith(

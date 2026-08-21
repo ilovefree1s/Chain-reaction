@@ -172,10 +172,19 @@
                           linear-gradient(100deg, #1E6FFF, #3FA9FF 45%, #FF8A1E) border-box;
               box-shadow: 0 0 14px rgba(30, 111, 255, 0.25); }
   .minicard img { width: 100%; display: block; border-radius: 8px; }
-  .minitags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
-  .minitags span { background: #061022; color: #4DC3FF; font-size: 10px; font-weight: 900;
-                   letter-spacing: .5px; text-transform: uppercase; border-radius: 5px;
-                   padding: 3px 6px; }
+  /* Chosen to pay for a spin — the same orange the scorecard uses for "you". */
+  .minicard.picked { background: linear-gradient(#130C05, #130C05) padding-box,
+                                 linear-gradient(100deg, #FF8A1E, #FF9A2E) border-box;
+                     box-shadow: 0 0 14px rgba(255, 138, 30, 0.3); }
+  /* Kind and timing on one line, always. As a pair of chips the longer timings wrapped
+     to a second row and pushed the card's own words out of sight — and the point of the
+     tile is starting to read without opening it. Plain text buys back the room. */
+  /* font-size is the starting point only — fitMetaLines() shrinks it per tile until
+     the line fits, because the longest ("GROUP · AFTER ALL PLAY A CARD") overflows a
+     half-width tile at any size a phone could still read. Same as Android. */
+  .minimeta { color: #4DC3FF; font-size: 10px; font-weight: 900; letter-spacing: .5px;
+              text-transform: uppercase; margin-bottom: 8px;
+              white-space: nowrap; overflow: hidden; text-overflow: clip; }
   .mininame { color: #F4F8FF; font-size: 17px; font-weight: 700; line-height: 1.2;
               margin-bottom: 4px; }
   .minitext { color: #A9B8D4; font-size: 13px; line-height: 1.35; display: -webkit-box;
@@ -300,6 +309,21 @@
                  color: #F4F8FF; font-family: inherit; font-size: 18px; min-height: 28px; }
   .nslot input:focus { outline: none; }
   .nslot input::placeholder { color: #5E6C88; }
+  /* Character badges: a face beside a name. Real art when it exists, otherwise the
+     character's own colour with its initial, so the roster works before art lands. */
+  .cbadge { flex: 0 0 auto; box-sizing: border-box; border-radius: 50%; overflow: hidden;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 900; background: #070B14; border: 1px solid #5E6C88; padding: 0; }
+  .cbadge img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  button.cbadge { cursor: pointer; }
+  .cgrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px 12px; }
+  .cgrid .cell { display: flex; flex-direction: column; align-items: center; gap: 6px;
+                 background: none; border: 0; padding: 0; font: inherit; cursor: pointer; }
+  .cgrid .cell[disabled] { opacity: .35; cursor: default; }
+  .cgrid .chname { font-size: 14px; font-weight: 700; color: #F4F8FF;
+                   text-align: center; line-height: 16px; }
+  .cgrid .cell.mine .chname { color: #FF8A1E; }
+  .cgrid .ctaken { font-size: 12px; color: #5E6C88; text-align: center; }
   .nme { flex: 0 0 56px; width: 56px; height: 56px; min-height: 56px; padding: 2px;
          border: none; border-radius: 0; cursor: pointer;
          background: linear-gradient(#3FA9FF, #1E6FFF);
@@ -424,7 +448,7 @@
 <script>
 "use strict";
 
-var DATA = {"handSize":4,"handCap":7,"maxCardsOnOnePlayerPerHole":2,"wheelExcludes":[7,8,11,12,13,15,18,19,27,31,36,37,39,43,48,51,54],"timings":["Before shot","Before tee shot","After throw","After throw · secret","After all tee","After card","After a hole","After all play a card","For the next hole","Any time"],"cards":[{"id":1,"timing":"Before shot","kind":"attack","name":"Roll It!","text":"Force an opponent to throw a roller on the upcoming drive or approach."},{"id":2,"timing":"Before shot","kind":"attack","name":"CHRIS SPECIAL!","text":"Force an opponent to throw a tomahawk on the upcoming drive or approach."},{"id":3,"timing":"Before shot","kind":"attack","name":"Sidearm","text":"Force an opponent to throw a sidearm on the upcoming drive or approach."},{"id":4,"timing":"Before shot","kind":"attack","name":"Bag Raid!","text":"Choose ANY disc from any bag. That disc must be used on their next shot."},{"id":5,"timing":"Before shot","kind":"attack","name":"39% OF THE SPLITS","text":"Force an opponent to straddle putt. Playable any time someone is about to throw a putter."},{"id":6,"timing":"Before shot","kind":"attack","name":"Baby Discs","text":"Force an opponent to throw a mini for their upcoming drive or putt. Through the basket floor still counts as in."},{"id":7,"timing":"After throw","kind":"attack","name":"AIR HORN!","text":"Heckle an opponent during one of their shots. Reveal and discard this card after."},{"id":8,"timing":"For the next hole","kind":"attack","name":"Bag Boy!","text":"Force an opponent to carry your discs until they beat you on a hole. While they carry your bag, you can't play any more cards on them."},{"id":9,"timing":"After throw · secret","kind":"self","name":"Don't Nice Me!","text":"If any player says \"nice\" as your disc is in flight and it hits a tree, that throw doesn't count. Take it again."},{"id":10,"timing":"Before tee shot","kind":"attack","name":"Code Words!","text":"An opponent can't say \"yes\" or \"no\" this hole. 1 stroke penalty every time they do."},{"id":11,"timing":"Before tee shot","kind":"attack","name":"Too Many Choices","text":"Force an opponent to discard 3 cards."},{"id":12,"timing":"Any time","kind":"react","name":"Change Is Good","text":"Force an opponent to change the target of one of their cards, if there is another option."},{"id":13,"timing":"Before tee shot","kind":"attack","name":"Dealer's Choice!","text":"You pick the discs every other player tees off with this hole."},{"id":14,"timing":"Before tee shot","kind":"attack","name":"Bizarro Golf!","text":"Force an opponent to drive with a putter and putt with a driver this hole."},{"id":15,"timing":"After throw","kind":"attack","name":"Prove It","text":"Cancel a shot an opponent just took. They throw again with a different disc of their choice. No extra stroke."},{"id":16,"timing":"Before shot","kind":"attack","name":"Close 'Em","text":"Force an opponent to take the next putt with their eyes closed."},{"id":17,"timing":"Before tee shot","kind":"attack","name":"One Disc Wonder!","text":"Force an opponent to play the hole with only 1 disc. You choose it."},{"id":18,"timing":"After card","kind":"react","name":"Rubber and Glue","text":"If a card targeting only you was just played, that opponent carries out the instructions instead of you."},{"id":19,"timing":"After all tee","kind":"self","name":"Gimme Dat","text":"After all tee shots, trade lies with an opponent of your choice."},{"id":20,"timing":"Before tee shot","kind":"self","name":"1v1 Challenge","text":"Challenge someone. It runs until one of you beats the other's score on a hole — a tie settles nothing. The winner gets a free immunity hole and 1 free mulligan on that hole."},{"id":21,"timing":"Before tee shot","kind":"attack","name":"It's Like a Stranger Is Doing It!","text":"Force an opponent to take the upcoming drive with their off hand."},{"id":22,"timing":"Before tee shot","kind":"attack","name":"Your Tee Pad Is Over There!","text":"Use 2 of your discs to mark a new tee for an opponent of your choice, within 10 paces (30 ft) of the original. They tee from it."},{"id":23,"timing":"Before tee shot","kind":"self","name":"My Tee Pad Is Over Here!","text":"Use 2 of your discs to mark a new tee for yourself, within 10 paces (30 ft) of the original. Feeling nice? You may pick 1 player to join you."},{"id":24,"timing":"Before tee shot","kind":"attack","name":"Thief'n","text":"Steal someone's disc. It's yours to throw for the rest of the round."},{"id":25,"timing":"After throw","kind":"attack","name":"Big Ooof, Bud.","text":"Move an opponent's lie 10 paces (30 ft) in any direction, as long as it isn't out of bounds."},{"id":26,"timing":"After throw","kind":"self","name":"Foot Wedge!","text":"Move your own lie 10 paces (30 ft) in any direction."},{"id":27,"timing":"After card","kind":"react","name":"No Way","text":"Cancel any card just played. That card goes to the discard pile."},{"id":28,"timing":"Before tee shot","kind":"attack","name":"Plant Your Feet!","text":"No run-up on an opponent's next throw."},{"id":29,"timing":"Before shot","kind":"attack","name":"Turbo Time","text":"An opponent's next putt must be a turbo putt."},{"id":30,"timing":"Before tee shot","kind":"attack","name":"Not the Recommended Route","text":"Choose a reasonable object the target player must pass on a side you specify."},{"id":31,"timing":"Before tee shot","kind":"attack","name":"Do Not Pass Go","text":"Whoever has the shortest drive on the next hole gets no cards for that hole."},{"id":32,"timing":"Before tee shot","kind":"self","name":"Tree Insurance","text":"Play before your tee shot. If you hit a tree, take a free mulligan."},{"id":33,"timing":"Before tee shot","kind":"self","name":"Call Your Shot","text":"Call CTP. If you win it, nobody can play cards on you next hole, and your next attack card hits every opponent — not you."},{"id":34,"timing":"After throw","kind":"self","name":"GAMBLE!","text":"Take a second chance at a putt you just missed. Make it and it was a free mulligan. Miss and the second stroke counts too — play whichever disc landed farthest away, then add +1 stroke after the hole ends."},{"id":35,"timing":"After a hole","kind":"self","name":"FIVE FOR YOU, YOU, AND YOU!","text":"Play after you birdie a hole nobody else birdied. Everyone else owes five dollars to the pot!"},{"id":36,"timing":"After all tee","kind":"attack","name":"I'm In Control","text":"You decide who plays whose tee shots. More than one player can be sent to the same lie."},{"id":37,"timing":"Before tee shot","kind":"self","name":"Not Today!","text":"Remove any and all card effects currently on you."},{"id":38,"timing":"Before tee shot","kind":"self","name":"GOOD GUYS VS. BAD GUYS!","text":"Ask another player to team up for the next hole. Birdie counts as an eagle, no birdie is +1. Cards against one of you count against both, and you both take the same score. If they refuse, ask someone else — if everyone refuses, discard this card with no effect."},{"id":39,"timing":"After all play a card","kind":"group","name":"Group Hug","text":"Only playable after every other player has hit you with a negative card this turn. Each card bounces back onto the player who played it, and you choose one of the effects to take yourself."},{"id":40,"timing":"Before shot","kind":"self","name":"If the Basket Was There It Woulda Went In","text":"Play before a C2 putt only. If you hit metal and it doesn't go in, it still counts."},{"id":41,"timing":"Before tee shot","kind":"attack","name":"Commentator","text":"Another player has to announce every shot you take this hole. If they forget one, they take +1 stroke."},{"id":42,"timing":"Before shot","kind":"attack","name":"Trust Me Bro","text":"Give another player advice for their tee shot. They have to follow it as best they can."},{"id":43,"timing":"Before tee shot","kind":"group","name":"WALK IT DOWN!!","text":"No other cards can be played once this hits the table. Everyone tees immediately from anywhere near the tee pad — no throw order. First and second to finish get birdie, third gets par, last gets bogey. No running, and no calling foot faults."},{"id":44,"timing":"After throw","kind":"attack","name":"Walk of Shame","text":"After a missed putt inside C1, that player carries their putter until they finish the next hole. If they drop it or put it in the bag, +1 stroke."},{"id":45,"timing":"Before shot","kind":"dual","name":"Shoe Golf","text":"On yourself: putt with your own shoe at no stroke cost. On another player: they putt with a shoe and it still counts as a stroke."},{"id":46,"timing":"Before shot","kind":"dual","name":"Globetrotter Shit","text":"On yourself: putt behind the back at no stroke cost. On another player: they putt behind the back and it counts as a normal stroke."},{"id":47,"timing":"Before shot","kind":"dual","name":"Spin to Win","text":"Spin rapidly 10 times, then putt within 3 seconds. Free on yourself, a normal stroke on an opponent."},{"id":48,"timing":"Before tee shot","kind":"group","name":"Double Wheel","text":"Free spin on the Double Wheel. If you get a negative effect, just ignore it."},{"id":49,"timing":"Before shot","kind":"dual","name":"Aerobie","text":"On yourself: use an aerobie for your drive. On another player: they drive with the aerobie using their off hand. Normal stroke either way."},{"id":50,"timing":"Any time","kind":"dual","name":"Player 2's Turn!","text":"On yourself: retake any shot for free. On another player: force them to re-throw a shot that was too good."},{"id":51,"timing":"After a hole","kind":"dual","name":"Me and You","text":"On yourself: take the best score made on the hole. On another player: they take the worst score made on the hole."},{"id":52,"timing":"After throw","kind":"self","name":"Big Putt!","text":"If you make a putt from outside C1 while a player still to putt is inside C1, they have to putt with their off hand."},{"id":53,"timing":"Before tee shot","kind":"attack","name":"Bag Exchange!","text":"Pick a player to swap bags with. Swap back after the first bogey by either player."},{"id":54,"timing":"Before shot","kind":"self","name":"BIG BLUFF","text":"Pick up your disc and throw your next shot from anyone else's disc, with them. If someone calls you out, you can claim you're holding this card even if you aren't. If they believe you, nothing happens. If they call your bluff and you have it, they take +1 stroke. If they call it and you don't, you take +2 strokes and they take -1."}]};
+var DATA = {"handSize":4,"handCap":7,"maxCardsOnOnePlayerPerHole":2,"wheelCost":2,"freeSpinCard":48,"wheelExcludes":[7,8,11,12,13,15,18,19,24,27,31,36,37,39,43,48,51,54],"timings":["Before shot","Before tee shot","After throw","After throw · secret","After all tee","After card","After a hole","After all play a card","For the next hole","Any time"],"cards":[{"id":1,"timing":"Before shot","kind":"attack","name":"Roll It!","text":"Force an opponent to throw a roller on the upcoming drive or approach."},{"id":2,"timing":"Before shot","kind":"attack","name":"CHRIS SPECIAL!","text":"Force an opponent to throw a tomahawk on the upcoming drive or approach."},{"id":3,"timing":"Before shot","kind":"attack","name":"Sidearm","text":"Force an opponent to throw a sidearm on the upcoming drive or approach."},{"id":4,"timing":"Before shot","kind":"attack","name":"Bag Raid!","text":"Choose ANY disc from any bag. That disc must be used on their next shot."},{"id":5,"timing":"Before shot","kind":"attack","name":"39% OF THE SPLITS","text":"Force an opponent to straddle putt. Playable any time someone is about to throw a putter."},{"id":6,"timing":"Before shot","kind":"attack","name":"Baby Discs","text":"Force an opponent to throw a mini for their upcoming drive or putt. Through the basket floor still counts as in."},{"id":7,"timing":"After throw","kind":"attack","name":"AIR HORN!","text":"Heckle an opponent during one of their shots. Reveal and discard this card after."},{"id":8,"timing":"For the next hole","kind":"attack","name":"Bag Boy!","text":"Force an opponent to carry your discs until they beat you on a hole. While they carry your bag, you can't play any more cards on them."},{"id":9,"timing":"After throw · secret","kind":"self","name":"Don't Nice Me!","text":"If any player says \"nice\" as your disc is in flight and it hits a tree, that throw doesn't count. Take it again."},{"id":10,"timing":"Before tee shot","kind":"attack","name":"Code Words!","text":"An opponent can't say \"yes\" or \"no\" this hole. 1 stroke penalty every time they do."},{"id":11,"timing":"Before tee shot","kind":"attack","name":"Too Many Choices","text":"Force an opponent to discard 3 cards."},{"id":12,"timing":"Any time","kind":"react","name":"Change Is Good","text":"Force an opponent to change the target of one of their cards, if there is another option."},{"id":13,"timing":"Before tee shot","kind":"attack","name":"Dealer's Choice!","text":"You pick the discs every other player tees off with this hole."},{"id":14,"timing":"Before tee shot","kind":"attack","name":"Bizarro Golf!","text":"Force an opponent to drive with a putter and putt with a driver this hole."},{"id":15,"timing":"After throw","kind":"attack","name":"Prove It","text":"Cancel a shot an opponent just took. They throw again with a different disc of their choice. No extra stroke."},{"id":16,"timing":"Before shot","kind":"attack","name":"Close 'Em","text":"Force an opponent to take the next putt with their eyes closed."},{"id":17,"timing":"Before tee shot","kind":"attack","name":"One Disc Wonder!","text":"Force an opponent to play the hole with only 1 disc. You choose it."},{"id":18,"timing":"After card","kind":"react","name":"Rubber and Glue","text":"If a card targeting only you was just played, that opponent carries out the instructions instead of you."},{"id":19,"timing":"After all tee","kind":"self","name":"Gimme Dat","text":"After all tee shots, trade lies with an opponent of your choice."},{"id":20,"timing":"Before tee shot","kind":"self","name":"1v1 Challenge","text":"Challenge someone. It runs until one of you beats the other's score on a hole — a tie settles nothing. The winner gets a free immunity hole and 1 free mulligan on that hole."},{"id":21,"timing":"Before tee shot","kind":"attack","name":"It's Like a Stranger Is Doing It!","text":"Force an opponent to take the upcoming drive with their off hand."},{"id":22,"timing":"Before tee shot","kind":"attack","name":"Your Tee Pad Is Over There!","text":"Use 2 of your discs to mark a new tee for an opponent of your choice, within 10 paces (30 ft) of the original. They tee from it."},{"id":23,"timing":"Before tee shot","kind":"self","name":"My Tee Pad Is Over Here!","text":"Use 2 of your discs to mark a new tee for yourself, within 10 paces (30 ft) of the original. Feeling nice? You may pick 1 player to join you."},{"id":24,"timing":"Any time","kind":"attack","name":"Finders Keepers","text":"If you pick up a disc a player forgot, play this to keep it for the rest of the round. You have to hold it for a full hole without them asking about it."},{"id":25,"timing":"After throw","kind":"attack","name":"Big Ooof, Bud.","text":"Move an opponent's lie 10 paces (30 ft) in any direction, as long as it isn't out of bounds."},{"id":26,"timing":"After throw","kind":"self","name":"Foot Wedge!","text":"Move your own lie 10 paces (30 ft) in any direction."},{"id":27,"timing":"After card","kind":"react","name":"No Way","text":"Cancel any card just played. That card goes to the discard pile."},{"id":28,"timing":"Before tee shot","kind":"attack","name":"Plant Your Feet!","text":"No run-up on an opponent's next throw."},{"id":29,"timing":"Before shot","kind":"attack","name":"Turbo Time","text":"An opponent's next putt must be a turbo putt."},{"id":30,"timing":"Before tee shot","kind":"attack","name":"Not the Recommended Route","text":"Choose a reasonable object the target player must pass on a side you specify."},{"id":31,"timing":"Before tee shot","kind":"attack","name":"Do Not Pass Go","text":"Whoever has the shortest drive on the next hole gets no cards for that hole."},{"id":32,"timing":"Before tee shot","kind":"self","name":"Tree Insurance","text":"Play before your tee shot. If you hit a tree, take a free mulligan."},{"id":33,"timing":"Before tee shot","kind":"self","name":"Call Your Shot","text":"Call CTP. If you win it, nobody can play cards on you next hole, and your next attack card hits every opponent — not you."},{"id":34,"timing":"After throw","kind":"self","name":"GAMBLE!","text":"Take a second chance at a putt you just missed. Make it and it was a free mulligan. Miss and the second stroke counts too — play whichever disc landed farthest away, then add +1 stroke after the hole ends."},{"id":35,"timing":"After a hole","kind":"self","name":"FIVE FOR YOU, YOU, AND YOU!","text":"Play after you birdie a hole nobody else birdied. Everyone else owes five dollars to the pot!"},{"id":36,"timing":"After all tee","kind":"attack","name":"I'm In Control","text":"You decide who plays whose tee shots. More than one player can be sent to the same lie."},{"id":37,"timing":"Before tee shot","kind":"self","name":"Not Today!","text":"Remove any and all card effects currently on you."},{"id":38,"timing":"Before tee shot","kind":"self","name":"GOOD GUYS VS. BAD GUYS!","text":"Ask another player to team up for the next hole. Birdie counts as an eagle, no birdie is +1. Cards against one of you count against both, and you both take the same score. If they refuse, ask someone else — if everyone refuses, discard this card with no effect."},{"id":39,"timing":"After all play a card","kind":"group","name":"Group Hug","text":"Only playable after every other player has hit you with a negative card this turn. Each card bounces back onto the player who played it, and you choose one of the effects to take yourself."},{"id":40,"timing":"Before shot","kind":"self","name":"If the Basket Was There It Woulda Went In","text":"Play before a C2 putt only. If you hit metal and it doesn't go in, it still counts."},{"id":41,"timing":"Before tee shot","kind":"attack","name":"Commentator","text":"Another player has to announce every shot you take this hole. If they forget one, they take +1 stroke."},{"id":42,"timing":"Before shot","kind":"attack","name":"Trust Me Bro","text":"Give another player advice for their tee shot. They have to follow it as best they can."},{"id":43,"timing":"Before tee shot","kind":"group","name":"WALK IT DOWN!!","text":"No other cards can be played once this hits the table. Everyone tees immediately from anywhere near the tee pad — no throw order. First and second to finish get birdie, third gets par, last gets bogey. No running, and no calling foot faults."},{"id":44,"timing":"After throw","kind":"attack","name":"Walk of Shame","text":"After a missed putt inside C1, that player carries their putter until they finish the next hole. If they drop it or put it in the bag, +1 stroke."},{"id":45,"timing":"Before shot","kind":"dual","name":"Shoe Golf","text":"On yourself: putt with your own shoe at no stroke cost. On another player: they putt with a shoe and it still counts as a stroke."},{"id":46,"timing":"Before shot","kind":"dual","name":"Globetrotter Shit","text":"On yourself: putt behind the back at no stroke cost. On another player: they putt behind the back and it counts as a normal stroke."},{"id":47,"timing":"Before shot","kind":"dual","name":"Spin to Win","text":"Spin rapidly 10 times, then putt within 3 seconds. Free on yourself, a normal stroke on an opponent."},{"id":48,"timing":"Before tee shot","kind":"group","name":"Double Wheel","text":"Free spin on the Double Wheel. The name doesn't matter — you choose who gets the benefit or the punishment."},{"id":49,"timing":"Before shot","kind":"dual","name":"Aerobie","text":"On yourself: use an aerobie for your drive. On another player: they drive with the aerobie using their off hand. Normal stroke either way."},{"id":50,"timing":"Any time","kind":"dual","name":"Player 2's Turn!","text":"On yourself: retake any shot for free. On another player: force them to re-throw a shot that was too good."},{"id":51,"timing":"After a hole","kind":"dual","name":"Me and You","text":"On yourself: take the best score made on the hole. On another player: they take the worst score made on the hole."},{"id":52,"timing":"After throw","kind":"self","name":"Big Putt!","text":"If you make a putt from outside C1 while a player still to putt is inside C1, they have to putt with their off hand."},{"id":53,"timing":"Before tee shot","kind":"attack","name":"Bag Exchange!","text":"Pick a player to swap bags with. Swap back after the first bogey by either player."},{"id":54,"timing":"Before shot","kind":"self","name":"BIG BLUFF","text":"Pick up your disc and throw your next shot from anyone else's disc, with them. If someone calls you out, you can claim you're holding this card even if you aren't. If they believe you, nothing happens. If they call your bluff and you have it, they take +1 stroke. If they call it and you don't, you take +2 strokes and they take -1."},{"id":55,"timing":"After throw","kind":"gift","name":"Buddy Buddy","text":"Bless someone with a free mulligan after a bad throw."}]};
 var CARDS = DATA.cards;
 var BY_ID = {};
 CARDS.forEach(function (c) { BY_ID[c.id] = c; });
@@ -439,6 +463,21 @@ var BUILT_IN_COURSES = [{"name":"W.S. Gibbs Memorial Disc Golf Course — White/
 /* Card faces present in the Android drawables, id -> asset path. Injected by
    web/build.js; empty until artwork lands. */
 var CARD_ART = {};
+
+/* The pickable characters, from shared/characters.json — the same file the Android
+   build reads. Cosmetic only: a face and a name beside a player, no rules attached.
+   An empty roster is legal, and simply means no picker appears. */
+var CHARACTERS = [{"id":1,"name":"The Ace","color":"#FF8A1E"},{"id":2,"name":"Tree Magnet","color":"#3FA9FF"},{"id":3,"name":"Rollercoaster","color":"#4DC3FF"},{"id":4,"name":"Sky God","color":"#B47CFF"},{"id":5,"name":"Scramble King","color":"#3FE08A"},{"id":6,"name":"Bag Mule","color":"#FFD23F"},{"id":7,"name":"Deep Six","color":"#FF5E7A"},{"id":8,"name":"Chain Music","color":"#1E6FFF"}];
+var CHARACTER_ART = {};
+
+function characterById(id) {
+  if (id == null) return null;
+  for (var ci = 0; ci < CHARACTERS.length; ci++) {
+    if (CHARACTERS[ci].id === id) return CHARACTERS[ci];
+  }
+  // A saved id that has since left the roster reads the same as never having picked.
+  return null;
+}
 
 /* Artwork, inlined as data URIs by web/build.js so this stays one file. */
 var MENU_IMAGE = "assets/menu.png";
@@ -506,7 +545,7 @@ function parList(n) { var a = []; for (var i = 0; i < n; i++) a.push(DEFAULT_PAR
 var SETTINGS_KEY = "chainreaction.settings";
 var memorySettings = null;
 
-function defaultSettings() { return { players: [], meIndex: 0 }; }
+function defaultSettings() { return { players: [], meIndex: 0, characters: [] }; }
 
 function loadSettings() {
   try {
@@ -543,7 +582,7 @@ function shuffled(arr) {
   return a;
 }
 
-function newRound(players, meIndex, holeCount, coursePars, courseName) {
+function newRound(players, meIndex, holeCount, coursePars, courseName, characters) {
   var deck = shuffled(CARDS.map(function (c) { return c.id; }));
   var source = (coursePars && coursePars.length === holeCount) ? coursePars : parList(holeCount);
   var pars = [], scores = [], locked = [];
@@ -561,8 +600,18 @@ function newRound(players, meIndex, holeCount, coursePars, courseName) {
     hand: deck.slice(0, DATA.handSize), deck: deck.slice(DATA.handSize), discard: [], owed: 0,
     dealt: [],
     // The course being played, when one was chosen rather than pars set by hand.
-    courseName: courseName || null
+    courseName: courseName || null,
+    // Parallel to players; null where nobody picked. Absent on a round saved before
+    // characters existed, which still loads and plays on names alone.
+    characters: players.map(function (_, i) {
+      return characters && characters[i] != null ? characters[i] : null;
+    })
   };
+}
+
+/* The character a player is going by, if any. Safe on rounds that predate them. */
+function characterFor(s, p) {
+  return characterById(s.characters ? s.characters[p] : null);
 }
 
 /* ---------- derived ---------- */
@@ -600,6 +649,30 @@ function esc(t) {
     .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 
+/* A character's face at [size] px. Null draws the empty slot — a quiet ring with a
+   "+", which is what a player who hasn't picked shows on Setup. */
+function badgeHtml(ch, size, opts) {
+  opts = opts || {};
+  var art = ch && CHARACTER_ART[ch.id];
+  var colour = ch ? (ch.color || "#3FA9FF") : "#5E6C88";
+  var style = "width:" + size + "px;height:" + size + "px;" +
+    "font-size:" + Math.round(size * 0.42) + "px;" +
+    "border-color:" + (opts.selected ? "#FF8A1E" : colour) + ";" +
+    (opts.selected ? "border-width:2px;" : "");
+  if (ch && !art) {
+    // The near-black reads better than white on a saturated badge.
+    style += "background:" + colour + ";color:#05070C;";
+  } else if (!ch) {
+    style += "background:rgba(94,108,136,.12);color:#5E6C88;";
+  }
+  var inner = art ? '<img src="' + art + '" alt="' + esc(ch.name) + '">'
+    : ch ? esc(ch.name.trim().charAt(0).toUpperCase())
+    : "+";
+  if (!opts.act) return '<div class="cbadge" style="' + style + '">' + inner + "</div>";
+  return '<button class="cbadge" style="' + style + '" data-act="' + opts.act +
+    '" data-i="' + opts.slot + '">' + inner + "</button>";
+}
+
 /* ---------- app state ---------- */
 var state = load();
 var tab = "score";
@@ -612,6 +685,10 @@ var confirmDiscard = null; // card id awaiting a discard confirmation
 var viewCard = null; // card id enlarged to its full face
 var confirming = false;
 var parsUI = { open: false, name: "" };
+/* Which name slot is choosing a character, and on which screen. Null when closed. */
+var charPick = null;
+/* Cards picked to pay for a spin. Null when the cost sheet is closed. */
+var wheelPay = null;
 var roundCourseName = "";
 var savedAs = null;
 var savedGroup = false;
@@ -620,9 +697,15 @@ var savedGroup = false;
 var showScorecard = false;
 
 function freshSetup() {
-  // Pre-filled from the group saved in Settings, so the usual four aren't retyped.
+  // Pre-filled from the group saved in Settings, so the usual four aren't retyped —
+  // characters included, so the regulars keep the faces they picked last time.
   var names = (settings.players && settings.players.length) ? settings.players.slice() : ["", "", "", ""];
-  return { names: names, meIndex: settings.meIndex || 0, holes: 0, pars: [], courseName: null };
+  var saved = settings.characters || [];
+  var chars = names.map(function (_, i) { return saved[i] != null ? saved[i] : null; });
+  return {
+    names: names, chars: chars, meIndex: settings.meIndex || 0,
+    holes: 0, pars: [], courseName: null,
+  };
 }
 
 function resizePars(n) {
@@ -656,10 +739,32 @@ function render() {
   if (viewCard != null) html += renderFaceModal();
   if (wheel) html += renderWheel();
   if (parsUI.open) html += renderParGrid();
+  if (charPick) html += renderCharSheet();
+  if (wheelPay) html += renderWheelCost();
   app.innerHTML = html;
+  fitMetaLines();
   document.body.classList.toggle("menu-screen", screen === "menu");
   document.body.classList.toggle("rules-screen", screen === "rules");
   document.body.classList.toggle("settings-screen", screen === "settings");
+}
+
+/*
+ * Shrink each tile's kind-and-timing line until it fits on one row. CSS can't do this
+ * on its own, and a wrapped second row is exactly what pushed the card's own words out
+ * of sight. Cheap: at most seven tiles, a few half-pixel steps each.
+ */
+var META_MAX_PX = 10, META_MIN_PX = 6;
+
+function fitMetaLines() {
+  var nodes = app.querySelectorAll(".minimeta");
+  for (var i = 0; i < nodes.length; i++) {
+    var el = nodes[i], size = META_MAX_PX;
+    el.style.fontSize = size + "px";
+    while (el.scrollWidth > el.clientWidth && size > META_MIN_PX) {
+      size -= 0.5;
+      el.style.fontSize = size + "px";
+    }
+  }
 }
 
 function backBar(title) {
@@ -714,6 +819,9 @@ function renderSetup() {
   // Same framed-slot + octagonal ME markup as Settings, so the two read as one app.
   var rows = setup.names.map(function (n, i) {
     return '<div class="nrow center" style="margin-bottom:10px">' +
+      (CHARACTERS.length
+        ? badgeHtml(characterById(setup.chars[i]), 48, { act: "pickChar", slot: i })
+        : "") +
       '<div class="npanel nslot nrow center" style="flex:1;margin:0;min-height:56px;padding:0 16px">' +
       '<input data-name="' + i + '" value="' + esc(n) + '" placeholder="Player ' + (i + 1) + '">' +
       '</div>' +
@@ -734,7 +842,9 @@ function renderSetup() {
 
   // No title block — the back bar already says NEW ROUND.
   return '<div class="label">Players</div>' +
-    '<p class="hint">Tap ME on your own name.</p>' + rows + addRemove +
+    '<p class="hint">' + (CHARACTERS.length
+      ? "Tap a face to pick a character, and ME on your own name."
+      : "Tap ME on your own name.") + '</p>' + rows + addRemove +
     '<div class="label">Course</div>' +
     '<div class="panel course' + (setup.courseName ? " sel" : "") + '" data-act="openPars">' +
       '<div class="cname' + (setup.courseName ? " picked" : "") + '">' +
@@ -784,7 +894,10 @@ function renderScore() {
     var score = s.scores[h][i], me = i === s.meIndex;
     var total = totalFor(s, i), rel = relFor(s, i);
     var lead = lockedCount(s) > 0 && total === best;
+    var ch = characterFor(s, i);
     return '<div class="player' + (me ? " me" : "") + '"><div class="row">' +
+      // Only takes up room once somebody has actually picked a character.
+      (ch ? badgeHtml(ch, 40) + '<div style="width:10px"></div>' : "") +
       '<div class="grow"><div class="name">' + esc(name) + '</div>' +
         '<div class="rel ' + relClass(rel) + '">' +
         (lead ? '<span class="lead">LEAD</span>' : "") + fmtRel(rel) + '  &middot;  ' + total + ' total strokes</div></div>' +
@@ -825,8 +938,10 @@ function renderResults() {
     var rel = relFor(s, p);
     var isWinner = won.indexOf(p) !== -1;
     var behind = total - winningTotal;
+    var ch = characterFor(s, p);
     return '<div class="player' + (isWinner ? " me" : "") + '"><div class="row">' +
       '<div class="place' + (isWinner ? " won" : "") + '">' + (place + 1) + '</div>' +
+      (ch ? badgeHtml(ch, 40) + '<div style="width:10px"></div>' : "") +
       '<div class="grow"><div class="name">' + esc(s.players[p]) + '</div>' +
         // Relative to par, then how far off the win — spelled out, because
         // "E · +1" reads as a contradiction at a glance.
@@ -861,7 +976,8 @@ function renderHand() {
     drawBlock = handIsFull(s)
       ? '<button class="big quiet" disabled>Hand is full &mdash; discard first</button>' +
         '<p class="hint">You\'re owed ' + s.owed + ' card(s) but you\'re holding the maximum of ' +
-        DATA.handCap + '. Discard, then draw.</p>'
+        DATA.handCap + '. Discard, then draw &mdash; locking the next hole loses ' +
+        'whatever you haven\'t taken.</p>'
       : '<button class="big primary" data-act="draw">Draw a card (' + s.owed + ' owed)</button>';
   }
 
@@ -870,21 +986,89 @@ function renderHand() {
       s.hand.map(function (id) { return miniCardHtml(BY_ID[id]); }).join("") + '</div>'
     : '<p class="hint">Nothing in hand. Cards arrive when you lock a hole.</p>';
 
-  return counters + drawBlock +
-    '<button class="big wheel" data-act="openWheel">Spin the Double Wheel</button>' +
+  return counters + drawBlock + wheelButton() +
     '<div class="label">Your hand</div>' + cards;
+}
+
+/*
+ * The wheel is no longer free: it costs cards, and you can't pay what you don't hold.
+ * Playing card #48 is the way round that — its whole text is a free spin.
+ */
+function canAffordWheel(s) { return s.hand.length >= DATA.wheelCost; }
+
+function wheelButton() {
+  var s = state;
+  var label = "Spin the Double Wheel (" + DATA.wheelCost + " cards)";
+  if (canAffordWheel(s)) {
+    return '<button class="big wheel" data-act="openWheel">' + label + "</button>";
+  }
+  return '<button class="big wheel" disabled>' + label + "</button>" +
+    '<p class="hint">Spinning costs ' + DATA.wheelCost + ' cards and you\'re holding ' +
+    s.hand.length + '. Playing Double Wheel spins for free.</p>';
+}
+
+/* The price of a spin: pick which cards leave your hand. */
+function renderWheelCost() {
+  var s = state;
+  var tiles = s.hand.map(function (id) {
+    var picked = wheelPay.indexOf(id) !== -1;
+    return miniCardHtml(BY_ID[id], picked ? "payPick" : "payPick", picked);
+  }).join("");
+
+  var ready = wheelPay.length === DATA.wheelCost;
+  return '<div class="modal nmodal">' +
+    '<div class="nheader"><button class="back" data-act="payCancel">&lsaquo;&nbsp; Back</button>' +
+    "<h1>SPIN COSTS " + DATA.wheelCost + "</h1></div>" +
+    '<p class="nbody" style="margin:0 0 14px">Pick ' + DATA.wheelCost +
+    " cards to discard, then spin. Playing Double Wheel instead gives you a free spin.</p>" +
+    '<div class="handgrid">' + tiles + "</div>" +
+    '<p class="hint"' + (ready ? ' style="color:#FF8A1E"' : "") + ">" +
+    wheelPay.length + " of " + DATA.wheelCost + " chosen</p>" +
+    '<button class="big primary" data-act="payConfirm"' + (ready ? "" : " disabled") +
+    ">Discard " + DATA.wheelCost + " &amp; spin</button>" +
+    '<button class="big quiet" data-act="payCancel">Never mind</button></div>';
+}
+
+/*
+ * Build the wheel and show it. Reached either by paying, or free off card #48 —
+ * and a free spin skips the name stage entirely, starting where a paid one arrives
+ * after its first wheel.
+ */
+function openWheelNow(free) {
+  // The whole pool rides the wheel — what you see is exactly what can hit.
+  var ring = shuffled(WHEEL_POOL);
+  var ringIdx = Math.floor(Math.random() * ring.length);
+  var winner = ring[ringIdx];
+  var nameLabels = [];
+  // Each player's actual name, twice around the wheel, so even 3 players fill it out.
+  for (var pi = 0; pi < state.players.length * 2; pi++) {
+    nameLabels.push(state.players[pi % state.players.length]);
+  }
+  var fateLabels = [];
+  for (var fi = 0; fi < 8; fi++) fateLabels.push(fi % 2 ? "BAD" : "GOOD");
+  wheel = {
+    stage: free ? "nameDone" : "idle", free: !!free, card: winner, name: null,
+    nameLabels: nameLabels, nameSeg: null, nameRot: 0,
+    cardLabels: ring.map(function (c) { return c.name; }),
+    cardIdx: ringIdx, cardRot: 0,
+    // Dual cards get a third spin: good half or bad half.
+    isDual: winner.kind === "dual",
+    fateLabels: fateLabels, fateIdx: null, fateRot: 0, fateGood: null,
+    spinning: false
+  };
+  render();
 }
 
 /* Half-width hand tile: tags, name, a taste of the text. No buttons — tapping
    opens the full face, where Play and Discard live. */
-function miniCardHtml(c) {
+/* [act] and [picked] let the same tile double as the pay-for-a-spin picker. */
+function miniCardHtml(c, act, picked) {
   var art = CARD_ART[c.id];
-  if (art) {
-    return '<div class="minicard" data-act="viewCard" data-i="' + c.id + '">' +
-      '<img src="' + art + '" alt="' + esc(c.name) + '"></div>';
-  }
-  return '<div class="minicard" data-act="viewCard" data-i="' + c.id + '">' +
-    '<div class="minitags"><span>' + c.kind + '</span><span>' + esc(c.timing) + '</span></div>' +
+  var open = '<div class="minicard' + (picked ? " picked" : "") + '" data-act="' +
+    (act || "viewCard") + '" data-i="' + c.id + '">';
+  if (art) return open + '<img src="' + art + '" alt="' + esc(c.name) + '"></div>';
+  return open +
+    '<div class="minimeta">' + esc(c.kind) + ' &middot; ' + esc(c.timing) + '</div>' +
     '<div class="mininame">' + esc(c.name) + '</div>' +
     '<div class="minitext">' + esc(c.text) + '</div></div>';
 }
@@ -928,9 +1112,9 @@ var HOUSE_RULES = [
   ["Stroke play", "Lowest total wins."],
   ["Starting hand", "4 cards, dealt at the start of the round."],
   ["Hand cap", "7 cards. You cannot draw past it — discard first."],
-  ["Your own deck", "Every player shuffles their own 54-card deck. Duplicates across players are expected and fine. This phone only tracks your deck."],
+  ["Your own deck", "Every player shuffles their own " + CARDS.length + "-card deck. Duplicates across players are expected and fine. This phone only tracks your deck."],
   ["Discard", "Played and discarded cards go to your own discard pile. If your deck runs out, the discard is reshuffled back in."],
-  ["Buy a spin", "Discard 2 cards to buy a spin on the Double Wheel. Spin it from the Hand tab."],
+  ["Buy a spin", "Discard " + DATA.wheelCost + " cards to buy a spin on the Double Wheel. Spin it from the Hand tab. Playing Double Wheel spins for free instead."],
   ["Two per player, per hole", "At most 2 cards may be played on any one player per hole. The app does not enforce this — track it yourselves."],
   ["The app doesn't referee", "It deals cards and keeps score. It never applies card effects or stroke penalties. Cards that rewrite scores get entered by hand with the ± steppers."]
 ];
@@ -1043,6 +1227,8 @@ function renderCards() {
    course count stays live, and Add/Remove genuinely resize the group (3-5). */
 var groupSlots = ["", "", "", ""];
 var settingsMeSlot = 0;
+/* Parallel to groupSlots; null where that slot has no character. */
+var groupChars = [];
 
 function settingsGroupValid() {
   return groupSlots.length >= MIN_PLAYERS &&
@@ -1053,6 +1239,9 @@ function renderSettings() {
   var valid = settingsGroupValid();
   var rows = groupSlots.map(function (v, i) {
     return '<div class="nrow center" style="margin-bottom:10px">' +
+      (CHARACTERS.length
+        ? badgeHtml(characterById(groupChars[i]), 48, { act: "pickCharSlot", slot: i })
+        : "") +
       '<div class="npanel nslot nrow center" style="flex:1;margin:0;min-height:56px;padding:0 16px">' +
       '<input data-slot="' + i + '" value="' + esc(v) + '" placeholder="Player ' + (i + 1) + '">' +
       "</div>" +
@@ -1066,7 +1255,8 @@ function renderSettings() {
       ? '<button class="npanel nact" data-act="settingRemove" style="margin:0">&minus; Remove</button>' : "") +
     "</div>";
   return nheader("SETTINGS") + nsec("Your usual group") +
-    '<p class="nbody" style="margin:0 0 12px">Saved here, these names pre-fill every new round.</p>' +
+    '<p class="nbody" style="margin:0 0 12px">Saved here, these names ' +
+    (CHARACTERS.length ? "and faces " : "") + 'pre-fill every new round.</p>' +
     rows + addRemove +
     '<button class="nsave ' + (valid ? "on" : "off") + '" data-act="saveGroupArt"' +
     (valid ? "" : " disabled") + ">Save group</button>" +
@@ -1076,6 +1266,53 @@ function renderSettings() {
     '<div style="flex:1"><div class="ntitle">Manage courses</div><div class="nbody">' +
     allCourses().length + ' saved &middot; add, edit or delete</div></div>' +
     '<span class="nchev">&rsaquo;</span></div>';
+}
+
+/* ---------- character select ----------
+   One tap picks and closes: this sits between a player and starting a round, so it
+   must not turn into a form. A character already taken by someone else is shown but
+   not pickable — the whole point is telling everyone apart on one scorecard. */
+function renderCharSheet() {
+  var onSetup = charPick.where === "setup";
+  var names = onSetup ? setup.names : groupSlots;
+  var picks = onSetup ? setup.chars : groupChars;
+  var slot = charPick.slot;
+  var mineId = picks[slot] != null ? picks[slot] : null;
+
+  var taken = {};
+  picks.forEach(function (id, i) {
+    if (i !== slot && id != null) {
+      taken[id] = (names[i] || "").trim() || ("Player " + (i + 1));
+    }
+  });
+
+  var cells = CHARACTERS.map(function (ch) {
+    var mine = ch.id === mineId;
+    var by = taken[ch.id];
+    var pickable = mine || !by;
+    return '<button class="cell' + (mine ? " mine" : "") + '"' +
+      (pickable ? "" : " disabled") +
+      // Tapping your own pick clears it, so a character can be given up without
+      // a separate control. -1 is that "none" signal.
+      ' data-act="chooseChar" data-i="' + (mine ? -1 : ch.id) + '">' +
+      badgeHtml(ch, 88, { selected: mine }) +
+      '<span class="chname">' + esc(ch.name) + "</span>" +
+      (by && !mine ? '<span class="ctaken">' + esc(by) + "</span>" : "") +
+      "</button>";
+  }).join("");
+
+  var who = (names[slot] || "").trim();
+  return '<div class="modal nmodal">' +
+    '<div class="nheader"><button class="back" data-act="closeChar">&lsaquo;&nbsp; Back</button>' +
+    "<h1>CHARACTER</h1></div>" +
+    '<p class="nbody" style="margin:0 0 16px">' +
+    (who ? "Who is " + esc(who) + "?" : "Pick a character.") + "</p>" +
+    (CHARACTERS.length
+      ? '<div class="cgrid">' + cells + "</div>"
+      : '<p class="hint">No characters in the roster yet.</p>') +
+    '<div style="height:16px"></div>' +
+    '<button class="big quiet" data-act="chooseChar" data-i="-1">' +
+    (mineId == null ? "Close" : "Play without a character") + "</button></div>";
 }
 
 /* ---------- nav ---------- */
@@ -1122,6 +1359,12 @@ function kindGlyph(kind, cx, cy) {
     g += '<polygon points="' + (cx + 6) + ',' + (cy - 52) + ' ' + (cx - 30) + ',' + (cy + 6) + ' ' +
       (cx - 6) + ',' + (cy + 6) + ' ' + (cx - 12) + ',' + (cy + 52) + ' ' + (cx + 30) + ',' + (cy - 8) + ' ' +
       (cx + 6) + ',' + (cy - 8) + '" fill="' + ICE + '" stroke="none"/>';
+  } else if (kind === "gift") {
+    // A wrapped present: aimed at somebody, but as a favour.
+    g += '<rect x="' + (cx - 36) + '" y="' + (cy - 10) + '" width="72" height="50" stroke="' + ICE + '"/>' +
+      '<path d="M' + cx + ' ' + (cy - 10) + 'v50" stroke="' + ORG + '"/>' +
+      '<circle cx="' + (cx - 17) + '" cy="' + (cy - 26) + '" r="14" stroke="' + ORG + '"/>' +
+      '<circle cx="' + (cx + 17) + '" cy="' + (cy - 26) + '" r="14" stroke="' + ORG + '"/>';
   } else {
     g += person(cx - 30, cy + 2, 1.1, ICE) + person(cx + 30, cy + 2, 1.1, ICE) + person(cx, cy + 18, 1.3, ORG);
   }
@@ -1171,8 +1414,9 @@ function cardFaceSvg(c) {
     '<text x="360" y="74" text-anchor="middle" fill="#4DC3FF" font-size="24" font-weight="800" letter-spacing="7">' +
     esc(c.timing.toUpperCase()) + '</text>' +
     title + oct + body +
-    '<rect x="270" y="902" width="120" height="40" rx="8" fill="#061022" stroke="#22304A" stroke-width="2"/>' +
-    '<text x="330" y="929" text-anchor="middle" fill="#4DC3FF" font-size="21" font-weight="900" letter-spacing="2">' +
+    // Plain text, not a filled chip: a block down here reads as something sitting
+    // on top of the explanation rather than part of the card. Matches Android.
+    '<text x="270" y="929" fill="#4DC3FF" font-size="21" font-weight="900" letter-spacing="2">' +
     esc(c.kind.toUpperCase()) + '</text>' +
     '<text x="620" y="930" text-anchor="end" fill="#5E6C88" font-size="21" font-weight="700">' +
     c.id + ' / ' + CARDS.length + '</text>' +
@@ -1229,11 +1473,14 @@ function stepViewCard(dir) {
 function renderWheel() {
   var stage = wheel.stage;
   var nameSettled = stage === "nameDone" || stage === "done";
+  var free = !!wheel.free;
 
   // No title block, and the name stage collapses to one orange verdict line
-  // once the name lands — said once, cleanly, up top.
+  // once the name lands — said once, cleanly, up top. A free spin has no name
+  // stage at all: card #48 says the name doesn't matter, so asking for a spin
+  // it just told you to disregard would be theatre.
   var html = '<div class="modal">';
-  if (!nameSettled) {
+  if (!nameSettled && !free) {
     html += '<div class="label">Who\'s exempt</div>' +
       '<div class="wheelbox"><div class="wheelptr"></div>' +
       wheelSvg("wheel-name", wheel.nameLabels, wheel.nameRot, null, 14) +
@@ -1244,7 +1491,9 @@ function renderWheel() {
   }
   var cardSettled = stage === "cardDone" || stage === "done";
   if (nameSettled) {
-    html += '<div class="exempt">' + esc(wheel.name) + ' is exempt</div>';
+    html += '<div class="exempt">' + (free
+      ? "Free spin &mdash; the name doesn't matter"
+      : esc(wheel.name) + " is exempt") + '</div>';
     // Like the name wheel, the effect wheel collapses to its result — the
     // card — once it lands, keeping the sheet one screen tall.
     if (!cardSettled) {
@@ -1272,11 +1521,17 @@ function renderWheel() {
     if (wheel.isDual) {
       html += '<div class="exempt" style="color:' + (wheel.fateGood ? '#4DC3FF' : '#FF8A1E') + '">' +
         (wheel.fateGood ? 'GOOD EFFECT' : 'BAD EFFECT') + '</div>' +
-        '<p>' + esc(wheel.name) + (wheel.fateGood
-          ? ' sits this one out. Everyone else gets the good half — the on-yourself version, free.'
-          : ' sits this one out. Everyone else takes the bad half — the attack version.') + '</p>';
+        '<p>' + (free
+          ? (wheel.fateGood
+            ? 'You choose who gets the good half — the on-yourself version, free.'
+            : 'You choose who takes the bad half — the attack version.')
+          : esc(wheel.name) + (wheel.fateGood
+            ? ' sits this one out. Everyone else gets the good half — the on-yourself version, free.'
+            : ' sits this one out. Everyone else takes the bad half — the attack version.')) + '</p>';
     } else {
-      html += '<p>' + esc(wheel.name) + ' sits this one out. Everyone else carries out the effect.</p>';
+      html += '<p>' + (free
+        ? 'You choose who gets the benefit or the punishment.'
+        : esc(wheel.name) + ' sits this one out. Everyone else carries out the effect.') + '</p>';
     }
   }
   html += '<button class="big quiet" data-act="closeWheel">' +
@@ -1569,11 +1824,24 @@ app.addEventListener("click", function (e) {
       }
       render(); break;
     case "addPlayer":
-      if (setup.names.length < MAX_PLAYERS) setup.names.push("");
+      if (setup.names.length < MAX_PLAYERS) { setup.names.push(""); setup.chars.push(null); }
       render(); break;
     case "removePlayer":
-      if (setup.names.length > MIN_PLAYERS) setup.names.pop();
+      if (setup.names.length > MIN_PLAYERS) { setup.names.pop(); setup.chars.pop(); }
       if (setup.meIndex > setup.names.length - 1) setup.meIndex = setup.names.length - 1;
+      render(); break;
+
+    // ---- character select ----
+    case "pickChar": charPick = { where: "setup", slot: i }; render(); break;
+    case "pickCharSlot": charPick = { where: "settings", slot: i }; render(); break;
+    case "closeChar": charPick = null; render(); break;
+    case "chooseChar":
+      if (charPick) {
+        var picked = i < 0 ? null : i;
+        if (charPick.where === "setup") setup.chars[charPick.slot] = picked;
+        else { groupChars[charPick.slot] = picked; savedGroup = false; }
+        charPick = null;
+      }
       render(); break;
     // Straight from the course list into the round — the course is already loaded
     // by the tap that selected it, so this is Start with the sheet closed.
@@ -1583,7 +1851,7 @@ app.addEventListener("click", function (e) {
     case "start":
       commit(newRound(
         setup.names.map(function (x) { return x.trim(); }),
-        setup.meIndex, setup.holes, setupPars(), setup.courseName,
+        setup.meIndex, setup.holes, setupPars(), setup.courseName, setup.chars,
       ));
       roundCourseName = state.courseName || "";
       screen = "round";
@@ -1611,16 +1879,20 @@ app.addEventListener("click", function (e) {
       groupSlots = (settings.players && settings.players.length)
         ? settings.players.slice()
         : ["", "", "", ""];
+      var savedChars = settings.characters || [];
+      groupChars = groupSlots.map(function (_, gi) {
+        return savedChars[gi] != null ? savedChars[gi] : null;
+      });
       settingsMeSlot = Math.min(settings.meIndex || 0, groupSlots.length - 1);
       screen = "settings"; render(); break;
 
     // ---- settings ----
     case "meSlot": settingsMeSlot = i; savedGroup = false; render(); break;
     case "settingAdd":
-      if (groupSlots.length < MAX_PLAYERS) groupSlots.push("");
+      if (groupSlots.length < MAX_PLAYERS) { groupSlots.push(""); groupChars.push(null); }
       savedGroup = false; render(); break;
     case "settingRemove":
-      if (groupSlots.length > MIN_PLAYERS) groupSlots.pop();
+      if (groupSlots.length > MIN_PLAYERS) { groupSlots.pop(); groupChars.pop(); }
       if (settingsMeSlot > groupSlots.length - 1) settingsMeSlot = groupSlots.length - 1;
       savedGroup = false; render(); break;
     case "saveGroupArt":
@@ -1628,6 +1900,9 @@ app.addEventListener("click", function (e) {
       putSettings({
         players: groupSlots.map(function (x) { return x.trim(); }),
         meIndex: settingsMeSlot,
+        characters: groupSlots.map(function (_, gi) {
+          return groupChars[gi] != null ? groupChars[gi] : null;
+        }),
       });
       savedGroup = true; render(); break;
 
@@ -1644,8 +1919,11 @@ app.addEventListener("click", function (e) {
       // A hole only ever deals ONCE — unlock and re-lock grants nothing new,
       // so the lock/unlock cycle can't farm cards.
       if (!s.dealt) s.dealt = [];
+      // Use-it-or-lose-it: a fresh hole's deal REPLACES whatever is still owed
+      // rather than adding to it, so a full hand can't bank a pile of cards.
+      // A re-lock isn't a fresh deal, so it neither grants nor wipes anything.
       if (!s.dealt[lockedHole]) {
-        s.owed += drawForHole(s, lockedHole);
+        s.owed = drawForHole(s, lockedHole);
         s.dealt[lockedHole] = true;
       }
       s.locked[lockedHole] = true;
@@ -1685,7 +1963,11 @@ app.addEventListener("click", function (e) {
       viewCard = null;
       s.hand.splice(at, 1);
       s.discard.push(i);
-      commit(s); break;
+      commit(s);
+      // Card #48 IS the spin — playing it opens the wheel with no further cost,
+      // which is exactly what its text promises.
+      if (i === DATA.freeSpinCard) openWheelNow(true);
+      break;
 
     case "askDiscard": confirmDiscard = i; render(); break;
     case "keepCard": confirmDiscard = null; render(); break;
@@ -1694,30 +1976,31 @@ app.addEventListener("click", function (e) {
     case "nextCard": stepViewCard(1); break;
     case "closeView": viewCard = null; confirmDiscard = null; render(); break;
 
-    case "openWheel": {
-      // The whole pool rides the wheel — what you see is exactly what can hit.
-      var ring = shuffled(WHEEL_POOL);
-      var ringIdx = Math.floor(Math.random() * ring.length);
-      var winner = ring[ringIdx];
-      var nameLabels = [];
-      // Each player's actual name, twice around the wheel, so even 3 players
-      // fill it out.
-      for (var pi = 0; pi < state.players.length * 2; pi++) {
-        nameLabels.push(state.players[pi % state.players.length]);
-      }
-      var fateLabels = [];
-      for (var fi = 0; fi < 8; fi++) fateLabels.push(fi % 2 ? "BAD" : "GOOD");
-      wheel = {
-        stage: "idle", card: winner, name: null,
-        nameLabels: nameLabels, nameSeg: null, nameRot: 0,
-        cardLabels: ring.map(function (c) { return c.name; }),
-        cardIdx: ringIdx, cardRot: 0,
-        // Dual cards get a third spin: good half or bad half.
-        isDual: winner.kind === "dual",
-        fateLabels: fateLabels, fateIdx: null, fateRot: 0, fateGood: null,
-        spinning: false
-      };
+    // Paying for a spin: choose the cards first, then the wheel opens.
+    case "openWheel":
+      if (!canAffordWheel(s)) break;
+      wheelPay = [];
       render(); break;
+    case "payPick": {
+      if (!wheelPay) break;
+      var payAt = wheelPay.indexOf(i);
+      // Tapping a chosen card takes it back; past the limit the rest stop
+      // responding rather than silently swapping one out.
+      if (payAt !== -1) wheelPay.splice(payAt, 1);
+      else if (wheelPay.length < DATA.wheelCost) wheelPay.push(i);
+      render(); break;
+    }
+    case "payCancel": wheelPay = null; render(); break;
+    case "payConfirm": {
+      if (!wheelPay || wheelPay.length !== DATA.wheelCost) break;
+      wheelPay.forEach(function (id) {
+        var k = s.hand.indexOf(id);
+        if (k !== -1) { s.hand.splice(k, 1); s.discard.push(id); }
+      });
+      wheelPay = null;
+      save(s);
+      openWheelNow(false);
+      break;
     }
     case "spinCard": spinWheel("card"); break;
     case "spinFate": spinWheel("fate"); break;
