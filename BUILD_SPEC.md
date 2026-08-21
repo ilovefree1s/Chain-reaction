@@ -107,7 +107,7 @@ Suggested palette: deep pine ground (`#0C1A14`), panels (`#132A21`), muted sage 
   "maxCardsOnOnePlayerPerHole": 2,
   "wheelCost": 2,
   "freeSpinCard": 48,
-  "wheelExcludes": [7, 8, 11, 12, 13, 15, 18, 19, 24, 27, 31, 36, 37, 39, 43, 48, 51, 54],
+  "wheelExcludes": [7, 8, 9, 11, 12, 13, 15, 18, 19, 24, 27, 31, 36, 37, 39, 43, 48, 51, 54],
   "timings": [
     "Before shot",
     "Before tee shot",
@@ -187,5 +187,5 @@ Suggested palette: deep pine ground (`#0C1A14`), panels (`#132A21`), muted sage 
 - Sit on a full hand for several holes without drawing → the owed count never banks up; each hole's deal replaces the last one's leftovers.
 - Tap "Spin the Double Wheel" → asked to pick 2 cards to discard first. Holding fewer than 2 → the button is disabled. Playing card 48 → the wheel opens with nothing else discarded, straight onto the effect wheel with no name spin.
 - Hold 7 cards, come last, try to draw → blocked with a clear message until a card is discarded.
-- Spin the Double Wheel 30 times → no blacklisted card (7, 8, 11, 12, 13, 15, 18, 19, 24, 27, 31, 36, 37, 39, 43, 48, 51, 54) ever appears.
+- Spin the Double Wheel 30 times → no blacklisted card (7, 8, 9, 11, 12, 13, 15, 18, 19, 24, 27, 31, 36, 37, 39, 43, 48, 51, 54) ever appears.
 - Play through 18 holes drawing 2 every hole → deck reshuffles from discard without erroring.
