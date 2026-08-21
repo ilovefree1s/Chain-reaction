@@ -107,7 +107,7 @@ Suggested palette: deep pine ground (`#0C1A14`), panels (`#132A21`), muted sage 
   "maxCardsOnOnePlayerPerHole": 2,
   "wheelCost": 2,
   "freeSpinCard": 48,
-  "wheelExcludes": [7, 8, 9, 11, 12, 13, 15, 18, 19, 24, 27, 31, 36, 37, 39, 43, 48, 51, 54],
+  "wheelExcludes": [7, 8, 9, 11, 12, 13, 15, 18, 19, 24, 27, 31, 36, 37, 39, 43, 48, 51, 54, 56],
   "timings": [
     "Before shot",
     "Before tee shot",
@@ -175,7 +175,8 @@ Suggested palette: deep pine ground (`#0C1A14`), panels (`#132A21`), muted sage 
     { "id": 52, "timing": "After throw", "kind": "self", "name": "Big Putt!", "text": "If you make a putt from outside C1 while a player still to putt is inside C1, they have to putt with their off hand." },
     { "id": 53, "timing": "Before tee shot", "kind": "attack", "name": "Bag Exchange!", "text": "Pick a player to swap bags with. Swap back after the first bogey by either player." },
     { "id": 54, "timing": "Before shot", "kind": "self", "name": "BIG BLUFF", "text": "Pick up your disc and throw your next shot from anyone else's disc, with them. If someone calls you out, you can claim you're holding this card even if you aren't. If they believe you, nothing happens. If they call your bluff and you have it, they take +1 stroke. If they call it and you don't, you take +2 strokes and they take -1." },
-    { "id": 55, "timing": "After throw", "kind": "gift", "name": "Buddy Buddy", "text": "Bless someone with a free mulligan after a bad throw." }
+    { "id": 55, "timing": "After throw", "kind": "gift", "name": "Buddy Buddy", "text": "Bless someone with a free mulligan after a bad throw." },
+    { "id": 56, "timing": "After throw", "kind": "gift", "name": "Doesn't Look OB to Me", "text": "Play on a shot that just went OB. Instead of actually being OB (or in a hazard) they can just play it where it lies, with no penalty at all." }
   ]
 }
 ```
@@ -187,5 +188,5 @@ Suggested palette: deep pine ground (`#0C1A14`), panels (`#132A21`), muted sage 
 - Sit on a full hand for several holes without drawing → the owed count never banks up; each hole's deal replaces the last one's leftovers.
 - Tap "Spin the Double Wheel" → asked to pick 2 cards to discard first. Holding fewer than 2 → the button is disabled. Playing card 48 → the wheel opens with nothing else discarded, straight onto the effect wheel with no name spin.
 - Hold 7 cards, come last, try to draw → blocked with a clear message until a card is discarded.
-- Spin the Double Wheel 30 times → no blacklisted card (7, 8, 9, 11, 12, 13, 15, 18, 19, 24, 27, 31, 36, 37, 39, 43, 48, 51, 54) ever appears.
+- Spin the Double Wheel 30 times → no blacklisted card (7, 8, 9, 11, 12, 13, 15, 18, 19, 24, 27, 31, 36, 37, 39, 43, 48, 51, 54, 56) ever appears.
 - Play through 18 holes drawing 2 every hole → deck reshuffles from discard without erroring.

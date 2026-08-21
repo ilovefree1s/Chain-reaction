@@ -38,7 +38,7 @@ object Rules {
     // The house blacklist: reaction cards plus everything too situational,
     // too group-shaped or too slow to land as a wheel result — and the Double
     // Wheel itself, so the wheel can never demand another wheel.
-    val WHEEL_EXCLUDES = setOf(7, 8, 9, 11, 12, 13, 15, 18, 19, 24, 27, 31, 36, 37, 39, 43, 48, 51, 54)
+    val WHEEL_EXCLUDES = setOf(7, 8, 9, 11, 12, 13, 15, 18, 19, 24, 27, 31, 36, 37, 39, 43, 48, 51, 54, 56)
 
     /** Display order for the rules reference. */
     val TIMINGS = listOf(
@@ -112,6 +112,7 @@ object CardDeck {
         GameCard(53, "Before tee shot", CardKind.ATTACK, "Bag Exchange!", "Pick a player to swap bags with. Swap back after the first bogey by either player."),
         GameCard(54, "Before shot", CardKind.SELF, "BIG BLUFF", "Pick up your disc and throw your next shot from anyone else's disc, with them. If someone calls you out, you can claim you're holding this card even if you aren't. If they believe you, nothing happens. If they call your bluff and you have it, they take +1 stroke. If they call it and you don't, you take +2 strokes and they take -1."),
         GameCard(55, "After throw", CardKind.GIFT, "Buddy Buddy", "Bless someone with a free mulligan after a bad throw."),
+        GameCard(56, "After throw", CardKind.GIFT, "Doesn't Look OB to Me", "Play on a shot that just went OB. Instead of actually being OB (or in a hazard) they can just play it where it lies, with no penalty at all."),
     )
 
     private val byId: Map<Int, GameCard> = ALL.associateBy { it.id }
