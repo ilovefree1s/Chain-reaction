@@ -105,6 +105,8 @@ private fun App(vm: GameViewModel = viewModel()) {
 
     when (screen) {
         Screen.MENU -> MenuScreen(
+            // Clears itself the moment a character is saved.
+            showCharacterHint = vm.settings.myCharacter == null,
             // The sheet's PLAY label is painted in, so the button can't announce a
             // round in progress — it still resumes one rather than starting fresh.
             // The chains only rattle for a new round; resuming is not an occasion.
@@ -162,6 +164,8 @@ private fun App(vm: GameViewModel = viewModel()) {
             // So the slider can be heard while it's being dragged.
             onPreviewSfx = { volume -> sfx.menuTap(volume) },
             onRenameCharacter = vm::renameCharacter,
+            stats = vm.stats,
+            onClearStats = vm::clearStats,
             onSettingsChange = vm::updateSettings,
             onSaveCourse = vm::saveCourse,
             onDeleteCourse = vm::deleteCourse,
@@ -179,8 +183,10 @@ private fun App(vm: GameViewModel = viewModel()) {
                     vm = vm,
                     characters = vm.characters,
                     onMenu = { go(Screen.MENU) },
+                    // finishRound banks the round into your stats on the way out;
+                    // ending one from the Rules tab abandons it and records nothing.
                     onFinishRound = {
-                        vm.endRound()
+                        vm.finishRound()
                         go(Screen.MENU)
                     },
                 )
@@ -323,8 +329,8 @@ private fun Round(
                     state = state,
                     modifier = content,
                     onDraw = vm::draw,
-                    onResolve = { id ->
-                        vm.resolveCard(id)
+                    onResolve = { id, played, target ->
+                        vm.resolveCard(id, played, target)
                         // The Double Wheel card IS the spin — playing it opens the wheel with no
                         // further cost, which is exactly what its text promises.
                         if (id == Rules.FREE_SPIN_CARD) {
@@ -356,7 +362,9 @@ private fun Round(
         WheelCostSheet(
             hand = state.hand,
             onPaid = { paid ->
-                paid.forEach(vm::resolveCard)
+                // Paying for a spin is a discard, not a play — it shouldn't show up
+                // in your stats as cards you used on anybody.
+                paid.forEach { vm.resolveCard(it, played = false) }
                 payingForWheel = false
                 wheelIsFree = false
                 wheelOpen = true

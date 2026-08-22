@@ -8,6 +8,14 @@ enum class CardKind(val label: String) {
     REACT("react"),
     GROUP("group"),
     GIFT("gift"),
+    ;
+
+    /**
+     * Whether playing this lands on one named person, and so is worth asking about.
+     * Self is you, group is everyone, and a reaction answers a card rather than a player —
+     * none of those have anyone to name.
+     */
+    val aimedAtSomeone: Boolean get() = this == ATTACK || this == DUAL || this == GIFT
 }
 
 data class GameCard(

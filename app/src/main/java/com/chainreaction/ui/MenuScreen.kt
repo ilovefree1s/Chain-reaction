@@ -13,7 +13,16 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.border
+import androidx.compose.material3.Text
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.sp
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -63,6 +72,8 @@ private val BUTTON_BANDS = listOf(
 @Composable
 fun MenuScreen(
     modifier: Modifier = Modifier,
+    /** Shown until a character is saved, then gone for good. */
+    showCharacterHint: Boolean = false,
     onPlay: () -> Unit,
     onCards: () -> Unit,
     onRules: () -> Unit,
@@ -129,6 +140,36 @@ fun MenuScreen(
                     ),
                 ),
         )
+
+        // A nudge, not a gate. It sits in the gap directly above the button stack —
+        // next to the Settings button it's pointing at, and clear of the logo, which
+        // it used to cut across. Tapping it goes straight to Settings, and saving a
+        // character is the only thing that clears it.
+        if (showCharacterHint) {
+            Box(
+                Modifier
+                    .align(Alignment.BottomCenter)
+                    .navigationBarsPadding()
+                    .padding(bottom = maxHeight * BUTTONS_HEIGHT_FRACTION)
+                    .padding(horizontal = 16.dp, vertical = 6.dp)
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    // Solid, because the artwork behind it is bright sky in places.
+                    .background(NeonBg.copy(alpha = 0.88f))
+                    .border(2.dp, NeonOrange, RoundedCornerShape(12.dp))
+                    .clickable(onClick = onSettings)
+                    .padding(horizontal = 14.dp, vertical = 10.dp),
+            ) {
+                Text(
+                    "Lock in your profile in Settings  ›",
+                    color = NeonOrange,
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Black,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+        }
 
         BoxWithConstraints(
             Modifier

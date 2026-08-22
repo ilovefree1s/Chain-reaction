@@ -33,6 +33,7 @@ import com.chainreaction.data.Character
 import com.chainreaction.data.Course
 import com.chainreaction.data.Rules
 import com.chainreaction.data.Settings
+import com.chainreaction.data.Stats
 import kotlin.math.roundToInt
 
 /**
@@ -52,6 +53,9 @@ fun SettingsScreen(
     onPreviewSfx: (Float) -> Unit = {},
     /** Typing over the name beside your picked face renames that character for good. */
     onRenameCharacter: (id: Int, name: String) -> Unit = { _, _ -> },
+    /** Your own history, kept on this phone. */
+    stats: Stats = Stats(),
+    onClearStats: () -> Unit = {},
     onSettingsChange: (Settings) -> Unit,
     onSaveCourse: (Course) -> Unit,
     onDeleteCourse: (String) -> Unit,
@@ -67,6 +71,7 @@ fun SettingsScreen(
     var volume by remember(settings.sfxVolume) { mutableFloatStateOf(settings.sfxVolume) }
 
     var coursesOpen by remember { mutableStateOf(false) }
+    var statsOpen by remember { mutableStateOf(false) }
     var holeCount by remember { mutableIntStateOf(0) }
     val pars = remember { mutableStateListOf<Int>() }
     fun resizePars(n: Int) {
@@ -162,6 +167,34 @@ fun SettingsScreen(
             Text("›", color = NeonIce, fontSize = 28.sp, fontWeight = FontWeight.Black)
         }
 
+        NeonSectionLabel("Stats")
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .neonPanel()
+                .clickable { statsOpen = true }
+                .padding(14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(Modifier.weight(1f)) {
+                Text("Your stats", color = NeonWhite, fontSize = 20.sp, fontWeight = FontWeight.ExtraBold)
+                Text(
+                    // Says why it's empty rather than just showing zeroes.
+                    if (settings.myCharacter == null) {
+                        "Lock in a profile above and they start counting"
+                    } else if (stats.gamesPlayed == 0) {
+                        "Nothing yet · finish a round to start"
+                    } else {
+                        "${stats.gamesPlayed} rounds · ${stats.wins} won · " +
+                            "${stats.totalCardsPlayed} cards played"
+                    },
+                    color = NeonBody,
+                    fontSize = 15.sp,
+                )
+            }
+            Text("›", color = NeonIce, fontSize = 28.sp, fontWeight = FontWeight.Black)
+        }
+
         NeonSectionLabel("Sound")
         Text(
             if (volume <= 0f) "Sound effects  ·  off"
@@ -204,6 +237,15 @@ fun SettingsScreen(
             onSaveCourse = { name -> onSaveCourse(Course(name, holeCount, pars.take(holeCount))) },
             onDeleteCourse = onDeleteCourse,
             onDismiss = { coursesOpen = false },
+        )
+    }
+
+    if (statsOpen) {
+        StatsSheet(
+            stats = stats,
+            characters = characters,
+            onClear = onClearStats,
+            onDismiss = { statsOpen = false },
         )
     }
 

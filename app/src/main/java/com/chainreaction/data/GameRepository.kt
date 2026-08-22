@@ -53,6 +53,14 @@ class GameRepository(context: Context) {
         prefs.edit().putString(KEY_CHARACTER_NAMES, o.toString()).apply()
     }
 
+    /** Your own history. Same apply() reasoning as the names — small and often. */
+    fun loadStats(): Stats =
+        prefs.getString(KEY_STATS, null)?.let { Stats.fromJson(it) } ?: Stats()
+
+    fun saveStats(stats: Stats) {
+        prefs.edit().putString(KEY_STATS, stats.toJson()).apply()
+    }
+
     fun loadSettings(): Settings =
         prefs.getString(KEY_SETTINGS, null)?.let { Settings.fromJson(it) } ?: Settings()
 
@@ -66,5 +74,6 @@ class GameRepository(context: Context) {
         const val KEY_COURSES = "courses"
         const val KEY_SETTINGS = "settings"
         const val KEY_CHARACTER_NAMES = "characterNames"
+        const val KEY_STATS = "stats"
     }
 }

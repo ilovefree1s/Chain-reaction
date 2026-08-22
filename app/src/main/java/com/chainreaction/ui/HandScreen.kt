@@ -32,7 +32,7 @@ fun HandScreen(
     state: GameState,
     modifier: Modifier = Modifier,
     onDraw: () -> Unit,
-    onResolve: (cardId: Int) -> Unit,
+    onResolve: (cardId: Int, played: Boolean, target: String?) -> Unit,
     onOpenWheel: () -> Unit,
 ) {
     // The card enlarged to its full face, if any. Play and Discard live there.
@@ -141,6 +141,8 @@ fun HandScreen(
             initialCardId = id,
             onDismiss = { enlarged = null },
             onResolve = onResolve,
+            players = state.players,
+            meIndex = state.meIndex,
         )
     }
 }

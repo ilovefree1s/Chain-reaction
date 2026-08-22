@@ -127,6 +127,28 @@ Play resumes a round in progress rather than starting a new one. Cards and Rules
 menu destinations; the in-round Rules tab still carries both plus the round-specific actions
 (save this course, end round).
 
+Until a character is saved, the menu carries an orange note in the gap above the buttons —
+*Lock in your profile in Settings* — which taps straight through to Settings. It shows on
+every launch and clears itself the moment `myCharacter` is set, so it can't be dismissed and
+forgotten. It sits above the button stack rather than at the top of the screen, where it cut
+across the logo.
+
+**Settings → Your stats** keeps a history of your rounds — and only yours. The app tracks
+the whole table's scores during a round but nobody else's history, and none of it leaves the
+phone. Nothing is recorded until a profile is locked in, so the numbers always belong to
+somebody; it lives behind a row in Settings because the menu's four buttons are painted into
+the artwork and a fifth would mean redrawing it.
+
+Most of it falls out of what the app already had to know: **rounds played, won, lost** come
+from the results screen's own standings, and an **ace** is a score of 1 on a locked hole. A
+tie for the win is counted apart from both — the app never invents a playoff, so calling one
+a win would be putting words in its mouth. **Cards played** needed one change: Play and
+Discard used to be the same action internally, both just moving the card to your discard
+pile, so they're now told apart. **Who you play cards against** is the only thing that asks
+you for anything: playing a card that lands on one person (attack, gift or dual) asks who.
+Self, group and reaction cards have nobody to name and skip the question. Paying two cards
+for a wheel spin is a discard, not a play, and doesn't count against anyone.
+
 **Settings** holds your own name and face, course management, and the sound slider. Only
 *you* are stored, not the whole group — the rest of the table changes round to round, and
 typing three names on Setup beats maintaining a roster you keep having to correct. You are

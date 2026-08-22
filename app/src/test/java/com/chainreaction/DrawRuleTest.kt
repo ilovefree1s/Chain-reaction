@@ -1,12 +1,15 @@
 package com.chainreaction
 
 import com.chainreaction.data.CardDeck
+import com.chainreaction.data.CardKind
 import com.chainreaction.data.Character
 import com.chainreaction.data.CharacterLibrary
 import com.chainreaction.data.Course
 import com.chainreaction.data.CourseLibrary
 import com.chainreaction.data.GameState
 import com.chainreaction.data.Rules
+import com.chainreaction.data.Stats
+import com.chainreaction.data.acesFor
 import com.chainreaction.data.drawCount
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
@@ -525,6 +528,86 @@ class DrawRuleTest {
         assertEquals(CharacterLibrary.FALLBACK, CharacterLibrary.parseColor(""))
         assertEquals(CharacterLibrary.FALLBACK, CharacterLibrary.parseColor("orange"))
         assertEquals(CharacterLibrary.FALLBACK, CharacterLibrary.parseColor("#FFF"))
+    }
+
+    // ---- stats: yours only, and derived from what the app already knew ----------
+
+    @Test
+    fun `an ace is a one, and only on a hole that has been locked`() {
+        var state = GameState.newRound(listOf("A", "B", "C"), meIndex = 0, holeCount = 9)
+        // Hole 1: ace it and lock. Hole 2: ace it but leave it open.
+        state = state.withScoreDelta(0, 0, -2).lockAndAdvance()
+        state = state.withScoreDelta(1, 0, -2)
+        assertEquals(1, state.scores[0][0])
+        assertEquals(1, state.scores[1][0])
+        assertEquals("an unlocked hole hasn't happened yet", 1, state.acesFor(0))
+    }
+
+    @Test
+    fun `aces are counted per player, not for the table`() {
+        var state = GameState.newRound(listOf("A", "B", "C"), meIndex = 0, holeCount = 9)
+        state = state.withScoreDelta(0, 1, -2).lockAndAdvance()
+        assertEquals(0, state.acesFor(0))
+        assertEquals(1, state.acesFor(1))
+    }
+
+    @Test
+    fun `an outright win, a tie and a loss land in different columns`() {
+        var s = Stats()
+        s = s.withRound(won = true, tied = false, aces = 0, profile = 1)
+        s = s.withRound(won = false, tied = true, aces = 0, profile = 1)
+        s = s.withRound(won = false, tied = false, aces = 0, profile = 1)
+        assertEquals(3, s.gamesPlayed)
+        assertEquals(1, s.wins)
+        assertEquals(1, s.ties)
+        assertEquals("a tie is neither — the app never invents a playoff", 1, s.losses)
+    }
+
+    @Test
+    fun `playing a card counts the card and the player it landed on`() {
+        var s = Stats()
+        s = s.withCardPlayed(1, "Alex")
+        s = s.withCardPlayed(1, "Alex")
+        s = s.withCardPlayed(2, "Jo")
+        assertEquals(3, s.totalCardsPlayed)
+        assertEquals(2, s.cardsPlayed[1])
+        assertEquals(listOf("Alex" to 2, "Jo" to 1), s.byMostTargeted)
+    }
+
+    @Test
+    fun `a card with nobody to aim at still counts as played`() {
+        val s = Stats().withCardPlayed(1, null)
+        assertEquals(1, s.totalCardsPlayed)
+        assertTrue("no target means no tally against anyone", s.playsAgainst.isEmpty())
+    }
+
+    @Test
+    fun `discards are counted apart from plays`() {
+        var s = Stats().withCardPlayed(1, "Alex")
+        s = s.withCardDiscarded()
+        s = s.withCardDiscarded()
+        assertEquals(1, s.totalCardsPlayed)
+        assertEquals(2, s.cardsDiscarded)
+    }
+
+    @Test
+    fun `gifts given comes from the card's kind, not a counter of its own`() {
+        val gift = CardDeck.ALL.first { it.kind == CardKind.GIFT }
+        val attack = CardDeck.ALL.first { it.kind == CardKind.ATTACK }
+        var s = Stats().withCardPlayed(gift.id, "Alex")
+        s = s.withCardPlayed(gift.id, "Jo")
+        s = s.withCardPlayed(attack.id, "Alex")
+        assertEquals(2, s.giftsGiven)
+    }
+
+    @Test
+    fun `only cards that land on one person ask who`() {
+        assertTrue(CardKind.ATTACK.aimedAtSomeone)
+        assertTrue(CardKind.GIFT.aimedAtSomeone)
+        assertTrue(CardKind.DUAL.aimedAtSomeone)
+        assertTrue("self is you", !CardKind.SELF.aimedAtSomeone)
+        assertTrue("group is everyone", !CardKind.GROUP.aimedAtSomeone)
+        assertTrue("a reaction answers a card", !CardKind.REACT.aimedAtSomeone)
     }
 
     private fun stateWith(

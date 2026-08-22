@@ -320,7 +320,15 @@ fun CardFaceDialog(
     cardIds: List<Int>,
     initialCardId: Int,
     onDismiss: () -> Unit,
-    onResolve: ((Int) -> Unit)? = null,
+    /**
+     * Both Play and Discard send the card to the discard pile — [played] is the only
+     * thing that tells them apart, and the stats need it. [target] is who it landed on,
+     * null for a discard or a card that isn't aimed at anybody.
+     */
+    onResolve: ((id: Int, played: Boolean, target: String?) -> Unit)? = null,
+    /** The table, so a card aimed at someone can ask who. Empty skips the question. */
+    players: List<String> = emptyList(),
+    meIndex: Int = 0,
 ) {
     Dialog(
         onDismissRequest = onDismiss,
@@ -333,8 +341,12 @@ fun CardFaceDialog(
             initialPage = cardIds.indexOf(initialCardId).coerceAtLeast(0),
         ) { cardIds.size }
         var confirmingDiscard by remember { mutableStateOf(false) }
+        var choosingTarget by remember { mutableStateOf(false) }
         // A half-typed discard shouldn't follow you to the next card.
-        LaunchedEffect(pagerState.currentPage) { confirmingDiscard = false }
+        LaunchedEffect(pagerState.currentPage) {
+            confirmingDiscard = false
+            choosingTarget = false
+        }
         val card = CardDeck.card(cardIds[pagerState.currentPage])
 
         Box(
@@ -373,8 +385,30 @@ fun CardFaceDialog(
 
                 Spacer(Modifier.height(16.dp))
 
+                val opponents = remember(players, meIndex) {
+                    players.filterIndexed { i, name -> i != meIndex && name.isNotBlank() }
+                }
+
                 if (onResolve != null) {
-                    if (confirmingDiscard) {
+                    if (choosingTarget) {
+                        // Who it landed on. Only asked for cards that are aimed at
+                        // somebody — self and group cards have no one to name.
+                        Text(
+                            "Play ${card.name} on…",
+                            color = NeonWhite,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                        )
+                        Spacer(Modifier.height(10.dp))
+                        opponents.forEach { name ->
+                            NeonBigButton(name, enabled = true) {
+                                onResolve(card.id, true, name)
+                                onDismiss()
+                            }
+                            Spacer(Modifier.height(8.dp))
+                        }
+                        NeonQuietButton("Never mind") { choosingTarget = false }
+                    } else if (confirmingDiscard) {
                         Text(
                             "Discard ${card.name}?",
                             color = NeonWhite,
@@ -388,7 +422,7 @@ fun CardFaceDialog(
                             }
                             Box(Modifier.weight(1f)) {
                                 NeonBigButton("Discard", enabled = true) {
-                                    onResolve(card.id)
+                                    onResolve(card.id, false, null)
                                     onDismiss()
                                 }
                             }
@@ -397,8 +431,12 @@ fun CardFaceDialog(
                         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                             Box(Modifier.weight(1f)) {
                                 NeonBigButton("Play", enabled = true) {
-                                    onResolve(card.id)
-                                    onDismiss()
+                                    if (card.kind.aimedAtSomeone && opponents.isNotEmpty()) {
+                                        choosingTarget = true
+                                    } else {
+                                        onResolve(card.id, true, null)
+                                        onDismiss()
+                                    }
                                 }
                             }
                             Box(Modifier.weight(1f)) {
