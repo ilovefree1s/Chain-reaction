@@ -10,6 +10,10 @@
     { "id": 7, "name": "Chris", "color": "#FF5E7A" },
     { "id": 8, "name": "Avery", "color": "#1E6FFF" },
     { "id": 9, "name": "Zac", "color": "#24D6C4" },
-    { "id": 10, "name": "James", "color": "#F45BD1" }
+    { "id": 10, "name": "James", "color": "#F45BD1" },
+    { "id": 11, "name": "Lyndsi", "color": "#A6FF3F" },
+    { "id": 12, "name": "Cougar", "color": "#FF3B30" },
+    { "id": 13, "name": "Grace", "color": "#EDE3C8" },
+    { "id": 14, "name": "Zephyrox", "color": "#7A5CFF" }
   ]
 }
