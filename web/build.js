@@ -125,10 +125,26 @@ function copyArt(source, target) {
   return "assets/" + target;
 }
 
+// ---- audio, from the Android raw resources ----
+// Same one-copy-in-the-repo rule as the artwork: Android owns the file, the web
+// build takes a copy. Precached with everything else, so it works with no signal.
+const rawDir = path.join(root, "app", "src", "main", "res", "raw");
+function copyAudio(name) {
+  const from = path.join(rawDir, name);
+  if (!fs.existsSync(from)) {
+    console.warn(`! ${name} not found — building without it.`);
+    return "";
+  }
+  fs.copyFileSync(from, path.join(assetsDir, name));
+  copied.push(name);
+  return "assets/" + name;
+}
+
 const menuImage = copyArt("chainreactionmain.png", "menu.png");
 const buttonsImage = copyArt("mainbuttons.png", "buttons.png");
 const grassImage = copyArt("moregrass.png", "grass.png");
 const iconImage = copyArt("chainreactionicon.png", "icon.png");
+const menuSound = copyAudio("chains.mp3");
 
 // ---- card faces: card_01 .. one per card, dropped into the Android drawables ----
 // Optional, per card — any card without art keeps its text tile. Alphabetical
@@ -178,6 +194,7 @@ const template = fs.readFileSync(path.join(__dirname, "template.html"), "utf8");
   "__MENU_IMAGE__",
   "__BUTTONS_IMAGE__",
   "__GRASS_IMAGE__",
+  "__MENU_SOUND__",
 ].forEach((token) => {
   if (!template.includes(token)) {
     console.error(`template.html is missing the ${token} placeholder`);
@@ -194,6 +211,7 @@ const html = template
   .replace("__MENU_IMAGE__", menuImage)
   .replace("__BUTTONS_IMAGE__", buttonsImage)
   .replace("__GRASS_IMAGE__", grassImage)
+  .replace("__MENU_SOUND__", menuSound)
   ;
 fs.writeFileSync(path.join(dist, "index.html"), html, "utf8");
 

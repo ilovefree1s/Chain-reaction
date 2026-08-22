@@ -4,7 +4,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 /**
- * Preferences that outlive rounds: the usual group, and whether the app makes noise.
+ * Preferences that outlive rounds: the usual group, and how loud the app is.
  *
  * [defaultPlayers] pre-fills Setup — the same four people play most rounds, and retyping
  * their names every time is the kind of friction that gets an app left in the car.
@@ -14,6 +14,8 @@ data class Settings(
     val defaultMeIndex: Int = 0,
     /** The character each usual player goes by, parallel to [defaultPlayers]. */
     val defaultCharacters: List<Int?> = emptyList(),
+    /** Sound effect volume, 0f silent to 1f full. Phones live in pockets on a course. */
+    val sfxVolume: Float = DEFAULT_SFX_VOLUME,
 ) {
     val hasRoster: Boolean
         get() = defaultPlayers.size in Rules.MIN_PLAYERS..Rules.MAX_PLAYERS &&
@@ -31,9 +33,13 @@ data class Settings(
                 defaultPlayers.indices.forEach { a.put(characterFor(it) ?: JSONObject.NULL) }
             },
         )
+        put("sfxVolume", sfxVolume.toDouble())
     }.toString()
 
     companion object {
+        /** Quiet enough not to startle a group standing round a tee pad. */
+        const val DEFAULT_SFX_VOLUME = 0.4f
+
         fun fromJson(raw: String): Settings = try {
             val o = JSONObject(raw)
             val arr = o.getJSONArray("players")
@@ -44,6 +50,9 @@ data class Settings(
                 defaultCharacters = o.optJSONArray("characters")?.let { c ->
                     List(c.length()) { if (c.isNull(it)) null else c.getInt(it) }
                 } ?: emptyList(),
+                // Absent on settings saved before the app made any noise.
+                sfxVolume = o.optDouble("sfxVolume", DEFAULT_SFX_VOLUME.toDouble())
+                    .toFloat().coerceIn(0f, 1f),
             )
         } catch (_: Exception) {
             Settings()

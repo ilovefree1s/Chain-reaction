@@ -56,6 +56,7 @@ import com.chainreaction.ui.RulesScreen
 import com.chainreaction.ui.ScoreScreen
 import com.chainreaction.ui.SettingsScreen
 import com.chainreaction.ui.SetupScreen
+import com.chainreaction.ui.rememberSfx
 import com.chainreaction.ui.WheelCostSheet
 import com.chainreaction.ui.NeonBg
 import com.chainreaction.ui.NeonBlue
@@ -95,16 +96,21 @@ private fun App(vm: GameViewModel = viewModel()) {
     val screen = Screen.entries[screenIndex]
     fun go(target: Screen) { screenIndex = target.ordinal }
 
+    // The app's only noise. Wrapped round the menu's four targets rather than baked
+    // into MenuScreen, which stays a dumb sheet of tap zones over artwork.
+    val sfx = rememberSfx()
+    fun chime() = sfx.menuTap(vm.settings.sfxVolume)
+
     BackHandler(enabled = screen != Screen.MENU) { go(Screen.MENU) }
 
     when (screen) {
         Screen.MENU -> MenuScreen(
             // The sheet's PLAY label is painted in, so the button can't announce a
             // round in progress — it still resumes one rather than starting fresh.
-            onPlay = { go(if (vm.state != null) Screen.ROUND else Screen.SETUP) },
-            onCards = { go(Screen.CARDS) },
-            onRules = { go(Screen.RULES) },
-            onSettings = { go(Screen.SETTINGS) },
+            onPlay = { chime(); go(if (vm.state != null) Screen.ROUND else Screen.SETUP) },
+            onCards = { chime(); go(Screen.CARDS) },
+            onRules = { chime(); go(Screen.RULES) },
+            onSettings = { chime(); go(Screen.SETTINGS) },
         )
 
         Screen.SETUP -> SubScreen("New round", onBack = { go(Screen.MENU) }) { content ->
@@ -148,6 +154,8 @@ private fun App(vm: GameViewModel = viewModel()) {
             modifier = Modifier
                 .background(NeonBg)
                 .safeDrawingPadding(),
+            // So the slider can be heard while it's being dragged.
+            onPreviewSfx = { volume -> sfx.menuTap(volume) },
             onSettingsChange = vm::updateSettings,
             onSaveCourse = vm::saveCourse,
             onDeleteCourse = vm::deleteCourse,

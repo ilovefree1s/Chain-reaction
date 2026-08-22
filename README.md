@@ -124,7 +124,18 @@ menu destinations; the in-round Rules tab still carries both plus the round-spec
 (save this course, end round).
 
 **Settings** holds the usual group (pre-fills every new round) and course management. The app
-is deliberately silent — there are no sound effects and no audio assets in either build.
+makes exactly one noise: a chain rattle on the four menu buttons, at whatever the
+**Sound** slider at the bottom of Settings is set to. Nothing else in either build plays
+audio.
+
+The clip lives at [app/src/main/res/raw/chains.mp3](app/src/main/res/raw/chains.mp3) —
+Android loads it as `R.raw.chains` through a `SoundPool`, and `web/build.js` copies it
+into `docs/assets/` and precaches it, so it still rattles with no signal. One copy in the
+repo, same rule as the artwork. Android resource names allow only lowercase letters,
+digits and underscores, so a new clip has to be named that way or the build fails.
+
+Volume defaults to 40% and saves on release rather than on every pixel of the drag. Zero
+is properly silent — the clip isn't played at nothing.
 
 The launcher icon is `app/src/main/res/drawable-nodpi/chainreactionicon.png`, wired up as an
 adaptive icon. Adaptive layers are 108dp but launchers only show the middle 72dp, so

@@ -12,9 +12,12 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -30,6 +33,7 @@ import com.chainreaction.data.Character
 import com.chainreaction.data.Course
 import com.chainreaction.data.Rules
 import com.chainreaction.data.Settings
+import kotlin.math.roundToInt
 
 /**
  * Settings in the neon style, drawn in code rather than shipped as artwork. Real
@@ -44,6 +48,8 @@ fun SettingsScreen(
     canDelete: (Course) -> Boolean,
     characters: List<Character> = emptyList(),
     modifier: Modifier = Modifier,
+    /** Plays the menu sound at the given volume, so the slider can be heard. */
+    onPreviewSfx: (Float) -> Unit = {},
     onSettingsChange: (Settings) -> Unit,
     onSaveCourse: (Course) -> Unit,
     onDeleteCourse: (String) -> Unit,
@@ -62,6 +68,10 @@ fun SettingsScreen(
     }
     var picking by remember { mutableIntStateOf(-1) }
     var saved by remember { mutableStateOf(false) }
+
+    // Volume saves on release rather than on every pixel of the drag, and isn't part
+    // of the group, so it doesn't wait on Save group.
+    var volume by remember(settings.sfxVolume) { mutableFloatStateOf(settings.sfxVolume) }
 
     var coursesOpen by remember { mutableStateOf(false) }
     var holeCount by remember { mutableIntStateOf(0) }
@@ -135,7 +145,8 @@ fun SettingsScreen(
         Spacer(Modifier.height(16.dp))
         NeonBigButton("Save group", enabled = valid) {
             onSettingsChange(
-                Settings(
+                // copy(), so saving the group doesn't reset the volume.
+                settings.copy(
                     defaultPlayers = slots.map { it.trim() },
                     defaultMeIndex = meSlot,
                     defaultCharacters = slots.indices.map { i ->
@@ -183,6 +194,30 @@ fun SettingsScreen(
             }
             Text("›", color = NeonIce, fontSize = 28.sp, fontWeight = FontWeight.Black)
         }
+
+        NeonSectionLabel("Sound")
+        Text(
+            if (volume <= 0f) "Sound effects  ·  off"
+            else "Sound effects  ·  ${(volume * 100).roundToInt()}%",
+            color = NeonBody,
+            fontSize = 16.sp,
+            modifier = Modifier.padding(bottom = 4.dp),
+        )
+        Slider(
+            value = volume,
+            onValueChange = { volume = it },
+            // Saved and sounded on release: dragging would otherwise write to disk
+            // and retrigger the clip on every frame.
+            onValueChangeFinished = {
+                onSettingsChange(settings.copy(sfxVolume = volume))
+                onPreviewSfx(volume)
+            },
+            colors = SliderDefaults.colors(
+                thumbColor = NeonOrange,
+                activeTrackColor = NeonOrange,
+                inactiveTrackColor = NeonChipBg,
+            ),
+        )
         Spacer(Modifier.height(28.dp))
     }
 
