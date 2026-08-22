@@ -76,7 +76,7 @@ fun HandScreen(
 
         item {
             // The wheel is no longer free: it costs cards, and you can't pay what
-            // you don't hold. Card #48 is the way round that.
+            // you don't hold. The Double Wheel card is the way round that.
             val canAfford = state.hand.size >= Rules.WHEEL_COST
             Column {
                 NeonBlueButton(

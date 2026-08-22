@@ -28,7 +28,7 @@ import com.chainreaction.data.Rules
 
 /**
  * The price of spinning the Double Wheel off your own bat: [Rules.WHEEL_COST] cards
- * out of your hand, and you choose which. Playing card #48 skips this entirely —
+ * out of your hand, and you choose which. Playing the Double Wheel card skips this entirely —
  * that card's whole text is a free spin, so the card itself is the payment.
  *
  * Deliberately a deliberate act: the wheel is the most dramatic thing in the game and

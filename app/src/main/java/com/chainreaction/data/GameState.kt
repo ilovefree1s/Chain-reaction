@@ -195,7 +195,12 @@ data class GameState(
     }.toString()
 
     companion object {
-        const val SCHEMA_VERSION = 1
+        /**
+         * 2: the deck was re-sorted alphabetically and renumbered, so a round saved
+         * under version 1 holds ids that now mean different cards. Bumping drops
+         * those rounds rather than dealing somebody the wrong hand mid-round.
+         */
+        const val SCHEMA_VERSION = 2
 
         fun newRound(
             players: List<String>,

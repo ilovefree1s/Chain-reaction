@@ -11,11 +11,18 @@ its own copy of the scorecard, exactly as [BUILD_SPEC.md](BUILD_SPEC.md) describ
 
 ## Where the rules live
 
-[BUILD_SPEC.md](BUILD_SPEC.md) is the source of truth for the 55 cards. The web build reads
+[BUILD_SPEC.md](BUILD_SPEC.md) is the source of truth for the 60 cards, held in alphabetical
+order by name with ids running 1-N to match. The web build reads
 its card data straight out of the spec's ```json block at build time, so the spec and the web
 app can't drift. The Android build has the same data transcribed into
 [GameCard.kt](app/src/main/java/com/chainreaction/data/GameCard.kt), verified against the spec
-by unit test (`deck is 55 cards with unique ids one through fifty-five`).
+by unit test (`deck is 60 cards with unique ids one through sixty`).
+
+Ids are positional, not permanent: re-sorting the deck renumbers them. Nothing in either
+build hardcodes one — `wheelExcludes` and `freeSpinCard` live in the spec beside the cards,
+and prose names cards rather than numbering them. `GameState.SCHEMA_VERSION` is bumped
+whenever ids move, so a round saved under the old numbering is dropped rather than dealing
+somebody the wrong hand.
 
 The one piece of real logic — how many cards you draw at the end of a hole — is in
 [DrawRule.kt](app/src/main/java/com/chainreaction/data/DrawRule.kt), deliberately free of
@@ -128,7 +135,7 @@ layer-list fallback for API 24–25, which predate adaptive icons.
 
 ## Card artwork
 
-Card faces are drop-in. Put an image named `card_01` … `card_54` (the number is the
+Card faces are drop-in. Put an image named `card_01` … one per card (the number is the
 card's id in the spec) into `app/src/main/res/drawable-nodpi/` — PNG, WebP or JPEG —
 and both builds pick it up: Android looks the drawable up by name at runtime, and
 `web/build.js` copies whatever faces exist into `docs/assets/` and tells the page about
@@ -212,7 +219,7 @@ Eight, all decided deliberately:
    card identity, and interim cards show neutral kind/timing tags instead.
 5. **Wheel order.** The spec spins the effect first, then the name. Reversed on request:
    the name lands first, so the table knows who is exempt before it learns what from.
-   (Card #48's text has since been rewritten as a free spin, so nothing describes the
+   (The Double Wheel card’s text has since been rewritten as a free spin, so nothing describes the
    old order anymore.)
 6. **Characters.** Not in the spec. A pickable face per player, added purely for
    personalisation — deliberately cosmetic, so the rules the group has to carry stay exactly
@@ -220,9 +227,9 @@ Eight, all decided deliberately:
 7. **The wheel costs cards.** The Rules screen has always said "discard 2 cards to buy a
    spin", but nothing enforced it — the wheel was free and unlimited, which made the hand cap
    beside the point. Tapping *Spin the Double Wheel* now asks which two cards to give up, and
-   the button is disabled when you're holding fewer than two. Playing card #48 still spins
+   the button is disabled when you're holding fewer than two. Playing Double Wheel still spins
    for free, since that card's whole text is a free spin — the card is the payment. That
-   spin also skips the name wheel: #48 says the name doesn't matter and hands the choice to
+   spin also skips the name wheel: that card says the name doesn’t matter and hands the choice to
    whoever spun, so asking for a spin the card just told you to disregard would be theatre.
 8. **Owed cards expire.** Not in the spec. Cards you're owed but can't hold because the hand
    is at 7 stay owed only until the next hole deals — that hole's draw *replaces* the debt

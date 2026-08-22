@@ -489,16 +489,26 @@ var GRASS_IMAGE = "__GRASS_IMAGE__";
 var STORE_KEY = "chainreaction.round";
 var memoryStore = null;
 
+/*
+ * 2: the deck was re-sorted alphabetically and renumbered, so a round saved under
+ * version 1 holds ids that now mean different cards. A mismatch drops the round
+ * rather than dealing somebody the wrong hand mid-round.
+ */
+var SCHEMA_VERSION = 2;
+
 function save(s) {
+  s.v = SCHEMA_VERSION;
   memoryStore = s;
   try { localStorage.setItem(STORE_KEY, JSON.stringify(s)); } catch (e) { /* memory only */ }
 }
 function load() {
+  var s = null;
   try {
     var raw = localStorage.getItem(STORE_KEY);
-    if (raw) return JSON.parse(raw);
+    if (raw) s = JSON.parse(raw);
   } catch (e) { /* fall through */ }
-  return memoryStore;
+  if (!s) s = memoryStore;
+  return s && s.v === SCHEMA_VERSION ? s : null;
 }
 function clearSaved() {
   memoryStore = null;
@@ -605,7 +615,8 @@ function newRound(players, meIndex, holeCount, coursePars, courseName, character
     // characters existed, which still loads and plays on names alone.
     characters: players.map(function (_, i) {
       return characters && characters[i] != null ? characters[i] : null;
-    })
+    }),
+    v: SCHEMA_VERSION
   };
 }
 
@@ -992,7 +1003,7 @@ function renderHand() {
 
 /*
  * The wheel is no longer free: it costs cards, and you can't pay what you don't hold.
- * Playing card #48 is the way round that — its whole text is a free spin.
+ * Playing the Double Wheel card is the way round that — its whole text is a free spin.
  */
 function canAffordWheel(s) { return s.hand.length >= DATA.wheelCost; }
 
@@ -1030,7 +1041,7 @@ function renderWheelCost() {
 }
 
 /*
- * Build the wheel and show it. Reached either by paying, or free off card #48 —
+ * Build the wheel and show it. Reached either by paying, or free off the Double Wheel card —
  * and a free spin skips the name stage entirely, starting where a paid one arrives
  * after its first wheel.
  */
@@ -1477,7 +1488,7 @@ function renderWheel() {
 
   // No title block, and the name stage collapses to one orange verdict line
   // once the name lands — said once, cleanly, up top. A free spin has no name
-  // stage at all: card #48 says the name doesn't matter, so asking for a spin
+  // stage at all: the Double Wheel card says the name doesn't matter, so asking for a spin
   // it just told you to disregard would be theatre.
   var html = '<div class="modal">';
   if (!nameSettled && !free) {
@@ -1964,7 +1975,7 @@ app.addEventListener("click", function (e) {
       s.hand.splice(at, 1);
       s.discard.push(i);
       commit(s);
-      // Card #48 IS the spin — playing it opens the wheel with no further cost,
+      // The Double Wheel card IS the spin — playing it opens the wheel with no further cost,
       // which is exactly what its text promises.
       if (i === DATA.freeSpinCard) openWheelNow(true);
       break;
