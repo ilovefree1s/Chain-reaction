@@ -90,9 +90,13 @@ properly:
 - **Offline** comes from the service worker, which precaches the page and every asset on first
   visit — so it works on a course with no signal.
 
-The service worker is cache-first and its cache name is a hash of everything precached, so a
-rebuild that changes any file invalidates the old cache and one that changes nothing leaves it
-alone. `web/serve.js` sends `cache-control: no-cache` for the same reason: a stale `sw.js` is
+The service worker is cache-first and keeps **two** caches, each named by its own hash: the
+page (`index.html`, the manifest — about 110 KB) and the assets (artwork, character photos,
+the audio — about 7 MB). They change at wildly different rates, and under one combined hash
+rewording a single card re-downloaded every image for everyone who already had the app
+installed. Split, a card edit costs the page and nothing else; the photos are re-fetched only
+when a photo actually changes. Verified by planting a sentinel in the asset cache, shipping a
+page-only change, and confirming it survived. `web/serve.js` sends `cache-control: no-cache` for the same reason: a stale `sw.js` is
 the one thing that makes a redeploy invisible.
 
 ## Screens
