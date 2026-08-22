@@ -33,14 +33,17 @@ import com.chainreaction.data.Rules
 /** No character picked. A sentinel rather than null so the list survives rememberSaveable. */
 internal const val NO_CHARACTER = -1
 
+/** You are always player 1. Nothing in Setup asks, so nothing can get it wrong. */
+private const val ME_INDEX = 0
+
 @Composable
 fun SetupScreen(
     courses: List<Course>,
     canDelete: (Course) -> Boolean,
-    defaultPlayers: List<String>,
-    defaultMeIndex: Int,
+    /** Your own name and face, from Settings. You are always player 1. */
+    myName: String,
+    myCharacter: Int?,
     characters: List<Character>,
-    defaultCharacters: List<Int?>,
     modifier: Modifier = Modifier,
     onSaveCourse: (Course) -> Unit,
     onDeleteCourse: (String) -> Unit,
@@ -58,8 +61,8 @@ fun SetupScreen(
             save = { it.toList() },
             restore = { it.toMutableStateList() },
         ),
-        // Pre-filled from the group saved in Settings, so the usual four aren't retyped.
-    ) { defaultPlayers.ifEmpty { List(4) { "" } }.toMutableStateList() }
+        // Only you are pre-filled — the rest of the table changes round to round.
+    ) { mutableListOf(myName, "", "", "").toMutableStateList() }
 
     val pars: SnapshotStateList<Int> = rememberSaveable(
         saver = listSaver<SnapshotStateList<Int>, Int>(
@@ -68,19 +71,19 @@ fun SetupScreen(
         ),
     ) { List(18) { Rules.DEFAULT_PAR }.toMutableStateList() }
 
-    // Parallel to [names]. Pre-filled from the saved group, so the usual four keep
-    // the characters they picked last time.
+    // Parallel to [names]. Only yours is pre-filled, from Settings.
     val picks: SnapshotStateList<Int> = rememberSaveable(
         saver = listSaver<SnapshotStateList<Int>, Int>(
             save = { it.toList() },
             restore = { it.toMutableStateList() },
         ),
     ) {
-        List(names.size) { defaultCharacters.getOrNull(it) ?: NO_CHARACTER }.toMutableStateList()
+        List(names.size) { if (it == 0) myCharacter ?: NO_CHARACTER else NO_CHARACTER }
+            .toMutableStateList()
     }
     var picking by rememberSaveable { mutableIntStateOf(-1) }
 
-    var meIndex by rememberSaveable { mutableIntStateOf(defaultMeIndex) }
+
     // 0 until a course is picked or its length is chosen — the course decides how
     // many holes there are, so there's nothing to toggle on this screen.
     var holeCount by rememberSaveable { mutableIntStateOf(0) }
@@ -103,7 +106,7 @@ fun SetupScreen(
         names.indices.map { i -> picks.getOrNull(i)?.takeIf { it != NO_CHARACTER } }
 
     val trimmed = names.map { it.trim() }
-    val namesReady = trimmed.all { it.isNotEmpty() } && meIndex in trimmed.indices
+    val namesReady = trimmed.all { it.isNotEmpty() }
     val courseReady = holeCount > 0
     val ready = namesReady && courseReady
 
@@ -116,8 +119,10 @@ fun SetupScreen(
         // No title block — the back bar already says NEW ROUND.
         NeonSectionLabel("Players")
         Text(
-            if (characters.isEmpty()) "Tap ME on your own name."
-            else "Tap a face to pick a character, and ME on your own name.",
+            // You are always player 1, so there is nothing to mark — the old ME chips
+            // said the same thing four times over.
+            if (characters.isEmpty()) "You're player 1. Name the rest of the group."
+            else "You're player 1. Name the rest, and tap a face to pick a character.",
             color = NeonBody,
             fontSize = 16.sp,
             modifier = Modifier.padding(bottom = 12.dp),
@@ -139,10 +144,9 @@ fun SetupScreen(
                 NeonTextField(
                     value = value,
                     onValueChange = { names[i] = it },
-                    placeholder = "Player ${i + 1}",
+                    placeholder = if (i == 0) "You" else "Player ${i + 1}",
                     modifier = Modifier.weight(1f),
                 )
-                NeonMeChip(selected = meIndex == i) { meIndex = i }
             }
         }
 
@@ -157,7 +161,6 @@ fun SetupScreen(
                 NeonSmallAction("− Remove") {
                     names.removeAt(names.lastIndex)
                     if (picks.size > names.size) picks.removeAt(picks.lastIndex)
-                    if (meIndex > names.lastIndex) meIndex = names.lastIndex
                 }
             }
         }
@@ -190,7 +193,7 @@ fun SetupScreen(
 
         Spacer(Modifier.height(36.dp))
         NeonBigButton("Start round", enabled = ready) {
-            onStart(trimmed, meIndex, holeCount, pars.take(holeCount), courseName, chosenCharacters())
+            onStart(trimmed, ME_INDEX, holeCount, pars.take(holeCount), courseName, chosenCharacters())
         }
         if (!ready) {
             Spacer(Modifier.height(10.dp))
@@ -232,7 +235,7 @@ fun SetupScreen(
             // Straight from the course list into the round, skipping the trip back
             // through Setup's own Start button.
             onPlayCourse = { course ->
-                onStart(trimmed, meIndex, course.holeCount, course.pars, course.name, chosenCharacters())
+                onStart(trimmed, ME_INDEX, course.holeCount, course.pars, course.name, chosenCharacters())
             },
         )
     }

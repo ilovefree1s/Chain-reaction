@@ -123,10 +123,14 @@ Play resumes a round in progress rather than starting a new one. Cards and Rules
 menu destinations; the in-round Rules tab still carries both plus the round-specific actions
 (save this course, end round).
 
-**Settings** holds the usual group (pre-fills every new round) and course management. The app
-makes exactly one noise: a chain rattle on the four menu buttons, at whatever the
-**Sound** slider at the bottom of Settings is set to. Nothing else in either build plays
-audio.
+**Settings** holds your own name and face, course management, and the sound slider. Only
+*you* are stored, not the whole group — the rest of the table changes round to round, and
+typing three names on Setup beats maintaining a roster you keep having to correct. You are
+always player 1, and Setup pre-fills that slot. Settings saved when this held the whole
+group keep whichever name was marked ME rather than making you retype it. The app
+makes exactly one noise: a chain rattle when Play starts a *new* round, at whatever the
+**Sound** slider at the bottom of Settings is set to. Play resuming a round in progress is
+silent, as are Cards, Rules and Settings. Nothing else in either build plays audio.
 
 The clip lives at [app/src/main/res/raw/chains.mp3](app/src/main/res/raw/chains.mp3) —
 Android loads it as `R.raw.chains` through a `SoundPool`, and `web/build.js` copies it
@@ -175,7 +179,7 @@ initial, so the roster is playable before any of it is drawn. Art that matches n
 the roster fails the web build rather than shipping unreferenced.
 
 Characters are picked on **Setup**, by tapping the face beside a name, and in
-**Settings → your usual group**, where they save with the group and pre-fill every new round.
+**Settings → You**, where your own character saves and pre-fills player 1 every new round.
 One character per player: a face already taken is shown greyed out with its owner's name, since
 the whole point is telling everyone apart on one scorecard. Tapping your own pick clears it.
 
@@ -217,7 +221,9 @@ Eight, all decided deliberately:
 1. **Stack.** The spec says Expo / React Native. Built as native Android + a separate web app
    instead, per the brief. The trade is two codebases rather than one; they're kept honest by
    sharing the spec as the card-data source and by matching screen-for-screen.
-2. **Players.** The spec's Setup screen describes four fixed name fields. This supports 3–5.
+2. **Players.** The spec's Setup screen describes four fixed name fields plus a "ME" toggle
+   on each. This supports 3–5, and drops the toggle — you are always player 1, so `meIndex`
+   is fixed at 0 and Setup pre-fills that slot from Settings.
    The draw rule generalises unchanged — "middle" is anyone neither outright best nor outright
    worst — and the name wheel spins over whoever is actually in the round.
 3. **Unlock.** Not in the spec. A mis-tapped "Lock hole & draw" on hole 3 of 18 would otherwise

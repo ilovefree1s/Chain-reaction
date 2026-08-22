@@ -23,7 +23,7 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.toMutableStateList
+
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -55,18 +55,9 @@ fun SettingsScreen(
     onDeleteCourse: (String) -> Unit,
     onBack: () -> Unit,
 ) {
-    val slots = remember(settings.defaultPlayers) {
-        settings.defaultPlayers.ifEmpty { List(4) { "" } }.toMutableStateList()
-    }
-    var meSlot by remember(settings.defaultMeIndex) {
-        mutableIntStateOf(settings.defaultMeIndex.coerceIn(0, slots.lastIndex))
-    }
-    // Parallel to [slots]. Saved with the group, so the usual four keep their faces
-    // and a new round starts already personalised.
-    val charSlots = remember(settings.defaultCharacters, settings.defaultPlayers) {
-        List(slots.size) { settings.characterFor(it) ?: NO_CHARACTER }.toMutableStateList()
-    }
-    var picking by remember { mutableIntStateOf(-1) }
+    var myName by remember(settings.myName) { mutableStateOf(settings.myName) }
+    var myCharacter by remember(settings.myCharacter) { mutableStateOf(settings.myCharacter) }
+    var picking by remember { mutableStateOf(false) }
     var saved by remember { mutableStateOf(false) }
 
     // Volume saves on release rather than on every pixel of the drag, and isn't part
@@ -81,7 +72,7 @@ fun SettingsScreen(
         while (pars.size > n) pars.removeAt(pars.lastIndex)
     }
 
-    val valid = slots.all { it.isNotBlank() }
+    val valid = myName.isNotBlank()
 
     Column(
         modifier
@@ -92,68 +83,37 @@ fun SettingsScreen(
     ) {
         NeonHeader("SETTINGS", onBack = onBack)
 
-        NeonSectionLabel("Your usual group")
+        NeonSectionLabel("You")
         Text(
-            if (characters.isEmpty()) "Saved here, these names pre-fill every new round."
-            else "Saved here, these names and faces pre-fill every new round.",
+            if (characters.isEmpty()) "Your name pre-fills player 1 on every new round."
+            else "Your name and face pre-fill player 1 on every new round.",
             color = NeonBody,
             fontSize = 16.sp,
             modifier = Modifier.padding(bottom = 12.dp),
         )
 
-        slots.forEachIndexed { i, value ->
-            Row(
-                Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 10.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-            ) {
-                if (characters.isNotEmpty()) {
-                    CharacterPickerButton(
-                        characters.character(charSlots.getOrNull(i)?.takeIf { it != NO_CHARACTER }),
-                    ) { picking = i }
-                }
-                NeonTextField(
-                    value = value,
-                    onValueChange = { slots[i] = it; saved = false },
-                    placeholder = "Player ${i + 1}",
-                    modifier = Modifier.weight(1f),
-                )
-                NeonMeChip(selected = meSlot == i) { meSlot = i; saved = false }
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .padding(bottom = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            if (characters.isNotEmpty()) {
+                CharacterPickerButton(characters.character(myCharacter)) { picking = true }
             }
-        }
-
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            if (slots.size < Rules.MAX_PLAYERS) {
-                NeonSmallAction("+ Add player") {
-                    slots.add("")
-                    charSlots.add(NO_CHARACTER)
-                    saved = false
-                }
-            }
-            if (slots.size > Rules.MIN_PLAYERS) {
-                NeonSmallAction("− Remove") {
-                    slots.removeAt(slots.lastIndex)
-                    if (charSlots.size > slots.size) charSlots.removeAt(charSlots.lastIndex)
-                    if (meSlot > slots.lastIndex) meSlot = slots.lastIndex
-                    saved = false
-                }
-            }
+            NeonTextField(
+                value = myName,
+                onValueChange = { myName = it; saved = false },
+                placeholder = "Your name",
+                modifier = Modifier.weight(1f),
+            )
         }
 
         Spacer(Modifier.height(16.dp))
-        NeonBigButton("Save group", enabled = valid) {
-            onSettingsChange(
-                // copy(), so saving the group doesn't reset the volume.
-                settings.copy(
-                    defaultPlayers = slots.map { it.trim() },
-                    defaultMeIndex = meSlot,
-                    defaultCharacters = slots.indices.map { i ->
-                        charSlots.getOrNull(i)?.takeIf { it != NO_CHARACTER }
-                    },
-                ),
-            )
+        NeonBigButton("Save", enabled = valid) {
+            // copy(), so saving your name doesn't reset the volume.
+            onSettingsChange(settings.copy(myName = myName.trim(), myCharacter = myCharacter))
             saved = true
         }
         if (saved) {
@@ -240,19 +200,15 @@ fun SettingsScreen(
         )
     }
 
-    if (picking in slots.indices) {
-        val slot = picking
+    if (picking) {
         CharacterSheet(
             characters = characters,
-            selected = charSlots.getOrNull(slot)?.takeIf { it != NO_CHARACTER },
-            playerName = slots[slot],
-            takenBy = takenBy(charSlots, slots, slot),
-            onPick = { id ->
-                while (charSlots.size <= slot) charSlots.add(NO_CHARACTER)
-                charSlots[slot] = id ?: NO_CHARACTER
-                saved = false
-            },
-            onDismiss = { picking = -1 },
+            selected = myCharacter,
+            playerName = myName,
+            // Nobody else to clash with here — the rest of the table is set on Setup.
+            takenBy = emptyMap(),
+            onPick = { id -> myCharacter = id; saved = false },
+            onDismiss = { picking = false },
         )
     }
 }

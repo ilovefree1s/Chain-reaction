@@ -42,7 +42,7 @@ Implementation: let `lo = min(scores)`, `hi = max(scores)`.
 
 ### 1. Setup (first run only)
 - Four name fields.
-- User taps which one is them ("ME"). Store this index — the app needs it to compute the local player's draw.
+- The local player is always player 1, so there is nothing to tap. The draw still works off an index; it is simply fixed at 0. (The spec had a "ME" toggle per name; it asked the same question four times and only ever got one answer.)
 - 9 or 18 holes.
 - Start round.
 

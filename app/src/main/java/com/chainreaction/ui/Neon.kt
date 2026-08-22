@@ -434,35 +434,6 @@ fun NeonTextField(
     }
 }
 
-/** Octagonal ME toggle; orange when it's you. */
-@Composable
-fun NeonMeChip(selected: Boolean, onClick: () -> Unit) {
-    val shape = CutCornerShape(14.dp)
-    Box(
-        Modifier
-            .size(TapTarget)
-            .clip(shape)
-            .background(if (selected) NeonOrange.copy(alpha = 0.18f) else NeonChipBg)
-            .border(
-                2.dp,
-                if (selected) {
-                    Brush.verticalGradient(listOf(NeonOrange, Color(0xFFF7791E)))
-                } else {
-                    Brush.verticalGradient(listOf(NeonBlue, NeonBlueDeep))
-                },
-                shape,
-            )
-            .clickable(onClick = onClick),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(
-            "ME",
-            color = if (selected) NeonOrange else NeonBody,
-            fontWeight = FontWeight.Black,
-            fontSize = 15.sp,
-        )
-    }
-}
 
 /** Self-sizing framed action for the small verbs — add a player, remove one. */
 @Composable

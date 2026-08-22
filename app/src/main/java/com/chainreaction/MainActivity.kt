@@ -96,10 +96,10 @@ private fun App(vm: GameViewModel = viewModel()) {
     val screen = Screen.entries[screenIndex]
     fun go(target: Screen) { screenIndex = target.ordinal }
 
-    // The app's only noise. Wrapped round the menu's four targets rather than baked
-    // into MenuScreen, which stays a dumb sheet of tap zones over artwork.
+    // The app's only noise, and only for starting a round. Wrapped round the tap
+    // target rather than baked into MenuScreen, which stays a dumb sheet of tap
+    // zones over artwork.
     val sfx = rememberSfx()
-    fun chime() = sfx.menuTap(vm.settings.sfxVolume)
 
     BackHandler(enabled = screen != Screen.MENU) { go(Screen.MENU) }
 
@@ -107,20 +107,24 @@ private fun App(vm: GameViewModel = viewModel()) {
         Screen.MENU -> MenuScreen(
             // The sheet's PLAY label is painted in, so the button can't announce a
             // round in progress — it still resumes one rather than starting fresh.
-            onPlay = { chime(); go(if (vm.state != null) Screen.ROUND else Screen.SETUP) },
-            onCards = { chime(); go(Screen.CARDS) },
-            onRules = { chime(); go(Screen.RULES) },
-            onSettings = { chime(); go(Screen.SETTINGS) },
+            // The chains only rattle for a new round; resuming is not an occasion.
+            onPlay = {
+                val resuming = vm.state != null
+                if (!resuming) sfx.menuTap(vm.settings.sfxVolume)
+                go(if (resuming) Screen.ROUND else Screen.SETUP)
+            },
+            onCards = { go(Screen.CARDS) },
+            onRules = { go(Screen.RULES) },
+            onSettings = { go(Screen.SETTINGS) },
         )
 
         Screen.SETUP -> SubScreen("New round", onBack = { go(Screen.MENU) }) { content ->
             SetupScreen(
                 courses = vm.courses,
                 canDelete = vm::canDelete,
-                defaultPlayers = vm.settings.defaultPlayers,
-                defaultMeIndex = vm.settings.defaultMeIndex,
+                myName = vm.settings.myName,
+                myCharacter = vm.settings.myCharacter,
                 characters = vm.characters,
-                defaultCharacters = vm.settings.defaultCharacters,
                 modifier = content,
                 onSaveCourse = vm::saveCourse,
                 onDeleteCourse = vm::deleteCourse,
