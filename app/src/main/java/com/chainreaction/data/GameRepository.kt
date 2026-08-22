@@ -1,6 +1,7 @@
 package com.chainreaction.data
 
 import android.content.Context
+import org.json.JSONObject
 
 /**
  * Local persistence, nothing else. No backend, no network — courses have no signal.
@@ -30,6 +31,28 @@ class GameRepository(context: Context) {
         prefs.edit().putString(KEY_COURSES, Course.listToJson(courses)).commit()
     }
 
+    /**
+     * Names the player has typed over the shipped ones, id -> name.
+     *
+     * apply() rather than commit() here alone: this is written on every keystroke while
+     * a name is being typed, and a synchronous disk write per character would jank the
+     * field. Losing the last letter to a force-quit costs nothing.
+     */
+    fun loadCharacterNames(): Map<Int, String> = try {
+        val o = JSONObject(prefs.getString(KEY_CHARACTER_NAMES, "{}") ?: "{}")
+        o.keys().asSequence().mapNotNull { k ->
+            k.toIntOrNull()?.let { id -> id to o.getString(k) }
+        }.toMap()
+    } catch (_: Exception) {
+        emptyMap()
+    }
+
+    fun saveCharacterNames(names: Map<Int, String>) {
+        val o = JSONObject()
+        names.forEach { (id, name) -> o.put(id.toString(), name) }
+        prefs.edit().putString(KEY_CHARACTER_NAMES, o.toString()).apply()
+    }
+
     fun loadSettings(): Settings =
         prefs.getString(KEY_SETTINGS, null)?.let { Settings.fromJson(it) } ?: Settings()
 
@@ -42,5 +65,6 @@ class GameRepository(context: Context) {
         const val KEY_ROUND = "round"
         const val KEY_COURSES = "courses"
         const val KEY_SETTINGS = "settings"
+        const val KEY_CHARACTER_NAMES = "characterNames"
     }
 }

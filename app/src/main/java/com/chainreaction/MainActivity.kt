@@ -128,6 +128,7 @@ private fun App(vm: GameViewModel = viewModel()) {
                 modifier = content,
                 onSaveCourse = vm::saveCourse,
                 onDeleteCourse = vm::deleteCourse,
+                onRenameCharacter = vm::renameCharacter,
                 onStart = { players, me, holes, pars, course, picks ->
                     vm.startRound(players, me, holes, pars, course, picks)
                     go(Screen.ROUND)
@@ -160,6 +161,7 @@ private fun App(vm: GameViewModel = viewModel()) {
                 .safeDrawingPadding(),
             // So the slider can be heard while it's being dragged.
             onPreviewSfx = { volume -> sfx.menuTap(volume) },
+            onRenameCharacter = vm::renameCharacter,
             onSettingsChange = vm::updateSettings,
             onSaveCourse = vm::saveCourse,
             onDeleteCourse = vm::deleteCourse,

@@ -23,8 +23,29 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
 
     private val builtInCourses = CourseLibrary.builtIn(app)
 
-    /** The pickable roster. Fixed for the life of the app — it ships in the assets. */
-    val characters: List<Character> = CharacterLibrary.builtIn(app)
+    private val builtInCharacters = CharacterLibrary.builtIn(app)
+
+    /** Names typed over the shipped ones. The photo stays put; only the label changes. */
+    private var characterNames by mutableStateOf(repo.loadCharacterNames())
+
+    /** The pickable roster, with any renames applied. */
+    val characters: List<Character>
+        get() = builtInCharacters.map { c ->
+            characterNames[c.id]?.takeIf { it.isNotBlank() }?.let { c.copy(name = it) } ?: c
+        }
+
+    /**
+     * Rename a character. Typing over the name beside a picked face is how you make the
+     * roster yours — the shipped names are placeholders until someone corrects them.
+     * A blank drops back to the shipped name rather than leaving a nameless face.
+     */
+    fun renameCharacter(id: Int, name: String) {
+        val trimmed = name.trim()
+        val next = if (trimmed.isEmpty()) characterNames - id else characterNames + (id to trimmed)
+        if (next == characterNames) return
+        characterNames = next
+        repo.saveCharacterNames(next)
+    }
 
     var settings by mutableStateOf(repo.loadSettings())
         private set

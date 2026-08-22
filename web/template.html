@@ -481,6 +481,43 @@ function characterById(id) {
   return null;
 }
 
+/*
+ * Names the player has typed over the shipped ones. The photo stays put; only the label
+ * changes, so the overrides are stored by id and folded straight into CHARACTERS — every
+ * badge and picker then reads the corrected name without knowing any of this happened.
+ */
+var CHARACTER_NAMES_KEY = "chainreaction.characterNames";
+var memoryCharacterNames = null;
+var SHIPPED_CHARACTER_NAMES = CHARACTERS.map(function (c) { return c.name; });
+
+function loadCharacterNames() {
+  try {
+    var raw = localStorage.getItem(CHARACTER_NAMES_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch (e) { /* fall through */ }
+  return memoryCharacterNames || {};
+}
+
+function applyCharacterNames() {
+  var overrides = loadCharacterNames();
+  CHARACTERS.forEach(function (c, i) {
+    var name = overrides[c.id];
+    c.name = (typeof name === "string" && name.trim() !== "") ? name : SHIPPED_CHARACTER_NAMES[i];
+  });
+}
+
+/** A blank drops back to the shipped name rather than leaving a nameless face. */
+function renameCharacter(id, name) {
+  var overrides = loadCharacterNames();
+  var trimmed = (name || "").trim();
+  if (trimmed === "") delete overrides[id]; else overrides[id] = trimmed;
+  memoryCharacterNames = overrides;
+  try { localStorage.setItem(CHARACTER_NAMES_KEY, JSON.stringify(overrides)); } catch (e) { /* memory only */ }
+  applyCharacterNames();
+}
+
+applyCharacterNames();
+
 /* Artwork, inlined as data URIs by web/build.js so this stays one file. */
 var MENU_IMAGE = "__MENU_IMAGE__";
 var BUTTONS_IMAGE = "__BUTTONS_IMAGE__";
@@ -1783,6 +1820,8 @@ app.addEventListener("input", function (e) {
   var idx = e.target.getAttribute("data-name");
   if (idx !== null) {
     setup.names[+idx] = e.target.value;
+    // Correcting the name beside a face corrects the face's name.
+    if (setup.chars[+idx] != null) renameCharacter(setup.chars[+idx], e.target.value);
     syncStartButton();
     return;
   }
@@ -1807,6 +1846,8 @@ app.addEventListener("input", function (e) {
   var artSlot = e.target.getAttribute("data-slot");
   if (artSlot !== null) {
     myNameDraft = e.target.value;
+    // Correcting the name beside a face corrects the face's name.
+    if (myCharacterDraft != null) renameCharacter(myCharacterDraft, e.target.value);
     savedGroup = false;
     // Arm the save button in place rather than re-rendering, which would drop focus.
     var save = app.querySelector('[data-act="saveGroupArt"]');
@@ -1915,8 +1956,17 @@ app.addEventListener("click", function (e) {
     case "chooseChar":
       if (charPick) {
         var picked = i < 0 ? null : i;
-        if (charPick.where === "setup") setup.chars[charPick.slot] = picked;
-        else { myCharacterDraft = picked; savedGroup = false; }
+        // Picking a face fills in its name, so the common case is no typing at all.
+        // Clearing a pick leaves whatever name is already there.
+        var pickedChar = characterById(picked);
+        if (charPick.where === "setup") {
+          setup.chars[charPick.slot] = picked;
+          if (pickedChar) setup.names[charPick.slot] = pickedChar.name;
+        } else {
+          myCharacterDraft = picked;
+          if (pickedChar) myNameDraft = pickedChar.name;
+          savedGroup = false;
+        }
         charPick = null;
       }
       render(); break;

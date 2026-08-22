@@ -47,6 +47,8 @@ fun SetupScreen(
     modifier: Modifier = Modifier,
     onSaveCourse: (Course) -> Unit,
     onDeleteCourse: (String) -> Unit,
+    /** Typing over the name beside a picked face renames that character for good. */
+    onRenameCharacter: (id: Int, name: String) -> Unit = { _, _ -> },
     onStart: (
         players: List<String>,
         meIndex: Int,
@@ -143,7 +145,12 @@ fun SetupScreen(
                 }
                 NeonTextField(
                     value = value,
-                    onValueChange = { names[i] = it },
+                    onValueChange = { typed ->
+                        names[i] = typed
+                        // Correcting the name beside a face corrects the face's name.
+                        picks.getOrNull(i)?.takeIf { it != NO_CHARACTER }
+                            ?.let { onRenameCharacter(it, typed) }
+                    },
                     placeholder = if (i == 0) "You" else "Player ${i + 1}",
                     modifier = Modifier.weight(1f),
                 )
@@ -250,6 +257,9 @@ fun SetupScreen(
             onPick = { id ->
                 while (picks.size <= slot) picks.add(NO_CHARACTER)
                 picks[slot] = id ?: NO_CHARACTER
+                // Picking a face fills in its name, so the common case is no typing
+                // at all. Clearing a pick leaves whatever name is already there.
+                characters.character(id)?.let { names[slot] = it.name }
             },
             onDismiss = { picking = -1 },
         )

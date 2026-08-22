@@ -180,6 +180,16 @@ the roster fails the web build rather than shipping unreferenced.
 
 Characters are picked on **Setup**, by tapping the face beside a name, and in
 **Settings → You**, where your own character saves and pre-fills player 1 every new round.
+
+Picking a face fills its name into the box beside it, so the usual case is no typing at
+all. Typing over that name **renames the character** — the photo stays put, the label
+changes, and it sticks for every future round. That's how the shipped names get replaced
+with your group's: pick a face, correct the name, done. Clearing the box entirely drops
+back to the name in the JSON rather than leaving a nameless face.
+
+Renames live in local storage per device (`characterNames`, id → name), not in
+[shared/characters.json](shared/characters.json) — so one person renaming Juice doesn't
+rewrite the file for everyone. Edit the JSON for names you want everybody to get.
 One character per player: a face already taken is shown greyed out with its owner's name, since
 the whole point is telling everyone apart on one scorecard. Tapping your own pick clears it.
 

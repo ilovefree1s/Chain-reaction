@@ -50,6 +50,8 @@ fun SettingsScreen(
     modifier: Modifier = Modifier,
     /** Plays the menu sound at the given volume, so the slider can be heard. */
     onPreviewSfx: (Float) -> Unit = {},
+    /** Typing over the name beside your picked face renames that character for good. */
+    onRenameCharacter: (id: Int, name: String) -> Unit = { _, _ -> },
     onSettingsChange: (Settings) -> Unit,
     onSaveCourse: (Course) -> Unit,
     onDeleteCourse: (String) -> Unit,
@@ -104,7 +106,12 @@ fun SettingsScreen(
             }
             NeonTextField(
                 value = myName,
-                onValueChange = { myName = it; saved = false },
+                onValueChange = { typed ->
+                    myName = typed
+                    saved = false
+                    // Correcting the name beside a face corrects the face's name.
+                    myCharacter?.let { onRenameCharacter(it, typed) }
+                },
                 placeholder = "Your name",
                 modifier = Modifier.weight(1f),
             )
@@ -207,7 +214,12 @@ fun SettingsScreen(
             playerName = myName,
             // Nobody else to clash with here — the rest of the table is set on Setup.
             takenBy = emptyMap(),
-            onPick = { id -> myCharacter = id; saved = false },
+            onPick = { id ->
+                myCharacter = id
+                saved = false
+                // Picking a face fills in its name, so the common case is no typing.
+                characters.character(id)?.let { myName = it.name }
+            },
             onDismiss = { picking = false },
         )
     }
