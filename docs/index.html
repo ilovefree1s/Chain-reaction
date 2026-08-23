@@ -1531,14 +1531,14 @@ function renderCharSheet() {
 
   return '<div class="modal nmodal">' +
     '<div class="nheader"><button class="back" data-act="closeChar">&lsaquo;&nbsp; Back</button>' +
-    "<h1>CHARACTER</h1></div>" +
+    "<h1>PROFILE</h1></div>" +
     '<div style="height:16px"></div>' +
     (CHARACTERS.length
       ? '<div class="cgrid">' + cells + "</div>"
       : '<p class="hint">No characters in the roster yet.</p>') +
     '<div style="height:16px"></div>' +
     '<button class="big quiet" data-act="chooseChar" data-i="-1">' +
-    (mineId == null ? "Close" : "Play without a character") + "</button></div>";
+    (mineId == null ? "Close" : "Play without a profile") + "</button></div>";
 }
 
 /* ---------- stats ----------

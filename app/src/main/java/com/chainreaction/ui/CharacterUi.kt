@@ -163,7 +163,7 @@ fun CharacterSheet(
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 16.dp),
         ) {
-            NeonHeader("CHARACTER", backLabel = "Back", onBack = onDismiss)
+            NeonHeader("PROFILE", backLabel = "Back", onBack = onDismiss)
 
             Spacer(Modifier.height(16.dp))
 
@@ -228,7 +228,7 @@ fun CharacterSheet(
             }
 
             Spacer(Modifier.height(10.dp))
-            NeonQuietButton(if (selected == null) "Close" else "Play without a character") {
+            NeonQuietButton(if (selected == null) "Close" else "Play without a profile") {
                 if (selected != null) onPick(null)
                 onDismiss()
             }
