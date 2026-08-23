@@ -252,7 +252,6 @@ fun SetupScreen(
         CharacterSheet(
             characters = characters,
             selected = picks.getOrNull(slot)?.takeIf { it != NO_CHARACTER },
-            playerName = names[slot],
             takenBy = takenBy(picks, names, slot),
             onPick = { id ->
                 while (picks.size <= slot) picks.add(NO_CHARACTER)

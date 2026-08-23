@@ -1529,12 +1529,10 @@ function renderCharSheet() {
       "</button>";
   }).join("");
 
-  var who = (names[slot] || "").trim();
   return '<div class="modal nmodal">' +
     '<div class="nheader"><button class="back" data-act="closeChar">&lsaquo;&nbsp; Back</button>' +
     "<h1>CHARACTER</h1></div>" +
-    '<p class="nbody" style="margin:0 0 16px">' +
-    (who ? "Who is " + esc(who) + "?" : "Pick a character.") + "</p>" +
+    '<div style="height:16px"></div>' +
     (CHARACTERS.length
       ? '<div class="cgrid">' + cells + "</div>"
       : '<p class="hint">No characters in the roster yet.</p>') +

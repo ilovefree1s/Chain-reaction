@@ -253,7 +253,6 @@ fun SettingsScreen(
         CharacterSheet(
             characters = characters,
             selected = myCharacter,
-            playerName = myName,
             // Nobody else to clash with here — the rest of the table is set on Setup.
             takenBy = emptyMap(),
             onPick = { id ->

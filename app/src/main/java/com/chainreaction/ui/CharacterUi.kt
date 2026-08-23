@@ -144,7 +144,6 @@ fun CharacterPickerButton(
 fun CharacterSheet(
     characters: List<Character>,
     selected: Int?,
-    playerName: String,
     takenBy: Map<Int, String>,
     onPick: (Int?) -> Unit,
     onDismiss: () -> Unit,
@@ -166,13 +165,7 @@ fun CharacterSheet(
         ) {
             NeonHeader("CHARACTER", backLabel = "Back", onBack = onDismiss)
 
-            Text(
-                playerName.trim().takeIf { it.isNotEmpty() }?.let { "Who is $it?" }
-                    ?: "Pick a character.",
-                color = NeonBody,
-                fontSize = 16.sp,
-                modifier = Modifier.padding(bottom = 16.dp),
-            )
+            Spacer(Modifier.height(16.dp))
 
             if (characters.isEmpty()) {
                 Text(
