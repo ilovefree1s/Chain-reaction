@@ -554,9 +554,9 @@ class DrawRuleTest {
     @Test
     fun `an outright win, a tie and a loss land in different columns`() {
         var s = Stats()
-        s = s.withRound(won = true, tied = false, aces = 0, profile = 1)
-        s = s.withRound(won = false, tied = true, aces = 0, profile = 1)
-        s = s.withRound(won = false, tied = false, aces = 0, profile = 1)
+        s = s.withRound(won = true, tied = false, aces = 0)
+        s = s.withRound(won = false, tied = true, aces = 0)
+        s = s.withRound(won = false, tied = false, aces = 0)
         assertEquals(3, s.gamesPlayed)
         assertEquals(1, s.wins)
         assertEquals(1, s.ties)
@@ -608,6 +608,40 @@ class DrawRuleTest {
         assertTrue("self is you", !CardKind.SELF.aimedAtSomeone)
         assertTrue("group is everyone", !CardKind.GROUP.aimedAtSomeone)
         assertTrue("a reaction answers a card", !CardKind.REACT.aimedAtSomeone)
+    }
+
+    @Test
+    fun `each profile keeps its own stats`() {
+        val all = mapOf(
+            11 to Stats().withRound(won = true, tied = false, aces = 1),
+            12 to Stats().withCardPlayed(3, "Lyndsi"),
+            13 to Stats(),
+        )
+        val read = Stats.mapFromJson(Stats.mapToJson(all))
+        assertEquals(1, read[11]?.wins)
+        assertEquals(0, read[12]?.gamesPlayed)
+        assertEquals(1, read[12]?.totalCardsPlayed)
+        assertEquals("a profile that never played is absence, not a row", null, read[13])
+    }
+
+    @Test
+    fun `stats saved before the split move under the profile that earned them`() {
+        val legacy = """
+            {"gamesPlayed":5,"wins":2,"ties":1,"aces":3,"cardsDiscarded":2,
+             "profile":6,"cardsPlayed":{"4":6},"playsAgainst":{"Zac":4}}
+        """.trimIndent()
+        val read = Stats.mapFromJson(legacy)
+        assertEquals(setOf(6), read.keys)
+        assertEquals(5, read[6]?.gamesPlayed)
+        assertEquals(6, read[6]?.totalCardsPlayed)
+        assertEquals(4, read[6]?.playsAgainst?.get("Zac"))
+    }
+
+    @Test
+    fun `ownerless legacy stats are dropped rather than handed to somebody`() {
+        // Nothing was ever recorded without a profile, so this can only be an empty blob.
+        val read = Stats.mapFromJson("""{"gamesPlayed":0,"wins":0,"profile":null}""")
+        assertTrue(read.isEmpty())
     }
 
     private fun stateWith(

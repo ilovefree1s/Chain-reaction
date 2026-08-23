@@ -53,12 +53,15 @@ class GameRepository(context: Context) {
         prefs.edit().putString(KEY_CHARACTER_NAMES, o.toString()).apply()
     }
 
-    /** Your own history. Same apply() reasoning as the names — small and often. */
-    fun loadStats(): Stats =
-        prefs.getString(KEY_STATS, null)?.let { Stats.fromJson(it) } ?: Stats()
+    /**
+     * History per profile, id -> that profile's stats. Same apply() reasoning as the
+     * names — small and often. Stats written before the split are migrated on read.
+     */
+    fun loadStats(): Map<Int, Stats> =
+        prefs.getString(KEY_STATS, null)?.let { Stats.mapFromJson(it) } ?: emptyMap()
 
-    fun saveStats(stats: Stats) {
-        prefs.edit().putString(KEY_STATS, stats.toJson()).apply()
+    fun saveStats(all: Map<Int, Stats>) {
+        prefs.edit().putString(KEY_STATS, Stats.mapToJson(all)).apply()
     }
 
     fun loadSettings(): Settings =

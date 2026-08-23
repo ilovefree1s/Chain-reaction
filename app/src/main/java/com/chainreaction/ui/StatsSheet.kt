@@ -46,6 +46,8 @@ private const val LIST_LIMIT = 8
 fun StatsSheet(
     stats: Stats,
     characters: List<Character>,
+    /** Whose these are — the saved profile, which is what recording keys off. */
+    profile: Int?,
     onClear: () -> Unit,
     onDismiss: () -> Unit,
 ) {
@@ -57,7 +59,7 @@ fun StatsSheet(
         ),
     ) {
         var confirmingClear by remember { mutableStateOf(false) }
-        val me = characters.character(stats.profile)
+        val me = characters.character(profile)
 
         Column(
             Modifier
@@ -147,7 +149,7 @@ fun StatsSheet(
             Spacer(Modifier.height(24.dp))
             if (confirmingClear) {
                 Text(
-                    "Clear every stat? This can't be undone.",
+                    "Clear this profile's stats? This can't be undone.",
                     color = NeonWhite,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,

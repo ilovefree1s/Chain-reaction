@@ -96,7 +96,7 @@ private fun App(vm: GameViewModel = viewModel()) {
     val screen = Screen.entries[screenIndex]
     fun go(target: Screen) { screenIndex = target.ordinal }
 
-    // The app's only noise, and only for starting a round. Wrapped round the tap
+    // The app's only noise, and only on PLAY. Wrapped round the tap
     // target rather than baked into MenuScreen, which stays a dumb sheet of tap
     // zones over artwork.
     val sfx = rememberSfx()
@@ -109,11 +109,10 @@ private fun App(vm: GameViewModel = viewModel()) {
             showCharacterHint = vm.settings.myCharacter == null,
             // The sheet's PLAY label is painted in, so the button can't announce a
             // round in progress — it still resumes one rather than starting fresh.
-            // The chains only rattle for a new round; resuming is not an occasion.
+            // Either way the chains rattle: PLAY is PLAY.
             onPlay = {
-                val resuming = vm.state != null
-                if (!resuming) sfx.menuTap(vm.settings.sfxVolume)
-                go(if (resuming) Screen.ROUND else Screen.SETUP)
+                sfx.menuTap(vm.settings.sfxVolume)
+                go(if (vm.state != null) Screen.ROUND else Screen.SETUP)
             },
             onCards = { go(Screen.CARDS) },
             onRules = { go(Screen.RULES) },

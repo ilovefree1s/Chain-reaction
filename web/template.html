@@ -691,25 +691,53 @@ var memoryStats = null;
 function emptyStats() {
   return {
     gamesPlayed: 0, wins: 0, ties: 0, aces: 0,
-    cardsPlayed: {}, playsAgainst: {}, cardsDiscarded: 0, profile: null,
+    cardsPlayed: {}, playsAgainst: {}, cardsDiscarded: 0,
   };
 }
 
-function loadStats() {
+/*
+ * Everything this device has recorded, profile id -> that profile's history. Also reads
+ * the single-blob shape written before stats were kept per profile: that one carried the
+ * character it belonged to as a `profile` field, so it moves under that id and nothing
+ * anybody earned is lost. A blob with no profile can only be empty — nothing was ever
+ * recorded without one.
+ */
+function loadAllStats() {
+  var raw = null;
+  try { raw = localStorage.getItem(STATS_KEY); } catch (e) { /* fall through */ }
+  if (!raw) return memoryStats || {};
   try {
-    var raw = localStorage.getItem(STATS_KEY);
-    if (raw) return Object.assign(emptyStats(), JSON.parse(raw));
-  } catch (e) { /* fall through */ }
-  return memoryStats || emptyStats();
+    var o = JSON.parse(raw);
+    if (!o || typeof o !== "object") return {};
+    if (!("gamesPlayed" in o)) return o;
+    var owner = o.profile;
+    if (owner == null) return {};
+    var moved = {};
+    delete o.profile;
+    moved[owner] = Object.assign(emptyStats(), o);
+    return moved;
+  } catch (e) {
+    return {};
+  }
 }
 
-function putStats(next) {
-  stats = next;
-  memoryStats = next;
-  try { localStorage.setItem(STATS_KEY, JSON.stringify(next)); } catch (e) { /* memory only */ }
+function statsFor(profile) {
+  var all = loadAllStats();
+  return profile != null && all[profile]
+    ? Object.assign(emptyStats(), all[profile])
+    : emptyStats();
 }
 
-var stats = loadStats();
+/** The selected profile's history — switching profiles switches the numbers. */
+function myStats() { return statsFor(settings.myCharacter); }
+
+function putStatsFor(profile, next) {
+  if (profile == null) return;
+  var all = loadAllStats();
+  all[profile] = next;
+  memoryStats = all;
+  try { localStorage.setItem(STATS_KEY, JSON.stringify(all)); } catch (e) { /* memory only */ }
+}
 
 function statsLosses(s) { return Math.max(0, s.gamesPlayed - s.wins - s.ties); }
 
@@ -749,8 +777,7 @@ function aimedAtSomeone(kind) {
 function recordCard(id, played, target) {
   var profile = settings.myCharacter;
   if (profile == null) return;
-  var next = loadStats();
-  if (next.profile == null) next.profile = profile;
+  var next = statsFor(profile);
   if (played) {
     next.cardsPlayed[id] = (next.cardsPlayed[id] || 0) + 1;
     var victim = (target || "").trim();
@@ -758,7 +785,7 @@ function recordCard(id, played, target) {
   } else {
     next.cardsDiscarded += 1;
   }
-  putStats(next);
+  putStatsFor(profile, next);
 }
 
 function recordRound(s) {
@@ -766,13 +793,12 @@ function recordRound(s) {
   if (profile == null || !roundComplete(s)) return;
   var won = winners(s);
   var mine = won.indexOf(s.meIndex) !== -1;
-  var next = loadStats();
-  if (next.profile == null) next.profile = profile;
+  var next = statsFor(profile);
   next.gamesPlayed += 1;
   if (mine && won.length === 1) next.wins += 1;
   if (mine && won.length > 1) next.ties += 1;
   next.aces += acesFor(s, s.meIndex);
-  putStats(next);
+  putStatsFor(profile, next);
 }
 
 /* ---------- the one piece of real logic ---------- */
@@ -1458,6 +1484,8 @@ function settingsGroupValid() { return myNameDraft.trim() !== ""; }
 
 function renderSettings() {
   var valid = settingsGroupValid();
+  // The saved profile's numbers, not the draft's — the draft isn't yours until you save.
+  var mine = myStats();
   var row = '<div class="nrow center" style="margin-bottom:10px">' +
     (CHARACTERS.length
       ? badgeHtml(characterById(myCharacterDraft), 48, { act: "pickCharSlot", slot: 0 })
@@ -1484,10 +1512,10 @@ function renderSettings() {
     // Says why it's empty rather than just showing zeroes.
     (settings.myCharacter == null
       ? "Lock in a profile above and they start counting"
-      : stats.gamesPlayed === 0
+      : mine.gamesPlayed === 0
         ? "Nothing yet &middot; finish a round to start"
-        : stats.gamesPlayed + " rounds &middot; " + stats.wins + " won &middot; " +
-          totalCardsPlayed(stats) + " cards played") +
+        : mine.gamesPlayed + " rounds &middot; " + mine.wins + " won &middot; " +
+          totalCardsPlayed(mine) + " cards played") +
     "</div></div><span class=\"nchev\">&rsaquo;</span></div>" +
     nsec("Sound") +
     '<p class="nbody" data-vol-label style="margin:0 0 6px">' +
@@ -1560,7 +1588,7 @@ function tallyRow(label, n) {
 }
 
 function renderStats() {
-  var s = stats;
+  var s = myStats();
   var head = '<div class="modal nmodal">' +
     '<div class="nheader"><button class="back" data-act="closeStats">&lsaquo;&nbsp; Back</button>' +
     "<h1>STATS</h1></div>";
@@ -1571,7 +1599,7 @@ function renderStats() {
       '<button class="big quiet" data-act="closeStats">Close</button></div>';
   }
 
-  var me = characterById(s.profile);
+  var me = characterById(settings.myCharacter);
   var who = me
     ? '<div class="nrow center" style="margin-bottom:14px">' + badgeHtml(me, 44) +
       '<div style="width:10px"></div><div class="ntitle">' + esc(me.name) + "</div></div>"
@@ -1610,7 +1638,7 @@ function renderStats() {
       : "") +
     '<div style="height:24px"></div>' +
     (confirmClearStats
-      ? '<p class="confirmq">Clear every stat? This can\'t be undone.</p>' +
+      ? '<p class="confirmq">Clear this profile\'s stats? This can\'t be undone.</p>' +
         '<div class="acts" style="margin-top:10px">' +
         '<button class="big raised" data-act="keepStats">Keep them</button>' +
         '<button class="big primary" data-act="clearStats">Clear</button></div>'
@@ -2136,9 +2164,9 @@ app.addEventListener("click", function (e) {
   var courseName = el.getAttribute("data-course");
   var s = state;
 
-  // Starting a round is the only thing in the app that makes a noise. Resuming one
-  // is not an occasion, and the other menu buttons are silent.
-  if (act === "play" && !state) playMenuSound(sfxVolume());
+  // PLAY is the only thing in the app that makes a noise — fresh round or resumed,
+  // it rattles either way. The other menu buttons are silent.
+  if (act === "play") playMenuSound(sfxVolume());
 
   switch (act) {
 
@@ -2353,9 +2381,11 @@ app.addEventListener("click", function (e) {
     case "askClearStats": confirmClearStats = true; render(); break;
     case "keepStats": confirmClearStats = false; render(); break;
     case "clearStats": {
-      var fresh = emptyStats();
-      fresh.profile = settings.myCharacter != null ? settings.myCharacter : null;
-      putStats(fresh);
+      // This profile's history only — every other profile's survives.
+      var all = loadAllStats();
+      delete all[settings.myCharacter];
+      memoryStats = all;
+      try { localStorage.setItem(STATS_KEY, JSON.stringify(all)); } catch (e) { /* memory only */ }
       statsOpen = false;
       confirmClearStats = false;
       render(); break;

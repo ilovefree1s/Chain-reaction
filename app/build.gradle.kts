@@ -69,6 +69,10 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     testImplementation(libs.junit)
+    // Real org.json on the unit-test classpath. Android stubs it out there, so without
+    // this every toJson/fromJson call throws "not mocked" and the stats round-trip and
+    // migration tests could not run at all.
+    testImplementation(libs.json)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     androidTestImplementation(libs.androidx.espresso.core)

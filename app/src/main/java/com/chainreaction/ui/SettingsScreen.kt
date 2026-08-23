@@ -243,6 +243,7 @@ fun SettingsScreen(
     if (statsOpen) {
         StatsSheet(
             stats = stats,
+            profile = settings.myCharacter,
             characters = characters,
             onClear = onClearStats,
             onDismiss = { statsOpen = false },

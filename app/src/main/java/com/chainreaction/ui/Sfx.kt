@@ -27,9 +27,12 @@ class Sfx(context: Context) {
         .setMaxStreams(MAX_STREAMS)
         .setAudioAttributes(
             AudioAttributes.Builder()
-                // SONIFICATION: UI feedback, so it ducks and routes like a system tap
-                // rather than fighting whatever music is playing in someone's pocket.
-                .setUsage(AudioAttributes.USAGE_ASSISTANCE_SONIFICATION)
+                // MEDIA, not SONIFICATION. Sonification routes to the system stream,
+                // which the phone mutes outright on silent or vibrate — and a phone
+                // that lives in a pocket on a course is on vibrate. It rattled on the
+                // emulator, which never is, and nowhere else. Media follows the volume
+                // rocker instead, which is the volume the in-app slider means.
+                .setUsage(AudioAttributes.USAGE_MEDIA)
                 .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
                 .build(),
         )

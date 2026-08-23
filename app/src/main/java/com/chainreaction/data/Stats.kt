@@ -3,11 +3,13 @@ package com.chainreaction.data
 import org.json.JSONObject
 
 /**
- * What this phone's owner has done across rounds. Yours only — the app tracks the whole
- * table's scores during a round, but nobody else's history, and it never leaves the device.
+ * What one profile has done across rounds. The app tracks the whole table's scores during
+ * a round but nobody else's history, and none of this leaves the device.
  *
- * Nothing is recorded until a profile is locked in, so the numbers always belong to
- * somebody. [profile] is the character that owned them when they started.
+ * Stats belong to the profile that was selected when they were earned — a phone that gets
+ * handed round, or a player who goes by two faces, keeps two sets rather than one blurred
+ * pile. Nothing is recorded until a profile is locked in, so the numbers always belong to
+ * somebody. Which profile is the map key in storage, not a field here.
  */
 data class Stats(
     val gamesPlayed: Int = 0,
@@ -25,9 +27,10 @@ data class Stats(
      */
     val playsAgainst: Map<String, Int> = emptyMap(),
     val cardsDiscarded: Int = 0,
-    /** The character these belong to, so a profile switch can offer to start over. */
-    val profile: Int? = null,
 ) {
+
+    /** Nothing earned yet — the empty entry a profile has before it plays. */
+    val isEmpty: Boolean get() = gamesPlayed == 0 && totalCardsPlayed == 0 && cardsDiscarded == 0
 
     val losses: Int get() = (gamesPlayed - wins - ties).coerceAtLeast(0)
 
@@ -67,12 +70,11 @@ data class Stats(
      * One finished round. [won] is an outright win, [tied] a shared best — a tie is
      * neither a win nor a loss, because the app doesn't decide those.
      */
-    fun withRound(won: Boolean, tied: Boolean, aces: Int, profile: Int?): Stats = copy(
+    fun withRound(won: Boolean, tied: Boolean, aces: Int): Stats = copy(
         gamesPlayed = gamesPlayed + 1,
         wins = wins + if (won) 1 else 0,
         ties = ties + if (tied) 1 else 0,
         aces = this.aces + aces,
-        profile = this.profile ?: profile,
     )
 
     fun toJson(): String = JSONObject().apply {
@@ -81,7 +83,6 @@ data class Stats(
         put("ties", ties)
         put("aces", aces)
         put("cardsDiscarded", cardsDiscarded)
-        put("profile", profile ?: JSONObject.NULL)
         put("cardsPlayed", JSONObject().also { o -> cardsPlayed.forEach { (k, v) -> o.put(k.toString(), v) } })
         put("playsAgainst", JSONObject().also { o -> playsAgainst.forEach { (k, v) -> o.put(k, v) } })
     }.toString()
@@ -102,11 +103,39 @@ data class Stats(
                 playsAgainst = (o.optJSONObject("playsAgainst") ?: JSONObject()).let { a ->
                     a.keys().asSequence().associateWith { a.getInt(it) }
                 },
-                profile = if (o.isNull("profile")) null else o.optInt("profile"),
             )
         } catch (_: Exception) {
             Stats()
         }
+
+        /**
+         * Everything this phone has recorded, profile id -> that profile's history.
+         *
+         * Also reads the single-blob shape written before stats were kept per profile:
+         * that one carried the character it belonged to as a `profile` field, so it moves
+         * under that id and nothing anybody earned is lost. A blob with no profile can
+         * only be empty — nothing was ever recorded without one — so it's dropped.
+         */
+        fun mapFromJson(raw: String): Map<Int, Stats> = try {
+            val o = JSONObject(raw)
+            if (o.has("gamesPlayed")) {
+                val owner = if (o.isNull("profile")) null else o.optInt("profile")
+                owner?.let { mapOf(it to fromJson(raw)) } ?: emptyMap()
+            } else {
+                o.keys().asSequence().mapNotNull { key ->
+                    key.toIntOrNull()?.let { id -> id to fromJson(o.getJSONObject(key).toString()) }
+                }.toMap()
+            }
+        } catch (_: Exception) {
+            emptyMap()
+        }
+
+        /** Empty entries are dropped rather than stored — an unplayed profile is absence. */
+        fun mapToJson(all: Map<Int, Stats>): String = JSONObject().apply {
+            all.forEach { (id, stats) ->
+                if (!stats.isEmpty) put(id.toString(), JSONObject(stats.toJson()))
+            }
+        }.toString()
     }
 }
 

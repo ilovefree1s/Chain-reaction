@@ -52,9 +52,15 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
     var settings by mutableStateOf(repo.loadSettings())
         private set
 
-    /** This phone owner's history. Nobody else's, and it never leaves the device. */
-    var stats by mutableStateOf(repo.loadStats())
-        private set
+    /** Every profile's history on this phone. Nobody else's, and it never leaves the device. */
+    private var allStats by mutableStateOf(repo.loadStats())
+
+    /**
+     * The selected profile's history. Switching profiles switches the numbers — they
+     * belong to the face you play as, not to the phone.
+     */
+    val stats: Stats
+        get() = settings.myCharacter?.let { allStats[it] } ?: Stats()
 
     fun updateSettings(next: Settings) {
         settings = next
@@ -120,12 +126,8 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
     fun resolveCard(cardId: Int, played: Boolean, target: String? = null) {
         val profile = settings.myCharacter
         if (profile != null) {
-            // Stamp the owner on the first thing recorded, not just on a finished
-            // round — otherwise a card played before your first round finishes leaves
-            // the stats with no name on them.
-            val owned = if (stats.profile == null) stats.copy(profile = profile) else stats
-            stats = if (played) owned.withCardPlayed(cardId, target) else owned.withCardDiscarded()
-            repo.saveStats(stats)
+            val mine = stats
+            record(profile, if (played) mine.withCardPlayed(cardId, target) else mine.withCardDiscarded())
         }
         update { it.withCardResolved(cardId) }
     }
@@ -140,20 +142,28 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
         if (profile != null && state.roundComplete) {
             val winners = state.winners
             val iWon = state.meIndex in winners
-            stats = stats.withRound(
-                won = iWon && winners.size == 1,
-                tied = iWon && winners.size > 1,
-                aces = state.acesFor(state.meIndex),
-                profile = profile,
+            record(
+                profile,
+                stats.withRound(
+                    won = iWon && winners.size == 1,
+                    tied = iWon && winners.size > 1,
+                    aces = state.acesFor(state.meIndex),
+                ),
             )
-            repo.saveStats(stats)
         }
         endRound()
     }
 
+    /** Clears the selected profile's history and leaves every other profile's alone. */
     fun clearStats() {
-        stats = Stats(profile = settings.myCharacter)
-        repo.saveStats(stats)
+        val profile = settings.myCharacter ?: return
+        allStats = allStats - profile
+        repo.saveStats(allStats)
+    }
+
+    private fun record(profile: Int, next: Stats) {
+        allStats = allStats + (profile to next)
+        repo.saveStats(allStats)
     }
 
     private inline fun update(block: (GameState) -> GameState) {
