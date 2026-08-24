@@ -680,125 +680,16 @@ function putSettings(next) {
 var settings = loadSettings();
 
 
-/* ---------- stats ----------
-   What this phone's owner has done across rounds. Yours only — the app tracks the whole
-   table's scores during a round but nobody else's history, and none of it leaves the
-   device. Nothing is recorded until a profile is locked in, so the numbers always belong
-   to somebody. */
-var STATS_KEY = "chainreaction.stats";
-var memoryStats = null;
-
-function emptyStats() {
-  return {
-    gamesPlayed: 0, wins: 0, ties: 0, aces: 0,
-    cardsPlayed: {}, playsAgainst: {}, cardsDiscarded: 0,
-  };
-}
-
-/*
- * Everything this device has recorded, profile id -> that profile's history. Also reads
- * the single-blob shape written before stats were kept per profile: that one carried the
- * character it belonged to as a `profile` field, so it moves under that id and nothing
- * anybody earned is lost. A blob with no profile can only be empty — nothing was ever
- * recorded without one.
- */
-function loadAllStats() {
-  var raw = null;
-  try { raw = localStorage.getItem(STATS_KEY); } catch (e) { /* fall through */ }
-  if (!raw) return memoryStats || {};
-  try {
-    var o = JSON.parse(raw);
-    if (!o || typeof o !== "object") return {};
-    if (!("gamesPlayed" in o)) return o;
-    var owner = o.profile;
-    if (owner == null) return {};
-    var moved = {};
-    delete o.profile;
-    moved[owner] = Object.assign(emptyStats(), o);
-    return moved;
-  } catch (e) {
-    return {};
-  }
-}
-
-function statsFor(profile) {
-  var all = loadAllStats();
-  return profile != null && all[profile]
-    ? Object.assign(emptyStats(), all[profile])
-    : emptyStats();
-}
-
-/** The selected profile's history — switching profiles switches the numbers. */
-function myStats() { return statsFor(settings.myCharacter); }
-
-function putStatsFor(profile, next) {
-  if (profile == null) return;
-  var all = loadAllStats();
-  all[profile] = next;
-  memoryStats = all;
-  try { localStorage.setItem(STATS_KEY, JSON.stringify(all)); } catch (e) { /* memory only */ }
-}
-
-function statsLosses(s) { return Math.max(0, s.gamesPlayed - s.wins - s.ties); }
-
-function totalCardsPlayed(s) {
-  return Object.keys(s.cardsPlayed).reduce(function (n, k) { return n + s.cardsPlayed[k]; }, 0);
-}
-
-/* Gifts are a kind, not a flag, so this is a filter rather than its own counter. */
-function giftsGiven(s) {
-  return Object.keys(s.cardsPlayed).reduce(function (n, k) {
-    var c = BY_ID[+k];
-    return n + (c && c.kind === "gift" ? s.cardsPlayed[k] : 0);
-  }, 0);
-}
-
-/* Most first, then a stable tiebreak so the list doesn't reshuffle between opens. */
-function tally(map, label) {
-  return Object.keys(map)
-    .map(function (k) { return { key: k, label: label(k), n: map[k] }; })
-    .filter(function (e) { return e.label; })
-    .sort(function (a, b) { return b.n - a.n || (a.label < b.label ? -1 : 1); });
-}
-
-/* An ace is a 1, and only on a hole that has actually been locked. */
-function acesFor(s, p) {
-  var n = 0;
-  for (var h = 0; h < s.holeCount; h++) if (s.locked[h] && s.scores[h][p] === 1) n++;
-  return n;
-}
-
 /* Only cards that land on one named person are worth asking about. Self is you, group
    is everyone, and a reaction answers a card rather than a player. */
 function aimedAtSomeone(kind) {
   return kind === "attack" || kind === "dual" || kind === "gift";
 }
 
-function recordCard(id, played, target) {
-  var profile = settings.myCharacter;
-  if (profile == null) return;
-  var next = statsFor(profile);
-  if (played) {
-    next.cardsPlayed[id] = (next.cardsPlayed[id] || 0) + 1;
-    var victim = (target || "").trim();
-    if (victim) next.playsAgainst[victim] = (next.playsAgainst[victim] || 0) + 1;
-  } else {
-    next.cardsDiscarded += 1;
-  }
-  putStatsFor(profile, next);
-}
-
-function recordRound(s) {
-  var profile = settings.myCharacter;
-  if (profile == null || !roundComplete(s)) return;
-  var won = winners(s);
-  var mine = won.indexOf(s.meIndex) !== -1;
-  var next = statsFor(profile);
-  next.gamesPlayed += 1;
-  if (mine && won.length === 1) next.wins += 1;
-  if (mine && won.length > 1) next.ties += 1;
-  next.aces += acesFor(s, s.meIndex);
-  putStatsFor(profile, next);
+/* A favour can be your own. Attacks are not offered — nobody needs the app's help to
+   hurt themselves. Matches CardKind on the Android side. */
+function playableOnSelf(kind) {
+  return kind === "gift" || kind === "dual";
 }
 
 /* ---------- the one piece of real logic ---------- */
@@ -930,8 +821,6 @@ var parsUI = { open: false, name: "" };
 var charPick = null;
 /* Cards picked to pay for a spin. Null when the cost sheet is closed. */
 var wheelPay = null;
-var statsOpen = false;
-var confirmClearStats = false;
 var roundCourseName = "";
 var savedAs = null;
 var savedGroup = false;
@@ -983,7 +872,6 @@ function render() {
   if (parsUI.open) html += renderParGrid();
   if (charPick) html += renderCharSheet();
   if (wheelPay) html += renderWheelCost();
-  if (statsOpen) html += renderStats();
   app.innerHTML = html;
   fitMetaLines();
   document.body.classList.toggle("menu-screen", screen === "menu");
@@ -1367,6 +1255,7 @@ var HOUSE_RULES = [
   ["Discard", "Played and discarded cards go to your own discard pile. If your deck runs out, the discard is reshuffled back in."],
   ["Buy a spin", "Discard " + DATA.wheelCost + " cards to buy a spin on the Double Wheel. Spin it from the Hand tab. Playing Double Wheel spins for free instead."],
   ["Two per player, per hole", "At most 2 cards may be played on any one player per hole. The app does not enforce this — track it yourselves."],
+  ["Gift yourself", "A gift card can be played on you. Nothing says a favour has to go to somebody else."],
   ["The app doesn't referee", "It deals cards and keeps score. It never applies card effects or stroke penalties. Cards that rewrite scores get entered by hand with the ± steppers."]
 ];
 var DRAW_TABLE = [
@@ -1413,6 +1302,7 @@ var NEON_ICONS = {
   people: '<circle cx="8.5" cy="8.5" r="3"/><circle cx="15.5" cy="8.5" r="3"/><path d="M3.5 20a5 5 0 0 1 10 0"/><path d="M10.5 20a5 5 0 0 1 10 0"/>',
   scales: '<path d="M12 3v15M8 20h8M5 6h14"/><path d="M5 6l-2.5 5h5z"/><path d="M19 6l-2.5 5h5z"/>',
   cap: '<path d="M2 9.5L12 5l10 4.5L12 14z"/><path d="M6.5 11.5v4.5c0 1.8 11 1.8 11 0v-4.5"/><path d="M22 9.5v5"/>',
+  gift: '<rect x="3" y="10" width="18" height="11"/><path d="M12 10v11M3 10h18"/><circle cx="8" cy="6.5" r="2.6"/><circle cx="16" cy="6.5" r="2.6"/>',
   wheel: '<circle cx="12" cy="12" r="9.5"/><circle cx="12" cy="12" r="1.8" fill="#4DC3FF" stroke="none"/><path d="M12 12V2.5M12 12v9.5M12 12H2.5M12 12h9.5M12 12l6.7-6.7M12 12l6.7 6.7M12 12l-6.7 6.7M12 12l-6.7-6.7"/>'
 };
 function nchip(icon) {
@@ -1426,7 +1316,7 @@ function nheader(title) {
 }
 function nsec(text) { return '<div class="nsec">' + text + "</div>"; }
 
-var RULE_ICONS = ["golf", "cards", "seven", "deck", "recycle", "wheel", "people", "scales"];
+var RULE_ICONS = ["golf", "cards", "seven", "deck", "recycle", "wheel", "people", "gift", "scales"];
 
 /* Menu destination: the rules in the neon style, drawn in code rather than shipped
    as artwork — text stays editable and the page costs kilobytes, not megabytes. */
@@ -1484,8 +1374,6 @@ function settingsGroupValid() { return myNameDraft.trim() !== ""; }
 
 function renderSettings() {
   var valid = settingsGroupValid();
-  // The saved profile's numbers, not the draft's — the draft isn't yours until you save.
-  var mine = myStats();
   var row = '<div class="nrow center" style="margin-bottom:10px">' +
     (CHARACTERS.length
       ? badgeHtml(characterById(myCharacterDraft), 48, { act: "pickCharSlot", slot: 0 })
@@ -1506,17 +1394,6 @@ function renderSettings() {
     '<div style="flex:1"><div class="ntitle">Manage courses</div><div class="nbody">' +
     allCourses().length + ' saved &middot; add, edit or delete</div></div>' +
     '<span class="nchev">&rsaquo;</span></div>' +
-    nsec("Stats") +
-    '<div class="npanel nrow center" data-act="openStats" style="cursor:pointer">' +
-    '<div style="flex:1"><div class="ntitle">Your stats</div><div class="nbody">' +
-    // Says why it's empty rather than just showing zeroes.
-    (settings.myCharacter == null
-      ? "Lock in a profile above and they start counting"
-      : mine.gamesPlayed === 0
-        ? "Nothing yet &middot; finish a round to start"
-        : mine.gamesPlayed + " rounds &middot; " + mine.wins + " won &middot; " +
-          totalCardsPlayed(mine) + " cards played") +
-    "</div></div><span class=\"nchev\">&rsaquo;</span></div>" +
     nsec("Sound") +
     '<p class="nbody" data-vol-label style="margin:0 0 6px">' +
     volumeLabel(sfxVolume()) + "</p>" +
@@ -1569,83 +1446,6 @@ function renderCharSheet() {
     (mineId == null ? "Close" : "Play without a profile") + "</button></div>";
 }
 
-/* ---------- stats ----------
-   Yours and nobody else's. Everything here is derived from what the app already had to
-   know — scores, and which card left your hand — apart from who you aimed at, which the
-   play flow asks for. Reached from Settings rather than the menu: the menu's four
-   buttons are painted into the artwork, so a fifth would mean redrawing it. */
-var STATS_LIST_LIMIT = 8;
-
-function statTile(label, value, accent) {
-  return '<div class="stile"><div class="sval"' + (accent ? ' style="color:' + accent + '"' : "") +
-    ">" + value + '</div><div class="slabel">' + label + "</div></div>";
-}
-
-function tallyRow(label, n) {
-  return '<div class="npanel nrow center" style="margin-bottom:8px">' +
-    '<div class="ntitle" style="flex:1;font-size:17px">' + esc(label) + "</div>" +
-    '<div style="color:#FF8A1E;font-size:20px;font-weight:900">' + n + "</div></div>";
-}
-
-function renderStats() {
-  var s = myStats();
-  var head = '<div class="modal nmodal">' +
-    '<div class="nheader"><button class="back" data-act="closeStats">&lsaquo;&nbsp; Back</button>' +
-    "<h1>STATS</h1></div>";
-
-  if (s.gamesPlayed === 0 && totalCardsPlayed(s) === 0) {
-    return head + '<p class="nbody">Nothing yet. Finish a round and it\'ll show up here.</p>' +
-      '<div style="height:20px"></div>' +
-      '<button class="big quiet" data-act="closeStats">Close</button></div>';
-  }
-
-  var me = characterById(settings.myCharacter);
-  var who = me
-    ? '<div class="nrow center" style="margin-bottom:14px">' + badgeHtml(me, 44) +
-      '<div style="width:10px"></div><div class="ntitle">' + esc(me.name) + "</div></div>"
-    : "";
-
-  var targeted = tally(s.playsAgainst, function (k) { return k; });
-  var played = tally(s.cardsPlayed, function (k) { return BY_ID[+k] && BY_ID[+k].name; });
-
-  return head + who +
-    nsec("Rounds") +
-    '<div class="stiles">' +
-      statTile("Played", s.gamesPlayed) +
-      statTile("Won", s.wins, "#FF8A1E") +
-      statTile("Lost", statsLosses(s)) +
-    "</div>" +
-    (s.ties > 0
-      // Ties are their own thing: the app never invents a playoff, so counting them
-      // as wins would be putting words in its mouth.
-      ? '<p class="nbody">' + s.ties + " tied for the win &mdash; neither a win nor a loss.</p>"
-      : "") +
-    nsec("On the course") +
-    '<div class="stiles">' +
-      statTile("Aces", s.aces, "#4DC3FF") +
-      statTile("Cards played", totalCardsPlayed(s)) +
-      statTile("Gifts given", giftsGiven(s), "#4DC3FF") +
-    "</div>" +
-    (targeted.length
-      ? nsec("Most targeted") + targeted.slice(0, STATS_LIST_LIMIT)
-          .map(function (e) { return tallyRow(e.label, e.n); }).join("")
-      : "") +
-    (played.length
-      ? nsec("Most played") + played.slice(0, STATS_LIST_LIMIT)
-          .map(function (e) { return tallyRow(e.label, e.n); }).join("") +
-        (s.cardsDiscarded > 0
-          ? '<p class="nbody">' + s.cardsDiscarded + " discarded without playing.</p>" : "")
-      : "") +
-    '<div style="height:24px"></div>' +
-    (confirmClearStats
-      ? '<p class="confirmq">Clear this profile\'s stats? This can\'t be undone.</p>' +
-        '<div class="acts" style="margin-top:10px">' +
-        '<button class="big raised" data-act="keepStats">Keep them</button>' +
-        '<button class="big primary" data-act="clearStats">Clear</button></div>'
-      : '<button class="big quiet" data-act="askClearStats">Clear stats</button>') +
-    "</div>";
-}
-
 /* ---------- nav ---------- */
 function renderNav() {
   var tabs = [["score", "Score"], ["hand", "Hand"], ["rules", "Rules"]];
@@ -1690,6 +1490,12 @@ function kindGlyph(kind, cx, cy) {
     g += '<polygon points="' + (cx + 6) + ',' + (cy - 52) + ' ' + (cx - 30) + ',' + (cy + 6) + ' ' +
       (cx - 6) + ',' + (cy + 6) + ' ' + (cx - 12) + ',' + (cy + 52) + ' ' + (cx + 30) + ',' + (cy - 8) + ' ' +
       (cx + 6) + ',' + (cy - 8) + '" fill="' + ICE + '" stroke="none"/>';
+  } else if (kind === "sabotage") {
+    // You, and what you just did to yourself: an arrow coming down on your own head.
+    // The tip stops short of the head — touching it, the two shapes read as one blob.
+    g += person(cx, cy + 26, 1.5, ICE) +
+      '<path d="M' + cx + ' ' + (cy - 64) + 'v38" stroke="' + ORG + '"/>' +
+      '<path d="M' + (cx - 16) + ' ' + (cy - 42) + 'l16 16 16-16" stroke="' + ORG + '"/>';
   } else if (kind === "gift") {
     // A wrapped present: aimed at somebody, but as a favour.
     g += '<rect x="' + (cx - 36) + '" y="' + (cy - 10) + '" width="72" height="50" stroke="' + ICE + '"/>' +
@@ -1747,10 +1553,9 @@ function cardFaceSvg(c) {
     title + oct + body +
     // Plain text, not a filled chip: a block down here reads as something sitting
     // on top of the explanation rather than part of the card. Matches Android.
+    // The card's number used to sit opposite — nobody ever needed it to play.
     '<text x="270" y="929" fill="#4DC3FF" font-size="21" font-weight="900" letter-spacing="2">' +
     esc(c.kind.toUpperCase()) + '</text>' +
-    '<text x="620" y="930" text-anchor="end" fill="#5E6C88" font-size="21" font-weight="700">' +
-    c.id + ' / ' + CARDS.length + '</text>' +
     '</svg>';
 }
 
@@ -1774,6 +1579,11 @@ function renderFaceModal() {
             '<button class="big primary" data-act="playOn" data-t="' + esc(name) +
             '" data-i="' + c.id + '">' + esc(name) + "</button>";
         }).join("") +
+        // A favour can be your own: gifts and duals may land on you. No data-t, so the
+        // tally stays a record of who you aim at rather than putting you top of it.
+        (playableOnSelf(c.kind)
+          ? '<button class="big quiet" data-act="playOn" data-i="' + c.id + '">Myself</button>'
+          : "") +
         '<button class="big quiet" data-act="cancelTarget">Never mind</button></div>';
     } else if (confirmDiscard === c.id) {
       acts = '<p class="confirmq" style="text-align:center">Discard ' + esc(c.name) + '?</p>' +
@@ -1974,7 +1784,9 @@ function renderParGrid() {
     '<button class="big quiet" data-act="closePars">Done</button></div>';
 }
 
-/* The card leaves your hand either way; [played] and [target] are for the stats. */
+/* The card leaves your hand either way. [played] and [target] are still threaded
+   through because the play flow asks who a card landed on; nothing records them
+   while stats are on hold. */
 function resolveCard(s, id, played, target) {
   var at = s.hand.indexOf(id);
   if (at < 0) return;
@@ -1983,7 +1795,6 @@ function resolveCard(s, id, played, target) {
   viewCard = null;
   s.hand.splice(at, 1);
   s.discard.push(id);
-  recordCard(id, played, target);
   commit(s);
   // The Double Wheel card IS the spin — playing it opens the wheel with no further
   // cost, which is exactly what its text promises.
@@ -2314,9 +2125,6 @@ app.addEventListener("click", function (e) {
     case "viewScorecard": showScorecard = true; render(); break;
     // Clears the round and returns to the menu, so Play means play again.
     case "finishRound":
-      // Banked on the way out. Only reachable from the results screen, and finishing
-      // clears the round, so it can't be counted twice.
-      recordRound(s);
       clearSaved();
       state = null;
       tab = "score";
@@ -2334,8 +2142,8 @@ app.addEventListener("click", function (e) {
       commit(s); break;
 
     case "draw": doDraw(); break;
-    // Play and Discard both send the card to the discard pile; only the stats care
-    // which one it was, and only a play has somebody on the other end of it.
+    // Play and Discard both send the card to the discard pile; only a play has
+    // somebody on the other end of it, which is why one of them asks.
     case "playCard":
       if (aimedAtSomeone(BY_ID[i].kind) && s.players.length > 1) {
         playTarget = i;
@@ -2374,22 +2182,6 @@ app.addEventListener("click", function (e) {
       render(); break;
     }
     case "payCancel": wheelPay = null; render(); break;
-
-    // ---- stats ----
-    case "openStats": statsOpen = true; confirmClearStats = false; render(); break;
-    case "closeStats": statsOpen = false; confirmClearStats = false; render(); break;
-    case "askClearStats": confirmClearStats = true; render(); break;
-    case "keepStats": confirmClearStats = false; render(); break;
-    case "clearStats": {
-      // This profile's history only — every other profile's survives.
-      var all = loadAllStats();
-      delete all[settings.myCharacter];
-      memoryStats = all;
-      try { localStorage.setItem(STATS_KEY, JSON.stringify(all)); } catch (e) { /* memory only */ }
-      statsOpen = false;
-      confirmClearStats = false;
-      render(); break;
-    }
     case "payConfirm": {
       if (!wheelPay || wheelPay.length !== DATA.wheelCost) break;
       wheelPay.forEach(function (id) {

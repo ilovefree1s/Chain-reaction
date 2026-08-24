@@ -12,8 +12,6 @@ import com.chainreaction.data.CourseLibrary
 import com.chainreaction.data.GameRepository
 import com.chainreaction.data.GameState
 import com.chainreaction.data.Settings
-import com.chainreaction.data.Stats
-import com.chainreaction.data.acesFor
 
 class GameViewModel(app: Application) : AndroidViewModel(app) {
 
@@ -51,16 +49,6 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
 
     var settings by mutableStateOf(repo.loadSettings())
         private set
-
-    /** Every profile's history on this phone. Nobody else's, and it never leaves the device. */
-    private var allStats by mutableStateOf(repo.loadStats())
-
-    /**
-     * The selected profile's history. Switching profiles switches the numbers — they
-     * belong to the face you play as, not to the phone.
-     */
-    val stats: Stats
-        get() = settings.myCharacter?.let { allStats[it] } ?: Stats()
 
     fun updateSettings(next: Settings) {
         settings = next
@@ -117,54 +105,16 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
     fun draw() = update { it.withDraw() }
 
     /**
-     * Play or discard — both send the card to the discard pile, but only one of them is
-     * something you did to somebody, so the stats keep them apart.
-     *
-     * Nothing is recorded until a profile is locked in: numbers with no owner are worse
-     * than no numbers.
+     * Play or discard — both send the card to the discard pile. [played] and [target]
+     * are kept because the play flow still asks who a card landed on; nothing records
+     * them while stats are on hold.
      */
     fun resolveCard(cardId: Int, played: Boolean, target: String? = null) {
-        val profile = settings.myCharacter
-        if (profile != null) {
-            val mine = stats
-            record(profile, if (played) mine.withCardPlayed(cardId, target) else mine.withCardDiscarded())
-        }
         update { it.withCardResolved(cardId) }
     }
 
-    /**
-     * A completed round, banked on the way out. Only reachable from the results screen,
-     * and finishing clears the round, so it can't be counted twice.
-     */
-    fun finishRound() {
-        val state = state ?: return
-        val profile = settings.myCharacter
-        if (profile != null && state.roundComplete) {
-            val winners = state.winners
-            val iWon = state.meIndex in winners
-            record(
-                profile,
-                stats.withRound(
-                    won = iWon && winners.size == 1,
-                    tied = iWon && winners.size > 1,
-                    aces = state.acesFor(state.meIndex),
-                ),
-            )
-        }
-        endRound()
-    }
-
-    /** Clears the selected profile's history and leaves every other profile's alone. */
-    fun clearStats() {
-        val profile = settings.myCharacter ?: return
-        allStats = allStats - profile
-        repo.saveStats(allStats)
-    }
-
-    private fun record(profile: Int, next: Stats) {
-        allStats = allStats + (profile to next)
-        repo.saveStats(allStats)
-    }
+    /** A completed round. Only reachable from the results screen. */
+    fun finishRound() = endRound()
 
     private inline fun update(block: (GameState) -> GameState) {
         val current = state ?: return

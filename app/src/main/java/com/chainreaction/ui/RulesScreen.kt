@@ -50,6 +50,8 @@ private val houseRules = listOf(
     "Two per player, per hole" to
         "At most ${Rules.MAX_CARDS_ON_ONE_PLAYER_PER_HOLE} cards may be played on any one " +
         "player per hole. The app does not enforce this — track it yourselves.",
+    "Gift yourself" to
+        "A gift card can be played on you. Nothing says a favour has to go to somebody else.",
     "The app doesn't referee" to
         "It deals cards and keeps score. It never applies card effects or stroke penalties. " +
         "Cards that rewrite scores get entered by hand with the ± steppers.",
@@ -66,7 +68,7 @@ private val drawTable = listOf(
 /** Icon per house rule, in the order of [houseRules]. */
 private val ruleIcons = listOf(
     NeonIcon.GOLF, NeonIcon.CARDS, NeonIcon.SEVEN, NeonIcon.DECK,
-    NeonIcon.RECYCLE, NeonIcon.WHEEL, NeonIcon.PEOPLE, NeonIcon.SCALES,
+    NeonIcon.RECYCLE, NeonIcon.WHEEL, NeonIcon.PEOPLE, NeonIcon.GIFT, NeonIcon.SCALES,
 )
 
 @Composable

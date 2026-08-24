@@ -46,7 +46,7 @@ if (missing.length) {
 }
 if (new Set(ids).size !== ids.length) problems.push("duplicate card ids");
 
-const kinds = new Set(["attack", "self", "dual", "react", "group", "gift"]);
+const kinds = new Set(["attack", "self", "dual", "react", "group", "gift", "sabotage"]);
 data.cards.forEach((c) => {
   if (!kinds.has(c.kind)) problems.push(`card ${c.id} has unknown kind "${c.kind}"`);
   if (!data.timings.includes(c.timing)) problems.push(`card ${c.id} has unlisted timing "${c.timing}"`);

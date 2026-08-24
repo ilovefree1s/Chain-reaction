@@ -163,8 +163,6 @@ private fun App(vm: GameViewModel = viewModel()) {
             // So the slider can be heard while it's being dragged.
             onPreviewSfx = { volume -> sfx.menuTap(volume) },
             onRenameCharacter = vm::renameCharacter,
-            stats = vm.stats,
-            onClearStats = vm::clearStats,
             onSettingsChange = vm::updateSettings,
             onSaveCourse = vm::saveCourse,
             onDeleteCourse = vm::deleteCourse,
@@ -182,8 +180,8 @@ private fun App(vm: GameViewModel = viewModel()) {
                     vm = vm,
                     characters = vm.characters,
                     onMenu = { go(Screen.MENU) },
-                    // finishRound banks the round into your stats on the way out;
-                    // ending one from the Rules tab abandons it and records nothing.
+                    // Both paths clear the round; finishing simply comes off the
+                    // results screen rather than out of the Rules tab.
                     onFinishRound = {
                         vm.finishRound()
                         go(Screen.MENU)
@@ -361,8 +359,7 @@ private fun Round(
         WheelCostSheet(
             hand = state.hand,
             onPaid = { paid ->
-                // Paying for a spin is a discard, not a play — it shouldn't show up
-                // in your stats as cards you used on anybody.
+                // Paying for a spin is a discard, not a play.
                 paid.forEach { vm.resolveCard(it, played = false) }
                 payingForWheel = false
                 wheelIsFree = false

@@ -127,7 +127,7 @@ fun NeonSectionLabel(text: String) {
     }
 }
 
-enum class NeonIcon { GOLF, CARDS, SEVEN, DECK, RECYCLE, WHEEL, PEOPLE, SCALES, CAP }
+enum class NeonIcon { GOLF, CARDS, SEVEN, DECK, RECYCLE, WHEEL, PEOPLE, SCALES, CAP, GIFT }
 
 /** Octagonal icon chip, blue on near-black, like the art's row markers. */
 @Composable
@@ -286,6 +286,19 @@ private fun DrawScope.drawNeonIcon(icon: NeonIcon) {
                 style = stroke,
             )
             line(0.94f, 0.38f, 0.94f, 0.66f)
+        }
+        // A wrapped box: the same present the gift cards carry, at chip size.
+        NeonIcon.GIFT -> {
+            drawRect(
+                NeonIce,
+                topLeft = Offset(w * 0.10f, h * 0.40f),
+                size = androidx.compose.ui.geometry.Size(w * 0.80f, h * 0.50f),
+                style = stroke,
+            )
+            line(0.50f, 0.40f, 0.50f, 0.90f)
+            line(0.10f, 0.40f, 0.90f, 0.40f)
+            drawCircle(NeonIce, radius = w * 0.11f, center = Offset(w * 0.34f, h * 0.21f), style = stroke)
+            drawCircle(NeonIce, radius = w * 0.11f, center = Offset(w * 0.66f, h * 0.21f), style = stroke)
         }
         NeonIcon.SEVEN -> Unit // rendered as text in the chip
     }

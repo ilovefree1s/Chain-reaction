@@ -11,12 +11,12 @@ its own copy of the scorecard, exactly as [BUILD_SPEC.md](BUILD_SPEC.md) describ
 
 ## Where the rules live
 
-[BUILD_SPEC.md](BUILD_SPEC.md) is the source of truth for the 61 cards, held in alphabetical
+[BUILD_SPEC.md](BUILD_SPEC.md) is the source of truth for the 63 cards, held in alphabetical
 order by name with ids running 1-N to match. The web build reads
 its card data straight out of the spec's ```json block at build time, so the spec and the web
 app can't drift. The Android build has the same data transcribed into
 [GameCard.kt](app/src/main/java/com/chainreaction/data/GameCard.kt), verified against the spec
-by unit test (`deck is 61 cards with unique ids one through sixty-one`).
+by unit test (`deck is 63 cards with unique ids one through sixty-three`).
 
 Ids are positional, not permanent: re-sorting the deck renumbers them. Nothing in either
 build hardcodes one — `wheelExcludes` and `freeSpinCard` live in the spec beside the cards,
@@ -40,7 +40,7 @@ Install on a connected device or running emulator:
 adb install -r app/build/outputs/apk/debug/app-debug.apk
 ```
 
-Run the tests (44 of them, covering the draw table, the hand cap and its use-it-or-lose-it
+Run the tests (45 of them, covering the draw table, the hand cap and its use-it-or-lose-it
 debt, deck reshuffling, locking, finishing a round, the course library and the character
 roster):
 
@@ -133,30 +133,21 @@ every launch and clears itself the moment `myCharacter` is set, so it can't be d
 forgotten. It sits above the button stack rather than at the top of the screen, where it cut
 across the logo.
 
-**Settings → Your stats** keeps a history of your rounds — and only yours. The app tracks
-the whole table's scores during a round but nobody else's history, and none of it leaves the
-phone. Nothing is recorded until a profile is locked in, so the numbers always belong to
-somebody; it lives behind a row in Settings because the menu's four buttons are painted into
-the artwork and a fifth would mean redrawing it.
-
-Most of it falls out of what the app already had to know: **rounds played, won, lost** come
-from the results screen's own standings, and an **ace** is a score of 1 on a locked hole. A
-tie for the win is counted apart from both — the app never invents a playoff, so calling one
-a win would be putting words in its mouth. **Cards played** needed one change: Play and
-Discard used to be the same action internally, both just moving the card to your discard
-pile, so they're now told apart. **Who you play cards against** is the only thing that asks
-you for anything: playing a card that lands on one person (attack, gift or dual) asks who.
-Self, group and reaction cards have nobody to name and skip the question. Paying two cards
-for a wheel spin is a discard, not a play, and doesn't count against anyone.
+Stats are **on hold**. Settings used to carry a *Your stats* row — rounds played, won
+and lost, aces, cards played, who you played them on — and it was pulled out on 2026-08-24
+rather than left half-trusted. Nothing records while it is gone. The code is whole in git
+(the feature landed in `7b346fc`, and its removal is the commit after), so bringing it back
+is a revert rather than a rewrite. The play flow still asks who a card landed on, because
+naming the target is how the table hears it, not just how the numbers got counted.
 
 **Settings** holds your own name and face, course management, and the sound slider. Only
 *you* are stored, not the whole group — the rest of the table changes round to round, and
 typing three names on Setup beats maintaining a roster you keep having to correct. You are
 always player 1, and Setup pre-fills that slot. Settings saved when this held the whole
 group keep whichever name was marked ME rather than making you retype it. The app
-makes exactly one noise: a chain rattle when Play starts a *new* round, at whatever the
-**Sound** slider at the bottom of Settings is set to. Play resuming a round in progress is
-silent, as are Cards, Rules and Settings. Nothing else in either build plays audio.
+makes exactly one noise: a chain rattle on Play — starting a round or resuming one, either
+way — at whatever the **Sound** slider at the bottom of Settings is set to. Cards, Rules and
+Settings are silent, and nothing else in either build plays audio.
 
 The clip lives at [app/src/main/res/raw/chains.mp3](app/src/main/res/raw/chains.mp3) —
 Android loads it as `R.raw.chains` through a `SoundPool`, and `web/build.js` copies it

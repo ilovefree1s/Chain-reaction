@@ -53,17 +53,6 @@ class GameRepository(context: Context) {
         prefs.edit().putString(KEY_CHARACTER_NAMES, o.toString()).apply()
     }
 
-    /**
-     * History per profile, id -> that profile's stats. Same apply() reasoning as the
-     * names — small and often. Stats written before the split are migrated on read.
-     */
-    fun loadStats(): Map<Int, Stats> =
-        prefs.getString(KEY_STATS, null)?.let { Stats.mapFromJson(it) } ?: emptyMap()
-
-    fun saveStats(all: Map<Int, Stats>) {
-        prefs.edit().putString(KEY_STATS, Stats.mapToJson(all)).apply()
-    }
-
     fun loadSettings(): Settings =
         prefs.getString(KEY_SETTINGS, null)?.let { Settings.fromJson(it) } ?: Settings()
 
@@ -77,6 +66,5 @@ class GameRepository(context: Context) {
         const val KEY_COURSES = "courses"
         const val KEY_SETTINGS = "settings"
         const val KEY_CHARACTER_NAMES = "characterNames"
-        const val KEY_STATS = "stats"
     }
 }

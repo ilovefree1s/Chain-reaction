@@ -8,12 +8,18 @@ enum class CardKind(val label: String) {
     REACT("react"),
     GROUP("group"),
     GIFT("gift"),
+
+    /**
+     * You, at your own expense. The table gets something and you don't — the only kind
+     * whose whole point is that it costs the person holding it.
+     */
+    SABOTAGE("sabotage"),
     ;
 
     /**
      * Whether playing this lands on one named person, and so is worth asking about.
-     * Self is you, group is everyone, and a reaction answers a card rather than a player —
-     * none of those have anyone to name.
+     * Self is you, group is everyone, sabotage is everyone but you, and a reaction answers
+     * a card rather than a player — none of those have anyone to name.
      */
     val aimedAtSomeone: Boolean get() = this == ATTACK || this == DUAL || this == GIFT
 }
@@ -46,12 +52,14 @@ object Rules {
     // The house blacklist: reaction cards plus everything too situational,
     // too group-shaped or too slow to land as a wheel result — and the Double
     // Wheel itself, so the wheel can never demand another wheel.
-    val WHEEL_EXCLUDES = setOf(1, 4, 6, 7, 9, 11, 14, 15, 16, 21, 22, 23, 24, 25, 26, 27, 28, 31, 33, 34, 35, 36, 39, 41, 43, 45, 48, 50, 55, 56, 59)
+    val WHEEL_EXCLUDES = setOf(1, 4, 6, 7, 9, 11, 14, 15, 16, 21, 22, 23, 24, 25, 26, 27, 28, 31, 33, 34, 35, 36, 39, 41, 43, 45, 48, 50, 53, 55, 56, 59, 62)
 
     /** Display order for the rules reference. */
     val TIMINGS = listOf(
         "Before shot",
         "Before tee shot",
+        "Before all tee",
+        "On draw",
         "After throw",
         "After throw · secret",
         "After all tee",
@@ -70,7 +78,7 @@ object CardDeck {
         GameCard(3, "Before shot", CardKind.DUAL, "Aerobie", "On yourself: use an aerobie for your drive. On another player: they drive with the aerobie using their off hand. Normal stroke either way."),
         GameCard(4, "After throw", CardKind.ATTACK, "AIR HORN!", "Heckle an opponent during one of their shots. Reveal and discard this card after."),
         GameCard(5, "Before shot", CardKind.ATTACK, "Baby Discs", "Force an opponent to throw a mini for their upcoming drive or putt. Through the basket floor still counts as in."),
-        GameCard(6, "For the next hole", CardKind.ATTACK, "Bag Boy!", "Force an opponent to carry your discs until they beat you on a hole. While they carry your bag, you can't play any more cards on them."),
+        GameCard(6, "For the next hole", CardKind.ATTACK, "Bag Boy!", "Force an opponent to carry your bag for 3 holes! If they beat you before those 3 holes are up (1st or 2nd hole), they can play one of your cards and you take your bag back."),
         GameCard(7, "Before tee shot", CardKind.ATTACK, "Bag Exchange!", "Pick a player to swap bags with. Swap back after the first bogey by either player. The player that took the bogey first must volunteer as tribute to exchange lies with the other player the next time they go OB."),
         GameCard(8, "Before shot", CardKind.ATTACK, "Bag Raid!", "Choose ANY disc from any bag. The target player must use that disc for their next shot."),
         GameCard(9, "Before shot", CardKind.SELF, "BIG BLUFF", "Pick up your disc and throw your next shot from anyone else's disc, with them. If someone calls you out, you can claim you're holding this card even if you aren't. If they believe you, nothing happens. If they call your bluff and you have it, they take +1 stroke. If they call it and you don't, you take +2 strokes and they take -1."),
@@ -78,13 +86,13 @@ object CardDeck {
         GameCard(11, "After throw", CardKind.SELF, "Big Putted!", "If you make a putt from outside C1 while any other players are inside C1, they all must use their left hand to putt this hole."),
         GameCard(12, "Before tee shot", CardKind.ATTACK, "Bizarro Golf!", "Force an opponent to drive with a putter and putt with a driver this hole."),
         GameCard(13, "After throw", CardKind.GIFT, "Buddy Buddy", "Bless someone with a free mulligan after a bad throw."),
-        GameCard(14, "Before tee shot", CardKind.SELF, "Call Your Shot", "Call CTP. If you win it, nobody can play cards on you next hole, and your next attack card hits every opponent — not you."),
+        GameCard(14, "Before all tee", CardKind.SELF, "Call Your Shot", "Call CTP. If you win it, nobody can play cards on you next hole, and your next attack card hits every opponent — not you."),
         GameCard(15, "Any time", CardKind.ATTACK, "Can I Borrow This?", "Pick anyone you want. Look through their cards and play one on anyone."),
         GameCard(16, "Any time", CardKind.REACT, "Change Is Good", "Force an opponent to change the target of one of their cards, if there is another option."),
         GameCard(17, "Before shot", CardKind.ATTACK, "CHRIS SPECIAL!", "Force an opponent to throw a tomahawk on the upcoming drive or approach."),
         GameCard(18, "Before shot", CardKind.ATTACK, "Close 'Em", "Force an opponent to take the next putt with their eyes closed."),
-        GameCard(19, "Before tee shot", CardKind.ATTACK, "Code Words!", "An opponent can't say \"yes\" or \"no\" this hole. 1 stroke penalty every time they do."),
-        GameCard(20, "Before tee shot", CardKind.ATTACK, "Commentator", "Another player has to announce every shot you take this hole. If they forget one, they take +1 stroke."),
+        GameCard(19, "Before tee shot", CardKind.ATTACK, "Code Words!", "An opponent can't say \"yes\" or \"no\" this hole. 1 stroke penalty every time they do. ANY variation of the words yes or no counts."),
+        GameCard(20, "Before tee shot", CardKind.ATTACK, "Commentator", "Another player has to announce every shot you take this hole like they are a commentator. If they forget one, they take +1 stroke."),
         GameCard(21, "Before tee shot", CardKind.ATTACK, "Dealer's Choice!", "You pick the discs every other player tees off with this hole."),
         GameCard(22, "Before tee shot", CardKind.ATTACK, "Do Not Pass Go", "Whoever has the shortest drive on the next hole gets no cards for that hole."),
         GameCard(23, "After throw", CardKind.GIFT, "Doesn't Look OB to Me", "Play on a shot that just went OB. Instead of actually being OB (or in a hazard) they can just play it where it lies, with no penalty at all."),
@@ -115,9 +123,9 @@ object CardDeck {
         GameCard(48, "After throw", CardKind.ATTACK, "Prove It", "Cancel a shot an opponent just took. They throw again with a different disc of their choice. No extra stroke."),
         GameCard(49, "Before shot", CardKind.ATTACK, "Roll It!", "Force an opponent to throw a roller on the upcoming drive or approach."),
         GameCard(50, "After card", CardKind.REACT, "Rubber and Glue", "If a card targeting only you was just played, that opponent carries out the instructions instead of you."),
-        GameCard(51, "Before shot", CardKind.DUAL, "Shoe Golf", "On yourself: putt with your own shoe at no stroke cost. On another player: they putt with a shoe and it still counts as a stroke."),
+        GameCard(51, "Before shot", CardKind.DUAL, "Shoe Golf", "On yourself: putt with your own shoe at no stroke cost. On another player: they putt with a shoe and it still counts as a stroke. If they refuse to take their shoe off, they take +1 stroke after the hole."),
         GameCard(52, "Before shot", CardKind.ATTACK, "Sidearm", "Force an opponent to throw a sidearm on the upcoming drive or approach."),
-        GameCard(53, "Before shot", CardKind.DUAL, "Spin to Win", "Spin rapidly 7 times, then putt within 3 seconds. Free on yourself, a normal stroke on an opponent."),
+        GameCard(53, "On draw", CardKind.SABOTAGE, "Everybody But Me", "You must play this card immediately after drawing, you can't discard it. Everyone gets a free mulligan on the next hole but me =("),
         GameCard(54, "Before shot", CardKind.GIFT, "That's Definitely a Gimme", "Allow a player to pick up a putt as a gimme, as long as it's inside C1. They definitely woulda made it."),
         GameCard(55, "Before tee shot", CardKind.ATTACK, "Too Many Choices", "Pick 3 discs out of an opponent's bag. They choose which one to tee off with this hole from the 3 options."),
         GameCard(56, "Before tee shot", CardKind.SELF, "Tree Insurance", "Play before your tee shot. If you hit a tree, take a free mulligan."),
@@ -126,6 +134,8 @@ object CardDeck {
         GameCard(59, "Before tee shot", CardKind.GROUP, "WALK IT DOWN!!", "No other cards can be played once this hits the table. Everyone tees immediately from anywhere near the tee pad — no throw order. First and second to finish get birdie, third gets par, last gets bogey. No running, and no calling foot faults."),
         GameCard(60, "After throw", CardKind.ATTACK, "Walk of Shame", "After a missed putt inside C1, that player carries their putter until they finish the next hole. If they drop it or put it in the bag, +1 stroke."),
         GameCard(61, "Before tee shot", CardKind.ATTACK, "Your Tee Pad Is Over There!", "Use 2 of your discs to mark a new tee for an opponent of your choice, up to 10 paces (30 ft) from the original. They tee from it."),
+        GameCard(62, "Before all tee", CardKind.SABOTAGE, "I Think It's Broke", "The first player to hit a tree loses that disc — they can't throw it again for the rest of the round."),
+        GameCard(63, "Before tee shot", CardKind.ATTACK, "One Disc Wonder", "Force an opponent to play the hole with only 1 DISC. You choose it."),
     )
 
     private val byId: Map<Int, GameCard> = ALL.associateBy { it.id }

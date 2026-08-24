@@ -170,27 +170,16 @@ fun CardFace(card: GameCard, modifier: Modifier = Modifier) {
             )
         }
 
-        Row(
-            Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            // Plain text, not a filled chip: on a card this size the chip reads as a
-            // solid block sitting on top of the explanation's last line.
-            Text(
-                card.kind.label.uppercase(),
-                color = NeonIce,
-                fontSize = 13.sp,
-                fontWeight = FontWeight.Black,
-                letterSpacing = 1.sp,
-            )
-            Text(
-                "${card.id} / ${CardDeck.ALL.size}",
-                color = NeonDim,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Bold,
-            )
-        }
+        // Plain text, not a filled chip: on a card this size the chip reads as a
+        // solid block sitting on top of the explanation's last line. The card's
+        // number used to sit opposite — nobody ever needed it to play.
+        Text(
+            card.kind.label.uppercase(),
+            color = NeonIce,
+            fontSize = 13.sp,
+            fontWeight = FontWeight.Black,
+            letterSpacing = 1.sp,
+        )
     }
 }
 
@@ -263,6 +252,14 @@ private fun DrawScope.drawKindGlyph(kind: CardKind) {
             person(0.74f, 0.52f, 1.0f, NeonIce)
             person(0.5f, 0.66f, 1.15f, NeonOrange)
         }
+        // You, and what you just did to yourself: an arrow coming down on your own head.
+        // The tip stops short of the head — touching it, the two shapes read as one blob.
+        CardKind.SABOTAGE -> {
+            person(0.5f, 0.70f, 1.3f, NeonIce)
+            drawLine(NeonOrange, Offset(w * 0.5f, h * 0.06f), Offset(w * 0.5f, h * 0.30f), stroke.width)
+            drawLine(NeonOrange, Offset(w * 0.36f, h * 0.18f), Offset(w * 0.5f, h * 0.30f), stroke.width)
+            drawLine(NeonOrange, Offset(w * 0.64f, h * 0.18f), Offset(w * 0.5f, h * 0.30f), stroke.width)
+        }
         // A wrapped present: this one is aimed at somebody, but as a favour.
         CardKind.GIFT -> {
             drawRect(
@@ -322,8 +319,8 @@ fun CardFaceDialog(
     onDismiss: () -> Unit,
     /**
      * Both Play and Discard send the card to the discard pile — [played] is the only
-     * thing that tells them apart, and the stats need it. [target] is who it landed on,
-     * null for a discard or a card that isn't aimed at anybody.
+     * thing that tells them apart. [target] is who it landed on, null for a discard,
+     * a card that isn't aimed at anybody, or one you played on yourself.
      */
     onResolve: ((id: Int, played: Boolean, target: String?) -> Unit)? = null,
     /** The table, so a card aimed at someone can ask who. Empty skips the question. */
@@ -389,6 +386,11 @@ fun CardFaceDialog(
                     players.filterIndexed { i, name -> i != meIndex && name.isNotBlank() }
                 }
 
+                // A favour can be your own: gifts and duals may land on you, so you are
+                // offered alongside the table. Attacks are not — nobody needs the app's
+                // help to hurt themselves.
+                val canPlayOnSelf = card.kind == CardKind.GIFT || card.kind == CardKind.DUAL
+
                 if (onResolve != null) {
                     if (choosingTarget) {
                         // Who it landed on. Only asked for cards that are aimed at
@@ -403,6 +405,15 @@ fun CardFaceDialog(
                         opponents.forEach { name ->
                             NeonBigButton(name, enabled = true) {
                                 onResolve(card.id, true, name)
+                                onDismiss()
+                            }
+                            Spacer(Modifier.height(8.dp))
+                        }
+                        if (canPlayOnSelf) {
+                            // Null target, not your own name: the tally answers "who do
+                            // you aim at", and you would otherwise top your own chart.
+                            NeonQuietButton("Myself") {
+                                onResolve(card.id, true, null)
                                 onDismiss()
                             }
                             Spacer(Modifier.height(8.dp))
@@ -431,7 +442,7 @@ fun CardFaceDialog(
                         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                             Box(Modifier.weight(1f)) {
                                 NeonBigButton("Play", enabled = true) {
-                                    if (card.kind.aimedAtSomeone && opponents.isNotEmpty()) {
+                                    if (card.kind.aimedAtSomeone && (opponents.isNotEmpty() || canPlayOnSelf)) {
                                         choosingTarget = true
                                     } else {
                                         onResolve(card.id, true, null)

@@ -15,7 +15,7 @@ If a PWA is easier to sideload, that's acceptable — but it must work offline, 
 - **Stroke play.** Lowest total wins.
 - **Starting hand:** 4 cards, dealt at round start.
 - **Hand cap:** 7. Cannot draw past it — must discard first.
-- **Each player has their own 61-card deck**, shuffled independently. Duplicate cards across players are expected and fine.
+- **Each player has their own 63-card deck**, shuffled independently. Duplicate cards across players are expected and fine.
 - **Played and discarded cards** go to that player's own discard pile. Reshuffle the discard back into the deck if the deck ever empties.
 - **Max 2 cards may be played on any one player per hole.** The app does not enforce this — players track it themselves — but show it in an in-app rules screen.
 
@@ -88,6 +88,7 @@ Color-code cards by function — this is the main visual system:
 | `react` | played in response to another card |
 | `group` | affects everyone |
 | `gift` | played on another player to help them |
+| `sabotage` | costs you, to everybody else's benefit |
 
 Suggested palette: deep pine ground (`#0C1A14`), panels (`#132A21`), muted sage text (`#8AA79A`), off-white (`#F2F5F1`). Function colors: attack `#FF5A4D`, self `#FFD23F`, dual `#FF57C1`, react `#4DD9E8`, group `#A78BFA`. Condensed heavy display face for card names, plain sans for body.
 
@@ -107,10 +108,12 @@ Suggested palette: deep pine ground (`#0C1A14`), panels (`#132A21`), muted sage 
   "maxCardsOnOnePlayerPerHole": 2,
   "wheelCost": 2,
   "freeSpinCard": 25,
-  "wheelExcludes": [1, 4, 6, 7, 9, 11, 14, 15, 16, 21, 22, 23, 24, 25, 26, 27, 28, 31, 33, 34, 35, 36, 39, 41, 43, 45, 48, 50, 55, 56, 59],
+  "wheelExcludes": [1, 4, 6, 7, 9, 11, 14, 15, 16, 21, 22, 23, 24, 25, 26, 27, 28, 31, 33, 34, 35, 36, 39, 41, 43, 45, 48, 50, 53, 55, 56, 59, 62],
   "timings": [
     "Before shot",
     "Before tee shot",
+    "Before all tee",
+    "On draw",
     "After throw",
     "After throw · secret",
     "After all tee",
@@ -126,7 +129,7 @@ Suggested palette: deep pine ground (`#0C1A14`), panels (`#132A21`), muted sage 
     { "id": 3, "timing": "Before shot", "kind": "dual", "name": "Aerobie", "text": "On yourself: use an aerobie for your drive. On another player: they drive with the aerobie using their off hand. Normal stroke either way." },
     { "id": 4, "timing": "After throw", "kind": "attack", "name": "AIR HORN!", "text": "Heckle an opponent during one of their shots. Reveal and discard this card after." },
     { "id": 5, "timing": "Before shot", "kind": "attack", "name": "Baby Discs", "text": "Force an opponent to throw a mini for their upcoming drive or putt. Through the basket floor still counts as in." },
-    { "id": 6, "timing": "For the next hole", "kind": "attack", "name": "Bag Boy!", "text": "Force an opponent to carry your discs until they beat you on a hole. While they carry your bag, you can't play any more cards on them." },
+    { "id": 6, "timing": "For the next hole", "kind": "attack", "name": "Bag Boy!", "text": "Force an opponent to carry your bag for 3 holes! If they beat you before those 3 holes are up (1st or 2nd hole), they can play one of your cards and you take your bag back." },
     { "id": 7, "timing": "Before tee shot", "kind": "attack", "name": "Bag Exchange!", "text": "Pick a player to swap bags with. Swap back after the first bogey by either player. The player that took the bogey first must volunteer as tribute to exchange lies with the other player the next time they go OB." },
     { "id": 8, "timing": "Before shot", "kind": "attack", "name": "Bag Raid!", "text": "Choose ANY disc from any bag. The target player must use that disc for their next shot." },
     { "id": 9, "timing": "Before shot", "kind": "self", "name": "BIG BLUFF", "text": "Pick up your disc and throw your next shot from anyone else's disc, with them. If someone calls you out, you can claim you're holding this card even if you aren't. If they believe you, nothing happens. If they call your bluff and you have it, they take +1 stroke. If they call it and you don't, you take +2 strokes and they take -1." },
@@ -134,13 +137,13 @@ Suggested palette: deep pine ground (`#0C1A14`), panels (`#132A21`), muted sage 
     { "id": 11, "timing": "After throw", "kind": "self", "name": "Big Putted!", "text": "If you make a putt from outside C1 while any other players are inside C1, they all must use their left hand to putt this hole." },
     { "id": 12, "timing": "Before tee shot", "kind": "attack", "name": "Bizarro Golf!", "text": "Force an opponent to drive with a putter and putt with a driver this hole." },
     { "id": 13, "timing": "After throw", "kind": "gift", "name": "Buddy Buddy", "text": "Bless someone with a free mulligan after a bad throw." },
-    { "id": 14, "timing": "Before tee shot", "kind": "self", "name": "Call Your Shot", "text": "Call CTP. If you win it, nobody can play cards on you next hole, and your next attack card hits every opponent — not you." },
+    { "id": 14, "timing": "Before all tee", "kind": "self", "name": "Call Your Shot", "text": "Call CTP. If you win it, nobody can play cards on you next hole, and your next attack card hits every opponent — not you." },
     { "id": 15, "timing": "Any time", "kind": "attack", "name": "Can I Borrow This?", "text": "Pick anyone you want. Look through their cards and play one on anyone." },
     { "id": 16, "timing": "Any time", "kind": "react", "name": "Change Is Good", "text": "Force an opponent to change the target of one of their cards, if there is another option." },
     { "id": 17, "timing": "Before shot", "kind": "attack", "name": "CHRIS SPECIAL!", "text": "Force an opponent to throw a tomahawk on the upcoming drive or approach." },
     { "id": 18, "timing": "Before shot", "kind": "attack", "name": "Close 'Em", "text": "Force an opponent to take the next putt with their eyes closed." },
-    { "id": 19, "timing": "Before tee shot", "kind": "attack", "name": "Code Words!", "text": "An opponent can't say \"yes\" or \"no\" this hole. 1 stroke penalty every time they do." },
-    { "id": 20, "timing": "Before tee shot", "kind": "attack", "name": "Commentator", "text": "Another player has to announce every shot you take this hole. If they forget one, they take +1 stroke." },
+    { "id": 19, "timing": "Before tee shot", "kind": "attack", "name": "Code Words!", "text": "An opponent can't say \"yes\" or \"no\" this hole. 1 stroke penalty every time they do. ANY variation of the words yes or no counts." },
+    { "id": 20, "timing": "Before tee shot", "kind": "attack", "name": "Commentator", "text": "Another player has to announce every shot you take this hole like they are a commentator. If they forget one, they take +1 stroke." },
     { "id": 21, "timing": "Before tee shot", "kind": "attack", "name": "Dealer's Choice!", "text": "You pick the discs every other player tees off with this hole." },
     { "id": 22, "timing": "Before tee shot", "kind": "attack", "name": "Do Not Pass Go", "text": "Whoever has the shortest drive on the next hole gets no cards for that hole." },
     { "id": 23, "timing": "After throw", "kind": "gift", "name": "Doesn't Look OB to Me", "text": "Play on a shot that just went OB. Instead of actually being OB (or in a hazard) they can just play it where it lies, with no penalty at all." },
@@ -171,9 +174,9 @@ Suggested palette: deep pine ground (`#0C1A14`), panels (`#132A21`), muted sage 
     { "id": 48, "timing": "After throw", "kind": "attack", "name": "Prove It", "text": "Cancel a shot an opponent just took. They throw again with a different disc of their choice. No extra stroke." },
     { "id": 49, "timing": "Before shot", "kind": "attack", "name": "Roll It!", "text": "Force an opponent to throw a roller on the upcoming drive or approach." },
     { "id": 50, "timing": "After card", "kind": "react", "name": "Rubber and Glue", "text": "If a card targeting only you was just played, that opponent carries out the instructions instead of you." },
-    { "id": 51, "timing": "Before shot", "kind": "dual", "name": "Shoe Golf", "text": "On yourself: putt with your own shoe at no stroke cost. On another player: they putt with a shoe and it still counts as a stroke." },
+    { "id": 51, "timing": "Before shot", "kind": "dual", "name": "Shoe Golf", "text": "On yourself: putt with your own shoe at no stroke cost. On another player: they putt with a shoe and it still counts as a stroke. If they refuse to take their shoe off, they take +1 stroke after the hole." },
     { "id": 52, "timing": "Before shot", "kind": "attack", "name": "Sidearm", "text": "Force an opponent to throw a sidearm on the upcoming drive or approach." },
-    { "id": 53, "timing": "Before shot", "kind": "dual", "name": "Spin to Win", "text": "Spin rapidly 7 times, then putt within 3 seconds. Free on yourself, a normal stroke on an opponent." },
+    { "id": 53, "timing": "On draw", "kind": "sabotage", "name": "Everybody But Me", "text": "You must play this card immediately after drawing, you can't discard it. Everyone gets a free mulligan on the next hole but me =(" },
     { "id": 54, "timing": "Before shot", "kind": "gift", "name": "That's Definitely a Gimme", "text": "Allow a player to pick up a putt as a gimme, as long as it's inside C1. They definitely woulda made it." },
     { "id": 55, "timing": "Before tee shot", "kind": "attack", "name": "Too Many Choices", "text": "Pick 3 discs out of an opponent's bag. They choose which one to tee off with this hole from the 3 options." },
     { "id": 56, "timing": "Before tee shot", "kind": "self", "name": "Tree Insurance", "text": "Play before your tee shot. If you hit a tree, take a free mulligan." },
@@ -181,7 +184,9 @@ Suggested palette: deep pine ground (`#0C1A14`), panels (`#132A21`), muted sage 
     { "id": 58, "timing": "Before shot", "kind": "attack", "name": "Turbo Time", "text": "An opponent's next putt must be a turbo putt." },
     { "id": 59, "timing": "Before tee shot", "kind": "group", "name": "WALK IT DOWN!!", "text": "No other cards can be played once this hits the table. Everyone tees immediately from anywhere near the tee pad — no throw order. First and second to finish get birdie, third gets par, last gets bogey. No running, and no calling foot faults." },
     { "id": 60, "timing": "After throw", "kind": "attack", "name": "Walk of Shame", "text": "After a missed putt inside C1, that player carries their putter until they finish the next hole. If they drop it or put it in the bag, +1 stroke." },
-    { "id": 61, "timing": "Before tee shot", "kind": "attack", "name": "Your Tee Pad Is Over There!", "text": "Use 2 of your discs to mark a new tee for an opponent of your choice, up to 10 paces (30 ft) from the original. They tee from it." }
+    { "id": 61, "timing": "Before tee shot", "kind": "attack", "name": "Your Tee Pad Is Over There!", "text": "Use 2 of your discs to mark a new tee for an opponent of your choice, up to 10 paces (30 ft) from the original. They tee from it." },
+    { "id": 62, "timing": "Before all tee", "kind": "sabotage", "name": "I Think It's Broke", "text": "The first player to hit a tree loses that disc — they can't throw it again for the rest of the round." },
+    { "id": 63, "timing": "Before tee shot", "kind": "attack", "name": "One Disc Wonder", "text": "Force an opponent to play the hole with only 1 DISC. You choose it." }
   ]
 }
 ```
