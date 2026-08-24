@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.chainreaction.data.Character
 import com.chainreaction.data.GameState
+import com.chainreaction.data.RoundMode
 
 /** "E", "+2", "-1" — how golfers read a score. */
 fun formatRelative(v: Int): String = when {
@@ -87,6 +88,26 @@ fun ScoreScreen(
                     fontWeight = FontWeight.Bold,
                     letterSpacing = 1.sp,
                 )
+                // What this hole is worth, which in skins is the whole question at the
+                // tee. A locked hole says who took it rather than what was on it.
+                if (state.mode == RoundMode.SKINS) {
+                    val stake = state.skinsAtStake(hole)
+                    val taker = state.skinWinner(hole)
+                    Text(
+                        when {
+                            locked && taker != null ->
+                                "${state.players[taker].uppercase()} TAKES " +
+                                    if (stake == 1) "THE SKIN" else "$stake SKINS"
+                            locked -> "TIED  ·  ${if (stake == 1) "1 SKIN" else "$stake SKINS"} ROLL ON"
+                            stake == 1 -> "1 SKIN ON THIS HOLE"
+                            else -> "$stake SKINS ON THIS HOLE"
+                        },
+                        color = NeonIce,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Black,
+                        letterSpacing = 1.sp,
+                    )
+                }
             }
             StepperButton("›", enabled = hole < state.holeCount - 1) { onHole(hole + 1) }
         }
@@ -97,12 +118,18 @@ fun ScoreScreen(
         // The old separate Totals list said the same names again; the LEAD tag
         // and running score live here now instead.
         val bestTotal = state.players.indices.minOfOrNull { state.totalFor(it) }
+        // In skins the lead is skins, not strokes — a player can be well over par and
+        // still be winning, which is the entire appeal of the format.
+        val mostSkins = state.players.indices.maxOfOrNull { state.skinsFor(it) } ?: 0
         state.players.forEachIndexed { i, name ->
             val isMe = i == state.meIndex
             val score = state.scores[hole][i]
             val total = state.totalFor(i)
             val rel = state.relativeToParFor(i)
-            val leading = state.lockedHoleCount > 0 && total == bestTotal
+            val leading = state.lockedHoleCount > 0 && when (state.mode) {
+                RoundMode.SKINS -> mostSkins > 0 && state.skinsFor(i) == mostSkins
+                RoundMode.STROKE -> total == bestTotal
+            }
 
             Row(
                 Modifier
@@ -144,7 +171,10 @@ fun ScoreScreen(
                             Spacer(Modifier.width(6.dp))
                         }
                         Text(
-                            "${formatRelative(rel)}  ·  $total total strokes",
+                            if (state.mode == RoundMode.SKINS) {
+                                val n = state.skinsFor(i)
+                                "${if (n == 1) "1 skin" else "$n skins"}  ·  ${formatRelative(rel)}  ·  $total total"
+                            } else "${formatRelative(rel)}  ·  $total total strokes",
                             color = relativeColor(rel),
                             fontSize = 15.sp,
                             fontWeight = FontWeight.Black,

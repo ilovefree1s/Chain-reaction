@@ -2,6 +2,7 @@ package com.chainreaction.ui
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -28,6 +29,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.chainreaction.data.Character
 import com.chainreaction.data.Course
+import com.chainreaction.data.RoundMode
 import com.chainreaction.data.Rules
 
 /** No character picked. A sentinel rather than null so the list survives rememberSaveable. */
@@ -56,6 +58,7 @@ fun SetupScreen(
         pars: List<Int>,
         courseName: String?,
         characterIds: List<Int?>,
+        mode: RoundMode,
     ) -> Unit,
 ) {
     val names = rememberSaveable(
@@ -91,6 +94,9 @@ fun SetupScreen(
     var holeCount by rememberSaveable { mutableIntStateOf(0) }
     var courseName by rememberSaveable { mutableStateOf<String?>(null) }
     var parsOpen by rememberSaveable { mutableStateOf(false) }
+    // Stroke play unless the group says otherwise. Saveable, so a rotation mid-setup
+    // does not quietly put the round back to strokes.
+    var mode by rememberSaveable { mutableStateOf(RoundMode.STROKE) }
 
     fun resizePars(n: Int) {
         while (pars.size < n) pars.add(Rules.DEFAULT_PAR)
@@ -198,9 +204,36 @@ fun SetupScreen(
             )
         }
 
+        NeonSectionLabel("Format")
+        Row(
+            Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            RoundMode.entries.forEach { option ->
+                Box(Modifier.weight(1f)) {
+                    // The picked one is the loud button, so the format reads off the
+                    // screen at a glance rather than needing both labels compared.
+                    if (option == mode) {
+                        NeonBigButton(option.label, enabled = true) { mode = option }
+                    } else {
+                        NeonQuietButton(option.label) { mode = option }
+                    }
+                }
+            }
+        }
+        Spacer(Modifier.height(8.dp))
+        Text(
+            when (mode) {
+                RoundMode.STROKE -> "Fewest strokes over the round wins."
+                RoundMode.SKINS -> "Each hole is a skin. Tie it and it rolls onto the next."
+            },
+            color = NeonBody,
+            fontSize = 15.sp,
+        )
+
         Spacer(Modifier.height(36.dp))
         NeonBigButton("Start round", enabled = ready) {
-            onStart(trimmed, ME_INDEX, holeCount, pars.take(holeCount), courseName, chosenCharacters())
+            onStart(trimmed, ME_INDEX, holeCount, pars.take(holeCount), courseName, chosenCharacters(), mode)
         }
         if (!ready) {
             Spacer(Modifier.height(10.dp))
@@ -242,7 +275,7 @@ fun SetupScreen(
             // Straight from the course list into the round, skipping the trip back
             // through Setup's own Start button.
             onPlayCourse = { course ->
-                onStart(trimmed, ME_INDEX, course.holeCount, course.pars, course.name, chosenCharacters())
+                onStart(trimmed, ME_INDEX, course.holeCount, course.pars, course.name, chosenCharacters(), mode)
             },
         )
     }

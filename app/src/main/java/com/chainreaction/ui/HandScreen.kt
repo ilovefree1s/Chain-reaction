@@ -1,5 +1,12 @@
 package com.chainreaction.ui
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
@@ -37,6 +44,8 @@ fun HandScreen(
 ) {
     // The card enlarged to its full face, if any. Play and Discard live there.
     var enlarged by remember { mutableStateOf<Int?>(null) }
+    // The discard pile, opened from its counter.
+    var pileOpen by remember { mutableStateOf(false) }
 
     LazyColumn(
         modifier = modifier
@@ -46,10 +55,37 @@ fun HandScreen(
     ) {
         item {
             Spacer(Modifier.height(12.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                Counter("Hand", "${state.hand.size}/${Rules.HAND_CAP}", Modifier.weight(1f))
-                Counter("Deck", "${state.deck.size}", Modifier.weight(1f))
-                Counter("Discard", "${state.discard.size}", Modifier.weight(1f))
+            // Intrinsic height, because the discard counter carries an extra line and
+            // three tiles of different heights read as a mistake.
+            Row(
+                Modifier.height(IntrinsicSize.Min),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                Counter(
+                    "Hand",
+                    "${state.hand.size}/${Rules.HAND_CAP}",
+                    Modifier
+                        .weight(1f)
+                        .fillMaxHeight(),
+                )
+                Counter(
+                    "Deck",
+                    "${state.deck.size}",
+                    Modifier
+                        .weight(1f)
+                        .fillMaxHeight(),
+                )
+                // The only counter worth opening: what's in the pile is a list, not
+                // just a number, and mid-round people forget what they've used.
+                Counter(
+                    "Discard",
+                    "${state.discard.size}",
+                    Modifier
+                        .weight(1f)
+                        .fillMaxHeight(),
+                    sublabel = "Played",
+                    onClick = { pileOpen = true },
+                )
             }
         }
 
@@ -133,6 +169,10 @@ fun HandScreen(
         item { Spacer(Modifier.height(24.dp)) }
     }
 
+    if (pileOpen) {
+        DiscardPileSheet(state = state, onDismiss = { pileOpen = false })
+    }
+
     // Tap-to-enlarge: the full face, with Play / Discard right there.
     // Swiping left and right walks the rest of the hand.
     enlarged?.let { id ->
@@ -148,9 +188,17 @@ fun HandScreen(
 }
 
 @Composable
-private fun Counter(label: String, value: String, modifier: Modifier = Modifier) {
+private fun Counter(
+    label: String,
+    value: String,
+    modifier: Modifier = Modifier,
+    /** Second line under the label. Present only where it says what tapping does. */
+    sublabel: String? = null,
+    onClick: (() -> Unit)? = null,
+) {
     Column(
         modifier
+            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
             .neonPanel()
             .padding(vertical = 12.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -163,5 +211,79 @@ private fun Counter(label: String, value: String, modifier: Modifier = Modifier)
             fontWeight = FontWeight.Black,
             letterSpacing = 1.sp,
         )
+        if (sublabel != null) {
+            // Ice, not body grey: this line is the tap target, and it has to look
+            // like something rather than like a caption.
+            Text(
+                sublabel.uppercase(),
+                color = NeonIce,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Black,
+                letterSpacing = 1.sp,
+            )
+        }
+    }
+}
+
+/**
+ * The discard pile, opened from its counter: everything that has left your hand this
+ * round, newest first, saying which you played and which you dumped. Mid-round nobody
+ * remembers what they've already used, and the pile is the only record of it.
+ */
+@Composable
+private fun DiscardPileSheet(state: GameState, onDismiss: () -> Unit) {
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(
+            usePlatformDefaultWidth = false,
+            decorFitsSystemWindows = false,
+        ),
+    ) {
+        val entries = state.playLog.reversed()
+        val playedCount = state.playLog.count { it.played }
+
+        Column(
+            Modifier
+                .fillMaxSize()
+                .background(NeonBg)
+                .safeDrawingPadding()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 16.dp),
+        ) {
+            NeonHeader("DISCARD", backLabel = "Back", onBack = onDismiss)
+
+            if (entries.isEmpty()) {
+                Text(
+                    "Nothing yet. Cards land here once you play or discard them.",
+                    color = NeonBody,
+                    fontSize = 16.sp,
+                )
+            } else {
+                Text(
+                    "${entries.size} in the pile · $playedCount played, " +
+                        "${entries.size - playedCount} discarded.",
+                    color = NeonBody,
+                    fontSize = 16.sp,
+                )
+                Spacer(Modifier.height(14.dp))
+
+                entries.forEach { entry ->
+                    Text(
+                        if (entry.played) "PLAYED" else "DISCARDED",
+                        color = if (entry.played) NeonIce else NeonDim,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Black,
+                        letterSpacing = 1.sp,
+                    )
+                    Spacer(Modifier.height(4.dp))
+                    CardTile(CardDeck.card(entry.id))
+                    Spacer(Modifier.height(12.dp))
+                }
+            }
+
+            Spacer(Modifier.height(16.dp))
+            NeonQuietButton("Close", onClick = onDismiss)
+            Spacer(Modifier.height(28.dp))
+        }
     }
 }

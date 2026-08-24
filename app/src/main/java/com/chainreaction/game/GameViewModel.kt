@@ -11,6 +11,7 @@ import com.chainreaction.data.Course
 import com.chainreaction.data.CourseLibrary
 import com.chainreaction.data.GameRepository
 import com.chainreaction.data.GameState
+import com.chainreaction.data.RoundMode
 import com.chainreaction.data.Settings
 
 class GameViewModel(app: Application) : AndroidViewModel(app) {
@@ -70,8 +71,10 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
         coursePars: List<Int>? = null,
         courseName: String? = null,
         characterIds: List<Int?> = emptyList(),
+        mode: RoundMode = RoundMode.STROKE,
     ) {
-        val fresh = GameState.newRound(players, meIndex, holeCount, coursePars, courseName, characterIds)
+        val fresh =
+            GameState.newRound(players, meIndex, holeCount, coursePars, courseName, characterIds, mode)
         state = fresh
         repo.save(fresh)
     }
@@ -110,7 +113,7 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
      * them while stats are on hold.
      */
     fun resolveCard(cardId: Int, played: Boolean, target: String? = null) {
-        update { it.withCardResolved(cardId) }
+        update { it.withCardResolved(cardId, played) }
     }
 
     /** A completed round. Only reachable from the results screen. */

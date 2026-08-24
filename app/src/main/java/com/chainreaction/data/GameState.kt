@@ -4,6 +4,27 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 /**
+ * How the round is won. Strokes are counted the same either way — the format decides
+ * what the count means at the end.
+ */
+enum class RoundMode(val label: String) {
+    /** Lowest total over the whole round. */
+    STROKE("Stroke play"),
+
+    /** Each hole is a skin. Tie it and nobody wins it: the skin rolls onto the next. */
+    SKINS("Skins"),
+    ;
+
+    companion object {
+        /** Anything unreadable, or a round saved before formats existed, is stroke play. */
+        fun from(raw: String?): RoundMode = entries.firstOrNull { it.name == raw } ?: STROKE
+    }
+}
+
+/** One card that left your hand, and whether you played it or just dumped it. */
+data class PlayedCard(val id: Int, val played: Boolean)
+
+/**
  * The whole round, on this one phone.
  *
  * Scores are tracked for every player so nobody miscounts, but the deck, hand and
@@ -32,7 +53,18 @@ data class GameState(
      * round saved before characters existed — means that player just goes by their name.
      */
     val characterIds: List<Int?> = emptyList(),
+    /** Stroke play unless the group picked otherwise on Setup. */
+    val mode: RoundMode = RoundMode.STROKE,
+    /**
+     * Everything that has left your hand this round, oldest first. Parallel in spirit to
+     * [discard], which is the same cards as a bare pile — this one remembers the order
+     * and whether each was played.
+     */
+    val playLog: List<PlayedCard> = emptyList(),
 ) {
+
+    /** What you played, most recent first. Discards are not plays. */
+    val cardsPlayed: List<Int> get() = playLog.filter { it.played }.map { it.id }.reversed()
 
     val playerCount: Int get() = players.size
 
@@ -53,21 +85,113 @@ data class GameState(
 
     val roundComplete: Boolean get() = locked.all { it }
 
-    /** Player indices, best (lowest total) first. */
-    val standings: List<Int> get() = players.indices.sortedBy { totalFor(it) }
+    // ---- skins ------------------------------------------------------------
+    // A hole is worth one skin. Win it outright and you take it, plus anything that
+    // rolled over; tie it and nobody does, so the pile grows for the next hole. Skins
+    // still riding at the end are settled at the table, not here: the house rule is to go
+    // back to the first tee and play on until they are taken. The app counts them and
+    // says so — it has no way to score extra holes.
 
     /**
-     * Everyone tied for the lowest total. Ties are left standing — the app doesn't
-     * invent a playoff, the group sorts that out.
+     * Who has the lowest score on [hole] outright, or null for a tie. Ignores whether
+     * the hole is locked, so the payout can be shown before you commit to it.
      */
-    val winners: List<Int>
-        get() {
-            val best = players.indices.minOf { totalFor(it) }
-            return players.indices.filter { totalFor(it) == best }
+    fun holeWinner(hole: Int): Int? {
+        val row = scores.getOrNull(hole) ?: return null
+        val low = row.minOrNull() ?: return null
+        return players.indices.filter { row.getOrNull(it) == low }.singleOrNull()
+    }
+
+    /** Who won [hole] outright, or null for a tie, an unlocked hole, or no players. */
+    fun skinWinner(hole: Int): Int? =
+        if (locked.getOrElse(hole) { false }) holeWinner(hole) else null
+
+    /**
+     * What [hole] is worth: one skin, plus everything the ties before it rolled over.
+     * Answers "what's on this hole" while the round is still being played.
+     */
+    fun skinsAtStake(hole: Int): Int {
+        var carry = 0
+        for (h in 0 until hole.coerceAtMost(holeCount)) {
+            if (!locked[h]) continue
+            val at = 1 + carry
+            carry = if (skinWinner(h) == null) at else 0
+        }
+        return 1 + carry
+    }
+
+    /** Skins [player] has taken so far. */
+    fun skinsFor(player: Int): Int {
+        var carry = 0
+        var won = 0
+        for (h in 0 until holeCount) {
+            if (!locked[h]) continue
+            val at = 1 + carry
+            val winner = skinWinner(h)
+            if (winner == null) {
+                carry = at
+            } else {
+                if (winner == player) won += at
+                carry = 0
+            }
+        }
+        return won
+    }
+
+    /** Skins nobody has won yet, still riding on the next hole. */
+    val skinsCarried: Int get() = skinsAtStake(holeCount) - 1
+
+    /** Player indices, best first — fewest strokes, or most skins. */
+    val standings: List<Int>
+        get() = when (mode) {
+            RoundMode.SKINS -> players.indices.sortedWith(
+                // Strokes break a tie on skins: it is the only other thing we know,
+                // and two players on the same skins is otherwise an arbitrary order.
+                compareByDescending<Int> { skinsFor(it) }.thenBy { totalFor(it) },
+            )
+            RoundMode.STROKE -> players.indices.sortedBy { totalFor(it) }
         }
 
-    /** What the local player would draw for [hole] given the scores currently entered. */
-    fun drawForHole(hole: Int): Int = drawCount(scores[hole], meIndex, pars[hole])
+    /**
+     * Everyone tied at the top. Ties are left standing — the app doesn't invent a
+     * playoff, the group sorts that out.
+     */
+    val winners: List<Int>
+        get() = when (mode) {
+            RoundMode.SKINS -> {
+                val best = players.indices.maxOf { skinsFor(it) }
+                players.indices.filter { skinsFor(it) == best }
+            }
+            RoundMode.STROKE -> {
+                val best = players.indices.minOf { totalFor(it) }
+                players.indices.filter { totalFor(it) == best }
+            }
+        }
+
+    /**
+     * Cards the skin on [hole] pays you. Skins buy cards for everyone who didn't win
+     * them: take the hole and you get nothing, lose it and you draw one card per skin
+     * on it — so the hole after a run of ties pays out several at once.
+     *
+     * A tied hole wins nobody a skin but still deals everyone one card. Paying nothing
+     * would mean a run of ties leaves the whole table with no cards to play, which is
+     * the opposite of what the deck is for.
+     */
+    fun skinsPayoutFor(hole: Int): Int {
+        val winner = holeWinner(hole) ?: return 1
+        return if (winner == meIndex) 0 else skinsAtStake(hole)
+    }
+
+    /**
+     * What the local player would draw for [hole] given the scores currently entered.
+     * The format decides where cards come from: finishing position in stroke play, and
+     * in skins the skins somebody else just took. They don't stack — in a skins round
+     * the draw table doesn't apply at all.
+     */
+    fun drawForHole(hole: Int): Int = when (mode) {
+        RoundMode.SKINS -> skinsPayoutFor(hole)
+        RoundMode.STROKE -> drawCount(scores[hole], meIndex, pars[hole])
+    }
 
     val handIsFull: Boolean get() = hand.size >= Rules.HAND_CAP
 
@@ -160,12 +284,19 @@ data class GameState(
     }
 
     /** Play or discard — both send the card to the local discard pile. */
-    fun withCardResolved(cardId: Int): GameState {
+    /**
+     * Play or discard: either way the card leaves your hand for the discard pile.
+     * [played] is remembered separately so the pile can say which cards you actually
+     * used on somebody and which you just dumped — the same card id can be both over
+     * a round, so this is a log in order, not a set.
+     */
+    fun withCardResolved(cardId: Int, played: Boolean = false): GameState {
         val at = hand.indexOf(cardId)
         if (at < 0) return this
         return copy(
             hand = hand.toMutableList().also { it.removeAt(at) },
             discard = discard + cardId,
+            playLog = playLog + PlayedCard(cardId, played),
         )
     }
 
@@ -192,6 +323,15 @@ data class GameState(
         )
         put("dealt", JSONArray().apply { (0 until holeCount).forEach { put(dealt.getOrElse(it) { false }) } })
         if (courseName != null) put("courseName", courseName)
+        // Written always, read optionally: a round saved before formats existed is
+        // stroke play, which is what it was being played as.
+        put("mode", mode.name)
+        put(
+            "playLog",
+            JSONArray().apply {
+                playLog.forEach { put(JSONObject().put("id", it.id).put("played", it.played)) }
+            },
+        )
     }.toString()
 
     companion object {
@@ -209,6 +349,7 @@ data class GameState(
             coursePars: List<Int>? = null,
             courseName: String? = null,
             characterIds: List<Int?> = emptyList(),
+            mode: RoundMode = RoundMode.STROKE,
         ): GameState {
             val shuffled = CardDeck.freshShuffledDeck()
             // Fall back to all-par-3 if no course was chosen, or if a saved course
@@ -230,6 +371,7 @@ data class GameState(
                 owed = 0,
                 courseName = courseName,
                 characterIds = List(players.size) { characterIds.getOrNull(it) },
+                mode = mode,
             )
         }
 
@@ -267,6 +409,14 @@ data class GameState(
                     // keeps playing on names alone rather than being thrown away.
                     characterIds = o.optJSONArray("characters")?.let { arr ->
                         List(arr.length()) { if (arr.isNull(it)) null else arr.getInt(it) }
+                    } ?: emptyList(),
+                    mode = RoundMode.from(o.optString("mode").takeIf { it.isNotBlank() }),
+                    // Absent on a round saved before the pile remembered anything.
+                    playLog = o.optJSONArray("playLog")?.let { arr ->
+                        List(arr.length()) {
+                            val e = arr.getJSONObject(it)
+                            PlayedCard(e.getInt("id"), e.optBoolean("played"))
+                        }
                     } ?: emptyList(),
                 )
                 if (state.isConsistent()) state else null

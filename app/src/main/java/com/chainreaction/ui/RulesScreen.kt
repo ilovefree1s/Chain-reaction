@@ -23,6 +23,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -30,31 +31,111 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.chainreaction.data.CardDeck
+import com.chainreaction.data.RoundMode
 import com.chainreaction.data.Rules
 import com.chainreaction.ui.theme.Attack
 
-private val houseRules = listOf(
-    "Stroke play" to "Lowest total wins.",
-    "Starting hand" to "4 cards, dealt at the start of the round.",
-    "Hand cap" to "7 cards. You cannot draw past it — discard first.",
-    "Your own deck" to
+/** One row of How it works: an icon, a title and the rule itself. */
+private data class HouseRule(val icon: NeonIcon, val title: String, val body: String)
+
+/**
+ * The house rules, for [mode]. Only scoring differs — everything else is how the deck
+ * works, which is the same game either way. Icon and text live together so a new rule
+ * can't land beside somebody else's icon.
+ */
+private fun houseRules(mode: RoundMode): List<HouseRule> = buildList {
+    when (mode) {
+        RoundMode.STROKE -> add(
+            HouseRule(NeonIcon.GOLF, "Stroke play", "Lowest total over the round wins."),
+        )
+        RoundMode.SKINS -> {
+            add(
+                HouseRule(
+                    NeonIcon.GOLF,
+                    "Skins",
+                    "Every hole is worth a skin. Win the hole outright and you take it. " +
+                        "Most skins at the end wins — strokes only decide each hole.",
+                ),
+            )
+            // Ties are the whole shape of skins, so they get their own rule rather than
+            // a clause somebody skims past.
+            add(
+                HouseRule(
+                    NeonIcon.RECYCLE,
+                    "Ties roll over",
+                    "Tie a hole and nobody wins it. Its skin rides onto the next, so the " +
+                        "hole after a tie is worth two, then three, until somebody takes them.",
+                ),
+            )
+            add(
+                HouseRule(
+                    NeonIcon.CARDS,
+                    "Skins buy cards",
+                    "Skins are worth cards — to everybody but the winner. Take a hole " +
+                        "worth 3 skins and you draw nothing; everyone else draws 3. A tied hole " +
+                        "wins nobody a skin but still deals everyone one, so the table is never " +
+                        "left without cards to play.",
+                ),
+            )
+            add(
+                HouseRule(
+                    NeonIcon.SCALES,
+                    "No ties around here",
+                    "Skins still on the table when the last hole is done don't sit there. " +
+                        "Go back to the first tee pad and play on until every one is taken.",
+                ),
+            )
+        }
+    }
+    addAll(sharedRules)
+}
+
+/** True in either format: the deck, the hand and who referees. */
+private val sharedRules = listOf(
+    HouseRule(NeonIcon.CARDS, "Starting hand", "4 cards, dealt at the start of the round."),
+    HouseRule(NeonIcon.SEVEN, "Hand cap", "7 cards. You cannot draw past it — discard first."),
+    HouseRule(
+        NeonIcon.DECK,
+        "Your own deck",
         "Every player shuffles their own ${CardDeck.ALL.size}-card deck. Duplicates across " +
-        "players are " +
-        "expected and fine. This phone only tracks your deck.",
-    "Discard" to
+            "players are expected and fine. This phone only tracks your deck.",
+    ),
+    HouseRule(
+        NeonIcon.RECYCLE,
+        "Discard",
         "Played and discarded cards go to your own discard pile. If your deck runs out, " +
-        "the discard is reshuffled back in.",
-    "Buy a spin" to
+            "the discard is reshuffled back in.",
+    ),
+    HouseRule(
+        NeonIcon.WHEEL,
+        "Buy a spin",
         "Discard ${Rules.WHEEL_COST} cards to buy a spin on the Double Wheel. Spin it from " +
-        "the Hand tab. Playing Double Wheel spins for free instead.",
-    "Two per player, per hole" to
+            "the Hand tab. Playing Double Wheel spins for free instead.",
+    ),
+    HouseRule(
+        NeonIcon.PEOPLE,
+        "Two per player, per hole",
         "At most ${Rules.MAX_CARDS_ON_ONE_PLAYER_PER_HOLE} cards may be played on any one " +
-        "player per hole. The app does not enforce this — track it yourselves.",
-    "Gift yourself" to
+            "player per hole. The app does not enforce this — track it yourselves.",
+    ),
+    HouseRule(
+        NeonIcon.GIFT,
+        "Gift yourself",
         "A gift card can be played on you. Nothing says a favour has to go to somebody else.",
-    "The app doesn't referee" to
+    ),
+    HouseRule(
+        NeonIcon.SCALES,
+        "The app doesn't referee",
         "It deals cards and keeps score. It never applies card effects or stroke penalties. " +
-        "Cards that rewrite scores get entered by hand with the ± steppers.",
+            "Cards that rewrite scores get entered by hand with the ± steppers.",
+    ),
+)
+
+/** In skins the table doesn't apply: cards come from the skins somebody else took. */
+private val skinsDrawTable = listOf(
+    "Won the hole outright" to "0",
+    "Everyone else" to "1 per skin",
+    "Tied hole — no skin won" to "1 each",
 )
 
 private val drawTable = listOf(
@@ -65,25 +146,19 @@ private val drawTable = listOf(
     "Double bogey or worse" to "+1 bonus",
 )
 
-/** Icon per house rule, in the order of [houseRules]. */
-private val ruleIcons = listOf(
-    NeonIcon.GOLF, NeonIcon.CARDS, NeonIcon.SEVEN, NeonIcon.DECK,
-    NeonIcon.RECYCLE, NeonIcon.WHEEL, NeonIcon.PEOPLE, NeonIcon.GIFT, NeonIcon.SCALES,
-)
-
 @Composable
-private fun RuleRow(index: Int, title: String, body: String) {
+private fun RuleRow(rule: HouseRule) {
     Row(
         Modifier
             .fillMaxWidth()
             .neonPanel()
             .padding(14.dp),
     ) {
-        NeonChip(ruleIcons[index])
+        NeonChip(rule.icon)
         Column(Modifier.padding(start = 14.dp)) {
-            Text(title, color = NeonWhite, fontSize = 20.sp, fontWeight = FontWeight.ExtraBold)
+            Text(rule.title, color = NeonWhite, fontSize = 20.sp, fontWeight = FontWeight.ExtraBold)
             Spacer(Modifier.height(2.dp))
-            Text(body, color = NeonBody, fontSize = 16.sp, lineHeight = 22.sp)
+            Text(rule.body, color = NeonBody, fontSize = 16.sp, lineHeight = 22.sp)
         }
     }
 }
@@ -102,13 +177,51 @@ private fun DrawRow(finish: String, cards: String) {
     }
 }
 
-/** The house rules and the draw table, for the in-round Rules tab. */
-fun LazyListScope.houseRulesItems() {
+/**
+ * The pick-one pair that swaps which scoring rules are shown. Same shape as Setup's
+ * Format buttons, so the two read as the same control.
+ */
+@Composable
+private fun FormatPicker(mode: RoundMode, onPick: (RoundMode) -> Unit) {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .padding(bottom = 12.dp),
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        RoundMode.entries.forEach { option ->
+            Box(Modifier.weight(1f)) {
+                if (option == mode) {
+                    NeonBigButton(option.label, enabled = true) { onPick(option) }
+                } else {
+                    NeonQuietButton(option.label) { onPick(option) }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * The house rules and the draw table, for the in-round Rules tab. [mode] opens on the
+ * format being played — reading the other one is a tap away, but the round you're in
+ * shouldn't have to be selected.
+ */
+fun LazyListScope.houseRulesItems(shown: RoundMode, onPick: (RoundMode) -> Unit) {
     item { NeonSectionLabel("How it works") }
-    items(houseRules.size) { i -> RuleRow(i, houseRules[i].first, houseRules[i].second) }
+    item {
+        Column {
+            FormatPicker(shown, onPick)
+            houseRules(shown).forEach { rule ->
+                RuleRow(rule)
+                Spacer(Modifier.height(12.dp))
+            }
+        }
+    }
 
     item { NeonSectionLabel("Cards drawn at the end of a hole") }
-    items(drawTable) { (finish, cards) -> DrawRow(finish, cards) }
+    items(if (shown == RoundMode.SKINS) skinsDrawTable else drawTable) { (finish, cards) ->
+        DrawRow(finish, cards)
+    }
 }
 
 /** All 54 cards, grouped by timing. */
@@ -139,14 +252,19 @@ fun RulesScreen(modifier: Modifier = Modifier, onBack: () -> Unit) {
     ) {
         NeonHeader("RULES", onBack = onBack)
 
+        // Off the menu there is no round to take a format from, so it opens on stroke
+        // play — the one you get if nobody chooses.
+        var shown by rememberSaveable { mutableStateOf(RoundMode.STROKE) }
+
         NeonSectionLabel("How it works")
-        houseRules.forEachIndexed { i, (title, body) ->
-            RuleRow(i, title, body)
+        FormatPicker(shown) { shown = it }
+        houseRules(shown).forEach { rule ->
+            RuleRow(rule)
             Spacer(Modifier.height(12.dp))
         }
 
         NeonSectionLabel("Cards drawn at the end of a hole")
-        drawTable.forEach { (finish, cards) ->
+        (if (shown == RoundMode.SKINS) skinsDrawTable else drawTable).forEach { (finish, cards) ->
             DrawRow(finish, cards)
             Spacer(Modifier.height(10.dp))
         }
@@ -174,6 +292,8 @@ fun CardsScreen(modifier: Modifier = Modifier) {
 @Composable
 fun RoundRulesScreen(
     holeCount: Int,
+    /** The format being played, so the Rules tab opens on the rules in force. */
+    mode: RoundMode,
     pars: List<Int>,
     playingCourse: String?,
     modifier: Modifier = Modifier,
@@ -181,6 +301,8 @@ fun RoundRulesScreen(
     onEndRound: () -> Unit,
 ) {
     var confirming by remember { mutableStateOf(false) }
+    // Opens on the format being played; reading the other one is a tap away.
+    var shownRules by rememberSaveable(mode) { mutableStateOf(mode) }
     // Pre-filled with the course being played, so correcting its pars is a one-tap save.
     var courseName by remember { mutableStateOf(playingCourse.orEmpty()) }
     var savedAs by remember { mutableStateOf<String?>(null) }
@@ -191,7 +313,7 @@ fun RoundRulesScreen(
             .padding(horizontal = 16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        houseRulesItems()
+        houseRulesItems(shownRules) { shownRules = it }
         cardLibraryItems()
 
         // You usually learn a course's real pars by playing it. Capture them here,

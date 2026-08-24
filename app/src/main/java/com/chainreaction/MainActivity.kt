@@ -130,8 +130,8 @@ private fun App(vm: GameViewModel = viewModel()) {
                 onSaveCourse = vm::saveCourse,
                 onDeleteCourse = vm::deleteCourse,
                 onRenameCharacter = vm::renameCharacter,
-                onStart = { players, me, holes, pars, course, picks ->
-                    vm.startRound(players, me, holes, pars, course, picks)
+                onStart = { players, me, holes, pars, course, picks, mode ->
+                    vm.startRound(players, me, holes, pars, course, picks, mode)
                     go(Screen.ROUND)
                 },
             )
@@ -339,6 +339,7 @@ private fun Round(
                 )
 
                 Tab.RULES -> RoundRulesScreen(
+                    mode = state.mode,
                     holeCount = state.holeCount,
                     pars = state.pars,
                     playingCourse = state.courseName,

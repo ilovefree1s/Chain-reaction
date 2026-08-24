@@ -109,6 +109,14 @@
   .hole-title strong { display: block; font-size: 26px; font-weight: 900; }
   .hole-title span { font-size: 14px; font-weight: 700; letter-spacing: 1px; color: var(--sage); }
   .hole-title span.locked { color: var(--self); }
+  /* The skins line sits under par, in ice, so it never reads as part of the par. */
+  .hole-title span.stake { display: block; color: #4DC3FF; font-weight: 900; }
+  /* Its own line under the label, and ice rather than sage: this is the tap target. */
+  .counter .sub { display: block; color: #4DC3FF; font-weight: 900; }
+  button.counter { cursor: pointer; font: inherit; text-align: center; }
+  .pilerow { font-size: 12px; font-weight: 900; letter-spacing: 1px; color: #5E6C88;
+             margin: 12px 0 4px; }
+  .pilerow.played { color: #4DC3FF; }
 
   .player { border: 2px solid transparent; border-radius: 14px; padding: 12px; margin-bottom: 10px;
             background: linear-gradient(var(--panel), var(--panel)) padding-box,
@@ -712,7 +720,7 @@ function shuffled(arr) {
   return a;
 }
 
-function newRound(players, meIndex, holeCount, coursePars, courseName, characters) {
+function newRound(players, meIndex, holeCount, coursePars, courseName, characters, mode) {
   var deck = shuffled(CARDS.map(function (c) { return c.id; }));
   var source = (coursePars && coursePars.length === holeCount) ? coursePars : parList(holeCount);
   var pars = [], scores = [], locked = [];
@@ -729,8 +737,13 @@ function newRound(players, meIndex, holeCount, coursePars, courseName, character
     pars: pars, scores: scores, locked: locked,
     hand: deck.slice(0, DATA.handSize), deck: deck.slice(DATA.handSize), discard: [], owed: 0,
     dealt: [],
+    // Everything that has left your hand, oldest first.
+    playLog: [],
     // The course being played, when one was chosen rather than pars set by hand.
     courseName: courseName || null,
+    // Stroke play unless the group picked otherwise. Read with a fallback, so a round
+    // saved before formats existed is stroke play — which is what it was being played as.
+    mode: mode === "skins" ? "skins" : "stroke",
     // Parallel to players; null where nobody picked. Absent on a round saved before
     // characters existed, which still loads and plays on names alone.
     characters: players.map(function (_, i) {
@@ -759,18 +772,89 @@ function relFor(s, p) {
 function lockedCount(s) {
   return s.locked.filter(function (v) { return v; }).length;
 }
-function drawForHole(s, h) { return drawCount(s.scores[h], s.meIndex, s.pars[h]); }
-function roundComplete(s) { return s.locked.every(function (v) { return v; }); }
-/* Player indices, best (lowest total) first. */
-function standings(s) {
-  return s.players.map(function (_, i) { return i; })
-    .sort(function (a, b) { return totalFor(s, a) - totalFor(s, b); });
+/* What the local player would draw for [h] given the scores entered. The format decides
+   where cards come from: finishing position in stroke play, and in skins the skins
+   somebody else just took. They don't stack — in skins the draw table doesn't apply. */
+function drawForHole(s, h) {
+  return isSkins(s) ? skinsPayout(s, h) : drawCount(s.scores[h], s.meIndex, s.pars[h]);
 }
-/* Everyone tied for the lowest total — ties are left standing. */
+function roundComplete(s) { return s.locked.every(function (v) { return v; }); }
+
+/* ---------- skins ----------
+   A hole is worth one skin. Win it outright and you take it, plus anything that rolled
+   over; tie it and nobody does, so the pile grows for the next hole. Skins still riding
+   at the end are settled at the table, not here: the house rule is to go back to the first
+   tee and play on until they are taken. The app counts them and says so. */
+function isSkins(s) { return s && s.mode === "skins"; }
+
+/* Lowest score on [hole] outright, or null for a tie. Ignores whether the hole is
+   locked, so the payout can be shown before you commit to it. */
+function holeWinner(s, hole) {
+  var row = s.scores[hole];
+  var low = Math.min.apply(null, row);
+  var leaders = [];
+  for (var i = 0; i < row.length; i++) if (row[i] === low) leaders.push(i);
+  return leaders.length === 1 ? leaders[0] : null;
+}
+
+/* Who won [hole] outright, or null for a tie or an unlocked hole. */
+function skinWinner(s, hole) {
+  return s.locked[hole] ? holeWinner(s, hole) : null;
+}
+
+/* Cards the skin on [hole] pays you. Skins buy cards for everyone who didn't win them:
+   take the hole and you get nothing, lose it and you draw one card per skin on it.
+   A tied hole wins nobody a skin but still deals everyone one card — paying nothing
+   would leave the whole table card-less through a run of ties. */
+function skinsPayout(s, hole) {
+  var w = holeWinner(s, hole);
+  if (w === null) return 1;
+  return w === s.meIndex ? 0 : skinsAtStake(s, hole);
+}
+
+/* What [hole] is worth: one skin plus everything the ties before it rolled over. */
+function skinsAtStake(s, hole) {
+  var carry = 0;
+  for (var h = 0; h < Math.min(hole, s.holeCount); h++) {
+    if (!s.locked[h]) continue;
+    var at = 1 + carry;
+    carry = skinWinner(s, h) === null ? at : 0;
+  }
+  return 1 + carry;
+}
+
+function skinsFor(s, p) {
+  var carry = 0, won = 0;
+  for (var h = 0; h < s.holeCount; h++) {
+    if (!s.locked[h]) continue;
+    var at = 1 + carry, w = skinWinner(s, h);
+    if (w === null) { carry = at; } else { if (w === p) won += at; carry = 0; }
+  }
+  return won;
+}
+
+/* Skins nobody has won yet, still riding on the next hole. */
+function skinsCarried(s) { return skinsAtStake(s, s.holeCount) - 1; }
+
+/* Player indices, best first — fewest strokes, or most skins. */
+function standings(s) {
+  var idx = s.players.map(function (_, i) { return i; });
+  if (!isSkins(s)) return idx.sort(function (a, b) { return totalFor(s, a) - totalFor(s, b); });
+  // Strokes break a tie on skins: it is the only other thing we know.
+  return idx.sort(function (a, b) {
+    return skinsFor(s, b) - skinsFor(s, a) || totalFor(s, a) - totalFor(s, b);
+  });
+}
+
+/* Everyone tied at the top — ties are left standing. */
 function winners(s) {
-  var best = Math.min.apply(null, s.players.map(function (_, i) { return totalFor(s, i); }));
-  return s.players.map(function (_, i) { return i; })
-    .filter(function (i) { return totalFor(s, i) === best; });
+  var idx = s.players.map(function (_, i) { return i; });
+  if (isSkins(s)) {
+    var most = Math.max.apply(null, idx.map(function (i) { return skinsFor(s, i); }));
+    return idx.filter(function (i) { return skinsFor(s, i) === most; });
+  }
+  var best = Math.min.apply(null, idx.map(function (i) { return totalFor(s, i); }));
+  return idx.filter(function (i) { return totalFor(s, i) === best; });
 }
 function handIsFull(s) { return s.hand.length >= DATA.handCap; }
 function fmtRel(v) { return v === 0 ? "E" : (v > 0 ? "+" + v : "" + v); }
@@ -815,6 +899,7 @@ var wheel = null;
 var confirmDiscard = null; // card id awaiting a discard confirmation
 var playTarget = null; // card id awaiting the name of whoever it lands on
 var viewCard = null; // card id enlarged to its full face
+var pileOpen = false; // the discard pile sheet, opened from its counter
 var confirming = false;
 var parsUI = { open: false, name: "" };
 /* Which name slot is choosing a character, and on which screen. Null when closed. */
@@ -836,6 +921,8 @@ function freshSetup() {
     chars: [settings.myCharacter != null ? settings.myCharacter : null, null, null, null],
     meIndex: 0,
     holes: 0, pars: [], courseName: null,
+    // Stroke play unless the group says otherwise on Setup.
+    mode: "stroke",
   };
 }
 
@@ -869,6 +956,7 @@ function render() {
   }
   if (viewCard != null) html += renderFaceModal();
   if (wheel) html += renderWheel();
+  if (pileOpen) html += renderPile();
   if (parsUI.open) html += renderParGrid();
   if (charPick) html += renderCharSheet();
   if (wheelPay) html += renderWheelCost();
@@ -992,6 +1080,18 @@ function renderSetup() {
         ? setup.holes + ' holes &middot; par ' + sum(setupPars())
         : 'Pick one, or set the pars yourself') + '</div>' +
     '</div>' +
+    '<div class="label">Format</div>' +
+    // The picked one is the loud button, so the format reads off the screen at a
+    // glance rather than needing both labels compared.
+    '<div class="acts">' +
+      '<button class="big ' + (setup.mode === "stroke" ? "primary" : "quiet") +
+        '" data-act="mode" data-t="stroke">Stroke play</button>' +
+      '<button class="big ' + (setup.mode === "skins" ? "primary" : "quiet") +
+        '" data-act="mode" data-t="skins">Skins</button>' +
+    '</div>' +
+    '<p class="hint">' + (setup.mode === "skins"
+      ? "Each hole is a skin. Tie it and it rolls onto the next."
+      : "Fewest strokes over the round wins.") + '</p>' +
     '<div style="height:36px"></div>' +
     '<button class="big primary" data-act="start"' + (ready ? "" : " disabled") + '>Start round</button>' +
     '<p class="hint" data-start-hint' + (ready ? ' style="display:none"' : "") + '>' +
@@ -1013,6 +1113,17 @@ function syncStartButton() {
   }
 }
 
+/* "1 skin" / "3 skins" — the count reads badly without it. */
+function plural(n, word) { return n + " " + word + (n === 1 ? "" : "s"); }
+
+/* What the hole is worth, or what just happened on it. */
+function skinLine(s, h) {
+  var stake = skinsAtStake(s, h), taker = skinWinner(s, h);
+  if (!s.locked[h]) return plural(stake, "skin").toUpperCase() + " ON THIS HOLE";
+  if (taker === null) return "TIED  ·  " + plural(stake, "skin").toUpperCase() + " ROLL ON";
+  return s.players[taker].toUpperCase() + " TAKES " + (stake === 1 ? "THE SKIN" : plural(stake, "skin").toUpperCase());
+}
+
 /* ---------- score ---------- */
 function renderScore() {
   var s = state, h = s.currentHole, locked = s.locked[h], par = s.pars[h];
@@ -1022,24 +1133,36 @@ function renderScore() {
     '<div class="hole-title"><strong>HOLE ' + (h + 1) + '</strong>' +
       // Par is fixed by the course — shown, not editable.
       '<span' + (locked ? ' class="locked"' : "") + '>PAR ' + par + '  &middot;  OF ' + s.holeCount +
-      (locked ? "  &middot;  LOCKED" : "") + '</span></div>' +
+      (locked ? "  &middot;  LOCKED" : "") + '</span>' +
+      // What this hole is worth, which in skins is the whole question at the tee.
+      // A locked hole says who took it rather than what was on it.
+      (isSkins(s) ? '<span class="stake">' + esc(skinLine(s, h)) + '</span>' : "") +
+      '</div>' +
     '<button class="step" data-act="hole" data-n="' + (h + 1) + '"' + (h < s.holeCount - 1 ? "" : " disabled") + '>&rsaquo;</button>' +
     '</div>';
 
   // Score entry and the running total in one row per player — the separate
   // Totals list said the same names twice, so the LEAD tag lives here now.
   var best = Math.min.apply(null, s.players.map(function (_, i) { return totalFor(s, i); }));
+  // In skins the lead is skins, not strokes — a player can be well over par and still
+  // be winning, which is the entire appeal of the format.
+  var mostSkins = isSkins(s)
+    ? Math.max.apply(null, s.players.map(function (_, i) { return skinsFor(s, i); })) : 0;
   var players = s.players.map(function (name, i) {
     var score = s.scores[h][i], me = i === s.meIndex;
     var total = totalFor(s, i), rel = relFor(s, i);
-    var lead = lockedCount(s) > 0 && total === best;
+    var lead = lockedCount(s) > 0 &&
+      (isSkins(s) ? mostSkins > 0 && skinsFor(s, i) === mostSkins : total === best);
     var ch = characterFor(s, i);
     return '<div class="player' + (me ? " me" : "") + '"><div class="row">' +
       // Only takes up room once somebody has actually picked a character.
       (ch ? badgeHtml(ch, 40) + '<div style="width:10px"></div>' : "") +
       '<div class="grow"><div class="name">' + esc(name) + '</div>' +
         '<div class="rel ' + relClass(rel) + '">' +
-        (lead ? '<span class="lead">LEAD</span>' : "") + fmtRel(rel) + '  &middot;  ' + total + ' total strokes</div></div>' +
+        (lead ? '<span class="lead">LEAD</span>' : "") +
+        (isSkins(s)
+          ? plural(skinsFor(s, i), "skin") + '  &middot;  ' + fmtRel(rel) + '  &middot;  ' + total + ' total'
+          : fmtRel(rel) + '  &middot;  ' + total + ' total strokes') + '</div></div>' +
       '<button class="step" data-act="score" data-i="' + i + '" data-n="-1"' +
         (locked || score <= 1 ? " disabled" : "") + '>&minus;</button>' +
       '<div class="num">' + score + '</div>' +
@@ -1067,6 +1190,14 @@ function winnerLine(names) {
   return names.slice(0, -1).join(", ") + " and " + names[names.length - 1] + " tie";
 }
 
+/* The winner's skins, and anything still riding. Skins left over do not go unclaimed:
+   the group replays from the first tee until they are taken. */
+function skinsSummary(s, winner) {
+  var carried = skinsCarried(s);
+  var line = plural(skinsFor(s, winner), "skin");
+  return carried > 0 ? line + "  ·  " + carried + " still up — back to hole 1" : line;
+}
+
 function renderResults() {
   var s = state;
   var won = winners(s);
@@ -1084,22 +1215,53 @@ function renderResults() {
       '<div class="grow"><div class="name">' + esc(s.players[p]) + '</div>' +
         // Relative to par, then how far off the win — spelled out, because
         // "E · +1" reads as a contradiction at a glance.
-        '<div class="rel ' + relClass(rel) + '">' + fmtRel(rel) +
-        (behind ? '  &middot;  ' + behind + ' back' : "") + '</div></div>' +
-      '<div class="num">' + total + '</div>' +
+        '<div class="rel ' + relClass(rel) + '">' +
+        (isSkins(s)
+          // In skins the strokes are still worth showing; they just are not the result.
+          ? total + ' strokes  &middot;  ' + fmtRel(rel)
+          : fmtRel(rel) + (behind ? '  &middot;  ' + behind + ' back' : "")) + '</div></div>' +
+      '<div class="num">' + (isSkins(s) ? skinsFor(s, p) : total) + '</div>' +
       '</div></div>';
   }).join("");
 
   return '<div class="label">' +
     esc(s.courseName || (s.holeCount + " holes")) + ' &middot; round complete</div>' +
     '<h1 style="color:var(--self)">' + esc(winnerLine(won.map(function (i) { return s.players[i]; }))) + '</h1>' +
-    '<p class="sub">' + winningTotal + '  &middot;  ' + fmtRel(relFor(s, won[0])) +
-    ' to a par of ' + sum(s.pars) + '</p>' +
-    '<div class="label">Final scores</div>' + rows +
+    '<p class="sub">' + (isSkins(s) ? esc(skinsSummary(s, won[0]))
+      : winningTotal + '  &middot;  ' + fmtRel(relFor(s, won[0])) + ' to a par of ' + sum(s.pars)) + '</p>' +
+    '<div class="label">' + (isSkins(s) ? "Skins" : "Final scores") + '</div>' + rows +
     '<div style="height:14px"></div>' +
     '<button class="big primary" data-act="finishRound">Finish round</button>' +
     // Escape hatch: a mis-scored final hole is still fixable from the scorecard.
     '<button class="big quiet" data-act="viewScorecard">Back to scorecard</button>';
+}
+
+/* The discard pile, opened from its counter: everything that has left your hand this
+   round, newest first, saying which you played and which you dumped. */
+function renderPile() {
+  var s = state, log = (s.playLog || []).slice().reverse();
+  var playedCount = (s.playLog || []).filter(function (e) { return e.played; }).length;
+  var head = '<div class="modal nmodal">' +
+    '<div class="nheader"><button class="back" data-act="closePile">&lsaquo;&nbsp; Back</button>' +
+    "<h1>DISCARD</h1></div>";
+
+  if (!log.length) {
+    return head + '<p class="nbody">Nothing yet. Cards land here once you play or discard them.</p>' +
+      '<div style="height:20px"></div>' +
+      '<button class="big quiet" data-act="closePile">Close</button></div>';
+  }
+
+  var rows = log.map(function (e) {
+    return '<div class="pilerow' + (e.played ? " played" : "") + '">' +
+      (e.played ? "PLAYED" : "DISCARDED") + "</div>" + cardHtml(BY_ID[e.id], false);
+  }).join("");
+
+  return head +
+    '<p class="nbody">' + log.length + ' in the pile &middot; ' + playedCount + ' played, ' +
+    (log.length - playedCount) + ' discarded.</p>' +
+    '<div style="height:14px"></div>' + rows +
+    '<div style="height:16px"></div>' +
+    '<button class="big quiet" data-act="closePile">Close</button></div>';
 }
 
 /* ---------- hand ---------- */
@@ -1108,7 +1270,9 @@ function renderHand() {
   var counters = '<div class="counters">' +
     counter("Hand", s.hand.length + "/" + DATA.handCap) +
     counter("Deck", s.deck.length) +
-    counter("Discard", s.discard.length) + '</div>';
+    // The only counter worth opening: what's in the pile is a list, not just a
+    // number, and mid-round people forget what they've used.
+    counter("Discard", s.discard.length, "Played", "openPile") + '</div>';
 
   var drawBlock = "";
   if (s.owed > 0) {
@@ -1212,8 +1376,13 @@ function miniCardHtml(c, act, picked) {
     '<div class="minitext">' + esc(c.text) + '</div></div>';
 }
 
-function counter(label, value) {
-  return '<div class="counter"><b>' + value + '</b><span>' + label + '</span></div>';
+function counter(label, value, sublabel, act) {
+  // Ice, not sage, on the second line: it is the tap target, and it has to look like
+  // something rather than like a caption.
+  return (act ? '<button class="counter" data-act="' + act + '">' : '<div class="counter">') +
+    '<b>' + value + '</b><span>' + label + '</span>' +
+    (sublabel ? '<span class="sub">' + sublabel + '</span>' : "") +
+    (act ? "</button>" : "</div>");
 }
 
 function cardHtml(c, withActions) {
@@ -1247,16 +1416,51 @@ function cardHtml(c, withActions) {
 }
 
 /* ---------- rules ---------- */
-var HOUSE_RULES = [
-  ["Stroke play", "Lowest total wins."],
-  ["Starting hand", "4 cards, dealt at the start of the round."],
-  ["Hand cap", "7 cards. You cannot draw past it — discard first."],
-  ["Your own deck", "Every player shuffles their own " + CARDS.length + "-card deck. Duplicates across players are expected and fine. This phone only tracks your deck."],
-  ["Discard", "Played and discarded cards go to your own discard pile. If your deck runs out, the discard is reshuffled back in."],
-  ["Buy a spin", "Discard " + DATA.wheelCost + " cards to buy a spin on the Double Wheel. Spin it from the Hand tab. Playing Double Wheel spins for free instead."],
-  ["Two per player, per hole", "At most 2 cards may be played on any one player per hole. The app does not enforce this — track it yourselves."],
-  ["Gift yourself", "A gift card can be played on you. Nothing says a favour has to go to somebody else."],
-  ["The app doesn't referee", "It deals cards and keeps score. It never applies card effects or stroke penalties. Cards that rewrite scores get entered by hand with the ± steppers."]
+/* One row of How it works: icon, title, rule. Only scoring depends on the format —
+   everything else is how the deck works, which is the same game either way. */
+var SHARED_RULES = [
+  ["cards", "Starting hand", "4 cards, dealt at the start of the round."],
+  ["seven", "Hand cap", "7 cards. You cannot draw past it — discard first."],
+  ["deck", "Your own deck", "Every player shuffles their own " + CARDS.length + "-card deck. Duplicates across players are expected and fine. This phone only tracks your deck."],
+  ["recycle", "Discard", "Played and discarded cards go to your own discard pile. If your deck runs out, the discard is reshuffled back in."],
+  ["wheel", "Buy a spin", "Discard " + DATA.wheelCost + " cards to buy a spin on the Double Wheel. Spin it from the Hand tab. Playing Double Wheel spins for free instead."],
+  ["people", "Two per player, per hole", "At most 2 cards may be played on any one player per hole. The app does not enforce this — track it yourselves."],
+  ["gift", "Gift yourself", "A gift card can be played on you. Nothing says a favour has to go to somebody else."],
+  ["scales", "The app doesn't referee", "It deals cards and keeps score. It never applies card effects or stroke penalties. Cards that rewrite scores get entered by hand with the ± steppers."]
+];
+
+function houseRules(mode) {
+  if (mode === "skins") {
+    return [
+      ["golf", "Skins", "Every hole is worth a skin. Win the hole outright and you take it. Most skins at the end wins — strokes only decide each hole."],
+      // Ties are the whole shape of skins, so they get their own rule rather than a
+      // clause somebody skims past.
+      ["recycle", "Ties roll over", "Tie a hole and nobody wins it. Its skin rides onto the next, so the hole after a tie is worth two, then three, until somebody takes them."],
+      ["cards", "Skins buy cards", "Skins are worth cards — to everybody but the winner. Take a hole worth 3 skins and you draw nothing; everyone else draws 3. A tied hole wins nobody a skin but still deals everyone one, so the table is never left without cards to play."],
+      ["scales", "No ties around here", "Skins still on the table when the last hole is done don't sit there. Go back to the first tee pad and play on until every one is taken."]
+    ].concat(SHARED_RULES);
+  }
+  return [["golf", "Stroke play", "Lowest total over the round wins."]].concat(SHARED_RULES);
+}
+
+/* Which format's rules are on screen. In a round it opens on the one being played;
+   off the menu there is no round, so it opens on stroke play. */
+var rulesMode = "stroke";
+
+/* The pick-one pair that swaps them. Same shape as Setup's Format buttons. */
+function formatPicker() {
+  return '<div class="acts" style="margin-bottom:12px">' +
+    '<button class="big ' + (rulesMode === "stroke" ? "primary" : "quiet") +
+      '" data-act="rulesMode" data-t="stroke">Stroke play</button>' +
+    '<button class="big ' + (rulesMode === "skins" ? "primary" : "quiet") +
+      '" data-act="rulesMode" data-t="skins">Skins</button>' +
+    '</div>';
+}
+/* In skins the table doesn't apply: cards come from the skins somebody else took. */
+var SKINS_DRAW_TABLE = [
+  ["Won the hole outright", "0"],
+  ["Everyone else", "1 per skin"],
+  ["Tied hole — no skin won", "1 each"]
 ];
 var DRAW_TABLE = [
   ["Best score, or tied for best", "0"],
@@ -1316,36 +1520,34 @@ function nheader(title) {
 }
 function nsec(text) { return '<div class="nsec">' + text + "</div>"; }
 
-var RULE_ICONS = ["golf", "cards", "seven", "deck", "recycle", "wheel", "people", "gift", "scales"];
-
 /* Menu destination: the rules in the neon style, drawn in code rather than shipped
    as artwork — text stays editable and the page costs kilobytes, not megabytes. */
 function renderRules() {
-  var rules = HOUSE_RULES.map(function (r, i) {
-    return '<div class="npanel nrow">' + nchip(RULE_ICONS[i]) +
-      '<div><div class="ntitle">' + esc(r[0]) + '</div><div class="nbody">' + esc(r[1]) +
+  var rules = houseRules(rulesMode).map(function (r) {
+    return '<div class="npanel nrow">' + nchip(r[0]) +
+      '<div><div class="ntitle">' + esc(r[1]) + '</div><div class="nbody">' + esc(r[2]) +
       "</div></div></div>";
   }).join("");
-  var table = DRAW_TABLE.map(function (r) {
+  var table = (rulesMode === "skins" ? SKINS_DRAW_TABLE : DRAW_TABLE).map(function (r) {
     return '<div class="npanel nrow center"><div class="nbody" style="flex:1;margin:0">' +
       esc(r[0]) + '</div><div class="nnum">' + r[1] + "</div></div>";
   }).join("");
-  return nheader("RULES") + nsec("How it works") + rules +
+  return nheader("RULES") + nsec("How it works") + formatPicker() + rules +
     nsec("Cards drawn at the end of a hole") + table;
 }
 
 function renderHouseRules() {
-  var rules = HOUSE_RULES.map(function (r) {
-    return '<div class="panel"><div style="font-size:22px;font-weight:700">' + esc(r[0]) +
-      '</div><p style="margin:4px 0 0;color:var(--sage)">' + esc(r[1]) + '</p></div>';
+  var rules = houseRules(rulesMode).map(function (r) {
+    return '<div class="panel"><div style="font-size:22px;font-weight:700">' + esc(r[1]) +
+      '</div><p style="margin:4px 0 0;color:var(--sage)">' + esc(r[2]) + '</p></div>';
   }).join("");
 
-  var table = DRAW_TABLE.map(function (r) {
+  var table = (rulesMode === "skins" ? SKINS_DRAW_TABLE : DRAW_TABLE).map(function (r) {
     return '<div class="total"><span class="name" style="font-size:17px;font-weight:400;color:var(--sage)">' +
       esc(r[0]) + '</span><span class="v">' + r[1] + '</span></div>';
   }).join("");
 
-  return '<div class="label">How it works</div>' + rules +
+  return '<div class="label">How it works</div>' + formatPicker() + rules +
     '<div class="label">Cards drawn at the end of a hole</div>' + table;
 }
 
@@ -1795,6 +1997,10 @@ function resolveCard(s, id, played, target) {
   viewCard = null;
   s.hand.splice(at, 1);
   s.discard.push(id);
+  // Played and discarded both land in the pile; the log is what tells them apart.
+  // A log, not a set: the same card can be played and later discarded in one round.
+  if (!s.playLog) s.playLog = [];
+  s.playLog.push({ id: id, played: !!played });
   commit(s);
   // The Double Wheel card IS the spin — playing it opens the wheel with no further
   // cost, which is exactly what its text promises.
@@ -2054,14 +2260,24 @@ app.addEventListener("click", function (e) {
     case "start":
       commit(newRound(
         setup.names.map(function (x) { return x.trim(); }),
-        setup.meIndex, setup.holes, setupPars(), setup.courseName, setup.chars,
+        setup.meIndex, setup.holes, setupPars(), setup.courseName, setup.chars, setup.mode,
       ));
       roundCourseName = state.courseName || "";
       screen = "round";
       render();
       break;
 
-    case "tab": tab = el.getAttribute("data-t"); render(); break;
+    case "mode": setup.mode = el.getAttribute("data-t"); render(); break;
+    case "rulesMode": rulesMode = el.getAttribute("data-t"); render(); break;
+
+    case "openPile": pileOpen = true; render(); break;
+    case "closePile": pileOpen = false; render(); break;
+
+    case "tab":
+      tab = el.getAttribute("data-t");
+      // The Rules tab opens on the format being played; reading the other is a tap away.
+      if (tab === "rules" && state) rulesMode = state.mode;
+      render(); break;
 
     // ---- menu navigation ----
     case "menu": screen = "menu"; render(); break;
@@ -2076,7 +2292,7 @@ app.addEventListener("click", function (e) {
       }
       render(); break;
     case "goCards": screen = "cards"; render(); break;
-    case "goRules": screen = "rules"; render(); break;
+    case "goRules": screen = "rules"; rulesMode = state ? state.mode : "stroke"; render(); break;
     case "goSettings":
       savedGroup = false;
       myNameDraft = settings.myName || "";

@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.chainreaction.data.Character
 import com.chainreaction.data.GameState
+import com.chainreaction.data.RoundMode
 
 /**
  * Shown in place of the scorecard once every hole is locked. A finished round should
@@ -60,13 +61,14 @@ fun ResultsScreen(
         )
         Spacer(Modifier.height(4.dp))
         Text(
-            "$winningTotal  ·  ${formatRelative(state.relativeToParFor(winners.first()))} " +
+            if (state.mode == RoundMode.SKINS) skinsSummary(state, winners.first())
+            else "$winningTotal  ·  ${formatRelative(state.relativeToParFor(winners.first()))} " +
                 "to a par of ${state.pars.sum()}",
             color = NeonBody,
             fontSize = 16.sp,
         )
 
-        NeonSectionLabel("Final scores")
+        NeonSectionLabel(if (state.mode == RoundMode.SKINS) "Skins" else "Final scores")
 
         state.standings.forEachIndexed { place, player ->
             val total = state.totalFor(player)
@@ -103,8 +105,11 @@ fun ResultsScreen(
                     )
                     Text(
                         // Relative to par, then how far off the win — spelled out, because
-                        // "E · +1" reads as a contradiction at a glance.
-                        if (behind == 0) formatRelative(state.relativeToParFor(player))
+                        // "E · +1" reads as a contradiction at a glance. In skins the
+                        // strokes are still worth showing; they just are not the result.
+                        if (state.mode == RoundMode.SKINS) {
+                            "$total strokes  ·  ${formatRelative(state.relativeToParFor(player))}"
+                        } else if (behind == 0) formatRelative(state.relativeToParFor(player))
                         else "${formatRelative(state.relativeToParFor(player))}  ·  $behind back",
                         color = relativeColor(state.relativeToParFor(player)),
                         fontSize = 15.sp,
@@ -112,7 +117,7 @@ fun ResultsScreen(
                     )
                 }
                 Text(
-                    "$total",
+                    if (state.mode == RoundMode.SKINS) "${state.skinsFor(player)}" else "$total",
                     color = NeonWhite,
                     fontSize = 34.sp,
                     fontWeight = FontWeight.Black,
@@ -128,6 +133,18 @@ fun ResultsScreen(
         NeonQuietButton("Back to scorecard", onClick = onViewScorecard)
         Spacer(Modifier.height(32.dp))
     }
+}
+
+/**
+ * The winner's skins, and anything still riding. Skins left over do not go unclaimed:
+ * the group goes back to the first tee and plays on until they are taken, which is a
+ * house rule the app can state but cannot score — extra holes are not a thing it has.
+ */
+private fun skinsSummary(state: GameState, winner: Int): String {
+    val won = state.skinsFor(winner)
+    val carried = state.skinsCarried
+    val skins = if (won == 1) "1 skin" else "$won skins"
+    return if (carried > 0) "$skins  ·  $carried still up — back to hole 1" else skins
 }
 
 private fun winnerLine(names: List<String>): String = when (names.size) {
