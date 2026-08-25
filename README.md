@@ -14,12 +14,12 @@ works entirely alone — scores are never synced, and no phone is the referee.
 
 ## Where the rules live
 
-[BUILD_SPEC.md](BUILD_SPEC.md) is the source of truth for the 60 cards, held in alphabetical
+[BUILD_SPEC.md](BUILD_SPEC.md) is the source of truth for the 59 cards, held in alphabetical
 order by name with ids running 1-N to match. The web build reads
 its card data straight out of the spec's ```json block at build time, so the spec and the web
 app can't drift. The Android build has the same data transcribed into
 [GameCard.kt](app/src/main/java/com/chainreaction/data/GameCard.kt), verified against the spec
-by unit test (`deck is 60 cards with unique ids one through 61`).
+by unit test (`deck is 59 cards with unique ids one through 61`).
 
 Ids are positional, not permanent: re-sorting the deck renumbers them. Nothing in either
 build hardcodes one — `wheelExcludes` and `freeSpinCard` live in the spec beside the cards,
@@ -271,7 +271,7 @@ Eight, all decided deliberately:
 6. **Characters.** Not in the spec. A pickable face per player, added purely for
    personalisation — deliberately cosmetic, so the rules the group has to carry stay exactly
    as the spec describes them.
-7. **The wheel costs cards.** The Rules screen has always said "discard 60 cards to buy a
+7. **The wheel costs cards.** The Rules screen has always said "discard 59 cards to buy a
    spin", but nothing enforced it — the wheel was free and unlimited, which made the hand cap
    beside the point. Tapping *Spin the Double Wheel* now asks which two cards to give up, and
    the button is disabled when you're holding fewer than two. Playing Double Wheel still spins
@@ -302,5 +302,5 @@ GOOD GUYS VS. BAD GUYS! and Me and You all rewrite scores, and players enter tho
 with the ± steppers. No money
 tracking; FIVE FOR YOU, YOU, AND YOU! is honour-system.
 
-The "max 60 cards on one player per hole" rule is shown on the Rules screen and tracked by the
+The "max 59 cards on one player per hole" rule is shown on the Rules screen and tracked by the
 players, not the app.

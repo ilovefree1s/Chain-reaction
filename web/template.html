@@ -630,7 +630,7 @@ var memoryStore = null;
  * version 1 holds ids that now mean different cards. A mismatch drops the round
  * rather than dealing somebody the wrong hand mid-round.
  */
-var SCHEMA_VERSION = 4;
+var SCHEMA_VERSION = 5;
 
 function save(s) {
   s.v = SCHEMA_VERSION;
@@ -1279,7 +1279,7 @@ function hasTwoHalves(c) {
 /* Gifts that make no sense aimed at yourself — a team-up needs a second person.
    These lose the "Myself" button; everything else about their kind stands. */
 var NO_SELF_CARDS = [
-  31, // GOOD GUYS VS. BAD GUYS! — you can't be your own teammate
+  30, // GOOD GUYS VS. BAD GUYS! — you can't be your own teammate
 ];
 function selfMakesSense(c) {
   return playableOnSelf(c.kind) && NO_SELF_CARDS.indexOf(c.id) === -1;
@@ -1295,18 +1295,18 @@ function selfMakesSense(c) {
  */
 var PLAY_ON_ALL = [
   10, // Big Putted! — everyone still putting goes lefty; already holed out, ignore it
-  13, // Call Your Shot
-  20, // Dealer's Choice!
-  21, // Do Not Pass Go — everyone is in the running until the drives land
+  12, // Call Your Shot
+  19, // Dealer's Choice!
+  20, // Do Not Pass Go — everyone is in the running until the drives land
 
-  26, // FIVE FOR YOU, YOU, AND YOU! — everyone else pays the ace pot
-  34, // I'm In Control
-  43, // Over Sharer
-  44, // Plant Your Feet! — nobody else gets a run-up
-  53, // Too Many Choices — the discs pass down the whole table
-  56, // Turbo Time — every opponent inside C1
-  59, // Your Tee Pad Is Over There! — the whole table tees from the new spot
-  60,  // I Think It's Broke
+  25, // FIVE FOR YOU, YOU, AND YOU! — everyone else pays the ace pot
+  33, // I'm In Control
+  42, // Over Sharer
+  43, // Plant Your Feet! — nobody else gets a run-up
+  52, // Too Many Choices — the discs pass down the whole table
+  55, // Turbo Time — every opponent inside C1
+  58, // Your Tee Pad Is Over There! — the whole table tees from the new spot
+  59,  // I Think It's Broke
 ];
 function playableOnAll(id) { return PLAY_ON_ALL.indexOf(id) !== -1; }
 /* Sent as the target when a card is played on the whole table, and understood
@@ -1321,7 +1321,7 @@ var ALL_TARGET = "*all*";
  * notice while the moment is live, and it stays until tapped.
  */
 var INVITE_CARDS = [
-  25,  // Easily Distracted? — everyone may help distract the putter
+  24,  // Easily Distracted? — everyone may help distract the putter
 ];
 function invitesTable(id) { return INVITE_CARDS.indexOf(id) !== -1; }
 
@@ -1330,13 +1330,13 @@ function invitesTable(id) { return INVITE_CARDS.indexOf(id) !== -1; }
    The words are the table's own voice — keep them in it. */
 var ALERT_TAUNTS = {
   10: "You just got Big Putted, nerd. Now you putt this as a lefty. If you already made it, never mind — but you're still a nerd.",
-  26: "Everyone else owes 5 dollars to the ace pot!"
+  25: "Everyone else owes 5 dollars to the ace pot!"
 };
 
 /* Wording for a card played on ONE person, when "on YOU" undersells it. [you]
    is what the target reads; [others] is what the rest of the table reads. */
 var ALERT_LINES = {
-  31: { you: "You're teammates next hole — good guys, bad guys, same score.",
+  30: { you: "You're teammates next hole — good guys, bad guys, same score.",
         others: "teamed up next hole" }
 };
 
