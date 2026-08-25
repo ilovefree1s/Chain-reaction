@@ -131,6 +131,7 @@ const WHEEL_SETTLED = {
   44: "Stays off the wheel. Playable from a hand only.",
   13: "Renamed Can I Borrow This? → \"Can I Borrow This Card?\" Stays off the wheel. Playable from a hand only.",
   2: "On the wheel: straddle putting starts once you're inside Circle 2, and runs for every putt from there.",
+  53: "On the wheel: the exempt player advises every other player, and can give each of them something different.",
   51: "Joins the wheel. The exempt player's own discs go round the table until everyone has one to tee with — a 4th gets added at 5 players.",
   48: "On the wheel: everyone but the exempt player throws forehand.",
   45: "On the wheel: everyone but the exempt player rolls their drive or approach.",
