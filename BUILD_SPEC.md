@@ -176,7 +176,7 @@ Suggested palette: deep pine ground (`#0C1A14`), panels (`#132A21`), muted sage 
     { "id": 51, "timing": "Before shot", "kind": "attack", "name": "Forehand only!", "text": "Force an opponent to throw a forehand on the upcoming drive or approach." },
     { "id": 52, "timing": "On draw", "kind": "sabotage", "name": "Everybody But Me", "text": "You must play this card immediately after drawing, you can't discard it. Everyone gets a free mulligan on the next hole but me =(" },
     { "id": 53, "timing": "Before shot", "kind": "dual", "name": "That's Definitely a Gimme", "text": "Allow a player to pick up a putt as a gimme, as long as it's inside C1. They definitely woulda made it." },
-    { "id": 54, "timing": "Before tee shot", "kind": "attack", "name": "Too Many Choices", "text": "Pick 3 discs out of an opponent's bag. They choose which one to tee off with this hole from the 3 options." },
+    { "id": 54, "timing": "Before tee shot", "kind": "attack", "name": "Too Many Choices", "text": "Pick 3 discs out of an opponent's bag. They pick 1, then pass the other 2 to the next person, who chooses 1 of the 2 and gives the last disc to the last person. Tee off, nerds." },
     { "id": 55, "timing": "Before tee shot", "kind": "self", "name": "Tree Insurance", "text": "Play before your tee shot. If you hit a tree, take a free mulligan." },
     { "id": 56, "timing": "Before shot", "kind": "attack", "name": "Trust Me Bro", "text": "Give another player advice for their tee shot. They have to follow it as best they can." },
     { "id": 57, "timing": "Before shot", "kind": "attack", "name": "Turbo Time", "text": "An opponent's next putt must be a turbo putt." },
