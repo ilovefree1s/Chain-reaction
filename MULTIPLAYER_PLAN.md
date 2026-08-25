@@ -78,10 +78,14 @@ him — the two apps have separate storage.
   looking at the app, or suppress it as redundant? Deferred until there is
   something to test. If it suppresses, an iPhone in hand gets the banner and the
   chain rattle but no haptic; everything else is unaffected.
-- **Row-level security on the shared Supabase project.** The anon key lands in a
-  public page. That is fine by design, but it is the same key as the other games in
-  that project, so every table in there needs to hold against an anonymous caller.
-  Check before shipping, not after.
+- ~~**Row-level security on the shared Supabase project.**~~ **Settled 2026-08-25,
+  before merge.** Security Advisor: 0 errors — RLS enabled on every table, and
+  Chain Reaction itself touches none (channels only). The audit also pruned the
+  project: DragonPath and an abandoned Blind Ink online prototype (the mm_
+  tables) were dropped outright. What remains is TimeIt's: score tables are
+  append-only (INSERT+SELECT); its rooms/round_results are anon-ALL, which the
+  user weighed and accepted — three players, free app, ephemeral stakes, and an
+  auth-less app can't scope writes by owner anyway. Revisit only if TimeIt grows.
 - Screen-level choices, better made with something on screen: where create/join
   lives, what the alert says and whether it needs acknowledging, whether group and
   sabotage cards announce to the whole table, where the discrepancy badge sits, and
