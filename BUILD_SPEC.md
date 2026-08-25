@@ -169,7 +169,7 @@ Suggested palette: deep pine ground (`#0C1A14`), panels (`#132A21`), muted sage 
     { "id": 44, "timing": "Before tee shot", "kind": "attack", "name": "Over Sharer", "text": "Give everyone a disc from your own bag to tee off with on this hole." },
     { "id": 45, "timing": "Before all tee", "kind": "attack", "name": "Plant Your Feet!", "text": "No run-up on everyone else's tee shot." },
     { "id": 46, "timing": "Any time", "kind": "dual", "name": "Player 2's Turn!", "text": "On yourself: retake any shot for free. On another player: force them to re-throw a shot that was too good." },
-    { "id": 47, "timing": "After throw", "kind": "attack", "name": "Prove It", "text": "Cancel a shot an opponent just took. They throw again with a different disc of their choice. No extra stroke." },
+    { "id": 47, "timing": "After throw", "kind": "attack", "name": "Prove It", "text": "Cancel a shot an opponent just took. They throw again with a different disc of their choice from any bag. (No extra stroke, just a forced mulligan.)" },
     { "id": 48, "timing": "Before shot", "kind": "attack", "name": "Roll It!", "text": "Force an opponent to throw a roller on the upcoming drive or approach." },
     { "id": 49, "timing": "After card", "kind": "react", "name": "Rubber and Glue", "text": "If a card targeting only you was just played, that opponent carries out the instructions instead of you." },
     { "id": 50, "timing": "Before shot", "kind": "dual", "name": "Shoe Golf", "text": "On yourself: putt with your own shoe at no stroke cost. On another player: they putt with a shoe and it still counts as a stroke. If they refuse to take their shoe off, they take +1 stroke after the hole." },
