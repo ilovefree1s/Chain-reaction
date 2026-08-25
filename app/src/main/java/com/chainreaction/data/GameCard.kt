@@ -118,7 +118,7 @@ object CardDeck {
         GameCard(38, "After a hole", CardKind.DUAL, "Me and You", "On yourself: take the best score made on the hole. On another player: they take the worst score made on the hole."),
         GameCard(39, "Before tee shot", CardKind.SELF, "My Tee Pad Is Over Here!", "Use 2 of your discs to mark a new tee for yourself, up to 10 paces (30 ft) from the original. Feeling nice? You may pick 1 player to join you."),
         GameCard(40, "After card", CardKind.REACT, "No Way", "Cancel any card just played. That card goes to the discard pile."),
-        GameCard(41, "Before tee shot", CardKind.ATTACK, "Not the Recommended Route", "Choose a reasonable object the target player must pass on a side you specify."),
+        GameCard(41, "Before tee shot", CardKind.ATTACK, "New mando on this hole, bud.", "Choose a reasonable object the target player must pass on a side you specify."),
         GameCard(42, "Before tee shot", CardKind.SELF, "Not Today!", "Remove any and all card effects currently on you."),
         GameCard(43, "Before tee shot", CardKind.ATTACK, "One Disc Wonder!", "Force an opponent to play the hole with only 1 DISC. You choose it."),
         GameCard(44, "Before tee shot", CardKind.ATTACK, "Over Sharer", "Give everyone a disc from your own bag to tee off with on this hole."),
