@@ -228,6 +228,10 @@
 
   .hint { color: var(--sage); margin: 0 0 12px; }
 
+  /* A fresh card the table hasn't locked yet: in hand, visible, not yet playable. */
+  .heldtag { font-size: 10px; font-weight: 900; letter-spacing: 2px; color: #FF8A1E;
+             margin-bottom: 6px; }
+
   /* A locked hole two phones disagree on. Flags, never fixes: no phone referees. */
   .dispute { border: 2px solid var(--attack); border-radius: 14px; padding: 12px 14px;
              margin-bottom: 10px; background: #130507; }
@@ -990,6 +994,45 @@ function scoreDisputes(s, h) {
     });
   });
   return out;
+}
+
+/* Whether hole [h]'s freshly dealt cards are still frozen. They unlock when
+   every phone at the table has locked [h] and none of them disagree — which is
+   exactly the moment a wrong score would have been caught. Until then the
+   cards sit in hand un-playable, so a mistake's cards are always still there
+   for the correction to take back. Only players whose phone is actually in
+   the lobby gate this: a typed-in name with no phone can't freeze anyone,
+   and a phone gone quiet without locking doesn't hold the table hostage.
+   Not live at all? No hold — the network stays decoration. */
+function dealHeld(s, h) {
+  if (!live) return false;
+  if (!s.locked[h]) return true; // mid-fix — settlement is pending
+  if (scoreDisputes(s, h).length) return true;
+  var peers = livePeers();
+  for (var i = 0; i < peers.length; i++) {
+    var pname = peers[i].name.trim().toLowerCase();
+    var seated = s.players.some(function (n) {
+      return n.trim().toLowerCase() === pname;
+    });
+    if (!seated) continue;
+    if (!peers[i].locks || !peers[i].locks[h]) return true;
+  }
+  return false;
+}
+
+/* Every card in hand that is still frozen, mapped to the hole it came from. */
+function heldCardIds(s) {
+  var held = {};
+  if (!live || !s.dealt) return held;
+  for (var h = 0; h < s.holeCount; h++) {
+    var rec = s.dealt[h];
+    if (!rec || rec === true || !rec.cards || !rec.cards.length) continue;
+    if (!dealHeld(s, h)) continue;
+    rec.cards.forEach(function (id) {
+      if (s.hand.indexOf(id) !== -1) held[id] = h;
+    });
+  }
+  return held;
 }
 
 /* The whole round's disagreements, grouped by hole, oldest first. */
@@ -1792,9 +1835,12 @@ function renderHand() {
       : '<button class="big primary" data-act="draw">Draw a card (' + s.owed + ' owed)</button>';
   }
 
+  var held = heldCardIds(s);
   var cards = s.hand.length
     ? '<div class="handgrid">' +
-      s.hand.map(function (id) { return miniCardHtml(BY_ID[id]); }).join("") + '</div>'
+      s.hand.map(function (id) {
+        return miniCardHtml(BY_ID[id], null, false, held[id] != null);
+      }).join("") + '</div>'
     : '<p class="hint">Nothing in hand. Cards arrive when you lock a hole.</p>';
 
   return counters + drawBlock + wheelButton() +
@@ -1821,9 +1867,11 @@ function wheelButton() {
 /* The price of a spin: pick which cards leave your hand. */
 function renderWheelCost() {
   var s = state;
+  // A held card can't pay for a spin — spending it is playing it by another name.
+  var held = heldCardIds(s);
   var tiles = s.hand.map(function (id) {
     var picked = wheelPay.indexOf(id) !== -1;
-    return miniCardHtml(BY_ID[id], picked ? "payPick" : "payPick", picked);
+    return miniCardHtml(BY_ID[id], "payPick", picked, held[id] != null);
   }).join("");
 
   var ready = wheelPay.length === DATA.wheelCost;
@@ -1872,13 +1920,15 @@ function openWheelNow(free) {
 
 /* Half-width hand tile: tags, name, a taste of the text. No buttons — tapping
    opens the full face, where Play and Discard live. */
-/* [act] and [picked] let the same tile double as the pay-for-a-spin picker. */
-function miniCardHtml(c, act, picked) {
+/* [act] and [picked] let the same tile double as the pay-for-a-spin picker;
+   [held] marks a card still frozen while the table locks its hole. */
+function miniCardHtml(c, act, picked, held) {
   var art = CARD_ART[c.id];
+  var tag = held ? '<div class="heldtag">HELD</div>' : "";
   var open = '<div class="minicard' + (picked ? " picked" : "") + '" data-act="' +
     (act || "viewCard") + '" data-i="' + c.id + '">';
-  if (art) return open + '<img src="' + art + '" alt="' + esc(c.name) + '"></div>';
-  return open +
+  if (art) return open + tag + '<img src="' + art + '" alt="' + esc(c.name) + '"></div>';
+  return open + tag +
     '<div class="minimeta">' + esc(c.kind) + ' &middot; ' + esc(c.timing) + '</div>' +
     '<div class="mininame">' + esc(c.name) + '</div>' +
     '<div class="minitext">' + esc(c.text) + '</div></div>';
@@ -2302,9 +2352,16 @@ function renderFaceModal() {
         '<button class="big raised" data-act="keepCard">Keep it</button>' +
         '<button class="big primary" data-act="discardCard" data-i="' + c.id + '">Discard</button></div>';
     } else {
+      var heldAt = heldCardIds(state)[c.id];
       acts = '<div class="acts" style="margin-top:14px">' +
-        '<button class="big primary" data-act="playCard" data-i="' + c.id + '">Play</button>' +
-        '<button class="big raised" data-act="askDiscard" data-i="' + c.id + '">Discard</button></div>';
+        (heldAt != null
+          ? '<button class="big primary" disabled>Held</button>'
+          : '<button class="big primary" data-act="playCard" data-i="' + c.id + '">Play</button>') +
+        '<button class="big raised" data-act="askDiscard" data-i="' + c.id + '">Discard</button></div>' +
+        (heldAt != null
+          ? '<p class="hint" style="text-align:center;margin-top:10px">Fresh from hole ' +
+            (heldAt + 1) + ' &mdash; playable once the whole table locks it in agreement.</p>'
+          : "");
     }
   }
   // Swiping left/right (or the chevrons) walks the rest of the hand — whole
@@ -2945,6 +3002,7 @@ app.addEventListener("click", function (e) {
     // Play and Discard both send the card to the discard pile; only a play has
     // somebody on the other end of it, which is why one of them asks.
     case "playCard":
+      if (heldCardIds(s)[i] != null) break; // the face modal already says why
       if (aimedAtSomeone(BY_ID[i].kind) && s.players.length > 1) {
         playTarget = i;
         render();
@@ -2974,6 +3032,7 @@ app.addEventListener("click", function (e) {
       render(); break;
     case "payPick": {
       if (!wheelPay) break;
+      if (heldCardIds(s)[i] != null) break; // held cards can't buy a spin
       var payAt = wheelPay.indexOf(i);
       // Tapping a chosen card takes it back; past the limit the rest stop
       // responding rather than silently swapping one out.
