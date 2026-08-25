@@ -254,6 +254,8 @@
                 text-transform: uppercase; }
   .alert .what { font-size: 20px; font-weight: 900; color: #F4F8FF; }
   .alert .onwho { font-size: 14px; font-weight: 900; color: #A9B8D4; }
+  /* A whole sentence of trash talk, not a label — set like one. */
+  .alert .taunt { font-weight: 600; line-height: 1.35; margin-top: 2px; }
   /* Aimed at you: the panel goes hot and breathes until you deal with it. */
   .alert.you { background: linear-gradient(#130C05, #130C05) padding-box,
                            linear-gradient(100deg, #FF8A1E, #F7791E) border-box;
@@ -1214,7 +1216,9 @@ function renderAlerts() {
       '" data-act="alertTap" data-eid="' + esc(a.eid) + '">' +
       '<div class="who">' + esc(a.who || "Someone") + ' played</div>' +
       '<div class="what">' + esc(c.name) + '</div>' +
-      (a.all ? '<div class="onwho">on EVERYONE</div>'
+      (a.all ? (ALERT_TAUNTS[a.card]
+          ? '<div class="onwho taunt">' + esc(ALERT_TAUNTS[a.card]) + '</div>'
+          : '<div class="onwho">on EVERYONE</div>')
         : a.invite ? '<div class="onwho">on ' + esc(a.target) + ' &mdash; join in!</div>'
         : a.target ? '<div class="onwho">on ' + (a.you ? "YOU" : esc(a.target)) + '</div>' : "") +
       '</div>';
@@ -1288,6 +1292,13 @@ var INVITE_CARDS = [
   26  // Easily Distracted? — everyone may help distract the putter
 ];
 function invitesTable(id) { return INVITE_CARDS.indexOf(id) !== -1; }
+
+/* Card-specific trash talk on the receiving phones. Keyed by card id; a
+   whole-table alert with an entry here says this instead of "on EVERYONE".
+   The words are the table's own voice — keep them in it. */
+var ALERT_TAUNTS = {
+  11: "You just got Big Putted, nerd. Now you putt this as a lefty. If you already made it, never mind — but you're still a nerd."
+};
 
 /* ---------- the one piece of real logic ---------- */
 function drawCount(holeScores, meIndex, par) {
