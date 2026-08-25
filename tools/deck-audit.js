@@ -131,6 +131,7 @@ const WHEEL_SETTLED = {
   44: "Stays off the wheel. Playable from a hand only.",
   13: "Renamed Can I Borrow This? → \"Can I Borrow This Card?\" Stays off the wheel. Playable from a hand only.",
   2: "On the wheel: straddle putting starts once you're inside Circle 2, and runs for every putt from there.",
+  57: "On the wheel: the exempt player marks the new tee and everyone else plays off it. No 2-disc requirement — that's the hand version.",
   56: "On the wheel: it sits on the whole table but only bites whoever misses inside C1 — the exempt player is safe either way.",
   54: "On the wheel: no C1 limit — everyone but the exempt player turbo putts their next putt from wherever they are.",
   53: "On the wheel: the exempt player advises every other player, and can give each of them something different.",
