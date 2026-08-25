@@ -122,7 +122,7 @@ object CardDeck {
         GameCard(42, "Before tee shot", CardKind.SELF, "Not Today!", "Remove any and all card effects currently on you."),
         GameCard(43, "Before tee shot", CardKind.ATTACK, "One Disc Wonder!", "Force an opponent to play the hole with only 1 DISC this hole! (If someone already gave them an Aerobie or mini, that counts as their 1 disc.)"),
         GameCard(44, "Before tee shot", CardKind.ATTACK, "Over Sharer", "Give everyone a disc from your own bag to tee off with on this hole."),
-        GameCard(45, "Before tee shot", CardKind.ATTACK, "Plant Your Feet!", "No run-up on an opponent's next throw."),
+        GameCard(45, "Before all tee", CardKind.ATTACK, "Plant Your Feet!", "No run-up on everyone else's tee shot."),
         GameCard(46, "Any time", CardKind.DUAL, "Player 2's Turn!", "On yourself: retake any shot for free. On another player: force them to re-throw a shot that was too good."),
         GameCard(47, "After throw", CardKind.ATTACK, "Prove It", "Cancel a shot an opponent just took. They throw again with a different disc of their choice. No extra stroke."),
         GameCard(48, "Before shot", CardKind.ATTACK, "Roll It!", "Force an opponent to throw a roller on the upcoming drive or approach."),
