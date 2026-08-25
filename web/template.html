@@ -1254,9 +1254,14 @@ function renderLiveSection() {
 }
 
 /* Only cards that land on one named person are worth asking about. Self is you, group
-   is everyone, and a reaction answers a card rather than a player. */
-function aimedAtSomeone(kind) {
-  return kind === "attack" || kind === "dual";
+   is everyone, and a reaction answers a card rather than a player.
+   The exception is the reaction that hijacks a card: the whole point of it is naming
+   somebody new, so it asks like an attack does. By id, since its kind says otherwise. */
+var AIMED_CARDS = [
+  14, // Change Is Good — you steal the card and pick who wears it
+];
+function aimedAtSomeone(c) {
+  return c.kind === "attack" || c.kind === "dual" || AIMED_CARDS.indexOf(c.id) !== -1;
 }
 
 /* A favour can be your own. Attacks are not offered — nobody needs the app's help to
@@ -3146,7 +3151,7 @@ app.addEventListener("click", function (e) {
       if (heldCardIds(s)[i] != null) break; // the face modal already says why
       // A card aimed at one person, or one that hits the whole table, opens
       // the picker; anything else (self, group, reaction) just plays.
-      if ((aimedAtSomeone(BY_ID[i].kind) || playableOnAll(i)) && s.players.length > 1) {
+      if ((aimedAtSomeone(BY_ID[i]) || playableOnAll(i)) && s.players.length > 1) {
         playTarget = i;
         render();
         break;

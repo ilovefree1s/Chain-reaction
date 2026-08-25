@@ -91,7 +91,7 @@ object CardDeck {
         GameCard(11, "Before tee shot", CardKind.ATTACK, "Bizarro Golf!", "Force an opponent to drive with a putter and putt with a driver this hole."),
         GameCard(12, "Before all tee", CardKind.SELF, "Call Your Shot", "Call CTP. If you win it, nobody can play cards on you next hole, and your next attack card hits every opponent — not you."),
         GameCard(13, "Any time", CardKind.ATTACK, "Can I Borrow This?", "Pick anyone you want. Look through their cards and play one on anyone."),
-        GameCard(14, "Any time", CardKind.REACT, "Change Is Good", "Force an opponent to change the target of one of their cards, if there is another option."),
+        GameCard(14, "Any time", CardKind.REACT, "Change Is Good", "Hijack a card as it's played and re-aim it at the player of your choice — including the player who played it."),
         GameCard(15, "Before shot", CardKind.ATTACK, "CHRIS SPECIAL!", "Force an opponent to throw a tomahawk on the upcoming drive or approach."),
         GameCard(16, "Before shot", CardKind.ATTACK, "Close 'Em", "Force an opponent to take the next putt with their eyes closed."),
         GameCard(17, "Before tee shot", CardKind.ATTACK, "Code Words!", "An opponent can't say \"yes\" or \"no\" this hole. 1 stroke penalty every time they do. ANY variation of the words yes or no counts."),
