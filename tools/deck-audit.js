@@ -124,6 +124,7 @@ const WHEEL_SETTLED = {
   1: "Stays off the wheel. Playable from a hand only.",
   4: "Stays off the wheel. Playable from a hand only.",
   2: "On the wheel: straddle putting starts once you're inside Circle 2, and runs for every putt from there.",
+  5: "On the wheel: it rides until you've thrown one or the other, since a spin can land mid-hole with some players already off the tee and others still putting.",
 };
 
 const AIMED = new Set(["attack", "dual"]);
