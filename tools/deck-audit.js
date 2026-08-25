@@ -33,6 +33,20 @@ const NO_SELF_CARDS = idList("NO_SELF_CARDS");
 const AIMED_CARDS = idList("AIMED_CARDS");
 const HAS_WORDS = [...new Set([...mapKeys("ALERT_TAUNTS"), ...mapKeys("ALERT_LINES")])];
 
+// The second wording, for when a card comes off the Double Wheel. Read whole
+// rather than by key, since the review is about the words themselves.
+function textMap(name) {
+  const m = tpl.match(new RegExp("var " + name + "\\s*=\\s*\\{([\\s\\S]*?)\\n\\};"));
+  if (!m) return {};
+  const out = {};
+  m[1].replace(/^\s*(\d+):\s*("(?:[^"\\]|\\.)*")\s*,?\s*$/gm, (line, id, str) => {
+    out[Number(id)] = JSON.parse(str);
+    return line;
+  });
+  return out;
+}
+const WHEEL_TEXT = textMap("WHEEL_TEXT");
+
 // Decisions already made and built. Key = card id, value = what we settled on.
 const SETTLED = {
   1: "Kind changed self → attack: the challenge is issued to one named person, so it opens the player picker. Text unchanged.",
@@ -95,6 +109,14 @@ const SETTLED = {
   14: "Now opens the one-player picker, the first reaction that does. Reworded as theft: you hijack the card as it's played and re-aim it at whoever you choose, the player who played it included. Kind stays react.",
 };
 
+/*
+ * Pass two: the wheel wording, reviewed the same way — a card drops off this
+ * list once its wheel words are agreed. Separate map from SETTLED, because a
+ * card can be finished as a play and still read wrong off the wheel.
+ */
+const WHEEL_SETTLED = {
+};
+
 const AIMED = new Set(["attack", "dual"]);
 const TABLE_RE = /every other player|everyone|each (?:other )?player|they all|the whole table|every opponent/i;
 // Written as an instruction aimed at somebody else. Off the wheel, where
@@ -133,9 +155,14 @@ const enriched = data.cards.map(c => {
     onWheel, twoHalves,
     invite: INVITE_CARDS.includes(c.id),
     hasWords: HAS_WORDS.includes(c.id),
-    // Needs a second wording for the wheel: it can land there, and it is
-    // written as an instruction pointed at somebody rather than at you.
-    wheelWord: !settled && onWheel && AIMED_RE.test(c.text),
+    // Pass two. Every card that can land on the wheel is in it until its wheel
+    // words are agreed; the ones with no entry read the same either way, which
+    // is itself a decision to make rather than assume.
+    wheelText: WHEEL_TEXT[c.id] || null,
+    wheelSettled: WHEEL_SETTLED[c.id] || null,
+    wheelWord: onWheel && !WHEEL_SETTLED[c.id],
+    // Still pointed at somebody else — a hint that the wheel wording is missing.
+    wheelAimed: onWheel && !WHEEL_TEXT[c.id] && AIMED_RE.test(c.text),
     flag: !settled && !PLAY_ON_ALL.includes(c.id) && TABLE_RE.test(c.text),
   };
 });
@@ -145,6 +172,7 @@ const remaining = enriched.length - settledCount;
 const flagged = enriched.filter(c => c.flag).length;
 const wheelWork = enriched.filter(c => c.wheelWord).length;
 const wheelPool = enriched.filter(c => c.onWheel).length;
+const wheelSettledCount = wheelPool - wheelWork;
 
 const html = `<title>Deck Audit — Chain Reaction</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -290,17 +318,18 @@ const html = `<title>Deck Audit — Chain Reaction</title>
 <div class="wrap">
   <header>
     <div class="eyebrow">Chain Reaction · Deck Audit</div>
-    <h1>Every card, <span class="u">as it's played</span></h1>
-    <p class="lede">All ${enriched.length} cards, grouped by kind, each showing its wording and the
-      <b>targeting the app derives from it</b>. This is pass one: how a card reads when you
-      <b>play it</b> at the tee. Settle a card — changed or fine as-is — and it drops off the list.
-      Pass two, the <b>Double Wheel</b> rewording, waits behind its own toggle.</p>
+    <h1>Every card, <span class="u">both ways round</span></h1>
+    <p class="lede">All ${enriched.length} cards, grouped by kind. Pass one — how a card reads when you
+      <b>play it</b> at the tee, and the <b>targeting the app derives from it</b> — is done.
+      Pass two is live behind the <b>wheel</b> toggle: the ${wheelPool} cards that can land on the
+      Double Wheel, each with the second wording it shows there, where everyone but the exempt
+      player carries it out at once.</p>
 
     <div class="tiles">
-      <div class="tile"><b>${remaining}</b><span>To review</span></div>
-      <div class="tile ok"><b>${settledCount}</b><span>Settled</span></div>
-      <div class="tile flag"><b>${flagged}</b><span>Reads table-wide</span></div>
-      <div class="tile wheel"><b>${wheelWork}</b><span>Wheel · later</span></div>
+      <div class="tile wheel"><b>${wheelWork}</b><span>Wheel words to review</span></div>
+      <div class="tile ok"><b>${wheelSettledCount}</b><span>Wheel words agreed</span></div>
+      <div class="tile"><b>${remaining}</b><span>Plays to review</span></div>
+      <div class="tile ok"><b>${settledCount}</b><span>Plays settled</span></div>
     </div>
   </header>
 
@@ -308,7 +337,7 @@ const html = `<title>Deck Audit — Chain Reaction</title>
     <div class="searchrow">
       <input id="q" type="text" placeholder="Search name or text…" autocomplete="off" spellcheck="false">
       <button class="toggle" id="flagOnly" aria-pressed="false"><span class="dot"></span>Table-wide</button>
-      <button class="toggle wheel" id="wheelOnly" aria-pressed="false"><span class="dot"></span>Wheel pass ${wheelWork}</button>
+      <button class="toggle wheel" id="wheelOnly" aria-pressed="true"><span class="dot"></span>Wheel pass ${wheelWork}</button>
       <button class="toggle ok" id="showSettled" aria-pressed="false"><span class="dot"></span>Settled ${settledCount}</button>
     </div>
     <div class="chips" id="chips"></div>
@@ -320,9 +349,11 @@ const html = `<title>Deck Audit — Chain Reaction</title>
   <footer>
     Generated from <code>BUILD_SPEC.md</code> and the live lists in <code>web/template.html</code>
     (<code>PLAY_ON_ALL</code>, <code>INVITE_CARDS</code>, <code>NO_SELF_CARDS</code>,
-    <code>ALERT_TAUNTS</code>, <code>ALERT_LINES</code>), so it always mirrors what ships.
+    <code>AIMED_CARDS</code>, <code>WHEEL_TEXT</code>, <code>ALERT_TAUNTS</code>,
+    <code>ALERT_LINES</code>), so it always mirrors what ships.
     ${wheelPool} of ${enriched.length} cards can land on the wheel; the rest are excluded by
-    <code>wheelExcludes</code>. Flags are text heuristics — a prompt to look, not a verdict.
+    <code>wheelExcludes</code>. Where a wheel wording names <code>[exempt]</code>, the app fills in
+    whoever the name wheel landed on. Flags are text heuristics — a prompt to look, not a verdict.
   </footer>
 </div>
 
@@ -330,7 +361,8 @@ const html = `<title>Deck Audit — Chain Reaction</title>
   const CARDS = ${JSON.stringify(enriched)};
   const KINDS = ${JSON.stringify(KINDS)};
   const ORDER = ${JSON.stringify(KIND_ORDER)};
-  const state = { q: "", kinds: new Set(ORDER), flagOnly: false, wheelOnly: false, showSettled: false };
+  // Opens on the pass that's actually running.
+  const state = { q: "", kinds: new Set(ORDER), flagOnly: false, wheelOnly: true, showSettled: false };
 
   const chips = document.getElementById("chips");
   ORDER.forEach(k => {
@@ -363,11 +395,17 @@ const html = `<title>Deck Audit — Chain Reaction</title>
   const empty = document.getElementById("empty");
 
   function matches(c) {
-    if (c.settled && !state.showSettled && !state.q) return false;
+    // Each pass has its own idea of "done" — pass one settles how a card is
+    // played, pass two settles how it reads off the wheel.
+    const done = state.wheelOnly ? c.wheelSettled : c.settled;
+    if (done && !state.showSettled && !state.q) return false;
     if (!state.kinds.has(c.kind)) return false;
     if (state.flagOnly && !c.flag) return false;
-    if (state.wheelOnly && !c.wheelWord) return false;
-    if (state.q && !(c.name.toLowerCase().includes(state.q) || c.text.toLowerCase().includes(state.q))) return false;
+    if (state.wheelOnly && !c.onWheel) return false;
+    if (state.q) {
+      const hay = (c.name + " " + c.text + " " + (c.wheelText || "")).toLowerCase();
+      if (!hay.includes(state.q)) return false;
+    }
     return true;
   }
 
@@ -389,7 +427,8 @@ const html = `<title>Deck Audit — Chain Reaction</title>
       sec.appendChild(head);
       cs.forEach(c => {
         const el = document.createElement("article");
-        el.className = "card" + (c.flag ? " isflag" : "") + (c.settled ? " issettled" : "");
+        const done = state.wheelOnly ? c.wheelSettled : c.settled;
+        el.className = "card" + (c.flag && !state.wheelOnly ? " isflag" : "") + (done ? " issettled" : "");
         el.style.setProperty("--kc", KINDS[c.kind].color);
         el.innerHTML =
           '<div class="cid">' + String(c.id).padStart(2, "0") + '</div>' +
@@ -405,17 +444,22 @@ const html = `<title>Deck Audit — Chain Reaction</title>
                              : '<span class="b nowheel">wheel-excluded</span>')
                 : '') +
               (c.twoHalves ? '<span class="b halves">good / bad halves</span>' : '') +
-              (c.invite ? '<span class="b words">table invited</span>' : '') +
-              (c.hasWords ? '<span class="b words">custom alert</span>' : '') +
-              (c.flag ? '<span class="b flag">⚑ reads table-wide</span>' : '') +
-              (c.settled ? '<span class="b ok">✓ settled</span>' : '') +
+              (c.invite && !state.wheelOnly ? '<span class="b words">table invited</span>' : '') +
+              (c.hasWords && !state.wheelOnly ? '<span class="b words">custom alert</span>' : '') +
+              (c.flag && !state.wheelOnly ? '<span class="b flag">⚑ reads table-wide</span>' : '') +
+              (c.wheelAimed && state.wheelOnly ? '<span class="b flag">⚑ still points at somebody</span>' : '') +
+              (done ? '<span class="b ok">✓ settled</span>' : '') +
             '</div>' +
             '<p class="ctext">' + esc(c.text) + '</p>' +
-            (c.wheelWord && state.wheelOnly
-              ? '<p class="wheelnote"><b>Off the wheel:</b> everyone but the exempt player does ' +
-                'this — but it is written pointing at somebody else. Needs its own wheel wording.</p>'
+            // In the wheel pass the card's own words are only the starting
+            // point; what's under review is the line below them.
+            (state.wheelOnly
+              ? (c.wheelText
+                  ? '<p class="wheelnote"><b>On the wheel:</b> ' + esc(c.wheelText) + '</p>'
+                  : '<p class="wheelnote"><b>On the wheel:</b> unchanged — it already reads as an ' +
+                    'instruction to you.</p>')
               : '') +
-            (c.settled ? '<p class="verdict">' + esc(c.settled) + '</p>' : '') +
+            (done ? '<p class="verdict">' + esc(done) + '</p>' : '') +
           '</div>';
         sec.appendChild(el);
       });
