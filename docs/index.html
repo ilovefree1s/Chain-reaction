@@ -228,6 +228,14 @@
 
   .hint { color: var(--sage); margin: 0 0 12px; }
 
+  /* A locked hole two phones disagree on. Flags, never fixes: no phone referees. */
+  .dispute { border: 2px solid var(--attack); border-radius: 14px; padding: 12px 14px;
+             margin-bottom: 10px; background: #130507; }
+  .dispute .dtitle { font-size: 12px; font-weight: 900; letter-spacing: 2px;
+                     color: var(--attack); text-transform: uppercase; margin-bottom: 6px; }
+  .dispute .dline { color: var(--off); font-weight: 700; }
+  .dispute .dhint { color: var(--sage); font-size: 14px; margin-top: 6px; }
+
   /* ---- live alerts: somebody played a card ---- */
   /* z 30: alerts outrank every modal — the wheel can wait, an attack can't. */
   .alerts { position: fixed; top: calc(10px + env(safe-area-inset-top)); left: 12px;
@@ -879,8 +887,27 @@ function liveHello() {
     characterId: state && state.characters
       ? state.characters[state.meIndex]
       : settings.myCharacter,
-    handCount: state ? state.hand.length : null
+    handCount: state ? state.hand.length : null,
+    locks: helloLocks()
   });
+}
+
+/* My locked rows, keyed by hole then player name — the key both sides share.
+   Riding every hello rather than a one-shot lock message makes comparison
+   self-healing: a reloaded phone rebuilds everyone's reports inside one hello
+   cycle, and an unlock-and-fix clears a flag the same way it raised it. */
+function helloLocks() {
+  if (!state) return null;
+  var out = {};
+  for (var h = 0; h < state.holeCount; h++) {
+    if (!state.locked[h]) continue;
+    var row = {};
+    state.players.forEach(function (n, i) {
+      row[n.trim().toLowerCase()] = state.scores[h][i];
+    });
+    out[h] = row;
+  }
+  return out;
 }
 
 function liveHear(p) {
@@ -889,6 +916,7 @@ function liveHear(p) {
     name: typeof p.name === "string" ? p.name : "",
     characterId: typeof p.characterId === "number" ? p.characterId : null,
     handCount: typeof p.handCount === "number" ? p.handCount : null,
+    locks: (p.locks && typeof p.locks === "object") ? p.locks : null,
     at: Date.now()
   };
   liveSeat(live.peers[p.id]);
@@ -945,6 +973,25 @@ function liveHandFor(s, p) {
     if (peers[i].name.trim().toLowerCase() === name) return peers[i].handCount;
   }
   return null;
+}
+
+/* Where my card and another phone's card disagree on a hole both have locked.
+   Compared at render time from the latest hellos — nothing is stored beyond
+   them, and nothing is ever merged: the flag is the entire feature. */
+function scoreDisputes(s, h) {
+  var out = [];
+  if (!live || !s.locked[h]) return out;
+  livePeers().forEach(function (peer) {
+    var theirs = peer.locks && peer.locks[h];
+    if (!theirs) return;
+    s.players.forEach(function (name, i) {
+      var t = theirs[name.trim().toLowerCase()];
+      if (typeof t === "number" && t !== s.scores[h][i]) {
+        out.push({ player: name, mine: s.scores[h][i], theirs: t, phone: peer.name });
+      }
+    });
+  });
+  return out;
 }
 
 /* Live updates redraw whatever is on screen, but never out from under a finger:
@@ -1615,7 +1662,18 @@ function renderScore() {
         ? 'Already dealt &mdash; locking again gives no new cards.'
         : 'Locking gives you ' + drawForHole(s, h) + ' card(s).') + '</p>';
 
-  return head + players + lockBlock;
+  var disputes = scoreDisputes(s, h);
+  var disputeBlock = disputes.length
+    ? '<div class="dispute"><div class="dtitle">Scorecards disagree</div>' +
+      disputes.map(function (d) {
+        return '<div class="dline">' + esc(d.player) + ': you have ' + d.mine +
+          ', ' + esc(d.phone) + '&rsquo;s phone has ' + d.theirs + '</div>';
+      }).join("") +
+      '<div class="dhint">Nobody&rsquo;s card gets overwritten &mdash; settle it out ' +
+      'loud, then whoever is wrong unlocks and fixes it.</div></div>'
+    : "";
+
+  return head + players + disputeBlock + lockBlock;
 }
 
 /* ---------- results ----------
