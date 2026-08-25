@@ -2388,24 +2388,24 @@ function renderFaceModal() {
     if (playTarget === c.id) {
       // Who it landed on. Only asked for cards aimed at somebody — self and group
       // cards have no one to name.
+      // A whole-table card offers exactly one target — everyone. The picker
+      // survives as the confirm step; single names would just invite mis-taps
+      // on a card that can't aim at one person anyway.
       acts = '<p class="confirmq" style="text-align:center">Play ' + esc(c.name) + ' on&hellip;</p>' +
         '<div style="margin-top:10px">' +
-        state.players.map(function (name, i) {
-          return (i === state.meIndex || !name.trim()) ? "" :
-            '<button class="big primary" data-act="playOn" data-t="' + esc(name) +
-            '" data-i="' + c.id + '">' + esc(name) + "</button>";
-        }).join("") +
-        // A favour can be your own: gifts and duals may land on you. No data-t, so the
-        // tally stays a record of who you aim at rather than putting you top of it.
-        (playableOnSelf(c.kind)
-          ? '<button class="big quiet" data-act="playOn" data-i="' + c.id + '">Myself</button>'
-          : "") +
-        // A table-wide card fires at everyone from here. No cancel button of
-        // its own — Close below already does that job.
         (playableOnAll(c.id)
           ? '<button class="big primary" data-act="playOn" data-t="' + ALL_TARGET +
             '" data-i="' + c.id + '">All players</button>'
-          : "") +
+          : state.players.map(function (name, i) {
+              return (i === state.meIndex || !name.trim()) ? "" :
+                '<button class="big primary" data-act="playOn" data-t="' + esc(name) +
+                '" data-i="' + c.id + '">' + esc(name) + "</button>";
+            }).join("") +
+            // A favour can be your own: gifts and duals may land on you. No data-t, so the
+            // tally stays a record of who you aim at rather than putting you top of it.
+            (playableOnSelf(c.kind)
+              ? '<button class="big quiet" data-act="playOn" data-i="' + c.id + '">Myself</button>'
+              : "")) +
         '</div>';
     } else if (confirmDiscard === c.id) {
       acts = '<p class="confirmq" style="text-align:center">Discard ' + esc(c.name) + '?</p>' +
