@@ -27,8 +27,8 @@ import com.chainreaction.data.CardDeck
 import com.chainreaction.data.Rules
 
 /**
- * The price of spinning the Double Wheel off your own bat: [Rules.WHEEL_COST] cards
- * out of your hand, and you choose which. Playing the Double Wheel card skips this entirely —
+ * The price of spinning the GAMBLE WHEEL!! off your own bat: [Rules.WHEEL_COST] cards
+ * out of your hand, and you choose which. Playing the GAMBLE WHEEL!! card skips this entirely —
  * that card's whole text is a free spin, so the card itself is the payment.
  *
  * Deliberately a deliberate act: the wheel is the most dramatic thing in the game and
@@ -63,7 +63,7 @@ fun WheelCostSheet(
 
             Text(
                 "Pick ${Rules.WHEEL_COST} cards to discard, then spin. " +
-                    "Playing Double Wheel instead gives you a free spin.",
+                    "Playing GAMBLE WHEEL!! instead gives you a free spin.",
                 color = NeonBody,
                 fontSize = 16.sp,
                 modifier = Modifier.padding(bottom = 14.dp),

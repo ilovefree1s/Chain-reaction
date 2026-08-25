@@ -62,8 +62,8 @@ UDisc-style. All four players are tracked on every phone so nobody miscounts or 
 - Each card has **Play** and **Discard** — both move it to the discard pile. (Play exists so the action reads naturally; there's no functional difference.)
 - A badge on the Hand tab showing how many cards are owed.
 
-### 4. Double Wheel (modal, launched from Hand)
-The Double Wheel card’s mechanic. Two-stage reveal, in this order:
+### 4. GAMBLE WHEEL!! (modal, launched from Hand)
+The GAMBLE WHEEL!! card’s mechanic. Two-stage reveal, in this order:
 1. Spin a random card from the deck's 52 — **reveal the effect first**.
 2. Then spin a wheel of the four player names.
 
@@ -107,7 +107,7 @@ Suggested palette: deep pine ground (`#0C1A14`), panels (`#132A21`), muted sage 
   "maxCardsOnOnePlayerPerHole": 2,
   "wheelCost": 2,
   "freeSpinCard": 23,
-  "wheelExcludes": [1, 4, 6, 7, 10, 12, 13, 14, 20, 21, 22, 23, 24, 25, 28, 30, 31, 32, 35, 37, 39, 44, 46, 49, 52, 55, 58],
+  "wheelExcludes": [1, 4, 6, 7, 12, 13, 14, 20, 21, 22, 23, 24, 25, 28, 30, 31, 32, 35, 37, 39, 44, 46, 49, 52, 55, 58],
   "timings": [
     "Before shot",
     "Before tee shot",
@@ -145,7 +145,7 @@ Suggested palette: deep pine ground (`#0C1A14`), panels (`#132A21`), muted sage 
     { "id": 20, "timing": "Before tee shot", "kind": "attack", "name": "Do Not Pass Go", "text": "Whoever has the shortest drive on the next hole gets no cards for that hole." },
     { "id": 21, "timing": "After throw", "kind": "dual", "name": "Doesn't Look OB to Me", "text": "Play on a shot that just went OB. Instead of actually being OB (or in a hazard) they can just play it where it lies, with no penalty at all." },
     { "id": 22, "timing": "After throw · secret", "kind": "self", "name": "Don't Nice Me!", "text": "If any player says any form of \"nice\" as your disc is in flight and it hits a tree, you can move to where your disc landed and throw again for a free stroke." },
-    { "id": 23, "timing": "Before tee shot", "kind": "group", "name": "Double Wheel", "text": "Free spin on the Double Wheel. The name doesn't matter — you choose who gets the benefit or the punishment." },
+    { "id": 23, "timing": "Before tee shot", "kind": "group", "name": "GAMBLE WHEEL!!", "text": "Free spin on the GAMBLE WHEEL!! The name doesn't matter — you choose who gets the benefit or the punishment." },
     { "id": 24, "timing": "Before shot", "kind": "attack", "name": "Easily Distracted?", "text": "Everyone can do anything they want to distract a player while they are about to putt." },
     { "id": 25, "timing": "After a hole", "kind": "self", "name": "FIVE FOR YOU, YOU, AND YOU!", "text": "Play after you birdie a hole nobody else birdied. Everyone else owes five dollars to the pot!" },
     { "id": 26, "timing": "After throw", "kind": "self", "name": "Foot Wedge!", "text": "Move your own lie up to 10 paces (30 ft) in any direction." },
@@ -190,7 +190,7 @@ Suggested palette: deep pine ground (`#0C1A14`), panels (`#132A21`), muted sage 
 - Start a round, score 3 holes, force-quit the app, reopen — round state, hand, deck and discard all restored.
 - Come last on a hole → 2 cards owed. Tie for last → still 2. Everyone ties → 1. Win the hole → 0. Double bogey → +1 on top of any of these.
 - Sit on a full hand for several holes without drawing → the owed count never banks up; each hole's deal replaces the last one's leftovers.
-- Tap "Spin the Double Wheel" → asked to pick 2 cards to discard first. Holding fewer than 2 → the button is disabled. Playing Double Wheel → the wheel opens with nothing else discarded, straight onto the effect wheel with no name spin.
+- Tap "Spin the GAMBLE WHEEL!!" → asked to pick 2 cards to discard first. Holding fewer than 2 → the button is disabled. Playing GAMBLE WHEEL!! → the wheel opens with nothing else discarded, straight onto the effect wheel with no name spin.
 - Hold 7 cards, come last, try to draw → blocked with a clear message until a card is discarded.
-- Spin the Double Wheel 30 times → no blacklisted card (1, 4, 6, 7, 9, 11, 14, 15, 16, 21, 22, 23, 24, 25, 26, 27, 28, 31, 33, 34, 35, 36, 39, 41, 43, 45, 48, 50, 55, 56, 59) ever appears.
+- Spin the GAMBLE WHEEL!! 30 times → no blacklisted card (1, 4, 6, 7, 9, 11, 14, 15, 16, 21, 22, 23, 24, 25, 26, 27, 28, 31, 33, 34, 35, 36, 39, 41, 43, 45, 48, 50, 55, 56, 59) ever appears.
 - Play through 18 holes drawing 2 every hole → deck reshuffles from discard without erroring.

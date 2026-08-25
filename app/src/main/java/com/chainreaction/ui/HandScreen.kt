@@ -112,11 +112,11 @@ fun HandScreen(
 
         item {
             // The wheel is no longer free: it costs cards, and you can't pay what
-            // you don't hold. The Double Wheel card is the way round that.
+            // you don't hold. The GAMBLE WHEEL!! card is the way round that.
             val canAfford = state.hand.size >= Rules.WHEEL_COST
             Column {
                 NeonBlueButton(
-                    "Spin the Double Wheel  (${Rules.WHEEL_COST} cards)",
+                    "Spin the GAMBLE WHEEL!!  (${Rules.WHEEL_COST} cards)",
                     enabled = canAfford,
                     onClick = onOpenWheel,
                 )
@@ -124,7 +124,7 @@ fun HandScreen(
                     Spacer(Modifier.height(8.dp))
                     Text(
                         "Spinning costs ${Rules.WHEEL_COST} cards and you're holding " +
-                            "${state.hand.size}. Playing Double Wheel spins for free.",
+                            "${state.hand.size}. Playing GAMBLE WHEEL!! spins for free.",
                         color = NeonBody,
                         fontSize = 16.sp,
                     )

@@ -45,11 +45,11 @@ object Rules {
     const val MAX_PLAYERS = 5
     const val DEFAULT_PAR = 3
 
-    /** Cards you pay to spin the Double Wheel off your own bat. */
+    /** Cards you pay to spin the GAMBLE WHEEL!! off your own bat. */
     const val WHEEL_COST = 2
 
     /**
-     * The Double Wheel card — its whole text is a free spin, so playing it opens the wheel
+     * The GAMBLE WHEEL!! card — its whole text is a free spin, so playing it opens the wheel
      * without the usual [WHEEL_COST]. The card itself is the payment.
      */
     const val FREE_SPIN_CARD = 23
@@ -57,7 +57,7 @@ object Rules {
     // The house blacklist: reaction cards plus everything too situational,
     // too group-shaped or too slow to land as a wheel result — and the Double
     // Wheel itself, so the wheel can never demand another wheel.
-    val WHEEL_EXCLUDES = setOf(1, 4, 6, 7, 10, 12, 13, 14, 20, 21, 22, 23, 24, 25, 28, 30, 31, 32, 35, 37, 39, 44, 46, 49, 52, 55, 58)
+    val WHEEL_EXCLUDES = setOf(1, 4, 6, 7, 12, 13, 14, 20, 21, 22, 23, 24, 25, 28, 30, 31, 32, 35, 37, 39, 44, 46, 49, 52, 55, 58)
 
     /** Display order for the rules reference. */
     val TIMINGS = listOf(
@@ -100,7 +100,7 @@ object CardDeck {
         GameCard(20, "Before tee shot", CardKind.ATTACK, "Do Not Pass Go", "Whoever has the shortest drive on the next hole gets no cards for that hole."),
         GameCard(21, "After throw", CardKind.DUAL, "Doesn't Look OB to Me", "Play on a shot that just went OB. Instead of actually being OB (or in a hazard) they can just play it where it lies, with no penalty at all."),
         GameCard(22, "After throw · secret", CardKind.SELF, "Don't Nice Me!", "If any player says any form of \"nice\" as your disc is in flight and it hits a tree, you can move to where your disc landed and throw again for a free stroke."),
-        GameCard(23, "Before tee shot", CardKind.GROUP, "Double Wheel", "Free spin on the Double Wheel. The name doesn't matter — you choose who gets the benefit or the punishment."),
+        GameCard(23, "Before tee shot", CardKind.GROUP, "GAMBLE WHEEL!!", "Free spin on the GAMBLE WHEEL!! The name doesn't matter — you choose who gets the benefit or the punishment."),
         GameCard(24, "Before shot", CardKind.ATTACK, "Easily Distracted?", "Everyone can do anything they want to distract a player while they are about to putt."),
         GameCard(25, "After a hole", CardKind.SELF, "FIVE FOR YOU, YOU, AND YOU!", "Play after you birdie a hole nobody else birdied. Everyone else owes five dollars to the pot!"),
         GameCard(26, "After throw", CardKind.SELF, "Foot Wedge!", "Move your own lie up to 10 paces (30 ft) in any direction."),
@@ -140,7 +140,7 @@ object CardDeck {
 
     private val byId: Map<Int, GameCard> = ALL.associateBy { it.id }
 
-    /** The wheel pool for the Double Wheel card. Excludes the reaction cards. */
+    /** The wheel pool for the GAMBLE WHEEL!! card. Excludes the reaction cards. */
     val WHEEL_POOL: List<GameCard> = ALL.filter { it.id !in Rules.WHEEL_EXCLUDES }
 
     fun card(id: Int): GameCard = byId.getValue(id)

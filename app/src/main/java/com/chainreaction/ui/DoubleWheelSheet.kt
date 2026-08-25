@@ -53,13 +53,13 @@ private const val SPIN_MS = 3600
 private val SpinEasing = CubicBezierEasing(0.12f, 0.8f, 0.08f, 1f)
 
 /**
- * The Double Wheel card’s mechanic, staged on actual wheels. The name spins first: the group
+ * The GAMBLE WHEEL!! card’s mechanic, staged on actual wheels. The name spins first: the group
  * learns who's exempt before anyone knows what they're exempt from. Once the
  * name lands its wheel gives way to the verdict line, so the effect wheel is on
  * screen without scrolling. That wheel carries the entire pool — every card not
  * on the house blacklist — so what you see is exactly what can hit.
  *
- * [freeSpin] is the spin you get from playing the Double Wheel card rather than paying for one.
+ * [freeSpin] is the spin you get from playing the GAMBLE WHEEL!! card rather than paying for one.
  * That card says the name doesn't matter — the spinner hands out the result — so the
  * name wheel is skipped entirely rather than asking for a spin it just told you to
  * disregard.

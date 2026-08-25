@@ -266,15 +266,15 @@ Eight, all decided deliberately:
    card identity, and interim cards show neutral kind/timing tags instead.
 5. **Wheel order.** The spec spins the effect first, then the name. Reversed on request:
    the name lands first, so the table knows who is exempt before it learns what from.
-   (The Double Wheel card’s text has since been rewritten as a free spin, so nothing describes the
+   (The GAMBLE WHEEL!! card’s text has since been rewritten as a free spin, so nothing describes the
    old order anymore.)
 6. **Characters.** Not in the spec. A pickable face per player, added purely for
    personalisation — deliberately cosmetic, so the rules the group has to carry stay exactly
    as the spec describes them.
 7. **The wheel costs cards.** The Rules screen has always said "discard 58 cards to buy a
    spin", but nothing enforced it — the wheel was free and unlimited, which made the hand cap
-   beside the point. Tapping *Spin the Double Wheel* now asks which two cards to give up, and
-   the button is disabled when you're holding fewer than two. Playing Double Wheel still spins
+   beside the point. Tapping *Spin the GAMBLE WHEEL!!* now asks which two cards to give up, and
+   the button is disabled when you're holding fewer than two. Playing GAMBLE WHEEL!! still spins
    for free, since that card's whole text is a free spin — the card is the payment. That
    spin also skips the name wheel: that card says the name doesn’t matter and hands the choice to
    whoever spun, so asking for a spin the card just told you to disregard would be theatre.

@@ -33,7 +33,7 @@ const NO_SELF_CARDS = idList("NO_SELF_CARDS");
 const AIMED_CARDS = idList("AIMED_CARDS");
 const HAS_WORDS = [...new Set([...mapKeys("ALERT_TAUNTS"), ...mapKeys("ALERT_LINES")])];
 
-// The second wording, for when a card comes off the Double Wheel. Read whole
+// The second wording, for when a card comes off the wheel. Read whole
 // rather than by key, since the review is about the words themselves.
 function textMap(name) {
   const m = tpl.match(new RegExp("var " + name + "\\s*=\\s*\\{([\\s\\S]*?)\\n\\};"));
@@ -131,6 +131,8 @@ const WHEEL_SETTLED = {
   44: "Stays off the wheel. Playable from a hand only.",
   13: "Renamed Can I Borrow This? → \"Can I Borrow This Card?\" Stays off the wheel. Playable from a hand only.",
   2: "On the wheel: straddle putting starts once you're inside Circle 2, and runs for every putt from there.",
+  10: "Joins the wheel, and lets nobody off: the first player to make a putt sets it going, so the spun name means nothing. The screen says \"Nobody sits this one out\" instead of naming somebody.",
+  23: "Renamed Double Wheel → GAMBLE WHEEL!!, everywhere it appears — card, buttons, rules screen, spec.",
   57: "On the wheel: the exempt player marks the new tee and everyone else plays off it. No 2-disc requirement — that's the hand version.",
   56: "On the wheel: it sits on the whole table but only bites whoever misses inside C1 — the exempt player is safe either way.",
   54: "On the wheel: no C1 limit — everyone but the exempt player turbo putts their next putt from wherever they are.",
@@ -380,7 +382,7 @@ const html = `<title>Deck Audit — Chain Reaction</title>
     <p class="lede">All ${enriched.length} cards, grouped by kind. Pass one — how a card reads when you
       <b>play it</b> at the tee, and the <b>targeting the app derives from it</b> — is done.
       Pass two is live behind the <b>wheel</b> toggle, and every card is in it. ${wheelPool} can land
-      on the Double Wheel and carry the second wording they show there; the other
+      on the GAMBLE WHEEL!! and carry the second wording they show there; the other
       ${enriched.length - wheelPool} are held off it, each saying why. Reword one and it joins the
       pool — leave it out and that's a decision too.</p>
 

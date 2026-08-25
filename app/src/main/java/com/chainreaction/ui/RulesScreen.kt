@@ -109,8 +109,8 @@ private val sharedRules = listOf(
     HouseRule(
         NeonIcon.WHEEL,
         "Buy a spin",
-        "Discard ${Rules.WHEEL_COST} cards to buy a spin on the Double Wheel. Spin it from " +
-            "the Hand tab. Playing Double Wheel spins for free instead.",
+        "Discard ${Rules.WHEEL_COST} cards to buy a spin on the GAMBLE WHEEL!! Spin it from " +
+            "the Hand tab. Playing GAMBLE WHEEL!! spins for free instead.",
     ),
     HouseRule(
         NeonIcon.PEOPLE,

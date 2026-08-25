@@ -223,7 +223,7 @@ private fun DrawScope.drawNeonIcon(icon: NeonIcon) {
             drawPath(arrow, NeonIce)
         }
         NeonIcon.WHEEL -> {
-            // A spoked wheel — the Double Wheel's marker.
+            // A spoked wheel — the GAMBLE WHEEL!!'s marker.
             drawCircle(NeonIce, radius = w * 0.42f, center = Offset(w * 0.5f, h * 0.5f), style = stroke)
             drawCircle(NeonIce, radius = w * 0.08f, center = Offset(w * 0.5f, h * 0.5f))
             line(0.5f, 0.5f, 0.5f, 0.10f)

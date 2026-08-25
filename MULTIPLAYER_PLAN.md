@@ -89,7 +89,7 @@ him — the two apps have separate storage.
 - Screen-level choices, better made with something on screen: where create/join
   lives, what the alert says and whether it needs acknowledging, whether group and
   sabotage cards announce to the whole table, where the discrepancy badge sits, and
-  ~~whether the Double Wheel result broadcasts as a table-wide moment.~~ (Built
+  ~~whether the GAMBLE WHEEL!! result broadcasts as a table-wide moment.~~ (Built
   2026-08-25: it does — one hot alert to every phone naming the spinner, the
   card, the good/bad half, and who's exempt.)
 

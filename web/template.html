@@ -1273,8 +1273,8 @@ function playableOnSelf(kind) {
 /*
  * Dual covers two shapes: cards that spell out both halves ("On yourself: … On
  * another player: …"), and plain favours that simply may land on you. Only the
- * first kind has a good and a bad version, which is what the Double Wheel's
- * third spin decides — so it asks the card's own words rather than its kind.
+ * first kind has a good and a bad version, which is what the wheel's third spin
+ * decides — so it asks the card's own words rather than its kind.
  * Read from the text so a new card behaves correctly the day it is written.
  */
 function hasTwoHalves(c) {
@@ -1346,7 +1346,7 @@ var ALERT_LINES = {
 };
 
 /*
- * How a card reads on the Double Wheel, which is a different sentence from how
+ * How a card reads on the wheel, which is a different sentence from how
  * it reads in your hand. In hand you point a card at somebody; on the wheel
  * everybody but the exempt player carries it out at once, so "force an opponent
  * to straddle putt" has to become "straddle putt every putt this hole."
@@ -1366,12 +1366,21 @@ var ALERT_LINES = {
  * one after this text is already on screen. Anything already written as a plain
  * instruction to you — Foot Wedge, GAMBLE! — needs no entry and gets none.
  */
+/* Cards that carry their own trigger — whoever does the thing sets the rest of
+   the table off — so the spun name means nothing and the screen says so rather
+   than promising somebody an exemption the card never gives them. */
+var IGNORES_EXEMPT = [
+  10,  // Big Putted! — the first player to make a putt starts it, and that can be anyone
+];
+function ignoresExempt(id) { return IGNORES_EXEMPT.indexOf(id) !== -1; }
+
 var WHEEL_TEXT = {
   2:  "Once you're inside Circle 2, every putt you take is a straddle putt.",
   3:  "Good half: use an aerobie for your drive. Bad half: drive with the aerobie using your off hand. Normal stroke either way.",
   5:  "Throw a mini for your next drive or putt — it applies until you do one or the other. Minis that fall through the basket still count as in.",
   8:  "[chooser] picks a disc out of any bag for each of you. That's what you tee off with on the next hole.",
   9:  "[chooser] moves your next lie up to 10 paces (30 ft) in any direction, as long as it isn't out of bounds.",
+  10: "The first player to make a PUTT Big Putts everyone — everyone else has to use their left hand on their next putt! Must putt in correct distance order.",
   11: "Everyone but [exempt] must drive with a putter and putt with a driver this hole.",
   15: "Everyone but [exempt] throws a tomahawk on their drive or approach.",
   16: "Everyone but [exempt] takes their next putt with their eyes closed.",
@@ -2055,19 +2064,19 @@ function renderHand() {
 
 /*
  * The wheel is no longer free: it costs cards, and you can't pay what you don't hold.
- * Playing the Double Wheel card is the way round that — its whole text is a free spin.
+ * Playing the GAMBLE WHEEL!! card is the way round that — its whole text is a free spin.
  */
 function canAffordWheel(s) { return s.hand.length >= DATA.wheelCost; }
 
 function wheelButton() {
   var s = state;
-  var label = "Spin the Double Wheel (" + DATA.wheelCost + " cards)";
+  var label = "Spin the GAMBLE WHEEL!! (" + DATA.wheelCost + " cards)";
   if (canAffordWheel(s)) {
     return '<button class="big wheel" data-act="openWheel">' + label + "</button>";
   }
   return '<button class="big wheel" disabled>' + label + "</button>" +
     '<p class="hint">Spinning costs ' + DATA.wheelCost + ' cards and you\'re holding ' +
-    s.hand.length + '. Playing Double Wheel spins for free.</p>';
+    s.hand.length + '. Playing GAMBLE WHEEL!! spins for free.</p>';
 }
 
 /* The price of a spin: pick which cards leave your hand. */
@@ -2085,7 +2094,7 @@ function renderWheelCost() {
     '<div class="nheader"><button class="back" data-act="payCancel">&lsaquo;&nbsp; Back</button>' +
     "<h1>SPIN COSTS " + DATA.wheelCost + "</h1></div>" +
     '<p class="nbody" style="margin:0 0 14px">Pick ' + DATA.wheelCost +
-    " cards to discard, then spin. Playing Double Wheel instead gives you a free spin.</p>" +
+    " cards to discard, then spin. Playing GAMBLE WHEEL!! instead gives you a free spin.</p>" +
     '<div class="handgrid">' + tiles + "</div>" +
     '<p class="hint"' + (ready ? ' style="color:#FF8A1E"' : "") + ">" +
     wheelPay.length + " of " + DATA.wheelCost + " chosen</p>" +
@@ -2095,7 +2104,7 @@ function renderWheelCost() {
 }
 
 /*
- * Build the wheel and show it. Reached either by paying, or free off the Double Wheel card —
+ * Build the wheel and show it. Reached either by paying, or free off the GAMBLE WHEEL!! card —
  * and a free spin skips the name stage entirely, starting where a paid one arrives
  * after its first wheel.
  */
@@ -2192,7 +2201,7 @@ var SHARED_RULES = [
   ["seven", "Hand cap", "7 cards. You cannot draw past it — discard first."],
   ["deck", "Your own deck", "Every player shuffles their own " + CARDS.length + "-card deck. Duplicates across players are expected and fine. This phone only tracks your deck."],
   ["recycle", "Discard", "Played and discarded cards go to your own discard pile. If your deck runs out, the discard is reshuffled back in."],
-  ["wheel", "Buy a spin", "Discard " + DATA.wheelCost + " cards to buy a spin on the Double Wheel. Spin it from the Hand tab. Playing Double Wheel spins for free instead."],
+  ["wheel", "Buy a spin", "Discard " + DATA.wheelCost + " cards to buy a spin on the GAMBLE WHEEL!! Spin it from the Hand tab. Playing GAMBLE WHEEL!! spins for free instead."],
   ["people", "Two per player, per hole", "At most 2 cards may be played on any one player per hole. The app does not enforce this — track it yourselves."],
   ["gift", "Yourself or somebody else", "A dual card can be played on you. Nothing says a favour has to go to another player."],
   ["scales", "The app doesn't referee", "It deals cards and keeps score. It never applies card effects or stroke penalties. Cards that rewrite scores get entered by hand with the ± steppers."]
@@ -2610,7 +2619,7 @@ function renderWheel() {
 
   // No title block, and the name stage collapses to one orange verdict line
   // once the name lands — said once, cleanly, up top. A free spin has no name
-  // stage at all: the Double Wheel card says the name doesn't matter, so asking for a spin
+  // stage at all: the GAMBLE WHEEL!! card says the name doesn't matter, so asking for a spin
   // it just told you to disregard would be theatre.
   var html = '<div class="modal">';
   if (!nameSettled && !free) {
@@ -2624,9 +2633,14 @@ function renderWheel() {
   }
   var cardSettled = stage === "cardDone" || stage === "done";
   if (nameSettled) {
-    html += '<div class="exempt">' + (free
-      ? "Free spin &mdash; the name doesn't matter"
-      : esc(wheel.name) + " is exempt") + '</div>';
+    // A few cards run on their own trigger and let nobody off, so once one of
+    // them lands the name that was spun stops meaning anything.
+    var noExempt = cardSettled && ignoresExempt(wheel.card.id);
+    html += '<div class="exempt">' + (noExempt
+      ? "Nobody sits this one out"
+      : free
+        ? "Free spin &mdash; the name doesn't matter"
+        : esc(wheel.name) + " is exempt") + '</div>';
     // Like the name wheel, the effect wheel collapses to its result — the
     // card — once it lands, keeping the sheet one screen tall.
     if (!cardSettled) {
@@ -2661,6 +2675,8 @@ function renderWheel() {
           : esc(wheel.name) + (wheel.fateGood
             ? ' sits this one out. Everyone else takes the good half.'
             : ' sits this one out. Everyone else takes the bad half.')) + '</p>';
+    } else if (ignoresExempt(wheel.card.id)) {
+      html += '<p>The card sets its own trigger. Every player is in it, spun name included.</p>';
     } else {
       html += '<p>' + (free
         ? 'You choose who gets the benefit or the punishment.'
@@ -2784,7 +2800,7 @@ function resolveCard(s, id, played, target) {
   if (played && live) {
     liveCast("play", { name: s.players[s.meIndex], card: id, target: target || null });
   }
-  // The Double Wheel card IS the spin — playing it opens the wheel with no further
+  // The GAMBLE WHEEL!! card IS the spin — playing it opens the wheel with no further
   // cost, which is exactly what its text promises.
   if (played && id === DATA.freeSpinCard) openWheelNow(true);
 }

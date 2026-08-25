@@ -261,7 +261,7 @@ private fun Round(
     var wheelOpen by remember { mutableStateOf(false) }
     // Between tapping Spin and the wheel appearing: choosing which cards to pay with.
     var payingForWheel by remember { mutableStateOf(false) }
-    // A spin off the Double Wheel card skips the name wheel — that card hands the choice to you.
+    // A spin off the GAMBLE WHEEL!! card skips the name wheel — that card hands the choice to you.
     var wheelIsFree by remember { mutableStateOf(false) }
 
     // Results take over the Score tab once every hole is locked. Reopening the scorecard
@@ -328,7 +328,7 @@ private fun Round(
                     onDraw = vm::draw,
                     onResolve = { id, played, target ->
                         vm.resolveCard(id, played, target)
-                        // The Double Wheel card IS the spin — playing it opens the wheel with no
+                        // The GAMBLE WHEEL!! card IS the spin — playing it opens the wheel with no
                         // further cost, which is exactly what its text promises.
                         if (id == Rules.FREE_SPIN_CARD) {
                             wheelIsFree = true

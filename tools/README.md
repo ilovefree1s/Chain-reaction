@@ -40,7 +40,7 @@ bumps `SCHEMA_VERSION`, since a saved round holds ids that now mean different
 cards. `shift-settled.js` does the same to the audit's decision keys.
 
 Then check the renumbering landed on the right cards rather than trusting it:
-open the app and confirm the free spin still points at Double Wheel and the
+open the app and confirm the free spin still points at GAMBLE WHEEL!! and the
 "all players" list still names the cards you expect.
 
 ## After any wording change
