@@ -141,6 +141,20 @@ const KIND_ORDER = ["attack", "self", "dual", "react", "group", "sabotage"];
 
 const excluded = new Set(data.wheelExcludes);
 
+/*
+ * Why a card is off the wheel today. Structural reasons are read from the card
+ * itself; the rest were a judgement call in the original spec and say so,
+ * rather than having a reason invented for them after the fact.
+ */
+function whyExcluded(c) {
+  if (c.id === data.freeSpinCard) return "It is the wheel — a spin can't demand another spin.";
+  if (c.kind === "react") return "A reaction has nothing to react to when it comes off a spin.";
+  if (PLAY_ON_ALL.includes(c.id)) return "Already lands on the whole table when it's played.";
+  if (c.kind === "group") return "Group card — it already involves everybody.";
+  if (c.kind === "sabotage") return "Sabotage — it plays itself the moment you draw it.";
+  return "A house call in the original spec. No reason was written down.";
+}
+
 function targetOf(c) {
   if (PLAY_ON_ALL.includes(c.id)) return { label: "Whole table", cls: "all" };
   if (AIMED.has(c.kind) || AIMED_CARDS.includes(c.id)) {
@@ -166,7 +180,10 @@ const enriched = data.cards.map(c => {
     // is itself a decision to make rather than assume.
     wheelText: WHEEL_TEXT[c.id] || null,
     wheelSettled: WHEEL_SETTLED[c.id] || null,
-    wheelWord: onWheel && !WHEEL_SETTLED[c.id],
+    // Every card is in the wheel pass, excluded ones included: staying off the
+    // wheel is a decision to take, not a decision already taken.
+    wheelWord: !WHEEL_SETTLED[c.id],
+    why: onWheel ? null : whyExcluded(c),
     // Still pointed at somebody else — a hint that the wheel wording is missing.
     wheelAimed: onWheel && !WHEEL_TEXT[c.id] && AIMED_RE.test(c.text),
     flag: !settled && !PLAY_ON_ALL.includes(c.id) && TABLE_RE.test(c.text),
@@ -178,7 +195,7 @@ const remaining = enriched.length - settledCount;
 const flagged = enriched.filter(c => c.flag).length;
 const wheelWork = enriched.filter(c => c.wheelWord).length;
 const wheelPool = enriched.filter(c => c.onWheel).length;
-const wheelSettledCount = wheelPool - wheelWork;
+const wheelSettledCount = enriched.length - wheelWork;
 
 const html = `<title>Deck Audit — Chain Reaction</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -312,6 +329,10 @@ const html = `<title>Deck Audit — Chain Reaction</title>
     color: var(--ice); background: color-mix(in srgb, var(--ice) 8%, transparent);
     border: 1px solid color-mix(in srgb, var(--ice) 28%, var(--edge-soft)); max-width: 68ch; }
   .wheelnote b { color: var(--off); font-weight: 700; }
+  /* Held off the wheel reads as a held decision, not a live wording. */
+  .wheelnote.off { color: var(--dim);
+    background: color-mix(in srgb, var(--dim) 7%, transparent);
+    border-color: var(--edge-soft); }
 
   .empty { text-align: center; color: var(--dim); padding: 60px 0;
     font-family: "JetBrains Mono", monospace; letter-spacing: 1px; }
@@ -327,13 +348,14 @@ const html = `<title>Deck Audit — Chain Reaction</title>
     <h1>Every card, <span class="u">both ways round</span></h1>
     <p class="lede">All ${enriched.length} cards, grouped by kind. Pass one — how a card reads when you
       <b>play it</b> at the tee, and the <b>targeting the app derives from it</b> — is done.
-      Pass two is live behind the <b>wheel</b> toggle: the ${wheelPool} cards that can land on the
-      Double Wheel, each with the second wording it shows there, where everyone but the exempt
-      player carries it out at once.</p>
+      Pass two is live behind the <b>wheel</b> toggle, and every card is in it. ${wheelPool} can land
+      on the Double Wheel and carry the second wording they show there; the other
+      ${enriched.length - wheelPool} are held off it, each saying why. Reword one and it joins the
+      pool — leave it out and that's a decision too.</p>
 
     <div class="tiles">
-      <div class="tile wheel"><b>${wheelWork}</b><span>Wheel words to review</span></div>
-      <div class="tile ok"><b>${wheelSettledCount}</b><span>Wheel words agreed</span></div>
+      <div class="tile wheel"><b>${wheelWork}</b><span>Wheel calls to review</span></div>
+      <div class="tile ok"><b>${wheelSettledCount}</b><span>Wheel calls agreed</span></div>
       <div class="tile"><b>${remaining}</b><span>Plays to review</span></div>
       <div class="tile ok"><b>${settledCount}</b><span>Plays settled</span></div>
     </div>
@@ -407,7 +429,6 @@ const html = `<title>Deck Audit — Chain Reaction</title>
     if (done && !state.showSettled && !state.q) return false;
     if (!state.kinds.has(c.kind)) return false;
     if (state.flagOnly && !c.flag) return false;
-    if (state.wheelOnly && !c.onWheel) return false;
     if (state.q) {
       const hay = (c.name + " " + c.text + " " + (c.wheelText || "")).toLowerCase();
       if (!hay.includes(state.q)) return false;
@@ -447,7 +468,7 @@ const html = `<title>Deck Audit — Chain Reaction</title>
               // Wheel facts stay out of the way until the wheel pass starts.
               (state.wheelOnly
                 ? (c.onWheel ? '<span class="b wheel">on the wheel</span>'
-                             : '<span class="b nowheel">wheel-excluded</span>')
+                             : '<span class="b nowheel">off the wheel</span>')
                 : '') +
               (c.twoHalves ? '<span class="b halves">good / bad halves</span>' : '') +
               (c.invite && !state.wheelOnly ? '<span class="b words">table invited</span>' : '') +
@@ -460,10 +481,13 @@ const html = `<title>Deck Audit — Chain Reaction</title>
             // In the wheel pass the card's own words are only the starting
             // point; what's under review is the line below them.
             (state.wheelOnly
-              ? (c.wheelText
-                  ? '<p class="wheelnote"><b>On the wheel:</b> ' + esc(c.wheelText) + '</p>'
-                  : '<p class="wheelnote"><b>On the wheel:</b> unchanged — it already reads as an ' +
-                    'instruction to you.</p>')
+              ? (!c.onWheel
+                  ? '<p class="wheelnote off"><b>Off the wheel:</b> ' + esc(c.why) +
+                    ' It can only be played from a hand. Reword it and it joins the pool.</p>'
+                  : c.wheelText
+                    ? '<p class="wheelnote"><b>On the wheel:</b> ' + esc(c.wheelText) + '</p>'
+                    : '<p class="wheelnote"><b>On the wheel:</b> unchanged — it already reads as an ' +
+                      'instruction to you.</p>')
               : '') +
             (done ? '<p class="verdict">' + esc(done) + '</p>' : '') +
           '</div>';
