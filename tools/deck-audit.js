@@ -130,6 +130,7 @@ const WHEEL_SETTLED = {
   32: "Stays off the wheel. Playable from a hand only.",
   13: "Renamed Can I Borrow This? → \"Can I Borrow This Card?\" Stays off the wheel. Playable from a hand only.",
   2: "On the wheel: straddle putting starts once you're inside Circle 2, and runs for every putt from there.",
+  33: "On the wheel: everyone but the exempt player drives off hand.",
   19: "Joins the wheel — first card taken off the blacklist. The exempt player picks the disc everyone else tees with. Close to Bag Raid on the wheel, but from your own bag and this hole rather than the next.",
   18: "On the wheel: it flips — the exempt player is the one being commentated, and everyone else has to call their shots. Written as \"anyone who forgets\" rather than \"any one of the 3\", since the table can be 3, 4 or 5.",
   17: "On the wheel: everyone but the exempt player is off the words for the hole. Kept the stroke penalty and the any-variation clause — without them there's nothing to enforce.",
