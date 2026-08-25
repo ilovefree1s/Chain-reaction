@@ -120,7 +120,7 @@ object CardDeck {
         GameCard(40, "After card", CardKind.REACT, "No Way", "Cancel any card just played. That card goes to the discard pile."),
         GameCard(41, "Before tee shot", CardKind.ATTACK, "New mando on this hole, bud.", "Choose a reasonable object the target player must pass on a side you specify."),
         GameCard(42, "Before tee shot", CardKind.SELF, "Not Today!", "Remove any and all card effects currently on you."),
-        GameCard(43, "Before tee shot", CardKind.ATTACK, "One Disc Wonder!", "Force an opponent to play the hole with only 1 DISC. You choose it."),
+        GameCard(43, "Before tee shot", CardKind.ATTACK, "One Disc Wonder!", "Force an opponent to play the hole with only 1 DISC this hole! (If someone already gave them an Aerobie or mini, that counts as their 1 disc.)"),
         GameCard(44, "Before tee shot", CardKind.ATTACK, "Over Sharer", "Give everyone a disc from your own bag to tee off with on this hole."),
         GameCard(45, "Before tee shot", CardKind.ATTACK, "Plant Your Feet!", "No run-up on an opponent's next throw."),
         GameCard(46, "Any time", CardKind.DUAL, "Player 2's Turn!", "On yourself: retake any shot for free. On another player: force them to re-throw a shot that was too good."),
