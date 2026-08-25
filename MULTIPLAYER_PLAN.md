@@ -1,7 +1,8 @@
 # Live match plan — four phones, one round
 
-Design settled 2026-08-24. Nothing built yet. This is the plan a future session
-should start from rather than re-deriving.
+Design settled 2026-08-24. Steps 1 and 2 built on the `multiplayer` branch and
+proven against real Supabase with a real phone in the room; steps 3-4 remain.
+This is the plan to build from rather than re-deriving.
 
 The goal: when somebody plays a card on you, your phone tells you. Everything else
 here exists to serve that.
@@ -100,10 +101,42 @@ half easy and the web half no easier, and produces two half-tables at one basket
 
 ## Build order
 
-1. The connection: join a room, see each other's hand counts. Proves the protocol
-   on four phones before anything is built on top of it.
-2. Card plays and the in-app alert.
-3. Score comparison at lock.
+1. ~~The connection: join a room, see each other's hand counts.~~ **Built.** Lives
+   entirely in `web/template.html` under "live room": a hand-rolled Phoenix
+   channel client, hellos every 15s with a 45s quiet timeout, silent reconnect
+   with 15s-capped backoff, wake lock, and hand counts as chips on the score
+   rows. Host/Join sits on Setup and the in-round Rules tab; peers arriving
+   during Setup seat themselves. The Supabase URL and anon key are the
+   `LIVE_URL`/`LIVE_KEY` constants at the top of that section — empty, every
+   live control hides. **Amended after the first phone test:** room codes were
+   built, worked, and were removed at the user's request — one friend group
+   needs one table, so everybody meets on the fixed `cr:lobby` channel and the
+   Host/Join buttons differ only in their waiting copy. If two simultaneous
+   groups ever become real, codes go back in at the `LIVE_ROOM` constant.
+2. ~~Card plays and the in-app alert.~~ **Built and proven phone-to-PC.** A play
+   broadcasts name, card and target; discards stay private beyond the hand
+   count. Aimed at you: hot pulsing banner, chain rattle, vibration, stays
+   until tapped. Anyone else: quiet banner, fades in 8s. Tapping a banner
+   opens the card's face. Deduped by event id for the day push becomes the
+   second delivery route.
+3. ~~Score comparison at lock.~~ **Built and proven phone-to-PC.** No lock
+   message: every hello carries the phone's locked rows keyed by hole and
+   player name, so comparison is self-healing across reloads and an
+   unlock-and-fix clears a flag the same way it raised it. Disagreements
+   show as a red panel on whatever hole is open — locking auto-advances, so
+   pinning the flag to its own hole meant nobody saw it (phone test) —
+   labeled by hole, tap to jump there. Nothing is merged; the flag is the
+   entire feature.
+
+   **Grew two companions during phone testing.** Corrections settle the deal:
+   deals record what they granted and which cards, every lock re-settles every
+   dealt hole (skins corrections re-price later holes), shortfalls deal out on
+   the spot, and over-deals send that hole's still-in-hand cards back on top
+   of the deck in original order. And fresh cards wait for the table: a
+   hole's newly dealt cards are un-playable (and can't buy spins) until every
+   phone in the lobby has locked that hole without disagreement — so a wrong
+   score's cards are always still in hand for the settlement to reclaim.
+   Discarding held cards stays legal; offline rounds have no hold at all.
 4. Push, which is its own project: keys, a subscriptions table, an Edge Function to
    send. This is the first server-side code and the first schema in the repo.
 

@@ -95,7 +95,12 @@
   }
   .row { display: flex; align-items: center; gap: 10px; }
   .grow { flex: 1 1 auto; min-width: 0; }
-  .num { width: 56px; text-align: center; font-size: 34px; font-weight: 900; }
+  /* 44, not 56: wide enough for a two-digit blow-up hole, and every pixel saved
+     here is a pixel the name beside it gets to keep. */
+  .num { width: 44px; text-align: center; font-size: 32px; font-weight: 900; }
+  /* − score + as one tight cluster: the row's 10px gap holds it off the name,
+     but inside it the three pieces sit nearly flush. */
+  .steps { display: flex; align-items: center; gap: 3px; }
 
   input[type=text] {
     width: 100%; min-height: var(--tap); background: var(--panel); color: var(--off);
@@ -128,6 +133,10 @@
   .player .name { font-size: 22px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .player.me .name { color: var(--self); }
   .rel { font-size: 15px; font-weight: 900; }
+  /* Live rounds only: what each player is holding, self-reported by their phone. */
+  .handct { font-size: 13px; font-weight: 900; color: #4DC3FF; background: #061022;
+            border: 1px solid var(--edge); border-radius: 6px; padding: 2px 7px;
+            margin-left: 6px; vertical-align: 2px; white-space: nowrap; }
   /* Under par cool blue, even quiet, over par hot orange — the palette does the talking. */
   .rel.under { color: var(--react); }
   .rel.even { color: var(--sage); }
@@ -218,6 +227,42 @@
   .card .acts button { flex: 1; margin: 0; }
 
   .hint { color: var(--sage); margin: 0 0 12px; }
+
+  /* A fresh card the table hasn't locked yet: in hand, visible, not yet playable. */
+  .heldtag { font-size: 10px; font-weight: 900; letter-spacing: 2px; color: #FF8A1E;
+             margin-bottom: 6px; }
+
+  /* A locked hole two phones disagree on. Flags, never fixes: no phone referees. */
+  .dispute { border: 2px solid var(--attack); border-radius: 14px; padding: 12px 14px;
+             margin-bottom: 10px; background: #130507; }
+  .dispute .dtitle { font-size: 12px; font-weight: 900; letter-spacing: 2px;
+                     color: var(--attack); text-transform: uppercase; margin-bottom: 6px; }
+  .dispute .dline { color: var(--off); font-weight: 700; }
+  .dispute .dhint { color: var(--sage); font-size: 14px; margin-top: 6px; }
+
+  /* ---- live alerts: somebody played a card ---- */
+  /* z 30: alerts outrank every modal — the wheel can wait, an attack can't. */
+  .alerts { position: fixed; top: calc(10px + env(safe-area-inset-top)); left: 12px;
+            right: 12px; z-index: 30; display: flex; flex-direction: column; gap: 8px;
+            pointer-events: none; }
+  .alert { pointer-events: auto; cursor: pointer; border: 2px solid transparent;
+           border-radius: 14px; padding: 10px 14px;
+           background: linear-gradient(#070B14, #070B14) padding-box,
+                       linear-gradient(100deg, #1E6FFF, #3FA9FF 45%, #FF8A1E) border-box;
+           box-shadow: 0 6px 24px rgba(0, 0, 0, .55), 0 0 14px rgba(30, 111, 255, .3); }
+  .alert .who { font-size: 12px; font-weight: 900; letter-spacing: 2px; color: #4DC3FF;
+                text-transform: uppercase; }
+  .alert .what { font-size: 20px; font-weight: 900; color: #F4F8FF; }
+  .alert .onwho { font-size: 14px; font-weight: 900; color: #A9B8D4; }
+  /* Aimed at you: the panel goes hot and breathes until you deal with it. */
+  .alert.you { background: linear-gradient(#130C05, #130C05) padding-box,
+                           linear-gradient(100deg, #FF8A1E, #F7791E) border-box;
+               animation: alertpulse 1.1s ease-in-out infinite alternate; }
+  .alert.you .who, .alert.you .onwho { color: #FF8A1E; }
+  @keyframes alertpulse {
+    from { box-shadow: 0 6px 24px rgba(0, 0, 0, .55), 0 0 10px rgba(247, 148, 30, .35); }
+    to   { box-shadow: 0 6px 24px rgba(0, 0, 0, .55), 0 0 26px rgba(247, 148, 30, .7); }
+  }
 
   .course { cursor: pointer; }
   .cname { font-size: 22px; font-weight: 700; }
@@ -687,6 +732,471 @@ function putSettings(next) {
 }
 var settings = loadSettings();
 
+/* ---------- live room ----------
+   Four phones, one round — see MULTIPLAYER_PLAN.md. The connection is decoration
+   over a scorecard that already works alone: with no keys below, no signal, or a
+   dead server, none of this runs and the round is exactly what it was.
+
+   The transport is Supabase Realtime spoken directly — a websocket, a channel
+   join, a heartbeat, broadcasts — rather than their client library. It is ~150
+   lines for the two features used, the repo stays free of third-party code, and
+   if the message format ever changes the round carries on locally, which is a
+   cheap failure to absorb. */
+
+/* The existing Supabase project (Settings -> API). The anon key ships in a
+   public page by design; the cr: channel namespace keeps rooms clear of
+   everything else in that project. Empty, every live control hides and the app
+   is exactly what it was before. */
+var LIVE_URL = "https://ljrnzpqepssnkidlcgha.supabase.co";
+var LIVE_KEY = "sb_publishable_DWik0p9owlUHmoh2v1U9lA_pDlntvoc";
+
+function liveConfigured() { return LIVE_URL !== "" && LIVE_KEY !== ""; }
+
+/* Say who you are every 15s; a phone silent for 45s goes quiet in the UI. The
+   slack between the two is deliberate — a phone pocketed for a throw must not
+   flicker out of the round. */
+var HELLO_MS = 15000, QUIET_MS = 45000, HEARTBEAT_MS = 25000;
+
+/* Who this phone is on the wire. Random once, kept forever: names can collide —
+   two phones may both say "Justin" — but ids must not, or one Justin's silence
+   would mute the other. */
+var MY_PEER_ID = (function () {
+  var key = "chainreaction.peer";
+  try {
+    var have = localStorage.getItem(key);
+    if (have) return have;
+  } catch (e) { /* fall through */ }
+  var fresh = Math.floor(Math.random() * 0xFFFFFFF).toString(36) +
+    Math.floor(Math.random() * 0xFFFFFFF).toString(36);
+  try { localStorage.setItem(key, fresh); } catch (e) { /* memory only */ }
+  return fresh;
+})();
+
+/* One table, no codes: it is one friend group, so everybody meets on the same
+   fixed channel. Hosting versus joining is presentational — the host opens the
+   lobby and says so, a joiner goes looking — but the wire is identical. Room
+   codes were built first and removed on request; if two simultaneous groups
+   ever become real, this is where a code would go back in. */
+var LIVE_ROOM = "lobby";
+
+/* Every event carries an id because alerts will arrive by two routes — the
+   channel and, later, push — and a repeat must cost nothing. */
+function eventId() {
+  return MY_PEER_ID + "." + Date.now().toString(36) + "." +
+    Math.floor(Math.random() * 1e9).toString(36);
+}
+
+var live = null;      // the open room, or null
+var liveSeen = {};    // event ids already handled, so the second route is a no-op
+
+function liveTopic() { return "realtime:cr:" + live.code; }
+
+function liveConnect(code) {
+  if (!liveConfigured()) return;
+  liveDisconnect();
+  live = { code: code, sock: null, joined: false, refN: 0, peers: {},
+           backoff: 1000, lastHeard: 0, closing: false,
+           hbTimer: null, sayTimer: null, retryTimer: null };
+  liveOpen();
+  keepAwake();
+}
+
+function liveOpen() {
+  var l = live;
+  if (!l) return;
+  var url = LIVE_URL.replace(/^http/, "ws") +
+    "/realtime/v1/websocket?apikey=" + encodeURIComponent(LIVE_KEY) + "&vsn=1.0.0";
+  var sock;
+  try { sock = new WebSocket(url); } catch (e) { liveRetry(); return; }
+  l.sock = sock;
+
+  sock.onopen = function () {
+    if (live !== l || l.sock !== sock) return;
+    l.backoff = 1000;
+    // The join Supabase expects, verbatim. No presence config on purpose —
+    // the hellos below do that job, at the fuzziness we actually want.
+    liveRaw(liveTopic(), "phx_join", {
+      config: { broadcast: { self: false, ack: false }, presence: { key: "" },
+                postgres_changes: [], private: false },
+      access_token: LIVE_KEY
+    });
+    l.hbTimer = setInterval(function () { liveRaw("phoenix", "heartbeat", {}); }, HEARTBEAT_MS);
+    l.sayTimer = setInterval(function () { liveHello(); liveRefresh(); }, HELLO_MS);
+  };
+
+  sock.onmessage = function (e) {
+    if (live !== l || l.sock !== sock) return;
+    l.lastHeard = Date.now();
+    var m;
+    try { m = JSON.parse(e.data); } catch (err) { return; }
+    if (m.topic !== liveTopic()) return; // heartbeat replies only bump lastHeard
+    if (m.event === "phx_reply") {
+      // Joined. Announce straight away — a broadcast before the ack is dropped.
+      if (m.payload && m.payload.status === "ok" && !l.joined) {
+        l.joined = true;
+        liveHello();
+        liveRefresh();
+      }
+      return;
+    }
+    // The server closed the channel under us; reopening the socket rejoins.
+    if (m.event === "phx_error" || m.event === "phx_close") { liveRetry(); return; }
+    if (m.event !== "broadcast" || !m.payload) return;
+    var p = m.payload.payload;
+    if (!p || p.from === MY_PEER_ID) return;
+    if (m.payload.event === "hello") { liveHear(p); return; }
+    // Alert-shaped events: dedupe first — the same one may arrive again by push.
+    if (p.eid) {
+      if (liveSeen[p.eid]) return;
+      liveSeen[p.eid] = true;
+    }
+    if (m.payload.event === "play") livePlayed(p);
+  };
+
+  sock.onclose = function () {
+    if (live !== l || l.sock !== sock || l.closing) return;
+    liveRetry();
+  };
+}
+
+/* One frame on the wire. Phoenix wants a ref on everything; nothing here reads
+   replies beyond "the socket is alive", so a counter is enough. */
+function liveRaw(topic, event, payload) {
+  var l = live;
+  if (!l || !l.sock || l.sock.readyState !== 1) return;
+  l.refN += 1;
+  try {
+    l.sock.send(JSON.stringify({ topic: topic, event: event, payload: payload, ref: String(l.refN) }));
+  } catch (e) { /* the close handler deals with a dying socket */ }
+}
+
+/* Fire-and-forget to everyone else in the room. */
+function liveCast(event, payload) {
+  if (!live) return;
+  payload.from = MY_PEER_ID;
+  payload.eid = eventId();
+  liveRaw(liveTopic(), "broadcast", { type: "broadcast", event: event, payload: payload });
+}
+
+/* Presence without the presence feature: who you are, what you're holding.
+   Mid-round the scorecard's own name wins over Settings, so the hello matches
+   the row it should light up on the other phones. */
+function liveHello() {
+  if (!live) return;
+  liveCast("hello", {
+    id: MY_PEER_ID,
+    name: (state ? state.players[state.meIndex] : settings.myName) || "",
+    characterId: state && state.characters
+      ? state.characters[state.meIndex]
+      : settings.myCharacter,
+    handCount: state ? state.hand.length : null,
+    locks: helloLocks()
+  });
+}
+
+/* My locked rows, keyed by hole then player name — the key both sides share.
+   Riding every hello rather than a one-shot lock message makes comparison
+   self-healing: a reloaded phone rebuilds everyone's reports inside one hello
+   cycle, and an unlock-and-fix clears a flag the same way it raised it. */
+function helloLocks() {
+  if (!state) return null;
+  var out = {};
+  for (var h = 0; h < state.holeCount; h++) {
+    if (!state.locked[h]) continue;
+    var row = {};
+    state.players.forEach(function (n, i) {
+      row[n.trim().toLowerCase()] = state.scores[h][i];
+    });
+    out[h] = row;
+  }
+  return out;
+}
+
+function liveHear(p) {
+  if (!live || !p.id) return;
+  live.peers[p.id] = {
+    name: typeof p.name === "string" ? p.name : "",
+    characterId: typeof p.characterId === "number" ? p.characterId : null,
+    handCount: typeof p.handCount === "number" ? p.handCount : null,
+    locks: (p.locks && typeof p.locks === "object") ? p.locks : null,
+    at: Date.now()
+  };
+  liveSeat(live.peers[p.id]);
+  liveRefresh();
+}
+
+/* Everyone heard from lately. Quiet phones are filtered, never removed — the
+   next hello brings them straight back. */
+function livePeers() {
+  var out = [];
+  if (!live) return out;
+  var now = Date.now();
+  for (var id in live.peers) {
+    if (now - live.peers[id].at <= QUIET_MS) out.push(live.peers[id]);
+  }
+  return out;
+}
+
+/* The roster builds itself: a phone arriving during Setup takes the first empty
+   seat, name and face already filled from its saved profile. Nobody types a
+   name for somebody who is standing right there. */
+function liveSeat(peer) {
+  if (screen !== "setup") return;
+  var name = peer.name.trim();
+  if (!name) return;
+  var have = setup.names.some(function (n) {
+    return n.trim().toLowerCase() === name.toLowerCase();
+  });
+  if (have) return;
+  var slot = -1;
+  for (var i = 0; i < setup.names.length; i++) {
+    if (!setup.names[i].trim()) { slot = i; break; }
+  }
+  if (slot === -1) {
+    if (setup.names.length >= MAX_PLAYERS) return;
+    setup.names.push(""); setup.chars.push(null);
+    slot = setup.names.length - 1;
+  }
+  setup.names[slot] = name;
+  // Their face too, unless somebody on this phone already claimed it.
+  if (peer.characterId != null && setup.chars.indexOf(peer.characterId) === -1) {
+    setup.chars[slot] = peer.characterId;
+  }
+}
+
+/* What [p] is holding: yours from the round in front of you, everyone else's
+   self-reported. Matching is by name — the only key both sides share. */
+function liveHandFor(s, p) {
+  if (!live) return null;
+  if (p === s.meIndex) return s.hand.length;
+  var name = s.players[p].trim().toLowerCase();
+  var peers = livePeers();
+  for (var i = 0; i < peers.length; i++) {
+    if (peers[i].name.trim().toLowerCase() === name) return peers[i].handCount;
+  }
+  return null;
+}
+
+/* Where my card and another phone's card disagree on a hole both have locked.
+   Compared at render time from the latest hellos — nothing is stored beyond
+   them, and nothing is ever merged: the flag is the entire feature. */
+function scoreDisputes(s, h) {
+  var out = [];
+  if (!live || !s.locked[h]) return out;
+  livePeers().forEach(function (peer) {
+    var theirs = peer.locks && peer.locks[h];
+    if (!theirs) return;
+    s.players.forEach(function (name, i) {
+      var t = theirs[name.trim().toLowerCase()];
+      if (typeof t === "number" && t !== s.scores[h][i]) {
+        out.push({ player: name, mine: s.scores[h][i], theirs: t, phone: peer.name });
+      }
+    });
+  });
+  return out;
+}
+
+/* Whether hole [h]'s freshly dealt cards are still frozen. They unlock when
+   every phone at the table has locked [h] and none of them disagree — which is
+   exactly the moment a wrong score would have been caught. Until then the
+   cards sit in hand un-playable, so a mistake's cards are always still there
+   for the correction to take back. Only players whose phone is actually in
+   the lobby gate this: a typed-in name with no phone can't freeze anyone,
+   and a phone gone quiet without locking doesn't hold the table hostage.
+   Not live at all? No hold — the network stays decoration. */
+function dealHeld(s, h) {
+  if (!live) return false;
+  if (!s.locked[h]) return true; // mid-fix — settlement is pending
+  if (scoreDisputes(s, h).length) return true;
+  var peers = livePeers();
+  for (var i = 0; i < peers.length; i++) {
+    var pname = peers[i].name.trim().toLowerCase();
+    var seated = s.players.some(function (n) {
+      return n.trim().toLowerCase() === pname;
+    });
+    if (!seated) continue;
+    if (!peers[i].locks || !peers[i].locks[h]) return true;
+  }
+  return false;
+}
+
+/* Every card in hand that is still frozen, mapped to the hole it came from. */
+function heldCardIds(s) {
+  var held = {};
+  if (!live || !s.dealt) return held;
+  for (var h = 0; h < s.holeCount; h++) {
+    var rec = s.dealt[h];
+    if (!rec || rec === true || !rec.cards || !rec.cards.length) continue;
+    if (!dealHeld(s, h)) continue;
+    rec.cards.forEach(function (id) {
+      if (s.hand.indexOf(id) !== -1) held[id] = h;
+    });
+  }
+  return held;
+}
+
+/* The whole round's disagreements, grouped by hole, oldest first. */
+function allDisputes(s) {
+  var out = [];
+  for (var h = 0; h < s.holeCount; h++) {
+    var d = scoreDisputes(s, h);
+    if (d.length) out.push({ hole: h, items: d });
+  }
+  return out;
+}
+
+/* Live updates redraw whatever is on screen, but never out from under a finger:
+   a re-render mid-name would drop the keyboard. */
+function liveRefresh() {
+  var el = document.activeElement;
+  if (el && el.tagName === "INPUT") return;
+  render();
+}
+
+/* Disconnects are the steady state — phones background to throw, and iOS
+   freezes the page within seconds. Reopen silently, backing off to 15s so a
+   dead room isn't hammered all afternoon. The UI says nothing: the room holds
+   no state, so being out costs nothing but missed alerts. */
+function liveRetry() {
+  var l = live;
+  if (!l) return;
+  clearInterval(l.hbTimer); clearInterval(l.sayTimer);
+  clearTimeout(l.retryTimer);
+  l.joined = false;
+  if (l.sock) {
+    var dying = l.sock;
+    l.sock = null;
+    try { dying.close(); } catch (e) { /* already gone */ }
+  }
+  l.retryTimer = setTimeout(function () { if (live === l) liveOpen(); }, l.backoff);
+  l.backoff = Math.min(15000, l.backoff * 2);
+}
+
+function liveDisconnect() {
+  var l = live;
+  if (!l) return;
+  live = null;
+  l.closing = true;
+  clearInterval(l.hbTimer); clearInterval(l.sayTimer);
+  clearTimeout(l.retryTimer);
+  if (l.sock) { try { l.sock.close(); } catch (e) { /* already gone */ } }
+  if (wakeLock) {
+    try { wakeLock.release(); } catch (e) { /* released with the page */ }
+    wakeLock = null;
+  }
+}
+
+/* The screen stays awake while a room is open: the phone is in a hand between
+   throws, and letting it lock would freeze the page along with the alerts. */
+var wakeLock = null;
+function keepAwake() {
+  if (!live || wakeLock || !("wakeLock" in navigator)) return;
+  navigator.wakeLock.request("screen").then(function (lock) {
+    wakeLock = lock;
+    lock.addEventListener("release", function () { wakeLock = null; });
+  }).catch(function () { /* battery saver said no — the round plays on */ });
+}
+
+/* Coming back out of a pocket the socket can look open and be long dead: if
+   nothing has been heard in over a heartbeat, assume it is and reopen now
+   rather than waiting to find out. */
+document.addEventListener("visibilitychange", function () {
+  if (document.visibilityState !== "visible" || !live) return;
+  keepAwake();
+  if (!live.sock || live.sock.readyState !== 1 ||
+      Date.now() - live.lastHeard > HEARTBEAT_MS + 10000) {
+    live.backoff = 1000;
+    liveRetry();
+  } else {
+    liveHello();
+  }
+  liveRefresh();
+});
+
+/* ---------- live alerts ----------
+   The point of the whole feature: a banner when somebody plays a card. One
+   aimed at you rattles, buzzes and stays until tapped — the rest inform the
+   table and fade on their own. Tapping any banner opens the card's face. */
+var liveAlerts = [];
+var ALERT_FADE_MS = 8000;
+
+function myRoundName() {
+  return ((state ? state.players[state.meIndex] : settings.myName) || "").trim().toLowerCase();
+}
+
+function livePlayed(p) {
+  var c = BY_ID[p.card];
+  if (!c) return; // an id this build doesn't know — a different deck version
+  var target = typeof p.target === "string" ? p.target : null;
+  var onYou = !!target && target.trim().toLowerCase() === myRoundName();
+  liveAlerts.push({ eid: p.eid, who: typeof p.name === "string" ? p.name : "",
+                    card: c.id, target: target, you: onYou });
+  if (onYou) {
+    // The chain rattle, doing the job it was born for. Both are best-effort:
+    // a browser that blocks gesture-less audio or vibration just shows the banner.
+    playMenuSound(sfxVolume());
+    try { if (navigator.vibrate) navigator.vibrate([120, 60, 120, 60, 320]); } catch (e) { /* banner only */ }
+  } else {
+    setTimeout(function () { dropAlert(p.eid); }, ALERT_FADE_MS);
+  }
+  liveRefresh();
+}
+
+function dropAlert(eid) {
+  var before = liveAlerts.length;
+  liveAlerts = liveAlerts.filter(function (a) { return a.eid !== eid; });
+  if (liveAlerts.length !== before) liveRefresh();
+}
+
+/* This phone talking to its own player — a corrected deal, not a broadcast.
+   Same banner, quiet style, fades on its own. */
+var noteN = 0;
+function localNote(text) {
+  var eid = "local." + (++noteN);
+  liveAlerts.push({ eid: eid, note: text });
+  setTimeout(function () { dropAlert(eid); }, ALERT_FADE_MS);
+}
+
+function renderAlerts() {
+  if (!liveAlerts.length) return "";
+  return '<div class="alerts">' + liveAlerts.map(function (a) {
+    if (a.note) {
+      return '<div class="alert" data-act="alertTap" data-eid="' + esc(a.eid) + '">' +
+        '<div class="who">Deal corrected</div>' +
+        '<div class="what" style="font-size:16px">' + esc(a.note) + '</div></div>';
+    }
+    var c = BY_ID[a.card];
+    return '<div class="alert' + (a.you ? " you" : "") + '" data-act="alertTap" data-eid="' +
+      esc(a.eid) + '">' +
+      '<div class="who">' + esc(a.who || "Someone") + ' played</div>' +
+      '<div class="what">' + esc(c.name) + '</div>' +
+      (a.target ? '<div class="onwho">on ' + (a.you ? "YOU" : esc(a.target)) + '</div>' : "") +
+      '</div>';
+  }).join("") + '</div>';
+}
+
+/* Create/join, shared by Setup and the in-round Rules tab. Hidden entirely
+   until the keys at the top of this section are filled in. */
+function renderLiveSection() {
+  if (!liveConfigured()) return "";
+  var head = '<div class="label">Live</div>';
+  if (!live) {
+    return head +
+      '<p class="hint">Link the group\'s phones — card plays and hand counts on every screen. Scores stay yours alone.</p>' +
+      '<div class="acts" style="margin-bottom:14px">' +
+      '<button class="big wheel" data-act="liveHost" style="margin:0">Host a lobby</button>' +
+      '<button class="big quiet" data-act="liveJoin" style="margin:0">Join the lobby</button></div>';
+  }
+  var names = livePeers().map(function (p) { return p.name.trim(); }).filter(Boolean);
+  return head +
+    '<div class="panel sel" style="text-align:center">' +
+    '<div style="font-size:24px;font-weight:900;letter-spacing:8px;color:#FF8A1E">LIVE</div>' +
+    '<div class="dim">' + (names.length
+      ? 'You + ' + names.map(esc).join(", ")
+      : live.hosting ? 'Lobby&rsquo;s open &mdash; tell the boys to join.'
+                     : 'Looking for the group&hellip;') + '</div></div>' +
+    '<button class="big quiet" data-act="liveLeave">Leave the lobby</button>';
+}
 
 /* Only cards that land on one named person are worth asking about. Self is you, group
    is everyone, and a reaction answers a card rather than a player. */
@@ -926,6 +1436,22 @@ function freshSetup() {
   };
 }
 
+/* The seats actually being played: trailing empty rows are unused chairs, not
+   unnamed players — a live room seats three and leaves the fourth row blank,
+   and Start must not stall on a chair nobody is sitting in. A gap in the
+   middle still blocks, because that is a player without a name. */
+function activeSeats() {
+  var n = setup.names.length;
+  while (n > MIN_PLAYERS && !setup.names[n - 1].trim()) n--;
+  return n;
+}
+function seatsReady() {
+  for (var i = 0; i < activeSeats(); i++) {
+    if (!setup.names[i].trim()) return false;
+  }
+  return true;
+}
+
 function resizePars(n) {
   while (setup.pars.length < n) setup.pars.push(DEFAULT_PAR);
   while (setup.pars.length > n) setup.pars.pop();
@@ -960,6 +1486,7 @@ function render() {
   if (parsUI.open) html += renderParGrid();
   if (charPick) html += renderCharSheet();
   if (wheelPay) html += renderWheelCost();
+  html += renderAlerts(); // rides over everything, on every screen
   app.innerHTML = html;
   fitMetaLines();
   document.body.classList.toggle("menu-screen", screen === "menu");
@@ -1061,12 +1588,13 @@ function renderSetup() {
       ? '<button class="npanel nact" data-act="removePlayer" style="margin:0">&minus; Remove</button>' : "") +
     "</div>";
 
-  var namesReady = setup.names.every(function (n) { return n.trim() !== ""; });
+  var namesReady = seatsReady();
   var courseReady = setup.holes > 0;
   var ready = namesReady && courseReady;
 
   // No title block — the back bar already says NEW ROUND.
-  return '<div class="label">Players</div>' +
+  return renderLiveSection() +
+    '<div class="label">Players</div>' +
     '<p class="hint">' + (CHARACTERS.length
       // You are always player 1, so there is nothing to mark — the old ME chips said
       // the same thing four times over.
@@ -1103,7 +1631,7 @@ function renderSetup() {
 function syncStartButton() {
   var btn = app.querySelector('[data-act="start"]');
   if (!btn) return;
-  var namesReady = setup.names.every(function (n) { return n.trim() !== ""; });
+  var namesReady = seatsReady();
   var ready = namesReady && setup.holes > 0;
   btn.disabled = !ready;
   var hint = app.querySelector("[data-start-hint]");
@@ -1154,20 +1682,29 @@ function renderScore() {
     var lead = lockedCount(s) > 0 &&
       (isSkins(s) ? mostSkins > 0 && skinsFor(s, i) === mostSkins : total === best);
     var ch = characterFor(s, i);
+    var held = liveHandFor(s, i);
     return '<div class="player' + (me ? " me" : "") + '"><div class="row">' +
       // Only takes up room once somebody has actually picked a character.
-      (ch ? badgeHtml(ch, 40) + '<div style="width:10px"></div>' : "") +
+      // The row's own gap is the whole spacing — names were getting cut off.
+      (ch ? badgeHtml(ch, 40) : "") +
       '<div class="grow"><div class="name">' + esc(name) + '</div>' +
         '<div class="rel ' + relClass(rel) + '">' +
         (lead ? '<span class="lead">LEAD</span>' : "") +
+        // Over/under and (in skins) the skins — no running stroke total. The
+        // par tells the story mid-round; totals wait for the results screen.
         (isSkins(s)
-          ? plural(skinsFor(s, i), "skin") + '  &middot;  ' + fmtRel(rel) + '  &middot;  ' + total + ' total'
-          : fmtRel(rel) + '  &middot;  ' + total + ' total strokes') + '</div></div>' +
+          ? plural(skinsFor(s, i), "skin") + '  &middot;  ' + fmtRel(rel)
+          : fmtRel(rel)) +
+        // The hand chip rides this line, not the name: a long name ellipsizes,
+        // and it was swallowing the chip on the row you look at most — your own.
+        (held != null ? ' <span class="handct">' + held + "/" + DATA.handCap + "</span>" : "") +
+        '</div></div>' +
+      '<div class="steps">' +
       '<button class="step" data-act="score" data-i="' + i + '" data-n="-1"' +
         (locked || score <= 1 ? " disabled" : "") + '>&minus;</button>' +
       '<div class="num">' + score + '</div>' +
       '<button class="step" data-act="score" data-i="' + i + '" data-n="1"' + (locked ? " disabled" : "") + '>+</button>' +
-      '</div></div>';
+      '</div></div></div>';
   }).join("");
 
   var lockBlock = locked
@@ -1178,7 +1715,21 @@ function renderScore() {
         ? 'Already dealt &mdash; locking again gives no new cards.'
         : 'Locking gives you ' + drawForHole(s, h) + ' card(s).') + '</p>';
 
-  return head + players + lockBlock;
+  // Every locked hole's disagreements, not just this one's: locking auto-
+  // advances, so a flag pinned to its own hole would talk to an empty room.
+  // Tapping a flag jumps to the hole it is arguing about.
+  var disputeBlock = allDisputes(s).map(function (g) {
+    return '<div class="dispute" data-act="hole" data-n="' + g.hole + '" style="cursor:pointer">' +
+      '<div class="dtitle">Scorecards disagree &middot; hole ' + (g.hole + 1) + '</div>' +
+      g.items.map(function (d) {
+        return '<div class="dline">' + esc(d.player) + ': you have ' + d.mine +
+          ', ' + esc(d.phone) + '&rsquo;s phone has ' + d.theirs + '</div>';
+      }).join("") +
+      '<div class="dhint">Nobody&rsquo;s card gets overwritten &mdash; settle it out ' +
+      'loud. Tap to open hole ' + (g.hole + 1) + ' and fix whichever card is wrong.</div></div>';
+  }).join("");
+
+  return head + players + disputeBlock + lockBlock;
 }
 
 /* ---------- results ----------
@@ -1211,7 +1762,7 @@ function renderResults() {
     var ch = characterFor(s, p);
     return '<div class="player' + (isWinner ? " me" : "") + '"><div class="row">' +
       '<div class="place' + (isWinner ? " won" : "") + '">' + (place + 1) + '</div>' +
-      (ch ? badgeHtml(ch, 40) + '<div style="width:10px"></div>' : "") +
+      (ch ? badgeHtml(ch, 40) : "") +
       '<div class="grow"><div class="name">' + esc(s.players[p]) + '</div>' +
         // Relative to par, then how far off the win — spelled out, because
         // "E · +1" reads as a contradiction at a glance.
@@ -1284,9 +1835,12 @@ function renderHand() {
       : '<button class="big primary" data-act="draw">Draw a card (' + s.owed + ' owed)</button>';
   }
 
+  var held = heldCardIds(s);
   var cards = s.hand.length
     ? '<div class="handgrid">' +
-      s.hand.map(function (id) { return miniCardHtml(BY_ID[id]); }).join("") + '</div>'
+      s.hand.map(function (id) {
+        return miniCardHtml(BY_ID[id], null, false, held[id] != null);
+      }).join("") + '</div>'
     : '<p class="hint">Nothing in hand. Cards arrive when you lock a hole.</p>';
 
   return counters + drawBlock + wheelButton() +
@@ -1313,9 +1867,11 @@ function wheelButton() {
 /* The price of a spin: pick which cards leave your hand. */
 function renderWheelCost() {
   var s = state;
+  // A held card can't pay for a spin — spending it is playing it by another name.
+  var held = heldCardIds(s);
   var tiles = s.hand.map(function (id) {
     var picked = wheelPay.indexOf(id) !== -1;
-    return miniCardHtml(BY_ID[id], picked ? "payPick" : "payPick", picked);
+    return miniCardHtml(BY_ID[id], "payPick", picked, held[id] != null);
   }).join("");
 
   var ready = wheelPay.length === DATA.wheelCost;
@@ -1364,13 +1920,15 @@ function openWheelNow(free) {
 
 /* Half-width hand tile: tags, name, a taste of the text. No buttons — tapping
    opens the full face, where Play and Discard live. */
-/* [act] and [picked] let the same tile double as the pay-for-a-spin picker. */
-function miniCardHtml(c, act, picked) {
+/* [act] and [picked] let the same tile double as the pay-for-a-spin picker;
+   [held] marks a card still frozen while the table locks its hole. */
+function miniCardHtml(c, act, picked, held) {
   var art = CARD_ART[c.id];
+  var tag = held ? '<div class="heldtag">HELD</div>' : "";
   var open = '<div class="minicard' + (picked ? " picked" : "") + '" data-act="' +
     (act || "viewCard") + '" data-i="' + c.id + '">';
-  if (art) return open + '<img src="' + art + '" alt="' + esc(c.name) + '"></div>';
-  return open +
+  if (art) return open + tag + '<img src="' + art + '" alt="' + esc(c.name) + '"></div>';
+  return open + tag +
     '<div class="minimeta">' + esc(c.kind) + ' &middot; ' + esc(c.timing) + '</div>' +
     '<div class="mininame">' + esc(c.name) + '</div>' +
     '<div class="minitext">' + esc(c.text) + '</div></div>';
@@ -1492,7 +2050,8 @@ function renderRoundRules() {
     (savedAs ? '<p class="hint" style="color:var(--react)">Saved as &ldquo;' +
       esc(savedAs) + '&rdquo;.</p>' : "");
 
-  return renderHouseRules() + renderCardLibrary() +
+  // Live first: joining mid-round shouldn't mean scrolling past the whole deck.
+  return renderLiveSection() + renderHouseRules() + renderCardLibrary() +
     '<div style="height:16px"></div>' + saveCourse +
     '<div style="height:16px"></div>' + danger;
 }
@@ -1793,9 +2352,16 @@ function renderFaceModal() {
         '<button class="big raised" data-act="keepCard">Keep it</button>' +
         '<button class="big primary" data-act="discardCard" data-i="' + c.id + '">Discard</button></div>';
     } else {
+      var heldAt = heldCardIds(state)[c.id];
       acts = '<div class="acts" style="margin-top:14px">' +
-        '<button class="big primary" data-act="playCard" data-i="' + c.id + '">Play</button>' +
-        '<button class="big raised" data-act="askDiscard" data-i="' + c.id + '">Discard</button></div>';
+        (heldAt != null
+          ? '<button class="big primary" disabled>Held</button>'
+          : '<button class="big primary" data-act="playCard" data-i="' + c.id + '">Play</button>') +
+        '<button class="big raised" data-act="askDiscard" data-i="' + c.id + '">Discard</button></div>' +
+        (heldAt != null
+          ? '<p class="hint" style="text-align:center;margin-top:10px">Fresh from hole ' +
+            (heldAt + 1) + ' &mdash; playable once the whole table locks it in agreement.</p>'
+          : "");
     }
   }
   // Swiping left/right (or the chevrons) walks the rest of the hand — whole
@@ -1932,7 +2498,7 @@ function wheelSvg(id, labels, rotation, winner, fontSize, duo) {
 /* ---------- course & pars ---------- */
 function renderParGrid() {
   var list = allCourses();
-  var namesOk = setup.names.every(function (n) { return n.trim() !== ""; });
+  var namesOk = seatsReady();
   var saved = list.map(function (c) {
     // Selection and the Play shortcut only make sense while setting up a round —
     // the same sheet doubles as Settings' course manager.
@@ -2002,6 +2568,11 @@ function resolveCard(s, id, played, target) {
   if (!s.playLog) s.playLog = [];
   s.playLog.push({ id: id, played: !!played });
   commit(s);
+  // The alert on everyone else's phone. Plays only — a discard is nobody's
+  // business beyond the hand count, which the commit's hello just carried.
+  if (played && live) {
+    liveCast("play", { name: s.players[s.meIndex], card: id, target: target || null });
+  }
   // The Double Wheel card IS the spin — playing it opens the wheel with no further
   // cost, which is exactly what its text promises.
   if (played && id === DATA.freeSpinCard) openWheelNow(true);
@@ -2074,7 +2645,9 @@ function spinWheel(kind) {
 }
 
 /* ---------- actions ---------- */
-function commit(next) { state = next; save(state); render(); }
+/* Every commit re-announces: the hand count on the other phones tracks yours as
+   fast as the wire allows, with no separate bookkeeping about what changed. */
+function commit(next) { state = next; save(state); render(); if (live) liveHello(); }
 
 function drawOne(s) {
   var deck = s.deck, discard = s.discard;
@@ -2084,9 +2657,72 @@ function drawOne(s) {
     discard = [];
   }
   s.hand = s.hand.concat([deck[0]]);
+  // Remember which hole's deal this card belongs to, so a score correction
+  // can send back exactly what the mistake dealt — never a card you chose.
+  var rec = s.dealt && s.dealt[s.lastDeal];
+  if (rec && rec.cards) rec.cards.push(deck[0]);
   s.deck = deck.slice(1);
   s.discard = discard;
   s.owed -= 1;
+}
+
+/*
+ * Deals are corrections-friendly, not one-way: every dealt hole re-answers
+ * "what should this hole have paid?" after each lock, and the difference is
+ * settled. Shortchanged, the extra lands in owed and deals out immediately.
+ * Over-dealt, the hole's own cards — newest first, only those still in hand —
+ * go back on top of the deck in their original order, so the next legitimate
+ * draw finds them as if the mistake never happened. A card already played or
+ * discarded is spent and stays spent; nothing rewinds a play.
+ *
+ * Farming stays impossible: re-locking unchanged scores recomputes to the
+ * same number, and minting cards by editing scores is just cheating at
+ * scorekeeping, which the disagreement flag broadcasts to the whole table.
+ * The loop covers every dealt hole because in skins a correction ripples:
+ * fixing hole 2's tie changes what holes 3 and 4 were worth.
+ */
+function settleDeals(s) {
+  if (!s.dealt) return;
+  for (var h = 0; h < s.holeCount; h++) {
+    var rec = s.dealt[h];
+    if (!rec) continue;
+    if (rec === true) {
+      // A round from before deals kept records: adopt today's answer as the
+      // baseline. Its cards were never tracked, so its past stays settled.
+      s.dealt[h] = { owed: drawForHole(s, h), cards: [] };
+      continue;
+    }
+    if (!s.locked[h]) continue; // mid-fix — settle when it re-locks
+    var e = drawForHole(s, h);
+    var diff = e - rec.owed;
+    if (!diff) continue;
+    rec.owed = e;
+    if (diff > 0) {
+      s.owed += diff;
+      s.lastDeal = h;
+      localNote("Hole " + (h + 1) + " corrected — you draw " + diff + " more.");
+    } else {
+      var give = -diff;
+      // Cards owed but never taken are cancelled before any card moves.
+      if (s.lastDeal === h && s.owed > 0) {
+        var cut = Math.min(give, s.owed);
+        s.owed -= cut; give -= cut;
+      }
+      var back = 0;
+      for (var i = rec.cards.length - 1; i >= 0 && give > 0; i--) {
+        var at = s.hand.indexOf(rec.cards[i]);
+        if (at === -1) continue; // spent is spent
+        s.hand.splice(at, 1);
+        s.deck.unshift(rec.cards[i]);
+        rec.cards.splice(i, 1);
+        give--; back++;
+      }
+      if (back) {
+        localNote("Hole " + (h + 1) + " corrected — " + back + " card" +
+          (back === 1 ? "" : "s") + " went back on your deck.");
+      }
+    }
+  }
 }
 
 function doDraw() {
@@ -2259,9 +2895,12 @@ app.addEventListener("click", function (e) {
       /* falls through */
     case "start":
       commit(newRound(
-        setup.names.map(function (x) { return x.trim(); }),
-        setup.meIndex, setup.holes, setupPars(), setup.courseName, setup.chars, setup.mode,
+        setup.names.slice(0, activeSeats()).map(function (x) { return x.trim(); }),
+        setup.meIndex, setup.holes, setupPars(), setup.courseName,
+        setup.chars.slice(0, activeSeats()), setup.mode,
       ));
+      // The room rides with the round: a reload rejoins it without asking.
+      if (live) { state.liveCode = live.code; save(state); }
       roundCourseName = state.courseName || "";
       screen = "round";
       render();
@@ -2318,17 +2957,18 @@ app.addEventListener("click", function (e) {
     case "lock":
       if (s.locked[s.currentHole]) break;
       var lockedHole = s.currentHole;
-      // A hole only ever deals ONCE — unlock and re-lock grants nothing new,
-      // so the lock/unlock cycle can't farm cards.
       if (!s.dealt) s.dealt = [];
       // Use-it-or-lose-it: a fresh hole's deal REPLACES whatever is still owed
       // rather than adding to it, so a full hand can't bank a pile of cards.
-      // A re-lock isn't a fresh deal, so it neither grants nor wipes anything.
+      // A re-lock isn't a fresh deal — corrections go through settleDeals,
+      // which pays or takes back exactly the difference and nothing else.
       if (!s.dealt[lockedHole]) {
         s.owed = drawForHole(s, lockedHole);
-        s.dealt[lockedHole] = true;
+        s.dealt[lockedHole] = { owed: s.owed, cards: [] };
+        s.lastDeal = lockedHole;
       }
       s.locked[lockedHole] = true;
+      settleDeals(s);
       s.currentHole = Math.min(s.holeCount - 1, s.currentHole + 1);
       // Draws land immediately — nothing banks between holes. Only what the
       // hand cap blocks stays owed, drawable once a discard makes room.
@@ -2341,6 +2981,7 @@ app.addEventListener("click", function (e) {
     case "viewScorecard": showScorecard = true; render(); break;
     // Clears the round and returns to the menu, so Play means play again.
     case "finishRound":
+      liveDisconnect(); // the room dies with the round
       clearSaved();
       state = null;
       tab = "score";
@@ -2361,6 +3002,7 @@ app.addEventListener("click", function (e) {
     // Play and Discard both send the card to the discard pile; only a play has
     // somebody on the other end of it, which is why one of them asks.
     case "playCard":
+      if (heldCardIds(s)[i] != null) break; // the face modal already says why
       if (aimedAtSomeone(BY_ID[i].kind) && s.players.length > 1) {
         playTarget = i;
         render();
@@ -2390,6 +3032,7 @@ app.addEventListener("click", function (e) {
       render(); break;
     case "payPick": {
       if (!wheelPay) break;
+      if (heldCardIds(s)[i] != null) break; // held cards can't buy a spin
       var payAt = wheelPay.indexOf(i);
       // Tapping a chosen card takes it back; past the limit the rest stop
       // responding rather than silently swapping one out.
@@ -2414,10 +3057,37 @@ app.addEventListener("click", function (e) {
     case "spinName": spinWheel("name"); break;
     case "closeWheel": wheel = null; render(); break;
 
+    // ---- live room ----
+    // Host and Join are the same wire; the flag only changes the waiting copy.
+    // Going live mid-round marks the saved round, so a reloaded page is back
+    // in the lobby without being asked. During Setup there is no round yet —
+    // the mark lands when Start creates one.
+    case "liveHost":
+    case "liveJoin":
+      liveConnect(LIVE_ROOM);
+      live.hosting = act === "liveHost";
+      if (s) { s.liveCode = LIVE_ROOM; commit(s); } else render();
+      break;
+    case "liveLeave":
+      liveDisconnect();
+      if (s) { delete s.liveCode; commit(s); } else render();
+      break;
+    // Tapping a banner answers "what does that card do?" — the face opens,
+    // and the banner is done arguing for attention.
+    case "alertTap": {
+      var eid = el.getAttribute("data-eid");
+      var hit = liveAlerts.filter(function (a) { return a.eid === eid; })[0];
+      liveAlerts = liveAlerts.filter(function (a) { return a.eid !== eid; });
+      if (hit && hit.card != null) viewCard = hit.card;
+      render();
+      break;
+    }
+
     case "endAsk": confirming = true; render(); break;
     case "endNo": confirming = false; render(); break;
     case "endYes":
       confirming = false;
+      liveDisconnect(); // the room dies with the round
       clearSaved();
       state = null;
       tab = "score";
@@ -2428,6 +3098,11 @@ app.addEventListener("click", function (e) {
       render(); break;
   }
 });
+
+/* A round marked live rejoins the lobby by itself — a reloaded page is back in
+   the room before anyone notices. LIVE_ROOM, not the stored value: rounds saved
+   in the room-code era carry an old code, and there is only one lobby now. */
+if (state && state.liveCode) liveConnect(LIVE_ROOM);
 
 render();
 

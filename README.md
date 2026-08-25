@@ -6,8 +6,11 @@ together in person. Two independent builds from one spec:
 - **`app/`** — native Android, Kotlin + Jetpack Compose. The phone app.
 - **`web/`** — sources for an installable, offline PWA, built into `docs/`. For the iPhone friends.
 
-Neither one syncs, networks, or adjudicates card effects. Every device runs its own deck and
-its own copy of the scorecard, exactly as [BUILD_SPEC.md](BUILD_SPEC.md) describes.
+Neither one adjudicates card effects, and every device runs its own deck and its own copy of
+the scorecard, exactly as [BUILD_SPEC.md](BUILD_SPEC.md) describes. The web build can
+additionally join a **live room** ([MULTIPLAYER_PLAN.md](MULTIPLAYER_PLAN.md)): names and card
+plays leave the phone for the first time, but only as decoration over a scorecard that still
+works entirely alone — scores are never synced, and no phone is the referee.
 
 ## Where the rules live
 
@@ -290,7 +293,10 @@ deliberately no `withPar` on `GameState`.
 
 ## What is deliberately absent
 
-No sync, no multiplayer, no accounts, no networking. No enforcement of card effects and no
+No score sync and no accounts. The web build's live room shares card plays and hand counts
+([MULTIPLAYER_PLAN.md](MULTIPLAYER_PLAN.md)), but the scorecard itself is never networked:
+every phone tracks the table independently, because syncing scores would mean deciding whose
+card wins when two disagree. No enforcement of card effects and no
 automatic stroke penalties — GAMBLE!, Code Words!, Commentator, WALK IT DOWN!!,
 GOOD GUYS VS. BAD GUYS! and Me and You all rewrite scores, and players enter those by hand
 with the ± steppers. No money
