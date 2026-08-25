@@ -1105,9 +1105,23 @@ function dropAlert(eid) {
   if (liveAlerts.length !== before) liveRefresh();
 }
 
+/* This phone talking to its own player — a corrected deal, not a broadcast.
+   Same banner, quiet style, fades on its own. */
+var noteN = 0;
+function localNote(text) {
+  var eid = "local." + (++noteN);
+  liveAlerts.push({ eid: eid, note: text });
+  setTimeout(function () { dropAlert(eid); }, ALERT_FADE_MS);
+}
+
 function renderAlerts() {
   if (!liveAlerts.length) return "";
   return '<div class="alerts">' + liveAlerts.map(function (a) {
+    if (a.note) {
+      return '<div class="alert" data-act="alertTap" data-eid="' + esc(a.eid) + '">' +
+        '<div class="who">Deal corrected</div>' +
+        '<div class="what" style="font-size:16px">' + esc(a.note) + '</div></div>';
+    }
     var c = BY_ID[a.card];
     return '<div class="alert' + (a.you ? " you" : "") + '" data-act="alertTap" data-eid="' +
       esc(a.eid) + '">' +
@@ -2586,9 +2600,72 @@ function drawOne(s) {
     discard = [];
   }
   s.hand = s.hand.concat([deck[0]]);
+  // Remember which hole's deal this card belongs to, so a score correction
+  // can send back exactly what the mistake dealt — never a card you chose.
+  var rec = s.dealt && s.dealt[s.lastDeal];
+  if (rec && rec.cards) rec.cards.push(deck[0]);
   s.deck = deck.slice(1);
   s.discard = discard;
   s.owed -= 1;
+}
+
+/*
+ * Deals are corrections-friendly, not one-way: every dealt hole re-answers
+ * "what should this hole have paid?" after each lock, and the difference is
+ * settled. Shortchanged, the extra lands in owed and deals out immediately.
+ * Over-dealt, the hole's own cards — newest first, only those still in hand —
+ * go back on top of the deck in their original order, so the next legitimate
+ * draw finds them as if the mistake never happened. A card already played or
+ * discarded is spent and stays spent; nothing rewinds a play.
+ *
+ * Farming stays impossible: re-locking unchanged scores recomputes to the
+ * same number, and minting cards by editing scores is just cheating at
+ * scorekeeping, which the disagreement flag broadcasts to the whole table.
+ * The loop covers every dealt hole because in skins a correction ripples:
+ * fixing hole 2's tie changes what holes 3 and 4 were worth.
+ */
+function settleDeals(s) {
+  if (!s.dealt) return;
+  for (var h = 0; h < s.holeCount; h++) {
+    var rec = s.dealt[h];
+    if (!rec) continue;
+    if (rec === true) {
+      // A round from before deals kept records: adopt today's answer as the
+      // baseline. Its cards were never tracked, so its past stays settled.
+      s.dealt[h] = { owed: drawForHole(s, h), cards: [] };
+      continue;
+    }
+    if (!s.locked[h]) continue; // mid-fix — settle when it re-locks
+    var e = drawForHole(s, h);
+    var diff = e - rec.owed;
+    if (!diff) continue;
+    rec.owed = e;
+    if (diff > 0) {
+      s.owed += diff;
+      s.lastDeal = h;
+      localNote("Hole " + (h + 1) + " corrected — you draw " + diff + " more.");
+    } else {
+      var give = -diff;
+      // Cards owed but never taken are cancelled before any card moves.
+      if (s.lastDeal === h && s.owed > 0) {
+        var cut = Math.min(give, s.owed);
+        s.owed -= cut; give -= cut;
+      }
+      var back = 0;
+      for (var i = rec.cards.length - 1; i >= 0 && give > 0; i--) {
+        var at = s.hand.indexOf(rec.cards[i]);
+        if (at === -1) continue; // spent is spent
+        s.hand.splice(at, 1);
+        s.deck.unshift(rec.cards[i]);
+        rec.cards.splice(i, 1);
+        give--; back++;
+      }
+      if (back) {
+        localNote("Hole " + (h + 1) + " corrected — " + back + " card" +
+          (back === 1 ? "" : "s") + " went back on your deck.");
+      }
+    }
+  }
 }
 
 function doDraw() {
@@ -2823,17 +2900,18 @@ app.addEventListener("click", function (e) {
     case "lock":
       if (s.locked[s.currentHole]) break;
       var lockedHole = s.currentHole;
-      // A hole only ever deals ONCE — unlock and re-lock grants nothing new,
-      // so the lock/unlock cycle can't farm cards.
       if (!s.dealt) s.dealt = [];
       // Use-it-or-lose-it: a fresh hole's deal REPLACES whatever is still owed
       // rather than adding to it, so a full hand can't bank a pile of cards.
-      // A re-lock isn't a fresh deal, so it neither grants nor wipes anything.
+      // A re-lock isn't a fresh deal — corrections go through settleDeals,
+      // which pays or takes back exactly the difference and nothing else.
       if (!s.dealt[lockedHole]) {
         s.owed = drawForHole(s, lockedHole);
-        s.dealt[lockedHole] = true;
+        s.dealt[lockedHole] = { owed: s.owed, cards: [] };
+        s.lastDeal = lockedHole;
       }
       s.locked[lockedHole] = true;
+      settleDeals(s);
       s.currentHole = Math.min(s.holeCount - 1, s.currentHole + 1);
       // Draws land immediately — nothing banks between holes. Only what the
       // hand cap blocks stays owed, drawable once a discard makes room.
@@ -2941,7 +3019,7 @@ app.addEventListener("click", function (e) {
       var eid = el.getAttribute("data-eid");
       var hit = liveAlerts.filter(function (a) { return a.eid === eid; })[0];
       liveAlerts = liveAlerts.filter(function (a) { return a.eid !== eid; });
-      if (hit) viewCard = hit.card;
+      if (hit && hit.card != null) viewCard = hit.card;
       render();
       break;
     }
