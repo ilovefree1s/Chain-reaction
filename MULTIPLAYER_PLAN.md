@@ -127,6 +127,16 @@ half easy and the web half no easier, and produces two half-tables at one basket
    pinning the flag to its own hole meant nobody saw it (phone test) —
    labeled by hole, tap to jump there. Nothing is merged; the flag is the
    entire feature.
+
+   **Grew two companions during phone testing.** Corrections settle the deal:
+   deals record what they granted and which cards, every lock re-settles every
+   dealt hole (skins corrections re-price later holes), shortfalls deal out on
+   the spot, and over-deals send that hole's still-in-hand cards back on top
+   of the deck in original order. And fresh cards wait for the table: a
+   hole's newly dealt cards are un-playable (and can't buy spins) until every
+   phone in the lobby has locked that hole without disagreement — so a wrong
+   score's cards are always still in hand for the settlement to reclaim.
+   Discarding held cards stays legal; offline rounds have no hold at all.
 4. Push, which is its own project: keys, a subscriptions table, an Edge Function to
    send. This is the first server-side code and the first schema in the repo.
 
