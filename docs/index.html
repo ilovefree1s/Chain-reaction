@@ -1512,9 +1512,11 @@ function renderScore() {
       '</div>' +
         '<div class="rel ' + relClass(rel) + '">' +
         (lead ? '<span class="lead">LEAD</span>' : "") +
+        // Over/under and (in skins) the skins — no running stroke total. The
+        // par tells the story mid-round; totals wait for the results screen.
         (isSkins(s)
-          ? plural(skinsFor(s, i), "skin") + '  &middot;  ' + fmtRel(rel) + '  &middot;  ' + total + ' total'
-          : fmtRel(rel) + '  &middot;  ' + total + ' total strokes') + '</div></div>' +
+          ? plural(skinsFor(s, i), "skin") + '  &middot;  ' + fmtRel(rel)
+          : fmtRel(rel)) + '</div></div>' +
       '<button class="step" data-act="score" data-i="' + i + '" data-n="-1"' +
         (locked || score <= 1 ? " disabled" : "") + '>&minus;</button>' +
       '<div class="num">' + score + '</div>' +
