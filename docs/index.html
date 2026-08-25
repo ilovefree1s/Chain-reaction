@@ -128,6 +128,10 @@
   .player .name { font-size: 22px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .player.me .name { color: var(--self); }
   .rel { font-size: 15px; font-weight: 900; }
+  /* Live rounds only: what each player is holding, self-reported by their phone. */
+  .handct { font-size: 13px; font-weight: 900; color: #4DC3FF; background: #061022;
+            border: 1px solid var(--edge); border-radius: 6px; padding: 2px 7px;
+            margin-left: 6px; vertical-align: 2px; white-space: nowrap; }
   /* Under par cool blue, even quiet, over par hot orange — the palette does the talking. */
   .rel.under { color: var(--react); }
   .rel.even { color: var(--sage); }
@@ -687,6 +691,334 @@ function putSettings(next) {
 }
 var settings = loadSettings();
 
+/* ---------- live room ----------
+   Four phones, one round — see MULTIPLAYER_PLAN.md. The connection is decoration
+   over a scorecard that already works alone: with no keys below, no signal, or a
+   dead server, none of this runs and the round is exactly what it was.
+
+   The transport is Supabase Realtime spoken directly — a websocket, a channel
+   join, a heartbeat, broadcasts — rather than their client library. It is ~150
+   lines for the two features used, the repo stays free of third-party code, and
+   if the message format ever changes the round carries on locally, which is a
+   cheap failure to absorb. */
+
+/* The existing Supabase project (Settings -> API). The anon key ships in a
+   public page by design; the cr: channel namespace keeps rooms clear of
+   everything else in that project. Empty, every live control hides and the app
+   is exactly what it was before. */
+var LIVE_URL = "";
+var LIVE_KEY = "";
+
+function liveConfigured() { return LIVE_URL !== "" && LIVE_KEY !== ""; }
+
+/* Say who you are every 15s; a phone silent for 45s goes quiet in the UI. The
+   slack between the two is deliberate — a phone pocketed for a throw must not
+   flicker out of the round. */
+var HELLO_MS = 15000, QUIET_MS = 45000, HEARTBEAT_MS = 25000;
+
+/* Who this phone is on the wire. Random once, kept forever: names can collide —
+   two phones may both say "Justin" — but ids must not, or one Justin's silence
+   would mute the other. */
+var MY_PEER_ID = (function () {
+  var key = "chainreaction.peer";
+  try {
+    var have = localStorage.getItem(key);
+    if (have) return have;
+  } catch (e) { /* fall through */ }
+  var fresh = Math.floor(Math.random() * 0xFFFFFFF).toString(36) +
+    Math.floor(Math.random() * 0xFFFFFFF).toString(36);
+  try { localStorage.setItem(key, fresh); } catch (e) { /* memory only */ }
+  return fresh;
+})();
+
+/* Four letters, shoutable across a tee pad. No I or O: read aloud they turn
+   into 1 and 0 and a room nobody can join. */
+function makeCode() {
+  var abc = "ABCDEFGHJKLMNPQRSTUVWXYZ", c = "";
+  for (var i = 0; i < 4; i++) c += abc.charAt(Math.floor(Math.random() * abc.length));
+  return c;
+}
+
+/* Every event carries an id because alerts will arrive by two routes — the
+   channel and, later, push — and a repeat must cost nothing. */
+function eventId() {
+  return MY_PEER_ID + "." + Date.now().toString(36) + "." +
+    Math.floor(Math.random() * 1e9).toString(36);
+}
+
+var live = null;      // the open room, or null
+var liveSeen = {};    // event ids already handled, so the second route is a no-op
+var liveJoin = null;  // the code being typed on the join field; null while closed
+
+function liveTopic() { return "realtime:cr:" + live.code; }
+
+function liveConnect(code) {
+  if (!liveConfigured()) return;
+  liveDisconnect();
+  live = { code: code, sock: null, joined: false, refN: 0, peers: {},
+           backoff: 1000, lastHeard: 0, closing: false,
+           hbTimer: null, sayTimer: null, retryTimer: null };
+  liveOpen();
+  keepAwake();
+}
+
+function liveOpen() {
+  var l = live;
+  if (!l) return;
+  var url = LIVE_URL.replace(/^http/, "ws") +
+    "/realtime/v1/websocket?apikey=" + encodeURIComponent(LIVE_KEY) + "&vsn=1.0.0";
+  var sock;
+  try { sock = new WebSocket(url); } catch (e) { liveRetry(); return; }
+  l.sock = sock;
+
+  sock.onopen = function () {
+    if (live !== l || l.sock !== sock) return;
+    l.backoff = 1000;
+    // The join Supabase expects, verbatim. No presence config on purpose —
+    // the hellos below do that job, at the fuzziness we actually want.
+    liveRaw(liveTopic(), "phx_join", {
+      config: { broadcast: { self: false, ack: false }, presence: { key: "" },
+                postgres_changes: [], private: false },
+      access_token: LIVE_KEY
+    });
+    l.hbTimer = setInterval(function () { liveRaw("phoenix", "heartbeat", {}); }, HEARTBEAT_MS);
+    l.sayTimer = setInterval(function () { liveHello(); liveRefresh(); }, HELLO_MS);
+  };
+
+  sock.onmessage = function (e) {
+    if (live !== l || l.sock !== sock) return;
+    l.lastHeard = Date.now();
+    var m;
+    try { m = JSON.parse(e.data); } catch (err) { return; }
+    if (m.topic !== liveTopic()) return; // heartbeat replies only bump lastHeard
+    if (m.event === "phx_reply") {
+      // Joined. Announce straight away — a broadcast before the ack is dropped.
+      if (m.payload && m.payload.status === "ok" && !l.joined) {
+        l.joined = true;
+        liveHello();
+        liveRefresh();
+      }
+      return;
+    }
+    // The server closed the channel under us; reopening the socket rejoins.
+    if (m.event === "phx_error" || m.event === "phx_close") { liveRetry(); return; }
+    if (m.event !== "broadcast" || !m.payload) return;
+    var p = m.payload.payload;
+    if (!p || p.from === MY_PEER_ID) return;
+    if (m.payload.event === "hello") { liveHear(p); return; }
+    // Anything else is an alert-shaped event: dedupe here, handling comes later.
+    if (p.eid) {
+      if (liveSeen[p.eid]) return;
+      liveSeen[p.eid] = true;
+    }
+  };
+
+  sock.onclose = function () {
+    if (live !== l || l.sock !== sock || l.closing) return;
+    liveRetry();
+  };
+}
+
+/* One frame on the wire. Phoenix wants a ref on everything; nothing here reads
+   replies beyond "the socket is alive", so a counter is enough. */
+function liveRaw(topic, event, payload) {
+  var l = live;
+  if (!l || !l.sock || l.sock.readyState !== 1) return;
+  l.refN += 1;
+  try {
+    l.sock.send(JSON.stringify({ topic: topic, event: event, payload: payload, ref: String(l.refN) }));
+  } catch (e) { /* the close handler deals with a dying socket */ }
+}
+
+/* Fire-and-forget to everyone else in the room. */
+function liveCast(event, payload) {
+  if (!live) return;
+  payload.from = MY_PEER_ID;
+  payload.eid = eventId();
+  liveRaw(liveTopic(), "broadcast", { type: "broadcast", event: event, payload: payload });
+}
+
+/* Presence without the presence feature: who you are, what you're holding.
+   Mid-round the scorecard's own name wins over Settings, so the hello matches
+   the row it should light up on the other phones. */
+function liveHello() {
+  if (!live) return;
+  liveCast("hello", {
+    id: MY_PEER_ID,
+    name: (state ? state.players[state.meIndex] : settings.myName) || "",
+    characterId: state && state.characters
+      ? state.characters[state.meIndex]
+      : settings.myCharacter,
+    handCount: state ? state.hand.length : null
+  });
+}
+
+function liveHear(p) {
+  if (!live || !p.id) return;
+  live.peers[p.id] = {
+    name: typeof p.name === "string" ? p.name : "",
+    characterId: typeof p.characterId === "number" ? p.characterId : null,
+    handCount: typeof p.handCount === "number" ? p.handCount : null,
+    at: Date.now()
+  };
+  liveSeat(live.peers[p.id]);
+  liveRefresh();
+}
+
+/* Everyone heard from lately. Quiet phones are filtered, never removed — the
+   next hello brings them straight back. */
+function livePeers() {
+  var out = [];
+  if (!live) return out;
+  var now = Date.now();
+  for (var id in live.peers) {
+    if (now - live.peers[id].at <= QUIET_MS) out.push(live.peers[id]);
+  }
+  return out;
+}
+
+/* The roster builds itself: a phone arriving during Setup takes the first empty
+   seat, name and face already filled from its saved profile. Nobody types a
+   name for somebody who is standing right there. */
+function liveSeat(peer) {
+  if (screen !== "setup") return;
+  var name = peer.name.trim();
+  if (!name) return;
+  var have = setup.names.some(function (n) {
+    return n.trim().toLowerCase() === name.toLowerCase();
+  });
+  if (have) return;
+  var slot = -1;
+  for (var i = 0; i < setup.names.length; i++) {
+    if (!setup.names[i].trim()) { slot = i; break; }
+  }
+  if (slot === -1) {
+    if (setup.names.length >= MAX_PLAYERS) return;
+    setup.names.push(""); setup.chars.push(null);
+    slot = setup.names.length - 1;
+  }
+  setup.names[slot] = name;
+  // Their face too, unless somebody on this phone already claimed it.
+  if (peer.characterId != null && setup.chars.indexOf(peer.characterId) === -1) {
+    setup.chars[slot] = peer.characterId;
+  }
+}
+
+/* What [p] is holding: yours from the round in front of you, everyone else's
+   self-reported. Matching is by name — the only key both sides share. */
+function liveHandFor(s, p) {
+  if (!live) return null;
+  if (p === s.meIndex) return s.hand.length;
+  var name = s.players[p].trim().toLowerCase();
+  var peers = livePeers();
+  for (var i = 0; i < peers.length; i++) {
+    if (peers[i].name.trim().toLowerCase() === name) return peers[i].handCount;
+  }
+  return null;
+}
+
+/* Live updates redraw whatever is on screen, but never out from under a finger:
+   a re-render mid-name would drop the keyboard. */
+function liveRefresh() {
+  var el = document.activeElement;
+  if (el && el.tagName === "INPUT") return;
+  render();
+}
+
+/* Disconnects are the steady state — phones background to throw, and iOS
+   freezes the page within seconds. Reopen silently, backing off to 15s so a
+   dead room isn't hammered all afternoon. The UI says nothing: the room holds
+   no state, so being out costs nothing but missed alerts. */
+function liveRetry() {
+  var l = live;
+  if (!l) return;
+  clearInterval(l.hbTimer); clearInterval(l.sayTimer);
+  clearTimeout(l.retryTimer);
+  l.joined = false;
+  if (l.sock) {
+    var dying = l.sock;
+    l.sock = null;
+    try { dying.close(); } catch (e) { /* already gone */ }
+  }
+  l.retryTimer = setTimeout(function () { if (live === l) liveOpen(); }, l.backoff);
+  l.backoff = Math.min(15000, l.backoff * 2);
+}
+
+function liveDisconnect() {
+  var l = live;
+  if (!l) return;
+  live = null;
+  l.closing = true;
+  clearInterval(l.hbTimer); clearInterval(l.sayTimer);
+  clearTimeout(l.retryTimer);
+  if (l.sock) { try { l.sock.close(); } catch (e) { /* already gone */ } }
+  if (wakeLock) {
+    try { wakeLock.release(); } catch (e) { /* released with the page */ }
+    wakeLock = null;
+  }
+}
+
+/* The screen stays awake while a room is open: the phone is in a hand between
+   throws, and letting it lock would freeze the page along with the alerts. */
+var wakeLock = null;
+function keepAwake() {
+  if (!live || wakeLock || !("wakeLock" in navigator)) return;
+  navigator.wakeLock.request("screen").then(function (lock) {
+    wakeLock = lock;
+    lock.addEventListener("release", function () { wakeLock = null; });
+  }).catch(function () { /* battery saver said no — the round plays on */ });
+}
+
+/* Coming back out of a pocket the socket can look open and be long dead: if
+   nothing has been heard in over a heartbeat, assume it is and reopen now
+   rather than waiting to find out. */
+document.addEventListener("visibilitychange", function () {
+  if (document.visibilityState !== "visible" || !live) return;
+  keepAwake();
+  if (!live.sock || live.sock.readyState !== 1 ||
+      Date.now() - live.lastHeard > HEARTBEAT_MS + 10000) {
+    live.backoff = 1000;
+    liveRetry();
+  } else {
+    liveHello();
+  }
+  liveRefresh();
+});
+
+/* Create/join, shared by Setup and the in-round Rules tab. Hidden entirely
+   until the keys at the top of this section are filled in. */
+function renderLiveSection() {
+  if (!liveConfigured()) return "";
+  var head = '<div class="label">Live</div>';
+  if (!live) {
+    if (liveJoin === null) {
+      return head +
+        '<p class="hint">Link the group\'s phones — card plays and hand counts on every screen. Scores stay yours alone.</p>' +
+        '<div class="acts" style="margin-bottom:14px">' +
+        '<button class="big wheel" data-act="liveStart" style="margin:0">Start a room</button>' +
+        '<button class="big quiet" data-act="liveJoinAsk" style="margin:0">Join a room</button></div>';
+    }
+    return head +
+      '<input type="text" data-live-code maxlength="4" autocapitalize="characters" ' +
+      'autocomplete="off" spellcheck="false" placeholder="CODE" value="' + esc(liveJoin) +
+      '" style="text-align:center;letter-spacing:10px;font-size:26px;font-weight:900;text-transform:uppercase">' +
+      '<div style="height:10px"></div>' +
+      '<button class="big primary" data-act="liveGo"' +
+      (liveJoin.trim().length === 4 ? "" : " disabled") + '>Join</button>' +
+      '<button class="big quiet" data-act="liveNo">Never mind</button>';
+  }
+  var names = livePeers().map(function (p) { return p.name.trim(); }).filter(Boolean);
+  return head +
+    // The code rides big on an orange panel so the rest of the group can read
+    // it straight off this screen.
+    '<div class="panel sel" style="text-align:center">' +
+    '<div style="font-size:38px;font-weight:900;letter-spacing:12px;color:#FF8A1E">' +
+    esc(live.code) + '</div>' +
+    '<div class="dim">' + (names.length
+      ? 'You + ' + names.map(esc).join(", ")
+      : 'Waiting for the others&hellip; same code on every phone.') + '</div></div>' +
+    '<button class="big quiet" data-act="liveLeave">Leave the room</button>';
+}
 
 /* Only cards that land on one named person are worth asking about. Self is you, group
    is everyone, and a reaction answers a card rather than a player. */
@@ -1066,7 +1398,8 @@ function renderSetup() {
   var ready = namesReady && courseReady;
 
   // No title block — the back bar already says NEW ROUND.
-  return '<div class="label">Players</div>' +
+  return renderLiveSection() +
+    '<div class="label">Players</div>' +
     '<p class="hint">' + (CHARACTERS.length
       // You are always player 1, so there is nothing to mark — the old ME chips said
       // the same thing four times over.
@@ -1154,10 +1487,13 @@ function renderScore() {
     var lead = lockedCount(s) > 0 &&
       (isSkins(s) ? mostSkins > 0 && skinsFor(s, i) === mostSkins : total === best);
     var ch = characterFor(s, i);
+    var held = liveHandFor(s, i);
     return '<div class="player' + (me ? " me" : "") + '"><div class="row">' +
       // Only takes up room once somebody has actually picked a character.
       (ch ? badgeHtml(ch, 40) + '<div style="width:10px"></div>' : "") +
-      '<div class="grow"><div class="name">' + esc(name) + '</div>' +
+      '<div class="grow"><div class="name">' + esc(name) +
+      (held != null ? ' <span class="handct">' + held + "/" + DATA.handCap + "</span>" : "") +
+      '</div>' +
         '<div class="rel ' + relClass(rel) + '">' +
         (lead ? '<span class="lead">LEAD</span>' : "") +
         (isSkins(s)
@@ -1492,7 +1828,8 @@ function renderRoundRules() {
     (savedAs ? '<p class="hint" style="color:var(--react)">Saved as &ldquo;' +
       esc(savedAs) + '&rdquo;.</p>' : "");
 
-  return renderHouseRules() + renderCardLibrary() +
+  // Live first: joining mid-round shouldn't mean scrolling past the whole deck.
+  return renderLiveSection() + renderHouseRules() + renderCardLibrary() +
     '<div style="height:16px"></div>' + saveCourse +
     '<div style="height:16px"></div>' + danger;
 }
@@ -2074,7 +2411,9 @@ function spinWheel(kind) {
 }
 
 /* ---------- actions ---------- */
-function commit(next) { state = next; save(state); render(); }
+/* Every commit re-announces: the hand count on the other phones tracks yours as
+   fast as the wire allows, with no separate bookkeeping about what changed. */
+function commit(next) { state = next; save(state); render(); if (live) liveHello(); }
 
 function drawOne(s) {
   var deck = s.deck, discard = s.discard;
@@ -2105,6 +2444,12 @@ app.addEventListener("input", function (e) {
     // Correcting the name beside a face corrects the face's name.
     if (setup.chars[+idx] != null) renameCharacter(setup.chars[+idx], e.target.value);
     syncStartButton();
+    return;
+  }
+  if (e.target.hasAttribute("data-live-code")) {
+    liveJoin = e.target.value.toUpperCase();
+    e.target.value = liveJoin;
+    syncButton('[data-act="liveGo"]', liveJoin.trim().length === 4);
     return;
   }
   if (e.target.hasAttribute("data-course-name")) {
@@ -2262,6 +2607,8 @@ app.addEventListener("click", function (e) {
         setup.names.map(function (x) { return x.trim(); }),
         setup.meIndex, setup.holes, setupPars(), setup.courseName, setup.chars, setup.mode,
       ));
+      // The room rides with the round: a reload rejoins it without asking.
+      if (live) { state.liveCode = live.code; save(state); }
       roundCourseName = state.courseName || "";
       screen = "round";
       render();
@@ -2341,6 +2688,7 @@ app.addEventListener("click", function (e) {
     case "viewScorecard": showScorecard = true; render(); break;
     // Clears the round and returns to the menu, so Play means play again.
     case "finishRound":
+      liveDisconnect(); // the room dies with the round
       clearSaved();
       state = null;
       tab = "score";
@@ -2414,10 +2762,35 @@ app.addEventListener("click", function (e) {
     case "spinName": spinWheel("name"); break;
     case "closeWheel": wheel = null; render(); break;
 
+    // ---- live room ----
+    // Starting or joining mid-round stamps the code onto the saved round, so a
+    // reloaded page is back in the room without being asked. During Setup there
+    // is no round yet — the code is stamped when Start creates one.
+    case "liveStart":
+      liveJoin = null;
+      liveConnect(makeCode());
+      if (s) { s.liveCode = live.code; commit(s); } else render();
+      break;
+    case "liveJoinAsk": liveJoin = ""; render(); break;
+    case "liveNo": liveJoin = null; render(); break;
+    case "liveGo": {
+      var code = liveJoin.trim().toUpperCase();
+      if (code.length !== 4) break;
+      liveJoin = null;
+      liveConnect(code);
+      if (s) { s.liveCode = code; commit(s); } else render();
+      break;
+    }
+    case "liveLeave":
+      liveDisconnect();
+      if (s) { delete s.liveCode; commit(s); } else render();
+      break;
+
     case "endAsk": confirming = true; render(); break;
     case "endNo": confirming = false; render(); break;
     case "endYes":
       confirming = false;
+      liveDisconnect(); // the room dies with the round
       clearSaved();
       state = null;
       tab = "score";
@@ -2428,6 +2801,10 @@ app.addEventListener("click", function (e) {
       render(); break;
   }
 });
+
+/* A round saved with a room rejoins it by itself — the code is never asked for
+   twice, and a reloaded page is back in the room before anyone notices. */
+if (state && state.liveCode) liveConnect(state.liveCode);
 
 render();
 

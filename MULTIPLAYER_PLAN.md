@@ -1,7 +1,8 @@
 # Live match plan — four phones, one round
 
-Design settled 2026-08-24. Nothing built yet. This is the plan a future session
-should start from rather than re-deriving.
+Design settled 2026-08-24. Build order step 1 — the connection — built the same
+day on the `multiplayer` branch; steps 2-4 remain. This is the plan to build
+from rather than re-deriving.
 
 The goal: when somebody plays a card on you, your phone tells you. Everything else
 here exists to serve that.
@@ -100,8 +101,15 @@ half easy and the web half no easier, and produces two half-tables at one basket
 
 ## Build order
 
-1. The connection: join a room, see each other's hand counts. Proves the protocol
-   on four phones before anything is built on top of it.
+1. ~~The connection: join a room, see each other's hand counts.~~ **Built.** Lives
+   entirely in `web/template.html` under "live room": a hand-rolled Phoenix
+   channel client, 4-letter room codes (no I/O), hellos every 15s with a 45s
+   quiet timeout, silent reconnect with 15s-capped backoff, wake lock, and hand
+   counts as chips on the score rows. Create/join sits on Setup and the in-round
+   Rules tab; peers arriving during Setup seat themselves. The Supabase URL and
+   anon key are the `LIVE_URL`/`LIVE_KEY` constants at the top of that section —
+   empty, every live control hides. Not yet proven against a real Supabase
+   project or four real phones.
 2. Card plays and the in-app alert.
 3. Score comparison at lock.
 4. Push, which is its own project: keys, a subscriptions table, an Edge Function to
