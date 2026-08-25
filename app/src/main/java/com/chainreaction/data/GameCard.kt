@@ -78,7 +78,7 @@ object Rules {
 
 object CardDeck {
     val ALL: List<GameCard> = listOf(
-        GameCard(1, "Before tee shot", CardKind.SELF, "1v1 Challenge", "Challenge someone. It runs until one of you beats the other's score on a hole — a tie settles nothing. The winner gets immunity from all attack cards next hole and banks a mulligan to use on any hole, whenever they need it."),
+        GameCard(1, "Before tee shot", CardKind.ATTACK, "1v1 Challenge", "Challenge someone. It runs until one of you beats the other's score on a hole — a tie settles nothing. The winner gets immunity from all attack cards next hole and banks a mulligan to use on any hole, whenever they need it."),
         GameCard(2, "Before shot", CardKind.ATTACK, "39% OF THE SPLITS", "Force an opponent to straddle putt. Playable any time someone is about to throw a putter."),
         GameCard(3, "Before shot", CardKind.DUAL, "Aerobie", "On yourself: use an aerobie for your drive. On another player: they drive with the aerobie using their off hand. Normal stroke either way."),
         GameCard(4, "After throw", CardKind.ATTACK, "AIR HORN!", "Heckle an opponent during one of their shots. Reveal and discard this card after."),
