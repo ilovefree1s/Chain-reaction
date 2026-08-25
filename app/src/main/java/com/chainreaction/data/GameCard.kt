@@ -134,7 +134,7 @@ object CardDeck {
         GameCard(54, "Before tee shot", CardKind.ATTACK, "Too Many Choices", "Pick 3 discs out of an opponent's bag. They pick 1, then pass the other 2 to the next person, who chooses 1 of the 2 and gives the last disc to the last person. Tee off, nerds."),
         GameCard(55, "Before tee shot", CardKind.SELF, "Tree Insurance", "Play before your tee shot. If you hit a tree, take a free mulligan."),
         GameCard(56, "Before shot", CardKind.ATTACK, "Trust Me Bro", "Give another player advice for their tee shot. They have to follow it as best they can. (Somewhat reasonable advice — don't tell them something like throw it backwards.)"),
-        GameCard(57, "Before shot", CardKind.ATTACK, "Turbo Time", "An opponent's next putt must be a turbo putt."),
+        GameCard(57, "Before shot", CardKind.ATTACK, "Turbo Time", "All opponents in C1 must turbo putt their next shot."),
         GameCard(58, "Before tee shot", CardKind.GROUP, "WALK IT DOWN!!", "No other cards can be played once this hits the table. Everyone tees immediately from anywhere near the tee pad — no throw order. First and second to finish get birdie, third gets par, last gets bogey. No running, and no calling foot faults."),
         GameCard(59, "After throw", CardKind.ATTACK, "Walk of Shame", "After a missed putt inside C1, that player carries their putter until they finish the next hole. If they drop it or put it in the bag, +1 stroke."),
         GameCard(60, "Before tee shot", CardKind.ATTACK, "Your Tee Pad Is Over There!", "Use 2 of your discs to mark a new tee for an opponent of your choice, up to 10 paces (30 ft) from the original. They tee from it."),
