@@ -95,7 +95,9 @@
   }
   .row { display: flex; align-items: center; gap: 10px; }
   .grow { flex: 1 1 auto; min-width: 0; }
-  .num { width: 56px; text-align: center; font-size: 34px; font-weight: 900; }
+  /* 44, not 56: wide enough for a two-digit blow-up hole, and every pixel saved
+     here is a pixel the name beside it gets to keep. */
+  .num { width: 44px; text-align: center; font-size: 32px; font-weight: 900; }
 
   input[type=text] {
     width: 100%; min-height: var(--tap); background: var(--panel); color: var(--off);
@@ -1506,7 +1508,8 @@ function renderScore() {
     var held = liveHandFor(s, i);
     return '<div class="player' + (me ? " me" : "") + '"><div class="row">' +
       // Only takes up room once somebody has actually picked a character.
-      (ch ? badgeHtml(ch, 40) + '<div style="width:10px"></div>' : "") +
+      // The row's own gap is the whole spacing — names were getting cut off.
+      (ch ? badgeHtml(ch, 40) : "") +
       '<div class="grow"><div class="name">' + esc(name) + '</div>' +
         '<div class="rel ' + relClass(rel) + '">' +
         (lead ? '<span class="lead">LEAD</span>' : "") +
@@ -1567,7 +1570,7 @@ function renderResults() {
     var ch = characterFor(s, p);
     return '<div class="player' + (isWinner ? " me" : "") + '"><div class="row">' +
       '<div class="place' + (isWinner ? " won" : "") + '">' + (place + 1) + '</div>' +
-      (ch ? badgeHtml(ch, 40) + '<div style="width:10px"></div>' : "") +
+      (ch ? badgeHtml(ch, 40) : "") +
       '<div class="grow"><div class="name">' + esc(s.players[p]) + '</div>' +
         // Relative to par, then how far off the win — spelled out, because
         // "E · +1" reads as a contradiction at a glance.
