@@ -113,6 +113,12 @@ const SETTLED = {
  * Pass two: the wheel wording, reviewed the same way — a card drops off this
  * list once its wheel words are agreed. Separate map from SETTLED, because a
  * card can be finished as a play and still read wrong off the wheel.
+ *
+ * Ruled once, for the seven cards that need somebody to choose (which disc,
+ * which mando, which direction, whose shots get commentated): the exempt
+ * player chooses, for everybody. They are sitting the card out anyway, and the
+ * alternative — each player choosing for themselves — empties the card out.
+ * Neither of those cards leaves the wheel over it. Don't reopen this per card.
  */
 const WHEEL_SETTLED = {
 };
