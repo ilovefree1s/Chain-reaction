@@ -128,7 +128,7 @@ object CardDeck {
         GameCard(48, "Before shot", CardKind.DUAL, "Shoe Golf", "On yourself: putt with your own shoe at no stroke cost. On another player: they putt with a shoe and it still counts as a stroke. If they refuse to take their shoe off, they take +1 stroke after the hole."),
         GameCard(49, "Before shot", CardKind.ATTACK, "Forehand only!", "Force an opponent to throw a forehand on the upcoming drive or approach."),
         GameCard(50, "On draw", CardKind.SABOTAGE, "Everybody But Me", "You must play this card immediately after drawing, you can't discard it. Everyone gets a free mulligan on the next hole but me =("),
-        GameCard(51, "Before shot", CardKind.DUAL, "That's Definitely a Gimme", "Allow a player to pick up a putt as a gimme, as long as it's inside C1. They definitely woulda made it."),
+        GameCard(51, "Before shot", CardKind.DUAL, "That's Definitely a Gimme", "Pick up a putt as a gimme, as long as it's inside C1 — you definitely woulda made it. The player in last place gets one too. If 2 players are tied for last, they rock paper scissors for it."),
         GameCard(52, "Before tee shot", CardKind.ATTACK, "Too Many Choices", "Pick 3 discs out of an opponent's bag. They pick 1, then pass the other 2 to the next person, who chooses 1 of the 2 and gives the last disc to the last person. Tee off, nerds."),
         GameCard(53, "Before tee shot", CardKind.SELF, "Tree Insurance", "Play before your tee shot. If you hit a tree, take a free mulligan."),
         GameCard(54, "Before shot", CardKind.ATTACK, "Trust Me Bro", "Give another player advice for their tee shot. They have to follow it as best they can. (Somewhat reasonable advice — don't tell them something like throw it backwards.)"),
