@@ -73,7 +73,7 @@ object Rules {
 
 object CardDeck {
     val ALL: List<GameCard> = listOf(
-        GameCard(1, "Before tee shot", CardKind.SELF, "1v1 Challenge", "Challenge someone. It runs until one of you beats the other's score on a hole — a tie settles nothing. The winner gets immunity from attack cards next turn and a free mulligan."),
+        GameCard(1, "Before tee shot", CardKind.SELF, "1v1 Challenge", "Challenge someone. It runs until one of you beats the other's score on a hole — a tie settles nothing. The winner gets immunity from all attack cards next hole and banks a mulligan to use on any hole, whenever they need it."),
         GameCard(2, "Before shot", CardKind.ATTACK, "39% OF THE SPLITS", "Force an opponent to straddle putt. Playable any time someone is about to throw a putter."),
         GameCard(3, "Before shot", CardKind.DUAL, "Aerobie", "On yourself: use an aerobie for your drive. On another player: they drive with the aerobie using their off hand. Normal stroke either way."),
         GameCard(4, "After throw", CardKind.ATTACK, "AIR HORN!", "Heckle an opponent during one of their shots. Reveal and discard this card after."),
@@ -116,7 +116,7 @@ object CardDeck {
         GameCard(41, "After card", CardKind.REACT, "No Way", "Cancel any card just played. That card goes to the discard pile."),
         GameCard(42, "Before tee shot", CardKind.ATTACK, "Not the Recommended Route", "Choose a reasonable object the target player must pass on a side you specify."),
         GameCard(43, "Before tee shot", CardKind.SELF, "Not Today!", "Remove any and all card effects currently on you."),
-        GameCard(44, "Before tee shot", CardKind.ATTACK, "One Disc Wonder!", "Force an opponent to play the hole with only 1 disc. You choose it."),
+        GameCard(44, "Before tee shot", CardKind.ATTACK, "One Disc Wonder!", "Force an opponent to play the hole with only 1 DISC. You choose it."),
         GameCard(45, "Before tee shot", CardKind.ATTACK, "Over Sharer", "Give everyone a disc from your own bag to tee off with on this hole."),
         GameCard(46, "Before tee shot", CardKind.ATTACK, "Plant Your Feet!", "No run-up on an opponent's next throw."),
         GameCard(47, "Any time", CardKind.DUAL, "Player 2's Turn!", "On yourself: retake any shot for free. On another player: force them to re-throw a shot that was too good."),
@@ -135,7 +135,6 @@ object CardDeck {
         GameCard(60, "After throw", CardKind.ATTACK, "Walk of Shame", "After a missed putt inside C1, that player carries their putter until they finish the next hole. If they drop it or put it in the bag, +1 stroke."),
         GameCard(61, "Before tee shot", CardKind.ATTACK, "Your Tee Pad Is Over There!", "Use 2 of your discs to mark a new tee for an opponent of your choice, up to 10 paces (30 ft) from the original. They tee from it."),
         GameCard(62, "Before all tee", CardKind.SABOTAGE, "I Think It's Broke", "The first player to hit a tree loses that disc — they can't throw it again for the rest of the round."),
-        GameCard(63, "Before tee shot", CardKind.ATTACK, "One Disc Wonder", "Force an opponent to play the hole with only 1 DISC. You choose it."),
     )
 
     private val byId: Map<Int, GameCard> = ALL.associateBy { it.id }

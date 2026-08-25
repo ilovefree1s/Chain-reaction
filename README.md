@@ -11,12 +11,12 @@ its own copy of the scorecard, exactly as [BUILD_SPEC.md](BUILD_SPEC.md) describ
 
 ## Where the rules live
 
-[BUILD_SPEC.md](BUILD_SPEC.md) is the source of truth for the 63 cards, held in alphabetical
+[BUILD_SPEC.md](BUILD_SPEC.md) is the source of truth for the 62 cards, held in alphabetical
 order by name with ids running 1-N to match. The web build reads
 its card data straight out of the spec's ```json block at build time, so the spec and the web
 app can't drift. The Android build has the same data transcribed into
 [GameCard.kt](app/src/main/java/com/chainreaction/data/GameCard.kt), verified against the spec
-by unit test (`deck is 63 cards with unique ids one through sixty-three`).
+by unit test (`deck is 62 cards with unique ids one through sixty-two`).
 
 Ids are positional, not permanent: re-sorting the deck renumbers them. Nothing in either
 build hardcodes one — `wheelExcludes` and `freeSpinCard` live in the spec beside the cards,

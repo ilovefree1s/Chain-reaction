@@ -15,7 +15,7 @@ If a PWA is easier to sideload, that's acceptable — but it must work offline, 
 - **Stroke play.** Lowest total wins.
 - **Starting hand:** 4 cards, dealt at round start.
 - **Hand cap:** 7. Cannot draw past it — must discard first.
-- **Each player has their own 63-card deck**, shuffled independently. Duplicate cards across players are expected and fine.
+- **Each player has their own 62-card deck**, shuffled independently. Duplicate cards across players are expected and fine.
 - **Played and discarded cards** go to that player's own discard pile. Reshuffle the discard back into the deck if the deck ever empties.
 - **Max 2 cards may be played on any one player per hole.** The app does not enforce this — players track it themselves — but show it in an in-app rules screen.
 
@@ -124,7 +124,7 @@ Suggested palette: deep pine ground (`#0C1A14`), panels (`#132A21`), muted sage 
     "Any time"
   ],
   "cards": [
-    { "id": 1, "timing": "Before tee shot", "kind": "self", "name": "1v1 Challenge", "text": "Challenge someone. It runs until one of you beats the other's score on a hole — a tie settles nothing. The winner gets immunity from attack cards next turn and a free mulligan." },
+    { "id": 1, "timing": "Before tee shot", "kind": "self", "name": "1v1 Challenge", "text": "Challenge someone. It runs until one of you beats the other's score on a hole — a tie settles nothing. The winner gets immunity from all attack cards next hole and banks a mulligan to use on any hole, whenever they need it." },
     { "id": 2, "timing": "Before shot", "kind": "attack", "name": "39% OF THE SPLITS", "text": "Force an opponent to straddle putt. Playable any time someone is about to throw a putter." },
     { "id": 3, "timing": "Before shot", "kind": "dual", "name": "Aerobie", "text": "On yourself: use an aerobie for your drive. On another player: they drive with the aerobie using their off hand. Normal stroke either way." },
     { "id": 4, "timing": "After throw", "kind": "attack", "name": "AIR HORN!", "text": "Heckle an opponent during one of their shots. Reveal and discard this card after." },
@@ -167,7 +167,7 @@ Suggested palette: deep pine ground (`#0C1A14`), panels (`#132A21`), muted sage 
     { "id": 41, "timing": "After card", "kind": "react", "name": "No Way", "text": "Cancel any card just played. That card goes to the discard pile." },
     { "id": 42, "timing": "Before tee shot", "kind": "attack", "name": "Not the Recommended Route", "text": "Choose a reasonable object the target player must pass on a side you specify." },
     { "id": 43, "timing": "Before tee shot", "kind": "self", "name": "Not Today!", "text": "Remove any and all card effects currently on you." },
-    { "id": 44, "timing": "Before tee shot", "kind": "attack", "name": "One Disc Wonder!", "text": "Force an opponent to play the hole with only 1 disc. You choose it." },
+    { "id": 44, "timing": "Before tee shot", "kind": "attack", "name": "One Disc Wonder!", "text": "Force an opponent to play the hole with only 1 DISC. You choose it." },
     { "id": 45, "timing": "Before tee shot", "kind": "attack", "name": "Over Sharer", "text": "Give everyone a disc from your own bag to tee off with on this hole." },
     { "id": 46, "timing": "Before tee shot", "kind": "attack", "name": "Plant Your Feet!", "text": "No run-up on an opponent's next throw." },
     { "id": 47, "timing": "Any time", "kind": "dual", "name": "Player 2's Turn!", "text": "On yourself: retake any shot for free. On another player: force them to re-throw a shot that was too good." },
@@ -185,8 +185,7 @@ Suggested palette: deep pine ground (`#0C1A14`), panels (`#132A21`), muted sage 
     { "id": 59, "timing": "Before tee shot", "kind": "group", "name": "WALK IT DOWN!!", "text": "No other cards can be played once this hits the table. Everyone tees immediately from anywhere near the tee pad — no throw order. First and second to finish get birdie, third gets par, last gets bogey. No running, and no calling foot faults." },
     { "id": 60, "timing": "After throw", "kind": "attack", "name": "Walk of Shame", "text": "After a missed putt inside C1, that player carries their putter until they finish the next hole. If they drop it or put it in the bag, +1 stroke." },
     { "id": 61, "timing": "Before tee shot", "kind": "attack", "name": "Your Tee Pad Is Over There!", "text": "Use 2 of your discs to mark a new tee for an opponent of your choice, up to 10 paces (30 ft) from the original. They tee from it." },
-    { "id": 62, "timing": "Before all tee", "kind": "sabotage", "name": "I Think It's Broke", "text": "The first player to hit a tree loses that disc — they can't throw it again for the rest of the round." },
-    { "id": 63, "timing": "Before tee shot", "kind": "attack", "name": "One Disc Wonder", "text": "Force an opponent to play the hole with only 1 DISC. You choose it." }
+    { "id": 62, "timing": "Before all tee", "kind": "sabotage", "name": "I Think It's Broke", "text": "The first player to hit a tree loses that disc — they can't throw it again for the rest of the round." }
   ]
 }
 ```

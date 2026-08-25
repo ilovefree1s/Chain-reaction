@@ -130,7 +130,7 @@ fun SetupScreen(
             // You are always player 1, so there is nothing to mark — the old ME chips
             // said the same thing four times over.
             if (characters.isEmpty()) "You're player 1. Name the rest of the group."
-            else "You're player 1. Name the rest, and tap a face to pick a character.",
+            else "You're player 1. Hit the + to easily add the rest of the boys on your card.",
             color = NeonBody,
             fontSize = 16.sp,
             modifier = Modifier.padding(bottom = 12.dp),

@@ -92,9 +92,9 @@ class DrawRuleTest {
     // ---- deck integrity ----
 
     @Test
-    fun `deck is 63 cards with unique ids one through sixty-three`() {
-        assertEquals(63, CardDeck.ALL.size)
-        assertEquals((1..63).toSet(), CardDeck.ALL.map { it.id }.toSet())
+    fun `deck is 62 cards with unique ids one through sixty-two`() {
+        assertEquals(62, CardDeck.ALL.size)
+        assertEquals((1..62).toSet(), CardDeck.ALL.map { it.id }.toSet())
     }
 
     @Test
