@@ -1,0 +1,114 @@
+# Live match plan — four phones, one round
+
+Design settled 2026-08-24. Nothing built yet. This is the plan a future session
+should start from rather than re-deriving.
+
+The goal: when somebody plays a card on you, your phone tells you. Everything else
+here exists to serve that.
+
+## The shape
+
+Every phone keeps its own round exactly as it does today. The connection is
+**decoration over a scorecard that already works alone** — a phone with no signal
+plays a complete round, it just misses the alerts. Nothing about the game depends
+on the network being up.
+
+Only three things travel:
+
+| What | Why |
+|---|---|
+| Card plays | The alert. "Justin played Bag Boy! on Avery." |
+| Hand counts | Each row shows `4/7` instead of a running stroke total. |
+| Hole scores, at lock | Flags a disagreement. Nobody's card gets overwritten. |
+
+Deliberately **not** synced: the scorecard itself. Every phone tracking the table
+independently is what makes the app trustworthy — no phone is the referee. Syncing
+scores would mean deciding who wins when two disagree, and that is a much worse
+game than the one being played.
+
+## Decisions
+
+**Server — Supabase, the existing project.** Not a new one: free projects sleep
+after about a week idle, and a group that plays when the weather is good would
+come back to a dead room. The existing project is kept awake by other traffic.
+Channels are namespaced `cr:<code>` so they cannot collide with anything else in
+there.
+
+**Connection — hand-rolled, no library.** About 150 lines: open a socket, join a
+channel, heartbeat, read messages. The project has no third-party code in it and
+this does not have to be the exception, especially to use two features out of
+dozens. If Supabase ever change their message format the connection breaks and the
+round carries on locally, which is a cheap failure to absorb.
+
+**No presence — heartbeats instead.** Supabase has a presence feature that reports
+joins and leaves precisely, and we deliberately don't want precision: a player who
+pockets their phone between throws must not flicker out of the UI. So every phone
+broadcasts `{ id, name, characterId, handCount }` on join and every 15s after, and
+a phone nobody has heard from in 45s goes quiet. Twenty lines, and the timeout is
+the behaviour we wanted anyway.
+
+**Identity — the saved profile.** Name and face are already in Settings, already
+drawn from the shared roster. Joining announces them. Nobody types a name, nobody
+picks a row, nobody matches "Ave" to "Avery". The roster builds itself as people
+join; Setup's typing path survives only for a phone that is not connecting.
+
+**Disconnects are the steady state, not an error.** Phones go in pockets to throw,
+and iOS freezes a backgrounded page within seconds. So: reconnect automatically and
+silently, store the room code with the round so it is never asked for twice, and
+say nothing in the UI during the normal in-and-out. Because the room holds no state
+— plays are fire-and-forget, counts are self-reported — everybody dropping at once
+costs nothing. They rejoin the same channel and it rebuilds in a second.
+
+**Wake lock.** Screen Wake Lock keeps the page alive while the phone is in a hand,
+which is where it is 99% of the time. Re-acquire on visibility change.
+
+**Alerts — both routes, deduped.** The realtime channel feeds everything on screen.
+A push goes out separately so a pocketed phone still buzzes. A phone may receive
+both, so every event carries an id and a repeat is ignored.
+
+**Android and iPhone both play the web build.** The Kotlin app does not speak this
+protocol and does not need to; the one Android user joins on the web build like
+everyone else. Note his native app's saved profile and custom courses do not follow
+him — the two apps have separate storage.
+
+## Not settled
+
+- **The iPhone foreground test.** Does iOS buzz for a notification while you are
+  looking at the app, or suppress it as redundant? Deferred until there is
+  something to test. If it suppresses, an iPhone in hand gets the banner and the
+  chain rattle but no haptic; everything else is unaffected.
+- **Row-level security on the shared Supabase project.** The anon key lands in a
+  public page. That is fine by design, but it is the same key as the other games in
+  that project, so every table in there needs to hold against an anonymous caller.
+  Check before shipping, not after.
+- Screen-level choices, better made with something on screen: where create/join
+  lives, what the alert says and whether it needs acknowledging, whether group and
+  sabotage cards announce to the whole table, where the discrepancy badge sits, and
+  whether the Double Wheel result broadcasts as a table-wide moment.
+
+## Rejected, with reasons
+
+**Phone numbers and SMS.** Would sidestep Apple entirely and lands where data is
+weak, but US carriers now require registering automated senders, texts pile up in a
+thread nobody can clear, and it still needs the same server-side sender. The one
+use worth revisiting is a single end-of-round summary text, which push is worse at.
+
+**Splitting by platform** — Android with Android, web with web. Makes the Android
+half easy and the web half no easier, and produces two half-tables at one basket.
+
+**Syncing scores as shared state.** See above.
+
+## Build order
+
+1. The connection: join a room, see each other's hand counts. Proves the protocol
+   on four phones before anything is built on top of it.
+2. Card plays and the in-app alert.
+3. Score comparison at lock.
+4. Push, which is its own project: keys, a subscriptions table, an Edge Function to
+   send. This is the first server-side code and the first schema in the repo.
+
+## What this contradicts
+
+`BUILD_SPEC.md` lists "No sync, multiplayer, or networking" as a founding
+principle, and the README repeats it. Both need rewriting when this lands, along
+with a line noting that names and card plays leave the phone for the first time.
