@@ -98,6 +98,9 @@
   /* 44, not 56: wide enough for a two-digit blow-up hole, and every pixel saved
      here is a pixel the name beside it gets to keep. */
   .num { width: 44px; text-align: center; font-size: 32px; font-weight: 900; }
+  /* − score + as one tight cluster: the row's 10px gap holds it off the name,
+     but inside it the three pieces sit nearly flush. */
+  .steps { display: flex; align-items: center; gap: 3px; }
 
   input[type=text] {
     width: 100%; min-height: var(--tap); background: var(--panel); color: var(--off);
@@ -1522,11 +1525,12 @@ function renderScore() {
         // and it was swallowing the chip on the row you look at most — your own.
         (held != null ? ' <span class="handct">' + held + "/" + DATA.handCap + "</span>" : "") +
         '</div></div>' +
+      '<div class="steps">' +
       '<button class="step" data-act="score" data-i="' + i + '" data-n="-1"' +
         (locked || score <= 1 ? " disabled" : "") + '>&minus;</button>' +
       '<div class="num">' + score + '</div>' +
       '<button class="step" data-act="score" data-i="' + i + '" data-n="1"' + (locked ? " disabled" : "") + '>+</button>' +
-      '</div></div>';
+      '</div></div></div>';
   }).join("");
 
   var lockBlock = locked
