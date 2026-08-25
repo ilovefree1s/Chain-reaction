@@ -992,6 +992,16 @@ function scoreDisputes(s, h) {
   return out;
 }
 
+/* The whole round's disagreements, grouped by hole, oldest first. */
+function allDisputes(s) {
+  var out = [];
+  for (var h = 0; h < s.holeCount; h++) {
+    var d = scoreDisputes(s, h);
+    if (d.length) out.push({ hole: h, items: d });
+  }
+  return out;
+}
+
 /* Live updates redraw whatever is on screen, but never out from under a finger:
    a re-render mid-name would drop the keyboard. */
 function liveRefresh() {
@@ -1648,16 +1658,19 @@ function renderScore() {
         ? 'Already dealt &mdash; locking again gives no new cards.'
         : 'Locking gives you ' + drawForHole(s, h) + ' card(s).') + '</p>';
 
-  var disputes = scoreDisputes(s, h);
-  var disputeBlock = disputes.length
-    ? '<div class="dispute"><div class="dtitle">Scorecards disagree</div>' +
-      disputes.map(function (d) {
+  // Every locked hole's disagreements, not just this one's: locking auto-
+  // advances, so a flag pinned to its own hole would talk to an empty room.
+  // Tapping a flag jumps to the hole it is arguing about.
+  var disputeBlock = allDisputes(s).map(function (g) {
+    return '<div class="dispute" data-act="hole" data-n="' + g.hole + '" style="cursor:pointer">' +
+      '<div class="dtitle">Scorecards disagree &middot; hole ' + (g.hole + 1) + '</div>' +
+      g.items.map(function (d) {
         return '<div class="dline">' + esc(d.player) + ': you have ' + d.mine +
           ', ' + esc(d.phone) + '&rsquo;s phone has ' + d.theirs + '</div>';
       }).join("") +
       '<div class="dhint">Nobody&rsquo;s card gets overwritten &mdash; settle it out ' +
-      'loud, then whoever is wrong unlocks and fixes it.</div></div>'
-    : "";
+      'loud. Tap to open hole ' + (g.hole + 1) + ' and fix whichever card is wrong.</div></div>';
+  }).join("");
 
   return head + players + disputeBlock + lockBlock;
 }
