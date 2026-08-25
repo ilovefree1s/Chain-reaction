@@ -84,10 +84,9 @@ Color-code cards by function — this is the main visual system:
 |---|---|
 | `attack` | played on an opponent |
 | `self` | benefits you |
-| `dual` | works either as self-help or as an attack, depending on target |
+| `dual` | lands on you or on another player — a favour either way, or self-help and an attack depending on who you pick |
 | `react` | played in response to another card |
 | `group` | affects everyone |
-| `gift` | played on another player to help them |
 | `sabotage` | costs you, to everybody else's benefit |
 
 Suggested palette: deep pine ground (`#0C1A14`), panels (`#132A21`), muted sage text (`#8AA79A`), off-white (`#F2F5F1`). Function colors: attack `#FF5A4D`, self `#FFD23F`, dual `#FF57C1`, react `#4DD9E8`, group `#A78BFA`. Condensed heavy display face for card names, plain sans for body.
@@ -136,7 +135,7 @@ Suggested palette: deep pine ground (`#0C1A14`), panels (`#132A21`), muted sage 
     { "id": 10, "timing": "After throw", "kind": "attack", "name": "Big Ooof, Bud.", "text": "Move an opponent's lie up to 10 paces (30 ft) in any direction, as long as it isn't out of bounds." },
     { "id": 11, "timing": "After throw", "kind": "self", "name": "Big Putted!", "text": "If you make a putt from outside C1 while any other players are inside C1, they all must use their left hand to putt this hole." },
     { "id": 12, "timing": "Before tee shot", "kind": "attack", "name": "Bizarro Golf!", "text": "Force an opponent to drive with a putter and putt with a driver this hole." },
-    { "id": 13, "timing": "After throw", "kind": "gift", "name": "Buddy Buddy", "text": "Bless someone with a free mulligan after a bad throw." },
+    { "id": 13, "timing": "After throw", "kind": "dual", "name": "Buddy Buddy", "text": "Bless someone with a free mulligan after a bad throw." },
     { "id": 14, "timing": "Before all tee", "kind": "self", "name": "Call Your Shot", "text": "Call CTP. If you win it, nobody can play cards on you next hole, and your next attack card hits every opponent — not you." },
     { "id": 15, "timing": "Any time", "kind": "attack", "name": "Can I Borrow This?", "text": "Pick anyone you want. Look through their cards and play one on anyone." },
     { "id": 16, "timing": "Any time", "kind": "react", "name": "Change Is Good", "text": "Force an opponent to change the target of one of their cards, if there is another option." },
@@ -146,7 +145,7 @@ Suggested palette: deep pine ground (`#0C1A14`), panels (`#132A21`), muted sage 
     { "id": 20, "timing": "Before tee shot", "kind": "attack", "name": "Commentator", "text": "Another player has to announce every shot you take this hole like they are a commentator. If they forget one, they take +1 stroke." },
     { "id": 21, "timing": "Before tee shot", "kind": "attack", "name": "Dealer's Choice!", "text": "You pick the discs every other player tees off with this hole." },
     { "id": 22, "timing": "Before tee shot", "kind": "attack", "name": "Do Not Pass Go", "text": "Whoever has the shortest drive on the next hole gets no cards for that hole." },
-    { "id": 23, "timing": "After throw", "kind": "gift", "name": "Doesn't Look OB to Me", "text": "Play on a shot that just went OB. Instead of actually being OB (or in a hazard) they can just play it where it lies, with no penalty at all." },
+    { "id": 23, "timing": "After throw", "kind": "dual", "name": "Doesn't Look OB to Me", "text": "Play on a shot that just went OB. Instead of actually being OB (or in a hazard) they can just play it where it lies, with no penalty at all." },
     { "id": 24, "timing": "After throw · secret", "kind": "self", "name": "Don't Nice Me!", "text": "If any player says \"nice\" as your disc is in flight and it hits a tree, that throw doesn't count. Take it again." },
     { "id": 25, "timing": "Before tee shot", "kind": "group", "name": "Double Wheel", "text": "Free spin on the Double Wheel. The name doesn't matter — you choose who gets the benefit or the punishment." },
     { "id": 26, "timing": "Before shot", "kind": "attack", "name": "Easily Distracted?", "text": "Everyone can do anything they want to distract a player while they are about to putt." },
@@ -156,12 +155,12 @@ Suggested palette: deep pine ground (`#0C1A14`), panels (`#132A21`), muted sage 
     { "id": 30, "timing": "After throw", "kind": "self", "name": "GAMBLE!", "text": "Take a second chance at a putt you just missed. Make it and it was a free mulligan. Miss and the second stroke counts too — play whichever disc landed farthest away, then add +1 stroke after the hole ends." },
     { "id": 31, "timing": "After all tee", "kind": "self", "name": "Gimme Dat", "text": "After all tee shots, trade lies with an opponent of your choice." },
     { "id": 32, "timing": "Before shot", "kind": "dual", "name": "Globetrotter Shit", "text": "On yourself: putt behind the back at no stroke cost. On another player: they putt behind the back and it counts as a normal stroke." },
-    { "id": 33, "timing": "Before tee shot", "kind": "gift", "name": "GOOD GUYS VS. BAD GUYS!", "text": "Ask another player to team up for the next hole. Birdie counts as an eagle, no birdie is +1. Cards against one of you count against both, and you both take the same score. If they refuse, ask someone else — if everyone refuses, they all discard 1 card." },
+    { "id": 33, "timing": "Before tee shot", "kind": "dual", "name": "GOOD GUYS VS. BAD GUYS!", "text": "Ask another player to team up for the next hole. Birdie counts as an eagle, no birdie is +1. Cards against one of you count against both, and you both take the same score. If they refuse, ask someone else — if everyone refuses, they all discard 1 card." },
     { "id": 34, "timing": "After all play a card", "kind": "group", "name": "Group Hug", "text": "Only play after 3 other players used an attack card. Everyone must carry out their own card they played. Do whichever one you choose as well." },
     { "id": 35, "timing": "Before shot", "kind": "self", "name": "If the Basket Was There It Woulda Went In", "text": "Play before a C2 putt only. If you hit metal and it doesn't go in, it still counts." },
     { "id": 36, "timing": "After all tee", "kind": "attack", "name": "I'm In Control", "text": "You decide who plays whose tee shots. More than one player can be sent to the same lie." },
     { "id": 37, "timing": "Before tee shot", "kind": "attack", "name": "It's Like a Stranger Is Doing It!", "text": "Force an opponent to take the upcoming drive with their off hand." },
-    { "id": 38, "timing": "Before tee shot", "kind": "gift", "name": "Lefty Off the Box", "text": "Allow a player to tee off left handed for free. Their first throw after that is their real tee shot." },
+    { "id": 38, "timing": "Before tee shot", "kind": "dual", "name": "Lefty Off the Box", "text": "Allow a player to tee off left handed for free. Their first throw after that is their real tee shot." },
     { "id": 39, "timing": "After a hole", "kind": "dual", "name": "Me and You", "text": "On yourself: take the best score made on the hole. On another player: they take the worst score made on the hole." },
     { "id": 40, "timing": "Before tee shot", "kind": "self", "name": "My Tee Pad Is Over Here!", "text": "Use 2 of your discs to mark a new tee for yourself, up to 10 paces (30 ft) from the original. Feeling nice? You may pick 1 player to join you." },
     { "id": 41, "timing": "After card", "kind": "react", "name": "No Way", "text": "Cancel any card just played. That card goes to the discard pile." },
@@ -177,7 +176,7 @@ Suggested palette: deep pine ground (`#0C1A14`), panels (`#132A21`), muted sage 
     { "id": 51, "timing": "Before shot", "kind": "dual", "name": "Shoe Golf", "text": "On yourself: putt with your own shoe at no stroke cost. On another player: they putt with a shoe and it still counts as a stroke. If they refuse to take their shoe off, they take +1 stroke after the hole." },
     { "id": 52, "timing": "Before shot", "kind": "attack", "name": "Sidearm", "text": "Force an opponent to throw a sidearm on the upcoming drive or approach." },
     { "id": 53, "timing": "On draw", "kind": "sabotage", "name": "Everybody But Me", "text": "You must play this card immediately after drawing, you can't discard it. Everyone gets a free mulligan on the next hole but me =(" },
-    { "id": 54, "timing": "Before shot", "kind": "gift", "name": "That's Definitely a Gimme", "text": "Allow a player to pick up a putt as a gimme, as long as it's inside C1. They definitely woulda made it." },
+    { "id": 54, "timing": "Before shot", "kind": "dual", "name": "That's Definitely a Gimme", "text": "Allow a player to pick up a putt as a gimme, as long as it's inside C1. They definitely woulda made it." },
     { "id": 55, "timing": "Before tee shot", "kind": "attack", "name": "Too Many Choices", "text": "Pick 3 discs out of an opponent's bag. They choose which one to tee off with this hole from the 3 options." },
     { "id": 56, "timing": "Before tee shot", "kind": "self", "name": "Tree Insurance", "text": "Play before your tee shot. If you hit a tree, take a free mulligan." },
     { "id": 57, "timing": "Before shot", "kind": "attack", "name": "Trust Me Bro", "text": "Give another player advice for their tee shot. They have to follow it as best they can." },

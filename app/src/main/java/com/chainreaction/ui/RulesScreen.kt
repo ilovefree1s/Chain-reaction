@@ -120,8 +120,8 @@ private val sharedRules = listOf(
     ),
     HouseRule(
         NeonIcon.GIFT,
-        "Gift yourself",
-        "A gift card can be played on you. Nothing says a favour has to go to somebody else.",
+        "Yourself or somebody else",
+        "A dual card can be played on you. Nothing says a favour has to go to another player.",
     ),
     HouseRule(
         NeonIcon.SCALES,

@@ -1256,13 +1256,24 @@ function renderLiveSection() {
 /* Only cards that land on one named person are worth asking about. Self is you, group
    is everyone, and a reaction answers a card rather than a player. */
 function aimedAtSomeone(kind) {
-  return kind === "attack" || kind === "dual" || kind === "gift";
+  return kind === "attack" || kind === "dual";
 }
 
 /* A favour can be your own. Attacks are not offered — nobody needs the app's help to
    hurt themselves. Matches CardKind on the Android side. */
 function playableOnSelf(kind) {
-  return kind === "gift" || kind === "dual";
+  return kind === "dual";
+}
+
+/*
+ * Dual covers two shapes: cards that spell out both halves ("On yourself: … On
+ * another player: …"), and plain favours that simply may land on you. Only the
+ * first kind has a good and a bad version, which is what the Double Wheel's
+ * third spin decides — so it asks the card's own words rather than its kind.
+ * Read from the text so a new card behaves correctly the day it is written.
+ */
+function hasTwoHalves(c) {
+  return /on yourself:/i.test(c.text) && /on another player:/i.test(c.text);
 }
 
 /* Gifts that make no sense aimed at yourself — a team-up needs a second person.
@@ -2023,8 +2034,8 @@ function openWheelNow(free) {
     nameLabels: nameLabels, nameSeg: null, nameRot: 0,
     cardLabels: ring.map(function (c) { return c.name; }),
     cardIdx: ringIdx, cardRot: 0,
-    // Dual cards get a third spin: good half or bad half.
-    isDual: winner.kind === "dual",
+    // Cards with a written good and bad half get a third spin to pick one.
+    isDual: hasTwoHalves(winner),
     fateLabels: fateLabels, fateIdx: null, fateRot: 0, fateGood: null,
     spinning: false
   };
@@ -2096,7 +2107,7 @@ var SHARED_RULES = [
   ["recycle", "Discard", "Played and discarded cards go to your own discard pile. If your deck runs out, the discard is reshuffled back in."],
   ["wheel", "Buy a spin", "Discard " + DATA.wheelCost + " cards to buy a spin on the Double Wheel. Spin it from the Hand tab. Playing Double Wheel spins for free instead."],
   ["people", "Two per player, per hole", "At most 2 cards may be played on any one player per hole. The app does not enforce this — track it yourselves."],
-  ["gift", "Gift yourself", "A gift card can be played on you. Nothing says a favour has to go to somebody else."],
+  ["gift", "Yourself or somebody else", "A dual card can be played on you. Nothing says a favour has to go to another player."],
   ["scales", "The app doesn't referee", "It deals cards and keeps score. It never applies card effects or stroke penalties. Cards that rewrite scores get entered by hand with the ± steppers."]
 ];
 
@@ -2370,12 +2381,6 @@ function kindGlyph(kind, cx, cy) {
     g += person(cx, cy + 26, 1.5, ICE) +
       '<path d="M' + cx + ' ' + (cy - 64) + 'v38" stroke="' + ORG + '"/>' +
       '<path d="M' + (cx - 16) + ' ' + (cy - 42) + 'l16 16 16-16" stroke="' + ORG + '"/>';
-  } else if (kind === "gift") {
-    // A wrapped present: aimed at somebody, but as a favour.
-    g += '<rect x="' + (cx - 36) + '" y="' + (cy - 10) + '" width="72" height="50" stroke="' + ICE + '"/>' +
-      '<path d="M' + cx + ' ' + (cy - 10) + 'v50" stroke="' + ORG + '"/>' +
-      '<circle cx="' + (cx - 17) + '" cy="' + (cy - 26) + '" r="14" stroke="' + ORG + '"/>' +
-      '<circle cx="' + (cx + 17) + '" cy="' + (cy - 26) + '" r="14" stroke="' + ORG + '"/>';
   } else {
     g += person(cx - 30, cy + 2, 1.1, ICE) + person(cx + 30, cy + 2, 1.1, ICE) + person(cx, cy + 18, 1.3, ORG);
   }
@@ -2459,7 +2464,7 @@ function renderFaceModal() {
                 '<button class="big primary" data-act="playOn" data-t="' + esc(name) +
                 '" data-i="' + c.id + '">' + esc(name) + "</button>";
             }).join("") +
-            // A favour can be your own: gifts and duals may land on you. No data-t, so the
+            // A favour can be your own: a dual card may land on you. No data-t, so the
             // tally stays a record of who you aim at rather than putting you top of it.
             (selfMakesSense(c)
               ? '<button class="big quiet" data-act="playOn" data-i="' + c.id + '">Myself</button>'

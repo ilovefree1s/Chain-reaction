@@ -260,23 +260,6 @@ private fun DrawScope.drawKindGlyph(kind: CardKind) {
             drawLine(NeonOrange, Offset(w * 0.36f, h * 0.18f), Offset(w * 0.5f, h * 0.30f), stroke.width)
             drawLine(NeonOrange, Offset(w * 0.64f, h * 0.18f), Offset(w * 0.5f, h * 0.30f), stroke.width)
         }
-        // A wrapped present: this one is aimed at somebody, but as a favour.
-        CardKind.GIFT -> {
-            drawRect(
-                NeonIce,
-                topLeft = Offset(w * 0.14f, h * 0.36f),
-                size = Size(w * 0.72f, h * 0.50f),
-                style = stroke,
-            )
-            drawLine(
-                NeonOrange,
-                Offset(w * 0.5f, h * 0.36f),
-                Offset(w * 0.5f, h * 0.86f),
-                stroke.width,
-            )
-            drawCircle(NeonOrange, radius = w * 0.11f, center = Offset(w * 0.37f, h * 0.24f), style = stroke)
-            drawCircle(NeonOrange, radius = w * 0.11f, center = Offset(w * 0.63f, h * 0.24f), style = stroke)
-        }
     }
 }
 
@@ -389,7 +372,7 @@ fun CardFaceDialog(
                 // A favour can be your own: gifts and duals may land on you, so you are
                 // offered alongside the table. Attacks are not — nobody needs the app's
                 // help to hurt themselves.
-                val canPlayOnSelf = card.kind == CardKind.GIFT || card.kind == CardKind.DUAL
+                val canPlayOnSelf = card.kind == CardKind.DUAL
 
                 if (onResolve != null) {
                     if (choosingTarget) {

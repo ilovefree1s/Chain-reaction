@@ -533,8 +533,7 @@ class DrawRuleTest {
     @Test
     fun `only cards that land on one person ask who`() {
         assertTrue(CardKind.ATTACK.aimedAtSomeone)
-        assertTrue(CardKind.GIFT.aimedAtSomeone)
-        assertTrue(CardKind.DUAL.aimedAtSomeone)
+        assertTrue("dual lands on you or on somebody else", CardKind.DUAL.aimedAtSomeone)
         assertTrue("self is you", !CardKind.SELF.aimedAtSomeone)
         assertTrue("group is everyone", !CardKind.GROUP.aimedAtSomeone)
         assertTrue("a reaction answers a card", !CardKind.REACT.aimedAtSomeone)
