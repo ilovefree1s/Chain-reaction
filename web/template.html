@@ -630,7 +630,7 @@ var memoryStore = null;
  * version 1 holds ids that now mean different cards. A mismatch drops the round
  * rather than dealing somebody the wrong hand mid-round.
  */
-var SCHEMA_VERSION = 2;
+var SCHEMA_VERSION = 3;
 
 function save(s) {
   s.v = SCHEMA_VERSION;
@@ -1279,7 +1279,7 @@ function hasTwoHalves(c) {
 /* Gifts that make no sense aimed at yourself — a team-up needs a second person.
    These lose the "Myself" button; everything else about their kind stands. */
 var NO_SELF_CARDS = [
-  33 // GOOD GUYS VS. BAD GUYS! — you can't be your own teammate
+  32, // GOOD GUYS VS. BAD GUYS! — you can't be your own teammate
 ];
 function selfMakesSense(c) {
   return playableOnSelf(c.kind) && NO_SELF_CARDS.indexOf(c.id) === -1;
@@ -1299,10 +1299,10 @@ var PLAY_ON_ALL = [
   21, // Dealer's Choice!
   22, // Do Not Pass Go — everyone is in the running until the drives land
 
-  28, // FIVE FOR YOU, YOU, AND YOU! — everyone else pays the ace pot
-  36, // I'm In Control
-  45, // Over Sharer
-  62  // I Think It's Broke
+  27, // FIVE FOR YOU, YOU, AND YOU! — everyone else pays the ace pot
+  35, // I'm In Control
+  44, // Over Sharer
+  61,  // I Think It's Broke
 ];
 function playableOnAll(id) { return PLAY_ON_ALL.indexOf(id) !== -1; }
 /* Sent as the target when a card is played on the whole table, and understood
@@ -1317,7 +1317,7 @@ var ALL_TARGET = "*all*";
  * notice while the moment is live, and it stays until tapped.
  */
 var INVITE_CARDS = [
-  26  // Easily Distracted? — everyone may help distract the putter
+  26,  // Easily Distracted? — everyone may help distract the putter
 ];
 function invitesTable(id) { return INVITE_CARDS.indexOf(id) !== -1; }
 
@@ -1326,13 +1326,13 @@ function invitesTable(id) { return INVITE_CARDS.indexOf(id) !== -1; }
    The words are the table's own voice — keep them in it. */
 var ALERT_TAUNTS = {
   11: "You just got Big Putted, nerd. Now you putt this as a lefty. If you already made it, never mind — but you're still a nerd.",
-  28: "Everyone else owes 5 dollars to the ace pot!"
+  27: "Everyone else owes 5 dollars to the ace pot!"
 };
 
 /* Wording for a card played on ONE person, when "on YOU" undersells it. [you]
    is what the target reads; [others] is what the rest of the table reads. */
 var ALERT_LINES = {
-  33: { you: "You're teammates next hole — good guys, bad guys, same score.",
+  32: { you: "You're teammates next hole — good guys, bad guys, same score.",
         others: "teamed up next hole" }
 };
 
