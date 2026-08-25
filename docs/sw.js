@@ -60,10 +60,38 @@ self.addEventListener("activate", (event) => {
   );
 });
 
-// Cache-first: courses have no signal, and the content only changes on redeploy.
-// caches.match with no cacheName searches both of ours.
+/*
+ * The page is network-first, everything else cache-first.
+ *
+ * Cache-first on the page meant an edit could take two app launches to appear —
+ * and, with GitHub Pages holding sw.js for ten minutes, sometimes not even
+ * then: the browser kept serving a cached page from a service worker that had
+ * not yet noticed it was out of date. For a deck being edited card by card,
+ * that is the difference between "shipped" and "shipped to nobody".
+ *
+ * So a navigation now tries the network first and falls back to the cache when
+ * it fails, which is exactly the case that matters on a course: no signal, open
+ * the app, play the round. Assets stay cache-first — they are megabytes of
+ * photographs and change almost never, and a miss falls through to the network
+ * anyway, so a card or character added today loads before its cache catches up.
+ */
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
+
+  if (event.request.mode === "navigate") {
+    event.respondWith(
+      fetch(event.request)
+        .then((res) => {
+          const copy = res.clone();
+          caches.open(PAGE_CACHE).then((c) => c.put(event.request, copy)).catch(() => {});
+          return res;
+        })
+        .catch(() => caches.match(event.request).then((hit) => hit || caches.match("index.html"))),
+    );
+    return;
+  }
+
+  // caches.match with no cacheName searches both of ours.
   event.respondWith(
     caches.match(event.request).then((hit) => hit || fetch(event.request)),
   );
