@@ -121,6 +121,9 @@ const SETTLED = {
  * Neither of those cards leaves the wheel over it. Don't reopen this per card.
  */
 const WHEEL_SETTLED = {
+  1: "Stays off the wheel. Playable from a hand only.",
+  4: "Stays off the wheel. Playable from a hand only.",
+  2: "On the wheel: straddle putting starts once you're inside Circle 2, and runs for every putt from there.",
 };
 
 const AIMED = new Set(["attack", "dual"]);
