@@ -297,7 +297,7 @@ No score sync and no accounts. The web build's live room shares card plays and h
 ([MULTIPLAYER_PLAN.md](MULTIPLAYER_PLAN.md)), but the scorecard itself is never networked:
 every phone tracks the table independently, because syncing scores would mean deciding whose
 card wins when two disagree. No enforcement of card effects and no
-automatic stroke penalties — GAMBLE!, Code Words!, Commentator, WALK IT DOWN!!,
+automatic stroke penalties — GAMBLE!, Code Words!, Jomez Commentator, WALK IT DOWN!!,
 GOOD GUYS VS. BAD GUYS! and Me and You all rewrite scores, and players enter those by hand
 with the ± steppers. No money
 tracking; FIVE FOR YOU, YOU, AND YOU! is honour-system.

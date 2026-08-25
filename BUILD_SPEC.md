@@ -95,7 +95,7 @@ Suggested palette: deep pine ground (`#0C1A14`), panels (`#132A21`), muted sage 
 
 - No score sync. (Since amended: the web build's live room shares card plays and hand counts — see MULTIPLAYER_PLAN.md — but the scorecard stays local on every phone, and no phone referees another.)
 - No enforcement of card effects.
-- No stroke penalties applied automatically. Cards like GAMBLE!, Code Words!, Commentator, RUSH ATTACK!, Trade Offer and Me and You all rewrite scores — players enter those manually with the ± steppers.
+- No stroke penalties applied automatically. Cards like GAMBLE!, Code Words!, Jomez Commentator, RUSH ATTACK!, Trade Offer and Me and You all rewrite scores — players enter those manually with the ± steppers.
 - No money tracking. FIVE FOR YOU, YOU, AND YOU! mentions a pot; it's honor-system.
 
 ## Card data
@@ -142,7 +142,7 @@ Suggested palette: deep pine ground (`#0C1A14`), panels (`#132A21`), muted sage 
     { "id": 17, "timing": "Before shot", "kind": "attack", "name": "CHRIS SPECIAL!", "text": "Force an opponent to throw a tomahawk on the upcoming drive or approach." },
     { "id": 18, "timing": "Before shot", "kind": "attack", "name": "Close 'Em", "text": "Force an opponent to take the next putt with their eyes closed." },
     { "id": 19, "timing": "Before tee shot", "kind": "attack", "name": "Code Words!", "text": "An opponent can't say \"yes\" or \"no\" this hole. 1 stroke penalty every time they do. ANY variation of the words yes or no counts." },
-    { "id": 20, "timing": "Before tee shot", "kind": "attack", "name": "Commentator", "text": "Another player has to announce every shot you take this hole like they are a commentator. If they forget one, they take +1 stroke." },
+    { "id": 20, "timing": "Before tee shot", "kind": "attack", "name": "Jomez Commentator", "text": "Another player has to announce every shot you take this hole like they are a commentator. If they forget one, they take +1 stroke." },
     { "id": 21, "timing": "Before tee shot", "kind": "attack", "name": "Dealer's Choice!", "text": "You pick the discs every other player tees off with this hole." },
     { "id": 22, "timing": "Before tee shot", "kind": "attack", "name": "Do Not Pass Go", "text": "Whoever has the shortest drive on the next hole gets no cards for that hole." },
     { "id": 23, "timing": "After throw", "kind": "dual", "name": "Doesn't Look OB to Me", "text": "Play on a shot that just went OB. Instead of actually being OB (or in a hazard) they can just play it where it lies, with no penalty at all." },
