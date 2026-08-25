@@ -119,7 +119,14 @@ half easy and the web half no easier, and produces two half-tables at one basket
    until tapped. Anyone else: quiet banner, fades in 8s. Tapping a banner
    opens the card's face. Deduped by event id for the day push becomes the
    second delivery route.
-3. Score comparison at lock.
+3. ~~Score comparison at lock.~~ **Built and proven phone-to-PC.** No lock
+   message: every hello carries the phone's locked rows keyed by hole and
+   player name, so comparison is self-healing across reloads and an
+   unlock-and-fix clears a flag the same way it raised it. Disagreements
+   show as a red panel on whatever hole is open — locking auto-advances, so
+   pinning the flag to its own hole meant nobody saw it (phone test) —
+   labeled by hole, tap to jump there. Nothing is merged; the flag is the
+   entire feature.
 4. Push, which is its own project: keys, a subscriptions table, an Edge Function to
    send. This is the first server-side code and the first schema in the repo.
 
