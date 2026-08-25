@@ -100,7 +100,7 @@ object CardDeck {
         GameCard(20, "Before tee shot", CardKind.ATTACK, "Dealer's Choice!", "You pick the discs every other player tees off with this hole."),
         GameCard(21, "Before tee shot", CardKind.ATTACK, "Do Not Pass Go", "Whoever has the shortest drive on the next hole gets no cards for that hole."),
         GameCard(22, "After throw", CardKind.DUAL, "Doesn't Look OB to Me", "Play on a shot that just went OB. Instead of actually being OB (or in a hazard) they can just play it where it lies, with no penalty at all."),
-        GameCard(23, "After throw · secret", CardKind.SELF, "Don't Nice Me!", "If any player says \"nice\" as your disc is in flight and it hits a tree, that throw doesn't count. Take it again."),
+        GameCard(23, "After throw · secret", CardKind.SELF, "Don't Nice Me!", "If any player says any form of \"nice\" as your disc is in flight and it hits a tree, you can move to where your disc landed and throw again for a free stroke."),
         GameCard(24, "Before tee shot", CardKind.GROUP, "Double Wheel", "Free spin on the Double Wheel. The name doesn't matter — you choose who gets the benefit or the punishment."),
         GameCard(25, "Before shot", CardKind.ATTACK, "Easily Distracted?", "Everyone can do anything they want to distract a player while they are about to putt."),
         GameCard(26, "After a hole", CardKind.SELF, "FIVE FOR YOU, YOU, AND YOU!", "Play after you birdie a hole nobody else birdied. Everyone else owes five dollars to the pot!"),

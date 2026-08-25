@@ -145,7 +145,7 @@ Suggested palette: deep pine ground (`#0C1A14`), panels (`#132A21`), muted sage 
     { "id": 20, "timing": "Before tee shot", "kind": "attack", "name": "Dealer's Choice!", "text": "You pick the discs every other player tees off with this hole." },
     { "id": 21, "timing": "Before tee shot", "kind": "attack", "name": "Do Not Pass Go", "text": "Whoever has the shortest drive on the next hole gets no cards for that hole." },
     { "id": 22, "timing": "After throw", "kind": "dual", "name": "Doesn't Look OB to Me", "text": "Play on a shot that just went OB. Instead of actually being OB (or in a hazard) they can just play it where it lies, with no penalty at all." },
-    { "id": 23, "timing": "After throw · secret", "kind": "self", "name": "Don't Nice Me!", "text": "If any player says \"nice\" as your disc is in flight and it hits a tree, that throw doesn't count. Take it again." },
+    { "id": 23, "timing": "After throw · secret", "kind": "self", "name": "Don't Nice Me!", "text": "If any player says any form of \"nice\" as your disc is in flight and it hits a tree, you can move to where your disc landed and throw again for a free stroke." },
     { "id": 24, "timing": "Before tee shot", "kind": "group", "name": "Double Wheel", "text": "Free spin on the Double Wheel. The name doesn't matter — you choose who gets the benefit or the punishment." },
     { "id": 25, "timing": "Before shot", "kind": "attack", "name": "Easily Distracted?", "text": "Everyone can do anything they want to distract a player while they are about to putt." },
     { "id": 26, "timing": "After a hole", "kind": "self", "name": "FIVE FOR YOU, YOU, AND YOU!", "text": "Play after you birdie a hole nobody else birdied. Everyone else owes five dollars to the pot!" },
