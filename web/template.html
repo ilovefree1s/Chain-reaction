@@ -1345,6 +1345,65 @@ var ALERT_LINES = {
         others: "teamed up next hole" }
 };
 
+/*
+ * How a card reads on the Double Wheel, which is a different sentence from how
+ * it reads in your hand. In hand you point a card at somebody; on the wheel
+ * everybody but the exempt player carries it out at once, so "force an opponent
+ * to straddle putt" has to become "straddle putt every putt this hole."
+ *
+ * Written in the second person, no target named — the screen already says who
+ * is exempt, and repeating it in the card's words says it twice. A few cards
+ * need somebody to choose (which disc, which mando, which direction); those
+ * hand the job to the exempt player, who is otherwise just watching, and write
+ * them [exempt] so the wheel can fill in the actual name. A free spin never
+ * lands on a name, so there [exempt] becomes the spinner, who does the choosing.
+ *
+ * Cards with a good and a bad half spell out both, since the fate spin picks
+ * one after this text is already on screen. Anything already written as a plain
+ * instruction to you — Foot Wedge, GAMBLE! — needs no entry and gets none.
+ */
+var WHEEL_TEXT = {
+  2:  "Straddle putt. Every putt you take this hole, feet planted either side of the lie.",
+  3:  "Good half: use an aerobie for your drive. Bad half: drive with the aerobie using your off hand. Normal stroke either way.",
+  5:  "Throw a mini for your next drive or putt. Through the basket floor still counts as in.",
+  8:  "[exempt] picks any disc out of your bag. That's what you throw next.",
+  9:  "[exempt] moves your lie up to 10 paces (30 ft) in any direction, as long as it isn't out of bounds.",
+  11: "Drive with a putter and putt with a driver this hole.",
+  15: "Throw a tomahawk on your next drive or approach.",
+  16: "Take your next putt with your eyes closed.",
+  17: "You can't say \"yes\" or \"no\" this hole. 1 stroke penalty every time you do. ANY variation of the words counts.",
+  18: "Announce every shot [exempt] takes this hole like you're a commentator. Miss one and you take +1 stroke.",
+  29: "Good half: putt behind the back at no stroke cost. Bad half: putt behind the back and it counts as a normal stroke.",
+  33: "Take your next drive with your off hand.",
+  34: "Your first throw off the box is with your offhand, for free — that's throw 0.",
+  36: "Use 2 of your discs to mark a new tee for yourself, up to 10 paces (30 ft) from the original.",
+  38: "[exempt] names a reasonable object you have to pass, and the side you have to pass it on.",
+  40: "Play the hole with only 1 disc.",
+  42: "No run-up on your tee shot.",
+  43: "Good half: retake any shot for free. Bad half: re-throw a shot that was too good — [exempt] picks which one.",
+  45: "Throw a roller on your next drive or approach.",
+  47: "Good half: putt with your own shoe at no stroke cost. Bad half: putt with a shoe and it still counts as a stroke. Refuse to take it off and it's +1 stroke after the hole.",
+  48: "Throw a forehand on your next drive or approach.",
+  50: "Pick up your next putt inside C1 as a gimme. You definitely woulda made it.",
+  53: "[exempt] gives you advice for your tee shot and you follow it as best you can. (Somewhat reasonable advice — nothing like throw it backwards.)",
+  54: "Turbo putt your next shot if you're inside C1.",
+  56: "Miss a putt inside C1 and you carry your putter in either hand until you finish the next hole. (You can putt with it.) Drop it or bag it and it's +1 stroke.",
+  57: "[exempt] marks a new tee with 2 discs, up to 10 paces (30 ft) from the original. Everyone else tees from it."
+};
+function wheelWords(c, w) {
+  var t = WHEEL_TEXT[c.id] || c.text;
+  if (t.indexOf("[exempt]") === -1) return t;
+  // A free spin lands on no name, and the spinner does the choosing instead —
+  // so it fills in with their name too. "You" would read as "You picks".
+  var who = (w && w.free && state && state.players ? state.players[state.meIndex] : w && w.name) ||
+    "the exempt player";
+  // Capitalised where the token opens a sentence, plain everywhere else.
+  return t.replace(/(^|[.!?—] )\[exempt\]/g, function (m, lead) {
+      return lead + who.charAt(0).toUpperCase() + who.slice(1);
+    })
+    .replace(/\[exempt\]/g, who);
+}
+
 /* ---------- the one piece of real logic ---------- */
 function drawCount(holeScores, meIndex, par) {
   var lo = Math.min.apply(null, holeScores);
@@ -2078,7 +2137,11 @@ function counter(label, value, sublabel, act) {
     (act ? "</button>" : "</div>");
 }
 
-function cardHtml(c, withActions) {
+/* [altText] rewrites the card's words for where it is being shown — the wheel
+   passes the wheel wording. Art is painted with the card's own text, so when a
+   face exists the replacement words go underneath it rather than nowhere. */
+function cardHtml(c, withActions, altText) {
+  var words = altText || c.text;
   var acts = "";
   if (withActions && confirmDiscard === c.id) {
     // A discard can't be un-tapped, so it asks once, in place.
@@ -2098,13 +2161,14 @@ function cardHtml(c, withActions) {
   var art = CARD_ART[c.id];
   if (art) {
     return '<div class="card artcard"' + tap + '><img class="cardart" src="' + art + '" alt="' +
-      esc(c.name) + '. ' + esc(c.text) + '">' +
+      esc(c.name) + '. ' + esc(words) + '">' +
+      (altText ? '<div class="body"><p>' + esc(altText) + '</p></div>' : "") +
       (acts ? '<div class="artacts">' + acts + '</div>' : "") + '</div>';
   }
   return '<div class="card"' + tap + '><div class="body">' +
     '<div class="tags"><span class="tag timing">' + c.kind + '</span>' +
     '<span class="tag timing">' + esc(c.timing) + '</span></div>' +
-    '<h3>' + esc(c.name) + '</h3><p>' + esc(c.text) + '</p>' + acts +
+    '<h3>' + esc(c.name) + '</h3><p>' + esc(words) + '</p>' + acts +
     '</div></div>';
 }
 
@@ -2564,7 +2628,7 @@ function renderWheel() {
     }
   }
   if (cardSettled) {
-    html += cardHtml(wheel.card, false);
+    html += cardHtml(wheel.card, false, wheelWords(wheel.card, wheel));
   }
   // Dual cards only: which half applies?
   if (stage === "cardDone") {
@@ -2580,11 +2644,11 @@ function renderWheel() {
         (wheel.fateGood ? 'GOOD EFFECT' : 'BAD EFFECT') + '</div>' +
         '<p>' + (free
           ? (wheel.fateGood
-            ? 'You choose who gets the good half — the on-yourself version, free.'
-            : 'You choose who takes the bad half — the attack version.')
+            ? 'You choose who gets the good half.'
+            : 'You choose who takes the bad half.')
           : esc(wheel.name) + (wheel.fateGood
-            ? ' sits this one out. Everyone else gets the good half — the on-yourself version, free.'
-            : ' sits this one out. Everyone else takes the bad half — the attack version.')) + '</p>';
+            ? ' sits this one out. Everyone else takes the good half.'
+            : ' sits this one out. Everyone else takes the bad half.')) + '</p>';
     } else {
       html += '<p>' + (free
         ? 'You choose who gets the benefit or the punishment.'
