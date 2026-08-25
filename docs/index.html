@@ -1351,12 +1351,16 @@ var ALERT_LINES = {
  * everybody but the exempt player carries it out at once, so "force an opponent
  * to straddle putt" has to become "straddle putt every putt this hole."
  *
- * Written in the second person, no target named — the screen already says who
- * is exempt, and repeating it in the card's words says it twice. A few cards
- * need somebody to choose (which disc, which mando, which direction); those
- * hand the job to the exempt player, who is otherwise just watching, and write
- * them [exempt] so the wheel can fill in the actual name. A free spin never
- * lands on a name, so there [exempt] becomes the spinner, who does the choosing.
+ * Mostly second person, no target named — the screen already says who is exempt,
+ * and repeating it in the card's words says it twice. Two tokens cover the cards
+ * that do have to name somebody, and they are not the same person:
+ *
+ *   [chooser] — whoever picks (which disc, which mando, which direction). That
+ *     job goes to the exempt player, who is otherwise just watching. On a free
+ *     spin nobody is exempt and the spinner picks, so it fills in their name.
+ *   [exempt] — whoever is sitting the card out, for wording that says "everyone
+ *     but". A free spin has no such player, so it reads "the player you exempt":
+ *     the spinner is choosing who that is as they read it.
  *
  * Cards with a good and a bad half spell out both, since the fate spin picks
  * one after this text is already on screen. Anything already written as a plain
@@ -1366,42 +1370,47 @@ var WHEEL_TEXT = {
   2:  "Once you're inside Circle 2, every putt you take is a straddle putt.",
   3:  "Good half: use an aerobie for your drive. Bad half: drive with the aerobie using your off hand. Normal stroke either way.",
   5:  "Throw a mini for your next drive or putt — it applies until you do one or the other. Minis that fall through the basket still count as in.",
-  8:  "[exempt] picks a disc out of any bag for each of you. That's what you tee off with on the next hole.",
-  9:  "[exempt] moves your next lie up to 10 paces (30 ft) in any direction, as long as it isn't out of bounds.",
-  11: "Drive with a putter and putt with a driver this hole.",
+  8:  "[chooser] picks a disc out of any bag for each of you. That's what you tee off with on the next hole.",
+  9:  "[chooser] moves your next lie up to 10 paces (30 ft) in any direction, as long as it isn't out of bounds.",
+  11: "Everyone but [exempt] must drive with a putter and putt with a driver this hole.",
   15: "Throw a tomahawk on your next drive or approach.",
   16: "Take your next putt with your eyes closed.",
   17: "You can't say \"yes\" or \"no\" this hole. 1 stroke penalty every time you do. ANY variation of the words counts.",
-  18: "Announce every shot [exempt] takes this hole like you're a commentator. Miss one and you take +1 stroke.",
+  18: "Announce every shot [chooser] takes this hole like you're a commentator. Miss one and you take +1 stroke.",
   29: "Good half: putt behind the back at no stroke cost. Bad half: putt behind the back and it counts as a normal stroke.",
   33: "Take your next drive with your off hand.",
   34: "Your first throw off the box is with your offhand, for free — that's throw 0.",
   36: "Use 2 of your discs to mark a new tee for yourself, up to 10 paces (30 ft) from the original.",
-  38: "[exempt] names a reasonable object you have to pass, and the side you have to pass it on.",
+  38: "[chooser] names a reasonable object you have to pass, and the side you have to pass it on.",
   40: "Play the hole with only 1 disc.",
   42: "No run-up on your tee shot.",
-  43: "Good half: retake any shot for free. Bad half: re-throw a shot that was too good — [exempt] picks which one.",
+  43: "Good half: retake any shot for free. Bad half: re-throw a shot that was too good — [chooser] picks which one.",
   45: "Throw a roller on your next drive or approach.",
   47: "Good half: putt with your own shoe at no stroke cost. Bad half: putt with a shoe and it still counts as a stroke. Refuse to take it off and it's +1 stroke after the hole.",
   48: "Throw a forehand on your next drive or approach.",
   50: "Pick up your next putt inside C1 as a gimme. You definitely woulda made it.",
-  53: "[exempt] gives you advice for your tee shot and you follow it as best you can. (Somewhat reasonable advice — nothing like throw it backwards.)",
+  53: "[chooser] gives you advice for your tee shot and you follow it as best you can. (Somewhat reasonable advice — nothing like throw it backwards.)",
   54: "Turbo putt your next shot if you're inside C1.",
   56: "Miss a putt inside C1 and you carry your putter in either hand until you finish the next hole. (You can putt with it.) Drop it or bag it and it's +1 stroke.",
-  57: "[exempt] marks a new tee with 2 discs, up to 10 paces (30 ft) from the original. Everyone else tees from it."
+  57: "[chooser] marks a new tee with 2 discs, up to 10 paces (30 ft) from the original. Everyone else tees from it."
 };
 function wheelWords(c, w) {
   var t = WHEEL_TEXT[c.id] || c.text;
-  if (t.indexOf("[exempt]") === -1) return t;
-  // A free spin lands on no name, and the spinner does the choosing instead —
-  // so it fills in with their name too. "You" would read as "You picks".
-  var who = (w && w.free && state && state.players ? state.players[state.meIndex] : w && w.name) ||
-    "the exempt player";
-  // Capitalised where the token opens a sentence, plain everywhere else.
-  return t.replace(/(^|[.!?—] )\[exempt\]/g, function (m, lead) {
-      return lead + who.charAt(0).toUpperCase() + who.slice(1);
-    })
-    .replace(/\[exempt\]/g, who);
+  var free = !!(w && w.free);
+  var me = state && state.players ? state.players[state.meIndex] : null;
+  var landed = (w && w.name) || "the exempt player";
+  // On a paid spin both tokens are the same person. A free spin splits them:
+  // nobody is sitting out, and the spinner is the one making the calls.
+  var fill = {
+    chooser: free ? (me || "the spinner") : landed,
+    exempt: free ? "the player you exempt" : landed
+  };
+  return t.replace(/(^|[.!?—] )?\[(chooser|exempt)\]/g, function (m, lead, key) {
+    var who = fill[key];
+    // Capitalised where the token opens a sentence, plain everywhere else.
+    if (lead) who = who.charAt(0).toUpperCase() + who.slice(1);
+    return (lead || "") + who;
+  });
 }
 
 /* ---------- the one piece of real logic ---------- */

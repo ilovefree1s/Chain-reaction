@@ -126,6 +126,7 @@ const WHEEL_SETTLED = {
   6: "Stays off the wheel. Playable from a hand only.",
   7: "Stays off the wheel. Playable from a hand only.",
   2: "On the wheel: straddle putting starts once you're inside Circle 2, and runs for every putt from there.",
+  11: "On the wheel: worded \"everyone but [exempt]\" outright. That split the token in two — [chooser] for whoever makes the picks, [exempt] for whoever is sitting out — since a free spin has a spinner but no exempt player.",
   9: "On the wheel: the exempt player moves every other player's next lie, up to 10 paces, still not out of bounds.",
   8: "On the wheel: the exempt player picks a disc out of any bag for each other player, and it's their tee shot on the next hole — not the next throw, so the whole table is on the same shot.",
   5: "On the wheel: it rides until you've thrown one or the other, since a spin can land mid-hole with some players already off the tee and others still putting.",
@@ -388,8 +389,9 @@ const html = `<title>Deck Audit — Chain Reaction</title>
     <code>AIMED_CARDS</code>, <code>WHEEL_TEXT</code>, <code>ALERT_TAUNTS</code>,
     <code>ALERT_LINES</code>), so it always mirrors what ships.
     ${wheelPool} of ${enriched.length} cards can land on the wheel; the rest are excluded by
-    <code>wheelExcludes</code>. Where a wheel wording names <code>[exempt]</code>, the app fills in
-    whoever the name wheel landed on. Flags are text heuristics — a prompt to look, not a verdict.
+    <code>wheelExcludes</code>. A wheel wording fills in <code>[chooser]</code> with whoever makes
+    the picks and <code>[exempt]</code> with whoever is sitting out — the same name on a paid spin,
+    different on a free one. Flags are text heuristics — a prompt to look, not a verdict.
   </footer>
 </div>
 
