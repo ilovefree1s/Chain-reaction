@@ -1220,6 +1220,11 @@ function renderAlerts() {
           ? '<div class="onwho taunt">' + esc(ALERT_TAUNTS[a.card]) + '</div>'
           : '<div class="onwho">on EVERYONE</div>')
         : a.invite ? '<div class="onwho">on ' + esc(a.target) + ' &mdash; join in!</div>'
+        : a.you && ALERT_LINES[a.card]
+          ? '<div class="onwho taunt">' + esc(ALERT_LINES[a.card].you) + '</div>'
+        : a.target && ALERT_LINES[a.card]
+          ? '<div class="onwho">' + esc(a.target) + ' &mdash; ' +
+            esc(ALERT_LINES[a.card].others) + '</div>'
         : a.target ? '<div class="onwho">on ' + (a.you ? "YOU" : esc(a.target)) + '</div>' : "") +
       '</div>';
   }).join("") + '</div>';
@@ -1258,6 +1263,15 @@ function aimedAtSomeone(kind) {
    hurt themselves. Matches CardKind on the Android side. */
 function playableOnSelf(kind) {
   return kind === "gift" || kind === "dual";
+}
+
+/* Gifts that make no sense aimed at yourself — a team-up needs a second person.
+   These lose the "Myself" button; everything else about their kind stands. */
+var NO_SELF_CARDS = [
+  33 // GOOD GUYS VS. BAD GUYS! — you can't be your own teammate
+];
+function selfMakesSense(c) {
+  return playableOnSelf(c.kind) && NO_SELF_CARDS.indexOf(c.id) === -1;
 }
 
 /*
@@ -1300,6 +1314,13 @@ function invitesTable(id) { return INVITE_CARDS.indexOf(id) !== -1; }
 var ALERT_TAUNTS = {
   11: "You just got Big Putted, nerd. Now you putt this as a lefty. If you already made it, never mind — but you're still a nerd.",
   28: "Everyone else owes 5 dollars to the ace pot!"
+};
+
+/* Wording for a card played on ONE person, when "on YOU" undersells it. [you]
+   is what the target reads; [others] is what the rest of the table reads. */
+var ALERT_LINES = {
+  33: { you: "You're teammates next hole — good guys, bad guys, same score.",
+        others: "teamed up next hole" }
 };
 
 /* ---------- the one piece of real logic ---------- */
@@ -2440,7 +2461,7 @@ function renderFaceModal() {
             }).join("") +
             // A favour can be your own: gifts and duals may land on you. No data-t, so the
             // tally stays a record of who you aim at rather than putting you top of it.
-            (playableOnSelf(c.kind)
+            (selfMakesSense(c)
               ? '<button class="big quiet" data-act="playOn" data-i="' + c.id + '">Myself</button>'
               : "")) +
         '</div>';
