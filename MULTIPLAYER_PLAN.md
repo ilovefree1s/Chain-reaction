@@ -103,13 +103,16 @@ half easy and the web half no easier, and produces two half-tables at one basket
 
 1. ~~The connection: join a room, see each other's hand counts.~~ **Built.** Lives
    entirely in `web/template.html` under "live room": a hand-rolled Phoenix
-   channel client, 4-letter room codes (no I/O), hellos every 15s with a 45s
-   quiet timeout, silent reconnect with 15s-capped backoff, wake lock, and hand
-   counts as chips on the score rows. Create/join sits on Setup and the in-round
-   Rules tab; peers arriving during Setup seat themselves. The Supabase URL and
-   anon key are the `LIVE_URL`/`LIVE_KEY` constants at the top of that section —
-   empty, every live control hides. Not yet proven against a real Supabase
-   project or four real phones.
+   channel client, hellos every 15s with a 45s quiet timeout, silent reconnect
+   with 15s-capped backoff, wake lock, and hand counts as chips on the score
+   rows. Host/Join sits on Setup and the in-round Rules tab; peers arriving
+   during Setup seat themselves. The Supabase URL and anon key are the
+   `LIVE_URL`/`LIVE_KEY` constants at the top of that section — empty, every
+   live control hides. **Amended after the first phone test:** room codes were
+   built, worked, and were removed at the user's request — one friend group
+   needs one table, so everybody meets on the fixed `cr:lobby` channel and the
+   Host/Join buttons differ only in their waiting copy. If two simultaneous
+   groups ever become real, codes go back in at the `LIVE_ROOM` constant.
 2. ~~Card plays and the in-app alert.~~ **Built and proven phone-to-PC.** A play
    broadcasts name, card and target; discards stay private beyond the hand
    count. Aimed at you: hot pulsing banner, chain rattle, vibration, stays

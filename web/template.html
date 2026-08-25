@@ -768,13 +768,12 @@ var MY_PEER_ID = (function () {
   return fresh;
 })();
 
-/* Four letters, shoutable across a tee pad. No I or O: read aloud they turn
-   into 1 and 0 and a room nobody can join. */
-function makeCode() {
-  var abc = "ABCDEFGHJKLMNPQRSTUVWXYZ", c = "";
-  for (var i = 0; i < 4; i++) c += abc.charAt(Math.floor(Math.random() * abc.length));
-  return c;
-}
+/* One table, no codes: it is one friend group, so everybody meets on the same
+   fixed channel. Hosting versus joining is presentational — the host opens the
+   lobby and says so, a joiner goes looking — but the wire is identical. Room
+   codes were built first and removed on request; if two simultaneous groups
+   ever become real, this is where a code would go back in. */
+var LIVE_ROOM = "lobby";
 
 /* Every event carries an id because alerts will arrive by two routes — the
    channel and, later, push — and a repeat must cost nothing. */
@@ -785,7 +784,6 @@ function eventId() {
 
 var live = null;      // the open room, or null
 var liveSeen = {};    // event ids already handled, so the second route is a no-op
-var liveJoin = null;  // the code being typed on the join field; null while closed
 
 function liveTopic() { return "realtime:cr:" + live.code; }
 
@@ -1116,33 +1114,21 @@ function renderLiveSection() {
   if (!liveConfigured()) return "";
   var head = '<div class="label">Live</div>';
   if (!live) {
-    if (liveJoin === null) {
-      return head +
-        '<p class="hint">Link the group\'s phones — card plays and hand counts on every screen. Scores stay yours alone.</p>' +
-        '<div class="acts" style="margin-bottom:14px">' +
-        '<button class="big wheel" data-act="liveStart" style="margin:0">Start a room</button>' +
-        '<button class="big quiet" data-act="liveJoinAsk" style="margin:0">Join a room</button></div>';
-    }
     return head +
-      '<input type="text" data-live-code maxlength="4" autocapitalize="characters" ' +
-      'autocomplete="off" spellcheck="false" placeholder="CODE" value="' + esc(liveJoin) +
-      '" style="text-align:center;letter-spacing:10px;font-size:26px;font-weight:900;text-transform:uppercase">' +
-      '<div style="height:10px"></div>' +
-      '<button class="big primary" data-act="liveGo"' +
-      (liveJoin.trim().length === 4 ? "" : " disabled") + '>Join</button>' +
-      '<button class="big quiet" data-act="liveNo">Never mind</button>';
+      '<p class="hint">Link the group\'s phones — card plays and hand counts on every screen. Scores stay yours alone.</p>' +
+      '<div class="acts" style="margin-bottom:14px">' +
+      '<button class="big wheel" data-act="liveHost" style="margin:0">Host a lobby</button>' +
+      '<button class="big quiet" data-act="liveJoin" style="margin:0">Join the lobby</button></div>';
   }
   var names = livePeers().map(function (p) { return p.name.trim(); }).filter(Boolean);
   return head +
-    // The code rides big on an orange panel so the rest of the group can read
-    // it straight off this screen.
     '<div class="panel sel" style="text-align:center">' +
-    '<div style="font-size:38px;font-weight:900;letter-spacing:12px;color:#FF8A1E">' +
-    esc(live.code) + '</div>' +
+    '<div style="font-size:24px;font-weight:900;letter-spacing:8px;color:#FF8A1E">LIVE</div>' +
     '<div class="dim">' + (names.length
       ? 'You + ' + names.map(esc).join(", ")
-      : 'Waiting for the others&hellip; same code on every phone.') + '</div></div>' +
-    '<button class="big quiet" data-act="liveLeave">Leave the room</button>';
+      : live.hosting ? 'Lobby&rsquo;s open &mdash; tell the boys to join.'
+                     : 'Looking for the group&hellip;') + '</div></div>' +
+    '<button class="big quiet" data-act="liveLeave">Leave the lobby</button>';
 }
 
 /* Only cards that land on one named person are worth asking about. Self is you, group
@@ -2610,12 +2596,6 @@ app.addEventListener("input", function (e) {
     syncStartButton();
     return;
   }
-  if (e.target.hasAttribute("data-live-code")) {
-    liveJoin = e.target.value.toUpperCase();
-    e.target.value = liveJoin;
-    syncButton('[data-act="liveGo"]', liveJoin.trim().length === 4);
-    return;
-  }
   if (e.target.hasAttribute("data-course-name")) {
     parsUI.name = e.target.value;
     syncButton('[data-act="saveCourse"]', parsUI.name.trim() !== "");
@@ -2928,24 +2908,16 @@ app.addEventListener("click", function (e) {
     case "closeWheel": wheel = null; render(); break;
 
     // ---- live room ----
-    // Starting or joining mid-round stamps the code onto the saved round, so a
-    // reloaded page is back in the room without being asked. During Setup there
-    // is no round yet — the code is stamped when Start creates one.
-    case "liveStart":
-      liveJoin = null;
-      liveConnect(makeCode());
-      if (s) { s.liveCode = live.code; commit(s); } else render();
+    // Host and Join are the same wire; the flag only changes the waiting copy.
+    // Going live mid-round marks the saved round, so a reloaded page is back
+    // in the lobby without being asked. During Setup there is no round yet —
+    // the mark lands when Start creates one.
+    case "liveHost":
+    case "liveJoin":
+      liveConnect(LIVE_ROOM);
+      live.hosting = act === "liveHost";
+      if (s) { s.liveCode = LIVE_ROOM; commit(s); } else render();
       break;
-    case "liveJoinAsk": liveJoin = ""; render(); break;
-    case "liveNo": liveJoin = null; render(); break;
-    case "liveGo": {
-      var code = liveJoin.trim().toUpperCase();
-      if (code.length !== 4) break;
-      liveJoin = null;
-      liveConnect(code);
-      if (s) { s.liveCode = code; commit(s); } else render();
-      break;
-    }
     case "liveLeave":
       liveDisconnect();
       if (s) { delete s.liveCode; commit(s); } else render();
@@ -2977,9 +2949,10 @@ app.addEventListener("click", function (e) {
   }
 });
 
-/* A round saved with a room rejoins it by itself — the code is never asked for
-   twice, and a reloaded page is back in the room before anyone notices. */
-if (state && state.liveCode) liveConnect(state.liveCode);
+/* A round marked live rejoins the lobby by itself — a reloaded page is back in
+   the room before anyone notices. LIVE_ROOM, not the stored value: rounds saved
+   in the room-code era carry an old code, and there is only one lobby now. */
+if (state && state.liveCode) liveConnect(LIVE_ROOM);
 
 render();
 
