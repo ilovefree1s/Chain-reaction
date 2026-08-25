@@ -1258,6 +1258,22 @@ function freshSetup() {
   };
 }
 
+/* The seats actually being played: trailing empty rows are unused chairs, not
+   unnamed players — a live room seats three and leaves the fourth row blank,
+   and Start must not stall on a chair nobody is sitting in. A gap in the
+   middle still blocks, because that is a player without a name. */
+function activeSeats() {
+  var n = setup.names.length;
+  while (n > MIN_PLAYERS && !setup.names[n - 1].trim()) n--;
+  return n;
+}
+function seatsReady() {
+  for (var i = 0; i < activeSeats(); i++) {
+    if (!setup.names[i].trim()) return false;
+  }
+  return true;
+}
+
 function resizePars(n) {
   while (setup.pars.length < n) setup.pars.push(DEFAULT_PAR);
   while (setup.pars.length > n) setup.pars.pop();
@@ -1393,7 +1409,7 @@ function renderSetup() {
       ? '<button class="npanel nact" data-act="removePlayer" style="margin:0">&minus; Remove</button>' : "") +
     "</div>";
 
-  var namesReady = setup.names.every(function (n) { return n.trim() !== ""; });
+  var namesReady = seatsReady();
   var courseReady = setup.holes > 0;
   var ready = namesReady && courseReady;
 
@@ -1436,7 +1452,7 @@ function renderSetup() {
 function syncStartButton() {
   var btn = app.querySelector('[data-act="start"]');
   if (!btn) return;
-  var namesReady = setup.names.every(function (n) { return n.trim() !== ""; });
+  var namesReady = seatsReady();
   var ready = namesReady && setup.holes > 0;
   btn.disabled = !ready;
   var hint = app.querySelector("[data-start-hint]");
@@ -2269,7 +2285,7 @@ function wheelSvg(id, labels, rotation, winner, fontSize, duo) {
 /* ---------- course & pars ---------- */
 function renderParGrid() {
   var list = allCourses();
-  var namesOk = setup.names.every(function (n) { return n.trim() !== ""; });
+  var namesOk = seatsReady();
   var saved = list.map(function (c) {
     // Selection and the Play shortcut only make sense while setting up a round —
     // the same sheet doubles as Settings' course manager.
@@ -2604,8 +2620,9 @@ app.addEventListener("click", function (e) {
       /* falls through */
     case "start":
       commit(newRound(
-        setup.names.map(function (x) { return x.trim(); }),
-        setup.meIndex, setup.holes, setupPars(), setup.courseName, setup.chars, setup.mode,
+        setup.names.slice(0, activeSeats()).map(function (x) { return x.trim(); }),
+        setup.meIndex, setup.holes, setupPars(), setup.courseName,
+        setup.chars.slice(0, activeSeats()), setup.mode,
       ));
       // The room rides with the round: a reload rejoins it without asking.
       if (live) { state.liveCode = live.code; save(state); }
