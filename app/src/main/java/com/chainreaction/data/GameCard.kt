@@ -112,7 +112,7 @@ object CardDeck {
         GameCard(32, "Before shot", CardKind.SELF, "If the Basket Was There It Woulda Went In", "Play before a C2 putt only. If you hit metal and it doesn't go in, it still counts."),
         GameCard(33, "After all tee", CardKind.ATTACK, "I'm In Control", "You decide who plays whose tee shots. More than one player can be sent to the same lie."),
         GameCard(34, "Before tee shot", CardKind.ATTACK, "It's Like a Stranger Is Doing It!", "Force an opponent to take the upcoming drive with their off hand."),
-        GameCard(35, "Before tee shot", CardKind.DUAL, "Lefty Off the Box", "Allow a player to tee off left handed for free. Their first throw after that is their real tee shot."),
+        GameCard(35, "Before tee shot", CardKind.DUAL, "Lefty Off the Box", "Your first throw off the box is with your offhand, for free — that's throw 0. The player in last place gets it too. If 2 players are tied for last, they rock paper scissors for it."),
         GameCard(36, "After a hole", CardKind.DUAL, "Me and You", "On yourself: take the best score made on the hole. On another player: they take the worst score made on the hole."),
         GameCard(37, "Before tee shot", CardKind.SELF, "My Tee Pad Is Over Here!", "Use 2 of your discs to mark a new tee for yourself, up to 10 paces (30 ft) from the original. Feeling nice? You may pick 1 player to join you."),
         GameCard(38, "After card", CardKind.REACT, "No Way", "Cancel any card just played. That card goes to the discard pile."),

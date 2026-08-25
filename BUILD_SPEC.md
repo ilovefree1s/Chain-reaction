@@ -157,7 +157,7 @@ Suggested palette: deep pine ground (`#0C1A14`), panels (`#132A21`), muted sage 
     { "id": 32, "timing": "Before shot", "kind": "self", "name": "If the Basket Was There It Woulda Went In", "text": "Play before a C2 putt only. If you hit metal and it doesn't go in, it still counts." },
     { "id": 33, "timing": "After all tee", "kind": "attack", "name": "I'm In Control", "text": "You decide who plays whose tee shots. More than one player can be sent to the same lie." },
     { "id": 34, "timing": "Before tee shot", "kind": "attack", "name": "It's Like a Stranger Is Doing It!", "text": "Force an opponent to take the upcoming drive with their off hand." },
-    { "id": 35, "timing": "Before tee shot", "kind": "dual", "name": "Lefty Off the Box", "text": "Allow a player to tee off left handed for free. Their first throw after that is their real tee shot." },
+    { "id": 35, "timing": "Before tee shot", "kind": "dual", "name": "Lefty Off the Box", "text": "Your first throw off the box is with your offhand, for free — that's throw 0. The player in last place gets it too. If 2 players are tied for last, they rock paper scissors for it." },
     { "id": 36, "timing": "After a hole", "kind": "dual", "name": "Me and You", "text": "On yourself: take the best score made on the hole. On another player: they take the worst score made on the hole." },
     { "id": 37, "timing": "Before tee shot", "kind": "self", "name": "My Tee Pad Is Over Here!", "text": "Use 2 of your discs to mark a new tee for yourself, up to 10 paces (30 ft) from the original. Feeling nice? You may pick 1 player to join you." },
     { "id": 38, "timing": "After card", "kind": "react", "name": "No Way", "text": "Cancel any card just played. That card goes to the discard pile." },
