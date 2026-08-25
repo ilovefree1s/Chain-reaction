@@ -15,7 +15,7 @@ If a PWA is easier to sideload, that's acceptable — but it must work offline, 
 - **Stroke play.** Lowest total wins.
 - **Starting hand:** 4 cards, dealt at round start.
 - **Hand cap:** 7. Cannot draw past it — must discard first.
-- **Each player has their own 59-card deck**, shuffled independently. Duplicate cards across players are expected and fine.
+- **Each player has their own 58-card deck**, shuffled independently. Duplicate cards across players are expected and fine.
 - **Played and discarded cards** go to that player's own discard pile. Reshuffle the discard back into the deck if the deck ever empties.
 - **Max 2 cards may be played on any one player per hole.** The app does not enforce this — players track it themselves — but show it in an in-app rules screen.
 
@@ -107,7 +107,7 @@ Suggested palette: deep pine ground (`#0C1A14`), panels (`#132A21`), muted sage 
   "maxCardsOnOnePlayerPerHole": 2,
   "wheelCost": 2,
   "freeSpinCard": 23,
-  "wheelExcludes": [1, 4, 6, 7, 10, 12, 13, 14, 19, 20, 21, 22, 23, 24, 25, 28, 30, 31, 32, 33, 36, 38, 40, 42, 45, 47, 50, 52, 53, 56, 59],
+  "wheelExcludes": [1, 4, 6, 7, 10, 12, 13, 14, 19, 20, 21, 22, 23, 24, 25, 28, 30, 31, 32, 35, 37, 39, 41, 44, 46, 49, 51, 52, 55, 58],
   "timings": [
     "Before shot",
     "Before tee shot",
@@ -153,35 +153,34 @@ Suggested palette: deep pine ground (`#0C1A14`), panels (`#132A21`), muted sage 
     { "id": 28, "timing": "After all tee", "kind": "self", "name": "I'll Have What He's Having", "text": "After all tee shots, trade lies with an opponent of your choice." },
     { "id": 29, "timing": "Before shot", "kind": "dual", "name": "Globetrotter Shit", "text": "On yourself: putt behind the back at no stroke cost. On another player: they putt behind the back and it counts as a normal stroke." },
     { "id": 30, "timing": "Before tee shot", "kind": "dual", "name": "GOOD GUYS VS. BAD GUYS!", "text": "Ask another player to team up for the next hole. Birdie counts as an eagle, no birdie is +1. Cards against one of you count against both, and you both take the same score. If they refuse, ask someone else — if everyone refuses, they all discard 1 card." },
-    { "id": 31, "timing": "After all play a card", "kind": "group", "name": "Group Hug", "text": "Only play after 3 other players used an attack card. Everyone must carry out their own card they played. Do whichever one you choose as well." },
-    { "id": 32, "timing": "Before shot", "kind": "self", "name": "If the Basket Was There It Woulda Went In", "text": "Play before a C2 putt only. If you hit metal and it doesn't go in, it still counts." },
-    { "id": 33, "timing": "After all tee", "kind": "attack", "name": "I'm In Control", "text": "You decide who plays whose tee shots. More than one player can be sent to the same lie." },
-    { "id": 34, "timing": "Before tee shot", "kind": "attack", "name": "It's Like a Stranger Is Doing It!", "text": "Force an opponent to take the upcoming drive with their off hand." },
-    { "id": 35, "timing": "Before tee shot", "kind": "dual", "name": "Lefty Off the Box", "text": "Your first throw off the box is with your offhand, for free — that's throw 0. The player in last place gets it too. If 2 players are tied for last, they rock paper scissors for it." },
-    { "id": 36, "timing": "After a hole", "kind": "dual", "name": "Me and You", "text": "On yourself: take the best score made on the hole. On another player: they take the worst score made on the hole." },
-    { "id": 37, "timing": "Before tee shot", "kind": "self", "name": "My Tee Pad Is Over Here!", "text": "Use 2 of your discs to mark a new tee for yourself, up to 10 paces (30 ft) from the original. Feeling nice? You may pick 1 player to join you." },
-    { "id": 38, "timing": "After card", "kind": "react", "name": "No Way", "text": "Cancel any card just played. That card goes to the discard pile." },
-    { "id": 39, "timing": "Before tee shot", "kind": "attack", "name": "New mando on this hole, bud.", "text": "Choose a reasonable object the target player must pass on a side you specify." },
-    { "id": 40, "timing": "Before tee shot", "kind": "dual", "name": "Not Today!", "text": "Remove any and all card effects currently on you, or use it on another player to cancel the effects on them." },
-    { "id": 41, "timing": "Before tee shot", "kind": "attack", "name": "One Disc Wonder!", "text": "Force an opponent to play the hole with only 1 DISC this hole! (If someone already gave them an Aerobie or mini, that counts as their 1 disc.)" },
-    { "id": 42, "timing": "Before tee shot", "kind": "attack", "name": "Over Sharer", "text": "Give everyone a disc from your own bag to tee off with on this hole." },
-    { "id": 43, "timing": "Before all tee", "kind": "attack", "name": "Plant Your Feet!", "text": "No run-up on everyone else's tee shot." },
-    { "id": 44, "timing": "Any time", "kind": "dual", "name": "Player 2's Turn!", "text": "On yourself: retake any shot for free. On another player: force them to re-throw a shot that was too good." },
-    { "id": 45, "timing": "After throw", "kind": "attack", "name": "Prove It", "text": "Cancel a shot an opponent just took. They throw again with a different disc of their choice from any bag. (No extra stroke, just a forced mulligan.)" },
-    { "id": 46, "timing": "Before shot", "kind": "attack", "name": "Roll It!", "text": "Force an opponent to throw a roller on the upcoming drive or approach." },
-    { "id": 47, "timing": "After card", "kind": "react", "name": "Rubber and Glue", "text": "If a card targeting only you was just played, that opponent carries out the instructions instead of you." },
-    { "id": 48, "timing": "Before shot", "kind": "dual", "name": "Shoe Golf", "text": "On yourself: putt with your own shoe at no stroke cost. On another player: they putt with a shoe and it still counts as a stroke. If they refuse to take their shoe off, they take +1 stroke after the hole." },
-    { "id": 49, "timing": "Before shot", "kind": "attack", "name": "Forehand only!", "text": "Force an opponent to throw a forehand on the upcoming drive or approach." },
-    { "id": 50, "timing": "On draw", "kind": "sabotage", "name": "Everybody But Me", "text": "You must play this card immediately after drawing, you can't discard it. Everyone gets a free mulligan on the next hole but me =(" },
-    { "id": 51, "timing": "Before shot", "kind": "dual", "name": "That's Definitely a Gimme", "text": "Pick up a putt as a gimme, as long as it's inside C1 — you definitely woulda made it. The player in last place gets one too. If 2 players are tied for last, they rock paper scissors for it." },
-    { "id": 52, "timing": "Before tee shot", "kind": "attack", "name": "Too Many Choices", "text": "Pick 3 discs out of an opponent's bag. They pick 1, then pass the other 2 to the next person, who chooses 1 of the 2 and gives the last disc to the last person. Tee off, nerds." },
-    { "id": 53, "timing": "Before tee shot", "kind": "self", "name": "Tree Insurance", "text": "Play before your tee shot. If you hit a tree, take a free mulligan." },
-    { "id": 54, "timing": "Before shot", "kind": "attack", "name": "Trust Me Bro", "text": "Give another player advice for their tee shot. They have to follow it as best they can. (Somewhat reasonable advice — don't tell them something like throw it backwards.)" },
-    { "id": 55, "timing": "Before shot", "kind": "attack", "name": "Turbo Time", "text": "All opponents in C1 must turbo putt their next shot." },
-    { "id": 56, "timing": "Before tee shot", "kind": "group", "name": "WALK IT DOWN!!", "text": "No other cards can be played once this hits the table. Everyone tees immediately from anywhere near the tee pad — no throw order. First and second to finish get birdie, third gets par, last gets bogey. No running, and no calling foot faults." },
-    { "id": 57, "timing": "After throw", "kind": "attack", "name": "Walk of Shame", "text": "After a missed putt inside C1, that player carries their putter in either hand until they finish the next hole. (They can putt with it.) If they drop it or put it in the bag, +1 stroke." },
-    { "id": 58, "timing": "Before tee shot", "kind": "attack", "name": "Your Tee Pad Is Over There!", "text": "Use 2 of your discs to mark a new tee for everyone else, up to 10 paces (30 ft) from the original. They all tee from it." },
-    { "id": 59, "timing": "Before all tee", "kind": "sabotage", "name": "I Think It's Broke", "text": "The first player to hit a tree loses that disc — they can't throw it again for the rest of the round." }
+    { "id": 31, "timing": "Before shot", "kind": "self", "name": "If the Basket Was There It Woulda Went In", "text": "Play before a C2 putt only. If you hit metal and it doesn't go in, it still counts." },
+    { "id": 32, "timing": "After all tee", "kind": "attack", "name": "I'm In Control", "text": "You decide who plays whose tee shots. More than one player can be sent to the same lie." },
+    { "id": 33, "timing": "Before tee shot", "kind": "attack", "name": "It's Like a Stranger Is Doing It!", "text": "Force an opponent to take the upcoming drive with their off hand." },
+    { "id": 34, "timing": "Before tee shot", "kind": "dual", "name": "Lefty Off the Box", "text": "Your first throw off the box is with your offhand, for free — that's throw 0. The player in last place gets it too. If 2 players are tied for last, they rock paper scissors for it." },
+    { "id": 35, "timing": "After a hole", "kind": "dual", "name": "Me and You", "text": "On yourself: take the best score made on the hole. On another player: they take the worst score made on the hole." },
+    { "id": 36, "timing": "Before tee shot", "kind": "self", "name": "My Tee Pad Is Over Here!", "text": "Use 2 of your discs to mark a new tee for yourself, up to 10 paces (30 ft) from the original. Feeling nice? You may pick 1 player to join you." },
+    { "id": 37, "timing": "After card", "kind": "react", "name": "No Way", "text": "Cancel any card just played. That card goes to the discard pile." },
+    { "id": 38, "timing": "Before tee shot", "kind": "attack", "name": "New mando on this hole, bud.", "text": "Choose a reasonable object the target player must pass on a side you specify." },
+    { "id": 39, "timing": "Before tee shot", "kind": "dual", "name": "Not Today!", "text": "Remove any and all card effects currently on you, or use it on another player to cancel the effects on them." },
+    { "id": 40, "timing": "Before tee shot", "kind": "attack", "name": "One Disc Wonder!", "text": "Force an opponent to play the hole with only 1 DISC this hole! (If someone already gave them an Aerobie or mini, that counts as their 1 disc.)" },
+    { "id": 41, "timing": "Before tee shot", "kind": "attack", "name": "Over Sharer", "text": "Give everyone a disc from your own bag to tee off with on this hole." },
+    { "id": 42, "timing": "Before all tee", "kind": "attack", "name": "Plant Your Feet!", "text": "No run-up on everyone else's tee shot." },
+    { "id": 43, "timing": "Any time", "kind": "dual", "name": "Player 2's Turn!", "text": "On yourself: retake any shot for free. On another player: force them to re-throw a shot that was too good." },
+    { "id": 44, "timing": "After throw", "kind": "attack", "name": "Prove It", "text": "Cancel a shot an opponent just took. They throw again with a different disc of their choice from any bag. (No extra stroke, just a forced mulligan.)" },
+    { "id": 45, "timing": "Before shot", "kind": "attack", "name": "Roll It!", "text": "Force an opponent to throw a roller on the upcoming drive or approach." },
+    { "id": 46, "timing": "After card", "kind": "react", "name": "Rubber and Glue", "text": "If a card targeting only you was just played, that opponent carries out the instructions instead of you." },
+    { "id": 47, "timing": "Before shot", "kind": "dual", "name": "Shoe Golf", "text": "On yourself: putt with your own shoe at no stroke cost. On another player: they putt with a shoe and it still counts as a stroke. If they refuse to take their shoe off, they take +1 stroke after the hole." },
+    { "id": 48, "timing": "Before shot", "kind": "attack", "name": "Forehand only!", "text": "Force an opponent to throw a forehand on the upcoming drive or approach." },
+    { "id": 49, "timing": "On draw", "kind": "sabotage", "name": "Everybody But Me", "text": "You must play this card immediately after drawing, you can't discard it. Everyone gets a free mulligan on the next hole but me =(" },
+    { "id": 50, "timing": "Before shot", "kind": "dual", "name": "That's Definitely a Gimme", "text": "Pick up a putt as a gimme, as long as it's inside C1 — you definitely woulda made it. The player in last place gets one too. If 2 players are tied for last, they rock paper scissors for it." },
+    { "id": 51, "timing": "Before tee shot", "kind": "attack", "name": "Too Many Choices", "text": "Pick 3 discs out of an opponent's bag. They pick 1, then pass the other 2 to the next person, who chooses 1 of the 2 and gives the last disc to the last person. Tee off, nerds." },
+    { "id": 52, "timing": "Before tee shot", "kind": "self", "name": "Tree Insurance", "text": "Play before your tee shot. If you hit a tree, take a free mulligan." },
+    { "id": 53, "timing": "Before shot", "kind": "attack", "name": "Trust Me Bro", "text": "Give another player advice for their tee shot. They have to follow it as best they can. (Somewhat reasonable advice — don't tell them something like throw it backwards.)" },
+    { "id": 54, "timing": "Before shot", "kind": "attack", "name": "Turbo Time", "text": "All opponents in C1 must turbo putt their next shot." },
+    { "id": 55, "timing": "Before tee shot", "kind": "group", "name": "WALK IT DOWN!!", "text": "No other cards can be played once this hits the table. Everyone tees immediately from anywhere near the tee pad — no throw order. First and second to finish get birdie, third gets par, last gets bogey. No running, and no calling foot faults." },
+    { "id": 56, "timing": "After throw", "kind": "attack", "name": "Walk of Shame", "text": "After a missed putt inside C1, that player carries their putter in either hand until they finish the next hole. (They can putt with it.) If they drop it or put it in the bag, +1 stroke." },
+    { "id": 57, "timing": "Before tee shot", "kind": "attack", "name": "Your Tee Pad Is Over There!", "text": "Use 2 of your discs to mark a new tee for everyone else, up to 10 paces (30 ft) from the original. They all tee from it." },
+    { "id": 58, "timing": "Before all tee", "kind": "sabotage", "name": "I Think It's Broke", "text": "The first player to hit a tree loses that disc — they can't throw it again for the rest of the round." }
   ]
 }
 ```
