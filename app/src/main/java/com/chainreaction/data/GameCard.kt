@@ -128,7 +128,7 @@ object CardDeck {
         GameCard(48, "Before shot", CardKind.ATTACK, "Roll It!", "Force an opponent to throw a roller on the upcoming drive or approach."),
         GameCard(49, "After card", CardKind.REACT, "Rubber and Glue", "If a card targeting only you was just played, that opponent carries out the instructions instead of you."),
         GameCard(50, "Before shot", CardKind.DUAL, "Shoe Golf", "On yourself: putt with your own shoe at no stroke cost. On another player: they putt with a shoe and it still counts as a stroke. If they refuse to take their shoe off, they take +1 stroke after the hole."),
-        GameCard(51, "Before shot", CardKind.ATTACK, "Sidearm", "Force an opponent to throw a sidearm on the upcoming drive or approach."),
+        GameCard(51, "Before shot", CardKind.ATTACK, "Forehand only!", "Force an opponent to throw a forehand on the upcoming drive or approach."),
         GameCard(52, "On draw", CardKind.SABOTAGE, "Everybody But Me", "You must play this card immediately after drawing, you can't discard it. Everyone gets a free mulligan on the next hole but me =("),
         GameCard(53, "Before shot", CardKind.DUAL, "That's Definitely a Gimme", "Allow a player to pick up a putt as a gimme, as long as it's inside C1. They definitely woulda made it."),
         GameCard(54, "Before tee shot", CardKind.ATTACK, "Too Many Choices", "Pick 3 discs out of an opponent's bag. They choose which one to tee off with this hole from the 3 options."),

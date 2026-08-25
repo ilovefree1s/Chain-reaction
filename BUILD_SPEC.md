@@ -173,7 +173,7 @@ Suggested palette: deep pine ground (`#0C1A14`), panels (`#132A21`), muted sage 
     { "id": 48, "timing": "Before shot", "kind": "attack", "name": "Roll It!", "text": "Force an opponent to throw a roller on the upcoming drive or approach." },
     { "id": 49, "timing": "After card", "kind": "react", "name": "Rubber and Glue", "text": "If a card targeting only you was just played, that opponent carries out the instructions instead of you." },
     { "id": 50, "timing": "Before shot", "kind": "dual", "name": "Shoe Golf", "text": "On yourself: putt with your own shoe at no stroke cost. On another player: they putt with a shoe and it still counts as a stroke. If they refuse to take their shoe off, they take +1 stroke after the hole." },
-    { "id": 51, "timing": "Before shot", "kind": "attack", "name": "Sidearm", "text": "Force an opponent to throw a sidearm on the upcoming drive or approach." },
+    { "id": 51, "timing": "Before shot", "kind": "attack", "name": "Forehand only!", "text": "Force an opponent to throw a forehand on the upcoming drive or approach." },
     { "id": 52, "timing": "On draw", "kind": "sabotage", "name": "Everybody But Me", "text": "You must play this card immediately after drawing, you can't discard it. Everyone gets a free mulligan on the next hole but me =(" },
     { "id": 53, "timing": "Before shot", "kind": "dual", "name": "That's Definitely a Gimme", "text": "Allow a player to pick up a putt as a gimme, as long as it's inside C1. They definitely woulda made it." },
     { "id": 54, "timing": "Before tee shot", "kind": "attack", "name": "Too Many Choices", "text": "Pick 3 discs out of an opponent's bag. They choose which one to tee off with this hole from the 3 options." },
