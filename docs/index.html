@@ -851,6 +851,7 @@ function liveOpen() {
       liveSeen[p.eid] = true;
     }
     if (m.payload.event === "play") livePlayed(p);
+    if (m.payload.event === "wheel") liveWheel(p);
   };
 
   sock.onclose = function () {
@@ -1124,6 +1125,25 @@ function myRoundName() {
   return ((state ? state.players[state.meIndex] : settings.myName) || "").trim().toLowerCase();
 }
 
+/* The wheel is the most table-wide moment in the game — everyone but the exempt
+   player carries out the effect — so its result lands as a hot alert on every
+   other phone, the same rattle and buzz as a card played on you. Fired once,
+   when the spin settles for good (after the fate spin, for a dual card). */
+function liveWheel(p) {
+  var c = BY_ID[p.card];
+  if (!c) return; // an id this build doesn't know
+  liveAlerts.push({
+    eid: p.eid, wheel: true, who: typeof p.name === "string" ? p.name : "",
+    card: c.id,
+    exempt: typeof p.exempt === "string" ? p.exempt : null,
+    dual: !!p.dual, good: !!p.good, free: !!p.free,
+    you: true // a table moment — everyone feels it
+  });
+  playMenuSound(sfxVolume());
+  try { if (navigator.vibrate) navigator.vibrate([120, 60, 120, 60, 320]); } catch (e) { /* banner only */ }
+  liveRefresh();
+}
+
 function livePlayed(p) {
   var c = BY_ID[p.card];
   if (!c) return; // an id this build doesn't know — a different deck version
@@ -1166,6 +1186,17 @@ function renderAlerts() {
       return '<div class="alert" data-act="alertTap" data-eid="' + esc(a.eid) + '">' +
         '<div class="who">Deal corrected</div>' +
         '<div class="what" style="font-size:16px">' + esc(a.note) + '</div></div>';
+    }
+    if (a.wheel) {
+      var wc = BY_ID[a.card];
+      var fate = a.dual ? (a.good ? " · good half" : " · bad half") : "";
+      var sub = a.free ? "free spin — you pick who"
+        : a.exempt ? esc(a.exempt) + " is exempt" : "";
+      return '<div class="alert you" data-act="alertTap" data-eid="' + esc(a.eid) + '">' +
+        '<div class="who">' + esc(a.who || "Someone") + ' spun the wheel</div>' +
+        '<div class="what">' + esc(wc.name) + fate + '</div>' +
+        (sub ? '<div class="onwho">' + sub + '</div>' : "") +
+        '</div>';
     }
     var c = BY_ID[a.card];
     return '<div class="alert' + (a.you ? " you" : "") + '" data-act="alertTap" data-eid="' +
@@ -2664,6 +2695,17 @@ function spinWheel(kind) {
     wheel.stage = kind === "name" ? "nameDone"
       : kind === "card" && wheel.isDual ? "cardDone"
       : "done";
+    // Settled for good: tell the table what the wheel decided.
+    if (wheel.stage === "done" && live) {
+      liveCast("wheel", {
+        name: state.players[state.meIndex],
+        card: wheel.card.id,
+        exempt: wheel.free ? null : wheel.name,
+        dual: !!wheel.isDual,
+        good: wheel.isDual ? !!wheel.fateGood : false,
+        free: !!wheel.free
+      });
+    }
     render();
   }
   el.addEventListener("transitionend", settle, { once: true });
