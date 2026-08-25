@@ -137,7 +137,7 @@ object CardDeck {
         GameCard(57, "Before shot", CardKind.ATTACK, "Turbo Time", "All opponents in C1 must turbo putt their next shot."),
         GameCard(58, "Before tee shot", CardKind.GROUP, "WALK IT DOWN!!", "No other cards can be played once this hits the table. Everyone tees immediately from anywhere near the tee pad — no throw order. First and second to finish get birdie, third gets par, last gets bogey. No running, and no calling foot faults."),
         GameCard(59, "After throw", CardKind.ATTACK, "Walk of Shame", "After a missed putt inside C1, that player carries their putter in either hand until they finish the next hole. (They can putt with it.) If they drop it or put it in the bag, +1 stroke."),
-        GameCard(60, "Before tee shot", CardKind.ATTACK, "Your Tee Pad Is Over There!", "Use 2 of your discs to mark a new tee for an opponent of your choice, up to 10 paces (30 ft) from the original. They tee from it."),
+        GameCard(60, "Before tee shot", CardKind.ATTACK, "Your Tee Pad Is Over There!", "Use 2 of your discs to mark a new tee for everyone else, up to 10 paces (30 ft) from the original. They all tee from it."),
         GameCard(61, "Before all tee", CardKind.SABOTAGE, "I Think It's Broke", "The first player to hit a tree loses that disc — they can't throw it again for the rest of the round."),
     )
 
