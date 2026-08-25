@@ -2369,12 +2369,12 @@ function renderFaceModal() {
         (playableOnSelf(c.kind)
           ? '<button class="big quiet" data-act="playOn" data-i="' + c.id + '">Myself</button>'
           : "") +
-        // A table-wide card fires at everyone from here — the button that would
-        // otherwise cancel becomes the whole-table target. Close still backs out.
+        // A table-wide card fires at everyone from here. No cancel button of
+        // its own — Close below already does that job.
         (playableOnAll(c.id)
           ? '<button class="big primary" data-act="playOn" data-t="' + ALL_TARGET +
             '" data-i="' + c.id + '">All players</button>'
-          : '<button class="big quiet" data-act="cancelTarget">Never mind</button>') +
+          : "") +
         '</div>';
     } else if (confirmDiscard === c.id) {
       acts = '<p class="confirmq" style="text-align:center">Discard ' + esc(c.name) + '?</p>' +
@@ -3045,7 +3045,6 @@ app.addEventListener("click", function (e) {
     case "playOn":
       resolveCard(s, i, true, el.getAttribute("data-t"));
       break;
-    case "cancelTarget": playTarget = null; render(); break;
     case "discardCard":
       resolveCard(s, i, false, null);
       break;
@@ -3055,7 +3054,9 @@ app.addEventListener("click", function (e) {
     case "viewCard": viewCard = i; render(); break;
     case "prevCard": stepViewCard(-1); break;
     case "nextCard": stepViewCard(1); break;
-    case "closeView": viewCard = null; confirmDiscard = null; render(); break;
+    // Close is the picker's cancel too, so it clears the pending target —
+    // otherwise reopening the card would land straight back in the picker.
+    case "closeView": viewCard = null; confirmDiscard = null; playTarget = null; render(); break;
 
     // Paying for a spin: choose the cards first, then the wheel opens.
     case "openWheel":
