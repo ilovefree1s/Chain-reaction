@@ -259,6 +259,11 @@
                            linear-gradient(100deg, #FF8A1E, #F7791E) border-box;
                animation: alertpulse 1.1s ease-in-out infinite alternate; }
   .alert.you .who, .alert.you .onwho { color: #FF8A1E; }
+  /* An invitation, not an attack: ice, steady, stays until tapped. */
+  .alert.join { background: linear-gradient(#050F1C, #050F1C) padding-box,
+                            linear-gradient(100deg, #4DC3FF, #1E6FFF) border-box;
+                box-shadow: 0 6px 24px rgba(0, 0, 0, .55), 0 0 18px rgba(77, 195, 255, .45); }
+  .alert.join .onwho { color: #4DC3FF; }
   @keyframes alertpulse {
     from { box-shadow: 0 6px 24px rgba(0, 0, 0, .55), 0 0 10px rgba(247, 148, 30, .35); }
     to   { box-shadow: 0 6px 24px rgba(0, 0, 0, .55), 0 0 26px rgba(247, 148, 30, .7); }
@@ -1151,13 +1156,19 @@ function livePlayed(p) {
   // A whole-table card hits everyone, so everyone gets the hot alert.
   var all = target === ALL_TARGET;
   var onYou = all || (!!target && target.trim().toLowerCase() === myRoundName());
+  // Not the target of an invite card? You're being asked to pile on, not hit.
+  var invite = !onYou && !!target && invitesTable(c.id);
   liveAlerts.push({ eid: p.eid, who: typeof p.name === "string" ? p.name : "",
-                    card: c.id, target: all ? null : target, all: all, you: onYou });
-  if (onYou) {
+                    card: c.id, target: all ? null : target, all: all,
+                    you: onYou, invite: invite });
+  if (onYou || invite) {
     // The chain rattle, doing the job it was born for. Both are best-effort:
     // a browser that blocks gesture-less audio or vibration just shows the banner.
+    // An invite buzzes shorter — get their attention, not their adrenaline.
     playMenuSound(sfxVolume());
-    try { if (navigator.vibrate) navigator.vibrate([120, 60, 120, 60, 320]); } catch (e) { /* banner only */ }
+    try {
+      if (navigator.vibrate) navigator.vibrate(onYou ? [120, 60, 120, 60, 320] : [90, 50, 90]);
+    } catch (e) { /* banner only */ }
   } else {
     setTimeout(function () { dropAlert(p.eid); }, ALERT_FADE_MS);
   }
@@ -1199,11 +1210,12 @@ function renderAlerts() {
         '</div>';
     }
     var c = BY_ID[a.card];
-    return '<div class="alert' + (a.you ? " you" : "") + '" data-act="alertTap" data-eid="' +
-      esc(a.eid) + '">' +
+    return '<div class="alert' + (a.you ? " you" : a.invite ? " join" : "") +
+      '" data-act="alertTap" data-eid="' + esc(a.eid) + '">' +
       '<div class="who">' + esc(a.who || "Someone") + ' played</div>' +
       '<div class="what">' + esc(c.name) + '</div>' +
       (a.all ? '<div class="onwho">on EVERYONE</div>'
+        : a.invite ? '<div class="onwho">on ' + esc(a.target) + ' &mdash; join in!</div>'
         : a.target ? '<div class="onwho">on ' + (a.you ? "YOU" : esc(a.target)) + '</div>' : "") +
       '</div>';
   }).join("") + '</div>';
@@ -1264,6 +1276,17 @@ function playableOnAll(id) { return PLAY_ON_ALL.indexOf(id) !== -1; }
    on the other phones as "this hit everyone" — so every recipient gets the
    hot alert, not one. Not a real name, so it can't collide with a player. */
 var ALL_TARGET = "*all*";
+
+/*
+ * Cards played on ONE person that invite the rest of the table to pile on.
+ * The target still gets the hot "on YOU" alert; everyone else gets a blue
+ * "join in" alert instead of the quiet fading banner — it buzzes so they
+ * notice while the moment is live, and it stays until tapped.
+ */
+var INVITE_CARDS = [
+  26  // Easily Distracted? — everyone may help distract the putter
+];
+function invitesTable(id) { return INVITE_CARDS.indexOf(id) !== -1; }
 
 /* ---------- the one piece of real logic ---------- */
 function drawCount(holeScores, meIndex, par) {
