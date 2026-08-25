@@ -106,7 +106,7 @@ object CardDeck {
         GameCard(26, "After a hole", CardKind.SELF, "FIVE FOR YOU, YOU, AND YOU!", "Play after you birdie a hole nobody else birdied. Everyone else owes five dollars to the pot!"),
         GameCard(27, "After throw", CardKind.SELF, "Foot Wedge!", "Move your own lie up to 10 paces (30 ft) in any direction."),
         GameCard(28, "After throw", CardKind.SELF, "GAMBLE!", "Take a second chance at a putt you just missed. Make it and it was a free mulligan. Miss and the second stroke counts too — play whichever disc landed farthest away, then add +1 stroke after the hole ends."),
-        GameCard(29, "After all tee", CardKind.SELF, "I+ll Have What He+s Having", "After all tee shots, trade lies with an opponent of your choice."),
+        GameCard(29, "After all tee", CardKind.SELF, "I'll Have What He's Having", "After all tee shots, trade lies with an opponent of your choice."),
         GameCard(30, "Before shot", CardKind.DUAL, "Globetrotter Shit", "On yourself: putt behind the back at no stroke cost. On another player: they putt behind the back and it counts as a normal stroke."),
         GameCard(31, "Before tee shot", CardKind.DUAL, "GOOD GUYS VS. BAD GUYS!", "Ask another player to team up for the next hole. Birdie counts as an eagle, no birdie is +1. Cards against one of you count against both, and you both take the same score. If they refuse, ask someone else — if everyone refuses, they all discard 1 card."),
         GameCard(32, "After all play a card", CardKind.GROUP, "Group Hug", "Only play after 3 other players used an attack card. Everyone must carry out their own card they played. Do whichever one you choose as well."),
