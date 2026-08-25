@@ -1507,16 +1507,18 @@ function renderScore() {
     return '<div class="player' + (me ? " me" : "") + '"><div class="row">' +
       // Only takes up room once somebody has actually picked a character.
       (ch ? badgeHtml(ch, 40) + '<div style="width:10px"></div>' : "") +
-      '<div class="grow"><div class="name">' + esc(name) +
-      (held != null ? ' <span class="handct">' + held + "/" + DATA.handCap + "</span>" : "") +
-      '</div>' +
+      '<div class="grow"><div class="name">' + esc(name) + '</div>' +
         '<div class="rel ' + relClass(rel) + '">' +
         (lead ? '<span class="lead">LEAD</span>' : "") +
         // Over/under and (in skins) the skins — no running stroke total. The
         // par tells the story mid-round; totals wait for the results screen.
         (isSkins(s)
           ? plural(skinsFor(s, i), "skin") + '  &middot;  ' + fmtRel(rel)
-          : fmtRel(rel)) + '</div></div>' +
+          : fmtRel(rel)) +
+        // The hand chip rides this line, not the name: a long name ellipsizes,
+        // and it was swallowing the chip on the row you look at most — your own.
+        (held != null ? ' <span class="handct">' + held + "/" + DATA.handCap + "</span>" : "") +
+        '</div></div>' +
       '<button class="step" data-act="score" data-i="' + i + '" data-n="-1"' +
         (locked || score <= 1 ? " disabled" : "") + '>&minus;</button>' +
       '<div class="num">' + score + '</div>' +
