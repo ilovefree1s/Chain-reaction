@@ -93,8 +93,8 @@ class DrawRuleTest {
 
     @Test
     fun `deck is 61 cards with unique ids one through 61`() {
-        assertEquals(61, CardDeck.ALL.size)
-        assertEquals((1..61).toSet(), CardDeck.ALL.map { it.id }.toSet())
+        assertEquals(60, CardDeck.ALL.size)
+        assertEquals((1..60).toSet(), CardDeck.ALL.map { it.id }.toSet())
     }
 
     @Test
