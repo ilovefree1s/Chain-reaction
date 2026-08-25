@@ -1,8 +1,8 @@
 # Live match plan — four phones, one round
 
-Design settled 2026-08-24. Build order step 1 — the connection — built the same
-day on the `multiplayer` branch; steps 2-4 remain. This is the plan to build
-from rather than re-deriving.
+Design settled 2026-08-24. Steps 1 and 2 built on the `multiplayer` branch and
+proven against real Supabase with a real phone in the room; steps 3-4 remain.
+This is the plan to build from rather than re-deriving.
 
 The goal: when somebody plays a card on you, your phone tells you. Everything else
 here exists to serve that.
@@ -110,7 +110,12 @@ half easy and the web half no easier, and produces two half-tables at one basket
    anon key are the `LIVE_URL`/`LIVE_KEY` constants at the top of that section —
    empty, every live control hides. Not yet proven against a real Supabase
    project or four real phones.
-2. Card plays and the in-app alert.
+2. ~~Card plays and the in-app alert.~~ **Built and proven phone-to-PC.** A play
+   broadcasts name, card and target; discards stay private beyond the hand
+   count. Aimed at you: hot pulsing banner, chain rattle, vibration, stays
+   until tapped. Anyone else: quiet banner, fades in 8s. Tapping a banner
+   opens the card's face. Deduped by event id for the day push becomes the
+   second delivery route.
 3. Score comparison at lock.
 4. Push, which is its own project: keys, a subscriptions table, an Edge Function to
    send. This is the first server-side code and the first schema in the repo.
