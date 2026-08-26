@@ -733,12 +733,19 @@ function primeWheelSound() {
   } catch (e) { /* nothing to do */ }
 }
 
-function startWheelSound(volume) {
+/* [baseRate] is the wheel's cruising speed — 1 for the card wheel's blur, less
+   for the name wheels, whose few big segments click past far slower. The
+   wind-down keeps its proportions: it always lands at the same fraction of
+   wherever it started. */
+function startWheelSound(volume, baseRate) {
   stopWheelSound(true);
   if (!wheelCtx || !wheelBuf || !wheelLoop || !(volume > 0)) return;
   try {
     if (wheelCtx.state === "suspended") wheelCtx.resume();
     var vol = Math.min(1, Math.max(0, volume));
+    var base = baseRate > 0 ? baseRate : 1;
+    // The floor: slowing further than this stops sounding like a wheel.
+    var endRate = Math.max(0.1, base * WHEEL_END_RATE);
     var spin = SPIN_MS / 1000, hold = Math.min(HOLD_MS / 1000, spin * 0.8);
     var t = wheelCtx.currentTime + 0.02;
 
@@ -751,9 +758,9 @@ function startWheelSound(volume) {
     loopSrc.loop = true;
     loopSrc.loopStart = wheelLoop.loopStart;
     loopSrc.loopEnd = wheelLoop.loopEnd;
-    loopSrc.playbackRate.setValueAtTime(1, t);
-    loopSrc.playbackRate.setValueAtTime(1, t + hold);
-    loopSrc.playbackRate.linearRampToValueAtTime(WHEEL_END_RATE, t + spin);
+    loopSrc.playbackRate.setValueAtTime(base, t);
+    loopSrc.playbackRate.setValueAtTime(base, t + hold);
+    loopSrc.playbackRate.linearRampToValueAtTime(endRate, t + spin);
 
     var loopG = wheelCtx.createGain();
     loopG.gain.setValueAtTime(vol, t);
@@ -3145,7 +3152,10 @@ function spinWheel(kind) {
   }
   el.addEventListener("transitionend", settle, { once: true });
   setTimeout(settle, SPIN_MS + 300);
-  startWheelSound(sfxVolume());
+  // The card wheel is a blur of segments and gets the full-speed clicks; the
+  // name wheels have a handful of big segments, so their clicks run at a third
+  // of that — a slower wheel from the moment it's flicked.
+  startWheelSound(sfxVolume(), kind === "card" ? 1 : 0.33);
   el.classList.add("go");
   requestAnimationFrame(function () {
     requestAnimationFrame(function () { el.style.transform = "rotate(" + target + "deg)"; });
