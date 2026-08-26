@@ -530,9 +530,9 @@
   /* ---- the double wheel itself ---- */
   .wheelbox { position: relative; max-width: 340px; margin: 0 auto 12px; }
   .wheelbox svg { display: block; width: 100%; }
-  /* 7.2s: long enough for the GAMBLE sound to play out under it. SPIN_MS and the
+  /* 5.2s: long enough for the GAMBLE sound to play out under it. SPIN_MS and the
      settle fallback in spinWheel() are the same number — change all three. */
-  .wheelbox svg.go { transition: transform 7.2s cubic-bezier(0.12, 0.8, 0.08, 1); }
+  .wheelbox svg.go { transition: transform 5.2s cubic-bezier(0.12, 0.8, 0.08, 1); }
   .wheelptr { position: absolute; top: 0; left: 50%; transform: translateX(-50%);
               width: 0; height: 0; border: 12px solid transparent; border-bottom: none;
               border-top: 20px solid var(--self); z-index: 1;
@@ -619,7 +619,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.0 · 25 Aug 21:41";
+var APP_VERSION = "v1.0 · 25 Aug 21:42";
 function versionLine() {
   return '<div class="ver">' + esc(APP_VERSION) + "</div>";
 }
@@ -663,7 +663,7 @@ function playMenuSound(volume) {
 var WHEEL_SOUND = "assets/GAMBLE.mp3";
 var wheelAudio = null, wheelFade = null, wheelRamp = null;
 
-var SPIN_MS = 7200;                       // matches .wheelbox svg.go
+var SPIN_MS = 5200;                       // matches .wheelbox svg.go
 var SPIN_EASE = [0.12, 0.8, 0.08, 1];     // and its cubic-bezier
 
 /* One axis of a cubic bezier with the endpoints pinned at 0 and 1. */
