@@ -57,7 +57,7 @@ object Rules {
     // The house blacklist: reaction cards plus everything too situational,
     // too group-shaped or too slow to land as a wheel result — and the Double
     // Wheel itself, so the wheel can never demand another wheel.
-    val WHEEL_EXCLUDES = setOf(1, 4, 6, 7, 13, 14, 20, 21, 22, 23, 24, 25, 32, 35, 37, 39, 43, 44, 46, 49, 55, 58)
+    val WHEEL_EXCLUDES = setOf(1, 4, 6, 7, 13, 14, 20, 21, 22, 23, 24, 25, 32, 35, 37, 39, 43, 44, 46, 49, 55, 58, 59)
 
     /** Display order for the rules reference. */
     val TIMINGS = listOf(
@@ -136,6 +136,7 @@ object CardDeck {
         GameCard(56, "After throw", CardKind.ATTACK, "Walk of Shame", "After a missed putt inside C1, that player carries their putter in either hand until they finish the next hole. (They can putt with it.) If they drop it or put it in the bag, +1 stroke."),
         GameCard(57, "Before tee shot", CardKind.ATTACK, "Your Tee Pad Is Over There!", "Use 2 of your discs to mark a new tee for everyone else, up to 10 paces (30 ft) from the original. They all tee from it."),
         GameCard(58, "Before all tee", CardKind.SABOTAGE, "I Think It's Broke", "The first player to hit a tree loses that disc — they can't throw it again for the rest of the round."),
+        GameCard(59, "After card", CardKind.REACT, "UNO REVERSO", "Reverse any cards that effect you back to the person that used the card. (Doesn't work on wheel spins.)"),
     )
 
     private val byId: Map<Int, GameCard> = ALL.associateBy { it.id }

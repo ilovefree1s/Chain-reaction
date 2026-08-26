@@ -15,7 +15,7 @@ If a PWA is easier to sideload, that's acceptable — but it must work offline, 
 - **Stroke play.** Lowest total wins.
 - **Starting hand:** 4 cards, dealt at round start.
 - **Hand cap:** 7. Cannot draw past it — must discard first.
-- **Each player has their own 58-card deck**, shuffled independently. Duplicate cards across players are expected and fine.
+- **Each player has their own 59-card deck**, shuffled independently. Duplicate cards across players are expected and fine.
 - **Played and discarded cards** go to that player's own discard pile. Reshuffle the discard back into the deck if the deck ever empties.
 - **Max 2 cards may be played on any one player per hole.** The app does not enforce this — players track it themselves — but show it in an in-app rules screen.
 
@@ -107,7 +107,7 @@ Suggested palette: deep pine ground (`#0C1A14`), panels (`#132A21`), muted sage 
   "maxCardsOnOnePlayerPerHole": 2,
   "wheelCost": 2,
   "freeSpinCard": 23,
-  "wheelExcludes": [1, 4, 6, 7, 13, 14, 20, 21, 22, 23, 24, 25, 32, 35, 37, 39, 43, 44, 46, 49, 55, 58],
+  "wheelExcludes": [1, 4, 6, 7, 13, 14, 20, 21, 22, 23, 24, 25, 32, 35, 37, 39, 43, 44, 46, 49, 55, 58, 59],
   "timings": [
     "Before shot",
     "Before tee shot",
@@ -180,7 +180,8 @@ Suggested palette: deep pine ground (`#0C1A14`), panels (`#132A21`), muted sage 
     { "id": 55, "timing": "Before tee shot", "kind": "group", "name": "WALK IT DOWN!!", "text": "No other cards can be played once this hits the table. Everyone tees immediately from anywhere near the tee pad — no throw order. First and second to finish get birdie, third gets par, last gets bogey. No running, and no calling foot faults." },
     { "id": 56, "timing": "After throw", "kind": "attack", "name": "Walk of Shame", "text": "After a missed putt inside C1, that player carries their putter in either hand until they finish the next hole. (They can putt with it.) If they drop it or put it in the bag, +1 stroke." },
     { "id": 57, "timing": "Before tee shot", "kind": "attack", "name": "Your Tee Pad Is Over There!", "text": "Use 2 of your discs to mark a new tee for everyone else, up to 10 paces (30 ft) from the original. They all tee from it." },
-    { "id": 58, "timing": "Before all tee", "kind": "sabotage", "name": "I Think It's Broke", "text": "The first player to hit a tree loses that disc — they can't throw it again for the rest of the round." }
+    { "id": 58, "timing": "Before all tee", "kind": "sabotage", "name": "I Think It's Broke", "text": "The first player to hit a tree loses that disc — they can't throw it again for the rest of the round." },
+    { "id": 59, "timing": "After card", "kind": "react", "name": "UNO REVERSO", "text": "Reverse any cards that effect you back to the person that used the card. (Doesn't work on wheel spins.)" }
   ]
 }
 ```
