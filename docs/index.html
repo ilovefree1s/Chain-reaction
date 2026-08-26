@@ -619,7 +619,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.0 · 26 Aug 00:25";
+var APP_VERSION = "v1.0 · 26 Aug 14:42";
 function versionLine() {
   return '<div class="ver">' + esc(APP_VERSION) + "</div>";
 }
@@ -2129,9 +2129,9 @@ function renderMenu() {
   }).join("");
 
   // A nudge, not a gate: it rides over the sky at the top, well clear of the button
-  // bands, and tapping it goes straight to Settings. Saving a character is the only
-  // thing that clears it, so it can't be dismissed and forgotten.
-  var hint = (settings.myCharacter == null)
+  // bands, and tapping it goes straight to Settings. Saving a name is what clears
+  // it — the face is optional, so a name-only player is done too.
+  var hint = !(settings.myName || "").trim()
     ? '<button class="charhint" data-act="goSettings">Lock in your profile in Settings &nbsp;&rsaquo;</button>'
     : "";
 
