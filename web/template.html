@@ -1436,17 +1436,13 @@ function renderAlerts() {
     if (a.wheel) {
       var wc = BY_ID[a.card];
       var fate = a.dual ? (a.good ? " · good half" : " · bad half") : "";
-      // The same four shapes the wheel screen knows about, said in a line: a
-      // team, a card nobody sits out, a card on one name alone, or an exemption.
-      var sub = a.free ? "free spin — you pick who"
-        : a.mate && a.exempt ? esc(a.exempt) + " &amp; " + esc(a.mate) + " are a team"
-        : ignoresExempt(a.card) ? "nobody sits this one out"
-        : a.exempt && onlyExempt(a.card) ? "on " + esc(a.exempt) + " alone"
-        : a.exempt ? esc(a.exempt) + " is exempt" : "";
+      // The banner carries the wheel wording itself, names filled in — the same
+      // definition the spinner is reading, not the card's hand text.
+      var sub = wheelWords(wc, { free: a.free, name: a.exempt, mate: a.mate, spinner: a.who });
       return '<div class="alert you" data-act="alertTap" data-eid="' + esc(a.eid) + '">' +
         '<div class="who">' + esc(a.who || "Someone") + ' spun the wheel</div>' +
         '<div class="what">' + esc(wc.name) + fate + '</div>' +
-        (sub ? '<div class="onwho">' + sub + '</div>' : "") +
+        (sub ? '<div class="onwho">' + esc(sub) + '</div>' : "") +
         '</div>';
     }
     var c = BY_ID[a.card];
@@ -1700,9 +1696,13 @@ function wheelWords(c, w) {
   var landed = (w && w.name) || "the exempt player";
   // On a paid spin both tokens are the same person. A free spin splits them:
   // nobody is sitting out, and the spinner is the one making the calls.
+  // [w.spinner] is the free spin read from another phone — "you" is them.
+  var spinner = (w && w.spinner) || me || "the spinner";
   var fill = {
-    chooser: free ? (me || "the spinner") : landed,
-    exempt: free ? "the player you exempt" : landed,
+    chooser: free ? spinner : landed,
+    exempt: free
+      ? (w && w.spinner ? "the player " + spinner + " exempts" : "the player you exempt")
+      : landed,
     // The partner off a team card's second spin, before it lands.
     mate: (w && w.mate) || "the second name"
   };
@@ -1915,6 +1915,7 @@ var wheel = null;
 var confirmDiscard = null; // card id awaiting a discard confirmation
 var playTarget = null; // card id awaiting the name of whoever it lands on
 var viewCard = null; // card id enlarged to its full face
+var viewWords = null; // replaces the face's words — a wheel alert opens the wheel wording
 var pileOpen = false; // the discard pile sheet, opened from its counter
 var confirming = false;
 var parsUI = { open: false, name: "" };
@@ -2875,7 +2876,11 @@ function renderFaceModal() {
   var c = BY_ID[viewCard];
   var inHand = state && state.hand.indexOf(c.id) !== -1;
   var art = CARD_ART[c.id];
-  var face = art
+  // A wheel alert opens the wheel wording, names filled in, exactly as the
+  // spinner's screen shows it — the plain face would tell a different story.
+  var face = viewWords != null
+    ? cardHtml(c, false, viewWords)
+    : art
     ? '<img class="cardart" src="' + art + '" style="border-radius:18px;width:100%">'
     : cardFaceSvg(c);
 
@@ -2944,6 +2949,7 @@ function stepViewCard(dir) {
   var next = at + dir;
   if (next < 0 || next >= state.hand.length) return;
   viewCard = state.hand[next];
+  viewWords = null;
   confirmDiscard = null;
   render();
 }
@@ -3646,12 +3652,12 @@ app.addEventListener("click", function (e) {
 
     case "askDiscard": confirmDiscard = i; render(); break;
     case "keepCard": confirmDiscard = null; render(); break;
-    case "viewCard": viewCard = i; render(); break;
+    case "viewCard": viewCard = i; viewWords = null; render(); break;
     case "prevCard": stepViewCard(-1); break;
     case "nextCard": stepViewCard(1); break;
     // Close is the picker's cancel too, so it clears the pending target —
     // otherwise reopening the card would land straight back in the picker.
-    case "closeView": viewCard = null; confirmDiscard = null; playTarget = null; render(); break;
+    case "closeView": viewCard = null; viewWords = null; confirmDiscard = null; playTarget = null; render(); break;
 
     // Paying for a spin: choose the cards first, then the wheel opens.
     case "openWheel":
@@ -3708,7 +3714,13 @@ app.addEventListener("click", function (e) {
       var eid = el.getAttribute("data-eid");
       var hit = liveAlerts.filter(function (a) { return a.eid === eid; })[0];
       liveAlerts = liveAlerts.filter(function (a) { return a.eid !== eid; });
-      if (hit && hit.card != null) viewCard = hit.card;
+      if (hit && hit.card != null) {
+        viewCard = hit.card;
+        // A wheel result opens as the wheel wording; a played card as itself.
+        viewWords = hit.wheel
+          ? wheelWords(BY_ID[hit.card], { free: hit.free, name: hit.exempt, mate: hit.mate, spinner: hit.who })
+          : null;
+      }
       render();
       break;
     }
