@@ -1088,9 +1088,11 @@ function liveHello() {
     // carries the choices — from the round once one is running, or the Setup
     // draft before that, so joiners watch the picks land as they're made.
     hosting: !!live.hosting,
+    // started separates browsing from committed: joiners watch the picks land
+    // but can't start until the host's round actually exists.
     cfg: live.hosting ? (state
-      ? { holes: state.holeCount, pars: state.pars, courseName: state.courseName, mode: state.mode }
-      : { holes: setup.holes, pars: setupPars(), courseName: setup.courseName, mode: setup.mode })
+      ? { holes: state.holeCount, pars: state.pars, courseName: state.courseName, mode: state.mode, started: true }
+      : { holes: setup.holes, pars: setupPars(), courseName: setup.courseName, mode: setup.mode, started: false })
       : null
   });
 }
@@ -2099,7 +2101,10 @@ function renderSetup() {
   // host to pick blocks Start — starting a different round defeats the point.
   var host = live && !live.hosting ? liveHostTable() : null;
   var hostPicked = host && host.cfg && host.cfg.holes > 0;
-  if (host && !hostPicked) ready = false;
+  // Touching a course in the list already broadcasts it, so "picked" only means
+  // the host is browsing. Start stays locked until they commit by starting.
+  var hostStarted = hostPicked && host.cfg.started;
+  if (host && !hostStarted) ready = false;
 
   var courseBlock, formatBlock;
   if (host) {
@@ -2155,6 +2160,7 @@ function renderSetup() {
     '<p class="hint" data-start-hint' + (ready ? ' style="display:none"' : "") + '>' +
       (!namesReady ? "Every player needs a name."
         : host && !hostPicked ? "The host is picking the course."
+        : host && !hostStarted ? "Waiting for " + esc(host.name || "the host") + " to start the round."
         : "Choose a course first.") + '</p>';
 }
 
@@ -2164,14 +2170,18 @@ function syncStartButton() {
   var btn = app.querySelector('[data-act="start"]');
   if (!btn) return;
   var namesReady = seatsReady();
-  var waitingOnHost = live && !live.hosting && liveHostTable() && setup.holes <= 0;
+  var host = live && !live.hosting ? liveHostTable() : null;
+  var waitingOnHost = host && !(host.cfg && host.cfg.holes > 0 && host.cfg.started);
   var ready = namesReady && setup.holes > 0 && !waitingOnHost;
   btn.disabled = !ready;
   var hint = app.querySelector("[data-start-hint]");
   if (hint) {
     hint.style.display = ready ? "none" : "";
     hint.textContent = !namesReady ? "Every player needs a name."
-      : waitingOnHost ? "The host is picking the course." : "Choose a course first.";
+      : waitingOnHost ? (host.cfg && host.cfg.holes > 0
+          ? "Waiting for " + (host.name || "the host") + " to start the round."
+          : "The host is picking the course.")
+      : "Choose a course first.";
   }
 }
 
@@ -3713,8 +3723,10 @@ app.addEventListener("click", function (e) {
 
   // A hosting phone announces its table after every Setup action, so joiners
   // watch the course and format land the moment they're picked rather than on
-  // the next 15-second heartbeat.
-  if (live && live.hosting && screen === "setup") liveHello();
+  // the next 15-second heartbeat. Start itself leaves the Setup screen, but is
+  // exactly the announcement that unlocks everyone else's Start button.
+  if (live && live.hosting && (screen === "setup" || act === "start" || act === "playCourse"))
+    liveHello();
 });
 
 /* A round marked live rejoins the lobby by itself — a reloaded page is back in
