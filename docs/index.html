@@ -619,7 +619,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.0 · 25 Aug 22:36";
+var APP_VERSION = "v1.0 · 25 Aug 22:41";
 function versionLine() {
   return '<div class="ver">' + esc(APP_VERSION) + "</div>";
 }
@@ -1181,6 +1181,9 @@ function liveSeat(peer) {
   if (have) return;
   var slot = -1;
   for (var i = 0; i < setup.names.length; i++) {
+    // Seat 1 is this phone's own, even while its name is still blank — a peer
+    // landing there would replace "you" with somebody else.
+    if (i === setup.meIndex) continue;
     if (!setup.names[i].trim()) { slot = i; break; }
   }
   if (slot === -1) {
