@@ -746,7 +746,10 @@ function startWheelSound(volume, baseRate) {
     var base = baseRate > 0 ? baseRate : 1;
     // The floor: slowing further than this stops sounding like a wheel.
     var endRate = Math.max(0.1, base * WHEEL_END_RATE);
-    var spin = SPIN_MS / 1000, hold = Math.min(HOLD_MS / 1000, spin * 0.8);
+    // A slower wheel starts dying sooner: the name wheels give up a second of
+    // their full-speed hold to a longer wind-down.
+    var holdMs = base < 1 ? HOLD_MS - 1000 : HOLD_MS;
+    var spin = SPIN_MS / 1000, hold = Math.min(holdMs / 1000, spin * 0.8);
     var t = wheelCtx.currentTime + 0.02;
 
     // One voice, start to finish: the steady 90ms slice of the whirr, looped.
