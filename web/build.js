@@ -145,6 +145,7 @@ const buttonsImage = copyArt("mainbuttons.png", "buttons.png");
 const grassImage = copyArt("moregrass.png", "grass.png");
 const iconImage = copyArt("chainreactionicon.png", "icon.png");
 const menuSound = copyAudio("chains.mp3");
+const wheelSound = copyAudio("GAMBLE.mp3");
 
 // ---- card faces: card_01 .. one per card, dropped into the Android drawables ----
 // Optional, per card — any card without art keeps its text tile. Alphabetical
@@ -208,6 +209,7 @@ const template = fs.readFileSync(path.join(__dirname, "template.html"), "utf8");
   "__BUTTONS_IMAGE__",
   "__GRASS_IMAGE__",
   "__MENU_SOUND__",
+  "__WHEEL_SOUND__",
 ].forEach((token) => {
   if (!template.includes(token)) {
     console.error(`template.html is missing the ${token} placeholder`);
@@ -225,6 +227,7 @@ const html = template
   .replace("__BUTTONS_IMAGE__", buttonsImage)
   .replace("__GRASS_IMAGE__", grassImage)
   .replace("__MENU_SOUND__", menuSound)
+  .replace("__WHEEL_SOUND__", wheelSound)
   .replace("__APP_VERSION__", versionLabel)
   ;
 fs.writeFileSync(path.join(dist, "index.html"), html, "utf8");

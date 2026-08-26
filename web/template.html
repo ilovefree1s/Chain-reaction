@@ -530,7 +530,9 @@
   /* ---- the double wheel itself ---- */
   .wheelbox { position: relative; max-width: 340px; margin: 0 auto 12px; }
   .wheelbox svg { display: block; width: 100%; }
-  .wheelbox svg.go { transition: transform 3.6s cubic-bezier(0.12, 0.8, 0.08, 1); }
+  /* 7.2s: long enough for the GAMBLE sound to play out under it. SPIN_MS and the
+     settle fallback in spinWheel() are the same number — change all three. */
+  .wheelbox svg.go { transition: transform 7.2s cubic-bezier(0.12, 0.8, 0.08, 1); }
   .wheelptr { position: absolute; top: 0; left: 50%; transform: translateX(-50%);
               width: 0; height: 0; border: 12px solid transparent; border-bottom: none;
               border-top: 20px solid var(--self); z-index: 1;
@@ -646,6 +648,105 @@ function playMenuSound(volume) {
     var p = a.play();
     if (p && p.catch) p.catch(function () { /* nothing to do */ });
   } catch (e) { /* nothing to do */ }
+}
+
+/*
+ * The wheel's own noise, and the one sound in here that has to follow something
+ * on screen. The wheel is a CSS transition — 3.6s on cubic-bezier(.12,.8,.08,1)
+ * — so the sound is dragged along the same curve: each frame asks how far the
+ * wheel actually moved since the last one and sets the playback rate to match.
+ * It winds down as the wheel does, and lands with it.
+ *
+ * preservesPitch off is the whole effect: slowing the tape drops the pitch, the
+ * way a real wheel does. Then a short fade so it stops rather than cuts.
+ */
+var WHEEL_SOUND = "__WHEEL_SOUND__";
+var wheelAudio = null, wheelFade = null, wheelRamp = null;
+
+var SPIN_MS = 7200;                       // matches .wheelbox svg.go
+var SPIN_EASE = [0.12, 0.8, 0.08, 1];     // and its cubic-bezier
+
+/* One axis of a cubic bezier with the endpoints pinned at 0 and 1. */
+function bezierAxis(t, a, b) {
+  var u = 1 - t;
+  return 3 * u * u * t * a + 3 * u * t * t * b + t * t * t;
+}
+/* CSS eases against x, so solve x(s) = progress before reading y. Newton with a
+   bisection fallback: fast where the curve is steep, safe where it flattens. */
+function easeOut(progress) {
+  var lo = 0, hi = 1, s = progress;
+  for (var i = 0; i < 12; i++) {
+    var x = bezierAxis(s, SPIN_EASE[0], SPIN_EASE[2]) - progress;
+    if (Math.abs(x) < 1e-4) break;
+    if (x > 0) hi = s; else lo = s;
+    s = (lo + hi) / 2;
+  }
+  return bezierAxis(s, SPIN_EASE[1], SPIN_EASE[3]);
+}
+
+function startWheelSound(volume) {
+  stopWheelSound(true);
+  if (!WHEEL_SOUND || !(volume > 0)) return;
+  try {
+    var a = new Audio(WHEEL_SOUND);
+    a.volume = Math.min(1, Math.max(0, volume));
+    a.preservesPitch = a.mozPreservesPitch = a.webkitPreservesPitch = false;
+    wheelAudio = a;
+    var p = a.play();
+    if (p && p.catch) p.catch(function () { /* blocked; the wheel spins on */ });
+
+    // The clip is stretched to fit the spin exactly: one play, starting as the
+    // wheel starts, its last moment landing as the wheel stops. Rate = clip
+    // remaining ÷ spin remaining, re-read every tick, so a slow phone or a late
+    // start is corrected on the fly rather than drifting to a cut or a gap.
+    var t0 = performance.now();
+    clearInterval(wheelRamp);
+    wheelRamp = setInterval(function () {
+      if (wheelAudio !== a) { clearInterval(wheelRamp); wheelRamp = null; return; }
+      var leftMs = SPIN_MS - (performance.now() - t0);
+      if (leftMs <= 60) {
+        clearInterval(wheelRamp); wheelRamp = null;
+        fadeWheelSound(a);
+        return;
+      }
+      var clipLeft = (a.duration || 0) - a.currentTime;   // NaN duration until metadata lands
+      if (clipLeft > 0) {
+        // Shaped, not flat: the wheel is quickest off the line, so the sound is
+        // too — up to a quarter faster at the start, paying it back at the end.
+        // The pull towards the exact fit is what keeps the two ending together.
+        var fit = clipLeft / (leftMs / 1000);
+        var lead = 1 + 0.25 * (leftMs / SPIN_MS);
+        var rate = Math.max(0.07, Math.min(4, fit * lead));
+        try { a.playbackRate = rate; } catch (e) { /* older browser: full speed */ }
+      }
+    }, 50);
+  } catch (e) { /* nothing to do */ }
+}
+
+/* Land, don't cut: 220ms down to nothing. */
+function fadeWheelSound(a) {
+  var from = a.volume, t0 = performance.now();
+  clearInterval(wheelFade);
+  wheelFade = setInterval(function () {
+    var k = (performance.now() - t0) / 220;
+    if (k >= 1 || wheelAudio !== a) {
+      clearInterval(wheelFade); wheelFade = null;
+      try { a.pause(); a.currentTime = 0; } catch (e) { /* nothing to do */ }
+      if (wheelAudio === a) wheelAudio = null;
+      return;
+    }
+    try { a.volume = from * (1 - k); } catch (e) { /* nothing to do */ }
+  }, 30);
+}
+
+function stopWheelSound(silent) {
+  clearInterval(wheelRamp); wheelRamp = null;
+  clearInterval(wheelFade); wheelFade = null;
+  var a = wheelAudio;
+  wheelAudio = null;
+  if (!a) return;
+  if (silent) { try { a.pause(); a.currentTime = 0; } catch (e) { /* nothing */ } return; }
+  fadeWheelSound(a);
 }
 
 /* ---------- persistence ---------- */
@@ -3000,7 +3101,8 @@ function spinWheel(kind) {
     render();
   }
   el.addEventListener("transitionend", settle, { once: true });
-  setTimeout(settle, 3900);
+  setTimeout(settle, SPIN_MS + 300);
+  startWheelSound(sfxVolume());
   el.classList.add("go");
   requestAnimationFrame(function () {
     requestAnimationFrame(function () { el.style.transform = "rotate(" + target + "deg)"; });
@@ -3422,7 +3524,8 @@ app.addEventListener("click", function (e) {
     case "spinFate": spinWheel("fate"); break;
     case "spinName": spinWheel("name"); break;
     case "spinMate": spinWheel("mate"); break;
-    case "closeWheel": wheel = null; render(); break;
+    // Closing mid-spin takes the sound with it.
+    case "closeWheel": stopWheelSound(); wheel = null; render(); break;
 
     // ---- live room ----
     // Host and Join are the same wire; the flag only changes the waiting copy.
