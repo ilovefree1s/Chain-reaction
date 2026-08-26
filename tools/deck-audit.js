@@ -130,6 +130,7 @@ const WHEEL_SETTLED = {
   32: "Stays off the wheel. Playable from a hand only.",
   44: "Stays off the wheel. Playable from a hand only.",
   22: "Stays off the wheel. Playable from a hand only.",
+  25: "Stays off the wheel. Playable from a hand only.",
   13: "Renamed Can I Borrow This? → \"Can I Borrow This Card?\" Stays off the wheel. Playable from a hand only.",
   2: "On the wheel: straddle putting starts once you're inside Circle 2, and runs for every putt from there.",
   12: "Joins the wheel, nobody exempt: the whole table throws for CTP and the winner takes the immunity plus a table-wide attack card.",
