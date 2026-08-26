@@ -147,8 +147,11 @@ const iconImage = copyArt("chainreactionicon.png", "icon.png");
 const menuSound = copyAudio("chains.mp3");
 const wheelSound = copyAudio("gamble.mp3");
 // The soundtrack, played back to back on the menu-side screens only.
-const musicTracks = [copyAudio("chainsofglory.mp3"), copyAudio("DiscHoarderBlues.mp3")]
-  .filter(Boolean);
+const musicTracks = [
+  copyAudio("chainsofglory.mp3"),
+  copyAudio("dischoarderblues.mp3"),
+  copyAudio("discgolferbeeotch.mp3"),
+].filter(Boolean);
 
 // ---- card faces: card_01 .. one per card, dropped into the Android drawables ----
 // Optional, per card — any card without art keeps its text tile. Alphabetical
