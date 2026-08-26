@@ -619,7 +619,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.0 · 26 Aug 15:16";
+var APP_VERSION = "v1.0 · 26 Aug 15:21";
 function versionLine() {
   return '<div class="ver">' + esc(APP_VERSION) + "</div>";
 }
@@ -1515,12 +1515,18 @@ function liveBye(p) {
     render();
     return;
   }
-  // A player left: their chair empties right away.
+  // A player left: their chair goes with them — taken out entirely, so a hole
+  // in the middle of the roster never blocks Start for the phones still here.
   if (screen === "setup" && name) {
     for (var i = 0; i < setup.names.length; i++) {
       if (i === setup.meIndex) continue;
       if (setup.names[i].trim().toLowerCase() === name.toLowerCase()) {
-        setup.names[i] = ""; setup.chars[i] = null; break;
+        if (setup.names.length > MIN_PLAYERS) {
+          setup.names.splice(i, 1); setup.chars.splice(i, 1);
+        } else {
+          setup.names[i] = ""; setup.chars[i] = null;
+        }
+        break;
       }
     }
   }
@@ -2241,16 +2247,32 @@ function renderMenu() {
 /* ---------- setup ---------- */
 function renderSetup() {
   // Same framed-slot + octagonal ME markup as Settings, so the two read as one app.
-  var rows = setup.names.map(function (n, i) {
-    return '<div class="nrow center" style="margin-bottom:10px">' +
-      (CHARACTERS.length
-        ? badgeHtml(characterById(setup.chars[i]), 48, { act: "pickChar", slot: i })
-        : "") +
-      '<div class="npanel nslot nrow center" style="flex:1;margin:0;min-height:56px;padding:0 16px">' +
-      '<input data-name="' + i + '" value="' + esc(n) + '" placeholder="' +
-      (i === 0 ? "You" : "Player " + (i + 1)) + '">' +
-      "</div></div>";
-  }).join("");
+  // In a live lobby every phone IS a person: one row for you, one per phone that
+  // joins — nothing typable, nothing addable. Names and faces are each phone's
+  // own business, set in its Settings.
+  var rows;
+  if (live) {
+    rows = setup.names.map(function (n, i) {
+      var name = n.trim();
+      if (i !== setup.meIndex && !name) return "";
+      return '<div class="nrow center" style="margin-bottom:10px">' +
+        (CHARACTERS.length ? badgeHtml(characterById(setup.chars[i]), 48) : "") +
+        '<div class="npanel nslot nrow center" style="flex:1;margin:0;min-height:56px;padding:0 16px">' +
+        '<span style="font-weight:700">' + (name ? esc(name) : "You — set your name in Settings") + '</span>' +
+        "</div></div>";
+    }).join("");
+  } else {
+    rows = setup.names.map(function (n, i) {
+      return '<div class="nrow center" style="margin-bottom:10px">' +
+        (CHARACTERS.length
+          ? badgeHtml(characterById(setup.chars[i]), 48, { act: "pickChar", slot: i })
+          : "") +
+        '<div class="npanel nslot nrow center" style="flex:1;margin:0;min-height:56px;padding:0 16px">' +
+        '<input data-name="' + i + '" value="' + esc(n) + '" placeholder="' +
+        (i === 0 ? "You" : "Player " + (i + 1)) + '">' +
+        "</div></div>";
+    }).join("");
+  }
 
   var addRemove = '<div class="nrow center" style="gap:10px">' +
     (setup.names.length < MAX_PLAYERS
@@ -2323,7 +2345,8 @@ function renderSetup() {
       // You are always player 1, so there is nothing to mark — the old ME chips said
       // the same thing four times over.
       ? "You're player 1. Hit the + to easily add the rest of the boys on your card."
-      : "You're player 1. Name the rest of the group.") + "</p>" + rows + addRemove +
+      : "You're player 1. Name the rest of the group.") + "</p>" + rows +
+    (live ? "" : addRemove) +
     '<div class="label">Course</div>' + courseBlock +
     '<div class="label">Format</div>' + formatBlock +
     '<div style="height:36px"></div>' +
@@ -3774,8 +3797,12 @@ app.addEventListener("click", function (e) {
       settings.myCharacter = myCharacterDraft;
       putSettings(settings);
       // Already at the table? The table hears the new name now, not at the
-      // next 15-second heartbeat.
-      if (live) liveHello();
+      // next 15-second heartbeat — and your own lobby row follows suit.
+      if (live) {
+        setup.names[setup.meIndex] = settings.myName;
+        setup.chars[setup.meIndex] = settings.myCharacter != null ? settings.myCharacter : null;
+        liveHello();
+      }
       savedGroup = true; render(); break;
 
     case "hole":
