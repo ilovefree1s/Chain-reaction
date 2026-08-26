@@ -1385,6 +1385,19 @@ var ONLY_EXEMPT = [
 ];
 function onlyExempt(id) { return ONLY_EXEMPT.indexOf(id) !== -1; }
 
+/* Cards that need a second name off the wheel — the spun player picks up a
+   partner rather than an exemption, so the wheel spins again to find them. */
+var TEAM_CARDS = [
+  30,  // GOOD GUYS VS. BAD GUYS! — the two names play the hole against the table
+];
+function needsMate(id) { return TEAM_CARDS.indexOf(id) !== -1; }
+
+/* Who can still be drawn as the partner: everyone except the player already on
+   the team. A free spin has no first name, so the whole table is in. */
+function mateLabels() {
+  return state.players.filter(function (p) { return !wheel || wheel.free || p !== wheel.name; });
+}
+
 var WHEEL_TEXT = {
   2:  "Once you're inside Circle 2, every putt you take is a straddle putt.",
   3:  "[exempt] is not so exempt — they tee off left handed with the aerobie. Counts as a normal stroke.",
@@ -1403,6 +1416,7 @@ var WHEEL_TEXT = {
   27: "Everyone but [exempt] must GAMBLE if they miss their first putt — putt again. Make it and that was a free mulligan. Miss and that stroke counts too — play whichever disc landed farthest away, then +1 stroke after the hole.",
   28: "[exempt] gets to join whatever player they want, as if they drove on top of that player's disc, after everyone tees off.",
   29: "[exempt] gets to putt behind the back for no stroke. Everyone else has to as well, and it counts as a stroke. Must be inside Circle 1 to take effect.",
+  30: "[exempt] and [mate] are a team for this hole, against everyone else. Same rules for both teams: a birdie counts as an eagle, no birdie is +1, and a card played on either teammate counts against both. Both take the same score.",
   31: "If anyone but [exempt] hits metal at any point on this hole, it counts as in.",
   33: "Everyone but [exempt] takes their next drive with their off hand.",
   34: "Your first throw off the box is with your offhand, for free — that's throw 0.",
@@ -1443,12 +1457,14 @@ function wheelWords(c, w) {
   // nobody is sitting out, and the spinner is the one making the calls.
   var fill = {
     chooser: free ? (me || "the spinner") : landed,
-    exempt: free ? "the player you exempt" : landed
+    exempt: free ? "the player you exempt" : landed,
+    // The partner off a team card's second spin, before it lands.
+    mate: (w && w.mate) || "the second name"
   };
   // Capitalised where the token opens a sentence, plain everywhere else. The
   // offset is what says "start of string" — a ^ match is an empty lead, which
   // reads as no lead at all and left "the player you exempt" in lower case.
-  return t.replace(/([.!?—] )?\[(chooser|exempt)\]/g, function (m, lead, key, at) {
+  return t.replace(/([.!?—] )?\[(chooser|exempt|mate)\]/g, function (m, lead, key, at) {
     var who = fill[key];
     if (lead || at === 0) who = who.charAt(0).toUpperCase() + who.slice(1);
     return (lead || "") + who;
@@ -2644,7 +2660,9 @@ function stepViewCard(dir) {
 /* ---------- double wheel ---------- */
 function renderWheel() {
   var stage = wheel.stage;
-  var nameSettled = stage === "nameDone" || stage === "done";
+  // cardDone counts as settled too: the name landed a stage ago, and putting its
+  // wheel back on screen for the good/bad or partner spin re-asks a done question.
+  var nameSettled = stage === "nameDone" || stage === "cardDone" || stage === "done";
   var free = !!wheel.free;
 
   // No title block, and the name stage collapses to one orange verdict line
@@ -2667,8 +2685,11 @@ function renderWheel() {
     // them lands the name that was spun stops meaning anything.
     var noExempt = cardSettled && ignoresExempt(wheel.card.id);
     var lone = cardSettled && onlyExempt(wheel.card.id);
+    var team = cardSettled && needsMate(wheel.card.id);
     html += '<div class="exempt">' + (noExempt
       ? "Nobody sits this one out"
+      : team
+        ? esc(wheel.name || "First name") + " &amp; " + esc(wheel.mate || "…")
       : lone
         ? (free ? "Whoever you name, and only them" : esc(wheel.name) + ", and only " + esc(wheel.name))
         : free
@@ -2689,8 +2710,16 @@ function renderWheel() {
   if (cardSettled) {
     html += cardHtml(wheel.card, false, wheelWords(wheel.card, wheel));
   }
-  // Dual cards only: which half applies?
-  if (stage === "cardDone") {
+  // Team cards take a second name instead of a good/bad half.
+  if (stage === "cardDone" && needsMate(wheel.card.id)) {
+    html += '<div class="label">And their partner</div>' +
+      '<div class="wheelbox"><div class="wheelptr"></div>' +
+      wheelSvg("wheel-mate", wheel.mateLabels || mateLabels().concat(mateLabels()),
+        wheel.mateRot, null, 14) +
+      '</div>' +
+      '<button class="big wheel" data-act="spinMate">Spin the partner</button>';
+  } else if (stage === "cardDone") {
+    // Dual cards only: which half applies?
     html += '<div class="label">Good or bad?</div>' +
       '<div class="wheelbox"><div class="wheelptr"></div>' +
       wheelSvg("wheel-fate", wheel.fateLabels, wheel.fateRot, null, 16, true) +
@@ -2710,6 +2739,9 @@ function renderWheel() {
             : ' sits this one out. Everyone else takes the bad half.')) + '</p>';
     } else if (ignoresExempt(wheel.card.id)) {
       html += '<p>Every player is in this one, spun name included &mdash; the card&rsquo;s own words say who gets what.</p>';
+    } else if (needsMate(wheel.card.id)) {
+      html += '<p>' + esc(wheel.name || "The first name") + ' and ' + esc(wheel.mate || "the second") +
+        ' play the hole as a team. Everybody else is against them.</p>';
     } else if (onlyExempt(wheel.card.id)) {
       html += '<p>This one lands the other way round: it&rsquo;s on the name alone, and the rest of the table just watches.</p>';
     } else {
@@ -2858,7 +2890,8 @@ function shuffled(arr) {
 function spinWheel(kind) {
   if (!wheel || wheel.spinning) return;
   var el = document.getElementById(
-    kind === "name" ? "wheel-name" : kind === "fate" ? "wheel-fate" : "wheel-card");
+    kind === "name" ? "wheel-name" : kind === "fate" ? "wheel-fate"
+      : kind === "mate" ? "wheel-mate" : "wheel-card");
   if (!el) return;
   wheel.spinning = true;
 
@@ -2869,6 +2902,14 @@ function spinWheel(kind) {
     // The player owns two opposite segments — land on either.
     wheel.nameSeg = p + state.players.length * (Math.random() < 0.5 ? 0 : 1);
     n = wheel.nameLabels.length; idx = wheel.nameSeg;
+  } else if (kind === "mate") {
+    // The teammate wheel is the name wheel minus whoever is already on the team.
+    var pool = mateLabels();
+    var m = Math.floor(Math.random() * pool.length);
+    wheel.mate = pool[m];
+    wheel.mateLabels = pool.concat(pool);
+    wheel.mateSeg = m + pool.length * (Math.random() < 0.5 ? 0 : 1);
+    n = wheel.mateLabels.length; idx = wheel.mateSeg;
   } else if (kind === "fate") {
     wheel.fateIdx = Math.floor(Math.random() * wheel.fateLabels.length);
     wheel.fateGood = wheel.fateIdx % 2 === 0;
@@ -2880,11 +2921,13 @@ function spinWheel(kind) {
   var target = 5 * 360 + (360 - (idx * seg + seg / 2)) + (Math.random() - 0.5) * 0.6 * seg;
   if (kind === "name") wheel.nameRot = target;
   else if (kind === "fate") wheel.fateRot = target;
+  else if (kind === "mate") wheel.mateRot = target;
   else wheel.cardRot = target;
 
   var btn = document.querySelector(
     kind === "name" ? '[data-act="spinName"]'
       : kind === "fate" ? '[data-act="spinFate"]'
+      : kind === "mate" ? '[data-act="spinMate"]'
       : '[data-act="spinCard"]');
   if (btn) btn.style.visibility = "hidden";
 
@@ -2894,7 +2937,7 @@ function spinWheel(kind) {
     settled = true;
     wheel.spinning = false;
     wheel.stage = kind === "name" ? "nameDone"
-      : kind === "card" && wheel.isDual ? "cardDone"
+      : kind === "card" && (wheel.isDual || needsMate(wheel.card.id)) ? "cardDone"
       : "done";
     // Settled for good: tell the table what the wheel decided.
     if (wheel.stage === "done" && live) {
@@ -3331,6 +3374,7 @@ app.addEventListener("click", function (e) {
     case "spinCard": spinWheel("card"); break;
     case "spinFate": spinWheel("fate"); break;
     case "spinName": spinWheel("name"); break;
+    case "spinMate": spinWheel("mate"); break;
     case "closeWheel": wheel = null; render(); break;
 
     // ---- live room ----

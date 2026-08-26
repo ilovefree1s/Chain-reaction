@@ -107,7 +107,7 @@ Suggested palette: deep pine ground (`#0C1A14`), panels (`#132A21`), muted sage 
   "maxCardsOnOnePlayerPerHole": 2,
   "wheelCost": 2,
   "freeSpinCard": 23,
-  "wheelExcludes": [1, 4, 6, 7, 13, 14, 20, 21, 22, 23, 24, 25, 30, 32, 35, 37, 39, 44, 46, 49, 55, 58],
+  "wheelExcludes": [1, 4, 6, 7, 13, 14, 20, 21, 22, 23, 24, 25, 32, 35, 37, 39, 44, 46, 49, 55, 58],
   "timings": [
     "Before shot",
     "Before tee shot",
@@ -152,7 +152,7 @@ Suggested palette: deep pine ground (`#0C1A14`), panels (`#132A21`), muted sage 
     { "id": 27, "timing": "After throw", "kind": "self", "name": "GAMBLE!", "text": "Take a second chance at a putt you just missed. Make it and it was a free mulligan. Miss and the second stroke counts too — play whichever disc landed farthest away, then add +1 stroke after the hole ends." },
     { "id": 28, "timing": "After all tee", "kind": "self", "name": "I'll Have What He's Having", "text": "After all tee shots, trade lies with an opponent of your choice." },
     { "id": 29, "timing": "Before shot", "kind": "dual", "name": "Globetrotter Shit", "text": "On yourself: putt behind the back at no stroke cost. On another player: they putt behind the back and it counts as a normal stroke." },
-    { "id": 30, "timing": "Before tee shot", "kind": "dual", "name": "GOOD GUYS VS. BAD GUYS!", "text": "Ask another player to team up for the next hole. Birdie counts as an eagle, no birdie is +1. Cards against one of you count against both, and you both take the same score. If they refuse, ask someone else — if everyone refuses, they all discard 1 card." },
+    { "id": 30, "timing": "Before tee shot", "kind": "dual", "name": "GOOD GUYS VS. BAD GUYS!", "text": "Ask another player to team up for the next hole. Birdie counts as an eagle, no birdie is +1. Cards against one of you count against both, and you both take the same score. If they refuse, ask someone else." },
     { "id": 31, "timing": "Before shot", "kind": "self", "name": "If the Basket Was There It Woulda Went In", "text": "Play before a C2 putt only. If you hit metal and it doesn't go in, it still counts." },
     { "id": 32, "timing": "After all tee", "kind": "attack", "name": "I'm In Control", "text": "You decide who plays whose tee shots. More than one player can be sent to the same lie." },
     { "id": 33, "timing": "Before tee shot", "kind": "attack", "name": "It's Like a Stranger Is Doing It!", "text": "Force an opponent to take the upcoming drive with their off hand." },
