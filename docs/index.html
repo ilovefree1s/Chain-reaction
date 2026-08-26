@@ -619,7 +619,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.0 · 25 Aug 22:20";
+var APP_VERSION = "v1.0 · 25 Aug 22:22";
 function versionLine() {
   return '<div class="ver">' + esc(APP_VERSION) + "</div>";
 }
@@ -1279,6 +1279,12 @@ function allDisputes(s) {
 function liveRefresh() {
   var el = document.activeElement;
   if (el && el.tagName === "INPUT") return;
+  // A wheel mid-spin is a CSS transition on an element render() would replace.
+  // Rebuild the DOM under it and the fresh copy is already drawn at its final
+  // rotation — the wheel visibly snaps to the landing the moment any hello or
+  // play arrives, which in a busy lobby is within a second or two of every
+  // spin. The room's chatter can wait; settle() renders when the wheel lands.
+  if (wheel && wheel.spinning) return;
   render();
 }
 
