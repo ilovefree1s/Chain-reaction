@@ -133,6 +133,7 @@ const WHEEL_SETTLED = {
   25: "Stays off the wheel. Playable from a hand only.",
   13: "Renamed Can I Borrow This? → \"Can I Borrow This Card?\" Stays off the wheel. Playable from a hand only.",
   2: "On the wheel: straddle putting starts once you're inside Circle 2, and runs for every putt from there.",
+  26: "On the wheel: everyone but the exempt player gets one free lie move this hole.",
   12: "Joins the wheel, nobody exempt: the whole table throws for CTP and the winner takes the immunity plus a table-wide attack card.",
   10: "Joins the wheel, and lets nobody off: the first player to make a putt sets it going, so the spun name means nothing. The screen says \"Nobody sits this one out\" instead of naming somebody.",
   23: "Renamed Double Wheel → GAMBLE WHEEL!!, everywhere it appears — card, buttons, rules screen, spec.",
