@@ -619,7 +619,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.0 · 25 Aug 22:29";
+var APP_VERSION = "v1.0 · 25 Aug 22:36";
 function versionLine() {
   return '<div class="ver">' + esc(APP_VERSION) + "</div>";
 }
@@ -2148,7 +2148,11 @@ function renderSetup() {
   // No title block — the back bar already says NEW ROUND.
   return renderLiveSection() +
     '<div class="label">Players</div>' +
-    '<p class="hint">' + (CHARACTERS.length
+    '<p class="hint">' + (live
+      // In the lobby the roster fills itself as phones join — telling the host
+      // to hit + would just get everyone seated twice.
+      ? "You're player 1. The boys fill in by themselves as their phones join."
+      : CHARACTERS.length
       // You are always player 1, so there is nothing to mark — the old ME chips said
       // the same thing four times over.
       ? "You're player 1. Hit the + to easily add the rest of the boys on your card."
