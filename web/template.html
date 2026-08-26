@@ -669,6 +669,7 @@ var wheelNode = null, wheelGain = null;
 
 var SPIN_MS = 5200;                       // matches .wheelbox svg.go
 var HOLD_MS = 3000;                       // full-speed clicks before the wind-down
+var WHEEL_END_RATE = 0.22;                // where the slowing loop lands
 
 /*
  * What the recording actually is: a real wheel given one flick, whirring down
@@ -738,50 +739,35 @@ function startWheelSound(volume) {
   try {
     if (wheelCtx.state === "suspended") wheelCtx.resume();
     var vol = Math.min(1, Math.max(0, volume));
-    var spin = SPIN_MS / 1000;
-    var fade = 0.12;
-    // The wind-down is the recording played once, slowed to fill what is left
-    // after the full-speed phase. Never sped up: if the spin is too short for
-    // the whole recording, the full-speed phase gives way instead.
-    var tailLen = Math.max(spin - HOLD_MS / 1000, Math.min(spin * 0.6, wheelLoop.audibleEnd));
-    var handover = spin - tailLen;
+    var spin = SPIN_MS / 1000, hold = Math.min(HOLD_MS / 1000, spin * 0.8);
     var t = wheelCtx.currentTime + 0.02;
 
-    // Phase one: a slice of the whirr, looped flat out. 90ms of a falling
-    // recording is too short to drift, so it holds steady.
+    // One voice, start to finish: the steady 90ms slice of the whirr, looped.
+    // Full speed through the hold, then the loop itself is slowed — the same
+    // clicks, further and further apart, pitch sagging with them — down to a
+    // crawl as the wheel lands. No second sound, so nothing to hand over to.
     var loopSrc = wheelCtx.createBufferSource();
     loopSrc.buffer = wheelBuf;
     loopSrc.loop = true;
     loopSrc.loopStart = wheelLoop.loopStart;
     loopSrc.loopEnd = wheelLoop.loopEnd;
+    loopSrc.playbackRate.setValueAtTime(1, t);
+    loopSrc.playbackRate.setValueAtTime(1, t + hold);
+    loopSrc.playbackRate.linearRampToValueAtTime(WHEEL_END_RATE, t + spin);
+
     var loopG = wheelCtx.createGain();
     loopG.gain.setValueAtTime(vol, t);
-    // Crossfade out as the wind-down takes over.
-    loopG.gain.setValueAtTime(vol, t + handover);
-    loopG.gain.linearRampToValueAtTime(0.0001, t + handover + fade);
+    // Land, don't cut.
+    loopG.gain.setValueAtTime(vol, t + spin - 0.15);
+    loopG.gain.linearRampToValueAtTime(0.0001, t + spin);
     loopSrc.connect(loopG); loopG.connect(wheelCtx.destination);
     loopSrc.start(t, wheelLoop.loopStart);
-    loopSrc.stop(t + handover + fade + 0.05);
+    loopSrc.stop(t + spin + 0.05);
 
-    // Phase two: the whole audible recording, once, stretched over the tail.
-    // Its own falling pitch is the wheel dying — no seam, nothing synthetic.
-    var tailSrc = wheelCtx.createBufferSource();
-    tailSrc.buffer = wheelBuf;
-    tailSrc.playbackRate.value = wheelLoop.audibleEnd / tailLen;
-    var tailG = wheelCtx.createGain();
-    tailG.gain.setValueAtTime(0.0001, t + handover);
-    tailG.gain.linearRampToValueAtTime(vol, t + handover + fade);
-    // Land, don't cut.
-    tailG.gain.setValueAtTime(vol, t + spin - 0.15);
-    tailG.gain.linearRampToValueAtTime(0.0001, t + spin);
-    tailSrc.connect(tailG); tailG.connect(wheelCtx.destination);
-    tailSrc.start(t + handover);
-    tailSrc.stop(t + spin + 0.05);
-
-    wheelNode = [loopSrc, tailSrc];
-    wheelGain = [loopG, tailG];
-    tailSrc.onended = function () {
-      if (wheelNode && wheelNode[1] === tailSrc) { wheelNode = null; wheelGain = null; }
+    wheelNode = [loopSrc];
+    wheelGain = [loopG];
+    loopSrc.onended = function () {
+      if (wheelNode && wheelNode[0] === loopSrc) { wheelNode = null; wheelGain = null; }
     };
   } catch (e) { /* nothing to do */ }
 }
