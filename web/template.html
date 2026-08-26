@@ -664,38 +664,54 @@ function playMenuSound(volume) {
  * gap, and a gap in a click track is heard as a second spin starting.
  */
 var WHEEL_SOUND = "__WHEEL_SOUND__";
-var wheelCtx = null, wheelBuf = null, wheelLoopEnd = 0;
+var wheelCtx = null, wheelBuf = null, wheelLoop = null;
 var wheelNode = null, wheelGain = null;
 
 var SPIN_MS = 5200;                       // matches .wheelbox svg.go
 var HOLD_MS = 3000;                       // full-speed clicks before the wind-down
-var WHEEL_END_RATE = 0.28;                // where the wind-down leaves the clicks
 
 /*
- * Where the clicks stop and the silence starts. Measured rather than assumed, so
- * a re-cut of the file just works: walk 20ms windows and take the last one with
- * real level in it, then back off to the last dense window so the loop doesn't
- * include the decaying tail (which would pulse once per lap).
+ * What the recording actually is: a real wheel given one flick, whirring down
+ * over about a second, then silence. Its pitch falls the whole way through, so
+ * no slice of it loops cleanly — every seam jumps back up in pitch and sounds
+ * like the wheel being hit back up to speed. Measured, twice, the hard way.
+ *
+ * So the sound is used the way the recording wants to be used:
+ *   - full-speed phase: a ~90ms slice from just after the flick, looped. Too
+ *     short to drift in pitch, so it holds as a steady whirr.
+ *   - wind-down: the whole audible second played ONCE, slowed to exactly fill
+ *     the time left. Its own falling pitch is the wheel dying — nothing is
+ *     synthesised, and there is no seam to hear.
+ * The two overlap in a short crossfade at the handover.
  */
-function findClickBed(buf) {
-  var sr = buf.sampleRate, chans = [];
-  for (var c = 0; c < buf.numberOfChannels; c++) chans.push(buf.getChannelData(c));
-  var win = Math.round(sr * 0.02), levels = [];
-  for (var s = 0; s + win <= buf.length; s += win) {
+function analyseWheelClip(buf) {
+  var sr = buf.sampleRate, d = buf.getChannelData(0);
+  var peak = 0;
+  for (var i = 0; i < d.length; i++) { var v = Math.abs(d[i]); if (v > peak) peak = v; }
+  if (!(peak > 0)) return null;
+
+  // Where the sound ends: last 20ms window with real level in it.
+  var win = Math.round(sr * 0.02), lastLoud = 0;
+  for (var s = 0; s + win <= d.length; s += win) {
     var sum = 0;
-    for (var i = s; i < s + win; i++) {
-      var v = 0;
-      for (var ch = 0; ch < chans.length; ch++) v += chans[ch][i];
-      sum += v * v;
-    }
-    levels.push(Math.sqrt(sum / win));
+    for (var j = s; j < s + win; j++) sum += d[j] * d[j];
+    if (Math.sqrt(sum / win) > peak * 0.03) lastLoud = s + win;
   }
-  var peak = Math.max.apply(null, levels);
-  if (!(peak > 0)) return buf.duration;
-  var dense = peak * 0.08, lastDense = 0;
-  for (var k = 0; k < levels.length; k++) if (levels[k] > dense) lastDense = k;
-  var end = (lastDense + 1) * 0.02;
-  return Math.max(0.3, Math.min(buf.duration, end));
+  var audibleEnd = Math.max(0.3, lastLoud / sr);
+
+  // The loop slice: 90ms from just after the initial flick, cuts snapped to
+  // zero crossings so the seam itself doesn't tick.
+  function snap(t) {
+    var at = Math.round(t * sr);
+    for (var o = 0; o < sr * 0.01; o++) {
+      if (at + o + 1 < d.length && d[at + o] <= 0 && d[at + o + 1] > 0) return (at + o) / sr;
+      if (at - o - 1 >= 0 && d[at - o - 1] <= 0 && d[at - o] > 0) return (at - o) / sr;
+    }
+    return t;
+  }
+  var from = Math.min(0.08, audibleEnd * 0.1);
+  var to = Math.min(from + 0.09, audibleEnd * 0.5);
+  return { audibleEnd: audibleEnd, loopStart: snap(from), loopEnd: snap(to) };
 }
 
 /* Fetched and decoded up front so the first spin has nothing to wait for. The
@@ -711,63 +727,83 @@ function primeWheelSound() {
       .then(function (bytes) {
         return new Promise(function (ok, no) { wheelCtx.decodeAudioData(bytes, ok, no); });
       })
-      .then(function (buf) { wheelBuf = buf; wheelLoopEnd = findClickBed(buf); })
+      .then(function (buf) { wheelBuf = buf; wheelLoop = analyseWheelClip(buf); })
       .catch(function () { /* no wheel sound; the wheel still spins */ });
   } catch (e) { /* nothing to do */ }
 }
 
 function startWheelSound(volume) {
   stopWheelSound(true);
-  if (!wheelCtx || !wheelBuf || !(volume > 0)) return;
+  if (!wheelCtx || !wheelBuf || !wheelLoop || !(volume > 0)) return;
   try {
     if (wheelCtx.state === "suspended") wheelCtx.resume();
-    var spin = SPIN_MS / 1000, hold = Math.min(HOLD_MS / 1000, spin * 0.8);
+    var vol = Math.min(1, Math.max(0, volume));
+    var spin = SPIN_MS / 1000;
+    var fade = 0.12;
+    // The wind-down is the recording played once, slowed to fill what is left
+    // after the full-speed phase. Never sped up: if the spin is too short for
+    // the whole recording, the full-speed phase gives way instead.
+    var tailLen = Math.max(spin - HOLD_MS / 1000, Math.min(spin * 0.6, wheelLoop.audibleEnd));
+    var handover = spin - tailLen;
     var t = wheelCtx.currentTime + 0.02;
 
-    var src = wheelCtx.createBufferSource();
-    src.buffer = wheelBuf;
-    src.loop = true;
-    src.loopStart = 0;
-    src.loopEnd = wheelLoopEnd;
+    // Phase one: a slice of the whirr, looped flat out. 90ms of a falling
+    // recording is too short to drift, so it holds steady.
+    var loopSrc = wheelCtx.createBufferSource();
+    loopSrc.buffer = wheelBuf;
+    loopSrc.loop = true;
+    loopSrc.loopStart = wheelLoop.loopStart;
+    loopSrc.loopEnd = wheelLoop.loopEnd;
+    var loopG = wheelCtx.createGain();
+    loopG.gain.setValueAtTime(vol, t);
+    // Crossfade out as the wind-down takes over.
+    loopG.gain.setValueAtTime(vol, t + handover);
+    loopG.gain.linearRampToValueAtTime(0.0001, t + handover + fade);
+    loopSrc.connect(loopG); loopG.connect(wheelCtx.destination);
+    loopSrc.start(t, wheelLoop.loopStart);
+    loopSrc.stop(t + handover + fade + 0.05);
 
-    var g = wheelCtx.createGain();
-    g.gain.setValueAtTime(Math.min(1, Math.max(0, volume)), t);
-    src.connect(g);
-    g.connect(wheelCtx.destination);
-
-    // Flat out, then losing its legs. Scheduled on the audio clock, so it holds
-    // its timing whatever the screen is doing.
-    src.playbackRate.setValueAtTime(1, t);
-    src.playbackRate.setValueAtTime(1, t + hold);
-    src.playbackRate.linearRampToValueAtTime(WHEEL_END_RATE, t + spin);
+    // Phase two: the whole audible recording, once, stretched over the tail.
+    // Its own falling pitch is the wheel dying — no seam, nothing synthetic.
+    var tailSrc = wheelCtx.createBufferSource();
+    tailSrc.buffer = wheelBuf;
+    tailSrc.playbackRate.value = wheelLoop.audibleEnd / tailLen;
+    var tailG = wheelCtx.createGain();
+    tailG.gain.setValueAtTime(0.0001, t + handover);
+    tailG.gain.linearRampToValueAtTime(vol, t + handover + fade);
     // Land, don't cut.
-    g.gain.setValueAtTime(Math.min(1, Math.max(0, volume)), t + spin - 0.22);
-    g.gain.linearRampToValueAtTime(0.0001, t + spin);
+    tailG.gain.setValueAtTime(vol, t + spin - 0.15);
+    tailG.gain.linearRampToValueAtTime(0.0001, t + spin);
+    tailSrc.connect(tailG); tailG.connect(wheelCtx.destination);
+    tailSrc.start(t + handover);
+    tailSrc.stop(t + spin + 0.05);
 
-    src.start(t);
-    src.stop(t + spin + 0.05);
-    wheelNode = src;
-    wheelGain = g;
-    src.onended = function () { if (wheelNode === src) { wheelNode = null; wheelGain = null; } };
+    wheelNode = [loopSrc, tailSrc];
+    wheelGain = [loopG, tailG];
+    tailSrc.onended = function () {
+      if (wheelNode && wheelNode[1] === tailSrc) { wheelNode = null; wheelGain = null; }
+    };
   } catch (e) { /* nothing to do */ }
 }
 
 /* Cut it short — closing the wheel mid-spin, or a second spin starting. */
 function stopWheelSound(silent) {
-  var src = wheelNode, g = wheelGain;
+  var nodes = wheelNode, gains = wheelGain;
   wheelNode = null; wheelGain = null;
-  if (!src) return;
-  try {
-    var now = wheelCtx ? wheelCtx.currentTime : 0;
-    if (g && !silent) {
-      g.gain.cancelScheduledValues(now);
-      g.gain.setValueAtTime(g.gain.value, now);
-      g.gain.linearRampToValueAtTime(0.0001, now + 0.12);
-      src.stop(now + 0.14);
-    } else {
-      src.stop(now);
-    }
-  } catch (e) { /* already stopped */ }
+  if (!nodes) return;
+  var now = wheelCtx ? wheelCtx.currentTime : 0;
+  for (var i = 0; i < nodes.length; i++) {
+    try {
+      if (gains && gains[i] && !silent) {
+        gains[i].gain.cancelScheduledValues(now);
+        gains[i].gain.setValueAtTime(gains[i].gain.value, now);
+        gains[i].gain.linearRampToValueAtTime(0.0001, now + 0.12);
+        nodes[i].stop(now + 0.14);
+      } else {
+        nodes[i].stop(now);
+      }
+    } catch (e) { /* already stopped */ }
+  }
 }
 
 /* ---------- persistence ---------- */
