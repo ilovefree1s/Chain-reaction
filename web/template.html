@@ -652,67 +652,64 @@ function playMenuSound(volume) {
 
 /*
  * The wheel's own noise, and the one sound in here that has to follow something
- * on screen.
+ * on screen — so it is generated FROM the thing on screen.
  *
- * The clip is a burst of clicks with a long silent tail, so it is not played as
- * a clip at all: the clicky part is cut out and looped, seamlessly, for as long
- * as the wheel turns. Full speed for HOLD_MS — the wheel at full tilt — then the
- * playback rate ramps down to a crawl, which spreads the clicks apart exactly
- * the way a real wheel does, and the loop stops as the wheel stops.
- *
- * Web Audio rather than an <audio> element: an element cannot loop without a
- * gap, and a gap in a click track is heard as a second spin starting.
+ * One click is cut out of the recording. Then, for a spin, the same curve the
+ * CSS animates is walked in advance, and a click is scheduled on the audio
+ * clock at the exact moment each segment boundary passes the pointer. The card
+ * wheel's 36 slivers rattle; a name wheel's six big slices knock past slowly;
+ * and the slowing IS the visual slowing, because it is the same arithmetic.
+ * Nothing is ever played at reduced speed, so the pitch never sags into mud.
  */
 var WHEEL_SOUND = "__WHEEL_SOUND__";
-var wheelCtx = null, wheelBuf = null, wheelLoop = null;
+var wheelCtx = null, wheelClick = null;
 var wheelNode = null, wheelGain = null;
 
 var SPIN_MS = 5200;                       // matches .wheelbox svg.go
-var HOLD_MS = 3000;                       // full-speed clicks before the wind-down
-var WHEEL_END_RATE = 0.22;                // where the slowing loop lands
+var SPIN_EASE = [0.12, 0.8, 0.08, 1];     // and its cubic-bezier
+
+/* One axis of a cubic bezier with the endpoints pinned at 0 and 1. */
+function bezierAxis(t, a, b) {
+  var u = 1 - t;
+  return 3 * u * u * t * a + 3 * u * t * t * b + t * t * t;
+}
+/* CSS eases against x, so solve x(s) = progress by bisection, then read y. */
+function easeOut(progress) {
+  var lo = 0, hi = 1, s = progress;
+  for (var i = 0; i < 24; i++) {
+    var x = bezierAxis(s, SPIN_EASE[0], SPIN_EASE[2]) - progress;
+    if (Math.abs(x) < 1e-5) break;
+    if (x > 0) hi = s; else lo = s;
+    s = (lo + hi) / 2;
+  }
+  return bezierAxis(s, SPIN_EASE[1], SPIN_EASE[3]);
+}
 
 /*
- * What the recording actually is: a real wheel given one flick, whirring down
- * over about a second, then silence. Its pitch falls the whole way through, so
- * no slice of it loops cleanly — every seam jumps back up in pitch and sounds
- * like the wheel being hit back up to speed. Measured, twice, the hard way.
- *
- * So the sound is used the way the recording wants to be used:
- *   - full-speed phase: a ~90ms slice from just after the flick, looped. Too
- *     short to drift in pitch, so it holds as a steady whirr.
- *   - wind-down: the whole audible second played ONCE, slowed to exactly fill
- *     the time left. Its own falling pitch is the wheel dying — nothing is
- *     synthesised, and there is no seam to hear.
- * The two overlap in a short crossfade at the handover.
+ * Cut one click out of the recording: the loudest transient, from a couple of
+ * milliseconds before its onset, 45ms long, edges feathered so the cut itself
+ * is silent. Copied into its own buffer; the recording is then done with.
  */
-function analyseWheelClip(buf) {
+function extractWheelClick(buf) {
   var sr = buf.sampleRate, d = buf.getChannelData(0);
-  var peak = 0;
-  for (var i = 0; i < d.length; i++) { var v = Math.abs(d[i]); if (v > peak) peak = v; }
+  var peakAt = 0, peak = 0;
+  for (var i = 0; i < d.length; i++) {
+    var v = Math.abs(d[i]);
+    if (v > peak) { peak = v; peakAt = i; }
+  }
   if (!(peak > 0)) return null;
-
-  // Where the sound ends: last 20ms window with real level in it.
-  var win = Math.round(sr * 0.02), lastLoud = 0;
-  for (var s = 0; s + win <= d.length; s += win) {
-    var sum = 0;
-    for (var j = s; j < s + win; j++) sum += d[j] * d[j];
-    if (Math.sqrt(sum / win) > peak * 0.03) lastLoud = s + win;
+  var from = Math.max(0, peakAt - Math.round(sr * 0.002));
+  var len = Math.min(Math.round(sr * 0.045), d.length - from);
+  var grain = wheelCtx.createBuffer(1, len, sr);
+  var g = grain.getChannelData(0);
+  var fade = Math.round(sr * 0.004);
+  for (var j = 0; j < len; j++) {
+    var k = 1;
+    if (j < fade) k = j / fade;
+    if (len - j < fade) k = (len - j) / fade;
+    g[j] = d[from + j] * k;
   }
-  var audibleEnd = Math.max(0.3, lastLoud / sr);
-
-  // The loop slice: 90ms from just after the initial flick, cuts snapped to
-  // zero crossings so the seam itself doesn't tick.
-  function snap(t) {
-    var at = Math.round(t * sr);
-    for (var o = 0; o < sr * 0.01; o++) {
-      if (at + o + 1 < d.length && d[at + o] <= 0 && d[at + o + 1] > 0) return (at + o) / sr;
-      if (at - o - 1 >= 0 && d[at - o - 1] <= 0 && d[at - o] > 0) return (at - o) / sr;
-    }
-    return t;
-  }
-  var from = Math.min(0.08, audibleEnd * 0.1);
-  var to = Math.min(from + 0.09, audibleEnd * 0.5);
-  return { audibleEnd: audibleEnd, loopStart: snap(from), loopEnd: snap(to) };
+  return grain;
 }
 
 /* Fetched and decoded up front so the first spin has nothing to wait for. The
@@ -728,77 +725,83 @@ function primeWheelSound() {
       .then(function (bytes) {
         return new Promise(function (ok, no) { wheelCtx.decodeAudioData(bytes, ok, no); });
       })
-      .then(function (buf) { wheelBuf = buf; wheelLoop = analyseWheelClip(buf); })
+      .then(function (buf) { wheelClick = extractWheelClick(buf); })
       .catch(function () { /* no wheel sound; the wheel still spins */ });
   } catch (e) { /* nothing to do */ }
 }
 
-/* [baseRate] is the wheel's cruising speed — 1 for the card wheel's blur, less
-   for the name wheels, whose few big segments click past far slower. The
-   wind-down keeps its proportions: it always lands at the same fraction of
-   wherever it started. */
-function startWheelSound(volume, baseRate) {
+/*
+ * When does each segment boundary cross the pointer? Walk the eased rotation
+ * in 2ms steps and note every time it enters a new segment. The launch is so
+ * front-loaded that boundaries fly past faster than distinct clicks can be
+ * heard, so anything nearer than 24ms to the previous click is dropped — the
+ * blur is a blur, not a wall of sound.
+ */
+function segmentCrossings(fromDeg, toDeg, segments) {
+  var segDeg = 360 / segments, delta = toDeg - fromDeg, times = [];
+  var steps = Math.round(SPIN_MS / 2), lastSeg = Math.floor(fromDeg / segDeg), lastAt = -1;
+  for (var i = 1; i <= steps; i++) {
+    var at = i / steps;
+    var seg = Math.floor((fromDeg + delta * easeOut(at)) / segDeg);
+    if (seg !== lastSeg) {
+      lastSeg = seg;
+      var tSec = at * SPIN_MS / 1000;
+      if (tSec - lastAt >= 0.024) { times.push(tSec); lastAt = tSec; }
+    }
+  }
+  return times;
+}
+
+/* Fire the clicks. Scheduled up front on the audio clock, so the pattern holds
+   even if the page is janking or backgrounded mid-spin. */
+function startWheelSound(volume, clickTimes) {
   stopWheelSound(true);
-  if (!wheelCtx || !wheelBuf || !wheelLoop || !(volume > 0)) return;
+  if (!wheelCtx || !wheelClick || !(volume > 0) || !clickTimes || !clickTimes.length) return;
   try {
     if (wheelCtx.state === "suspended") wheelCtx.resume();
     var vol = Math.min(1, Math.max(0, volume));
-    var base = baseRate > 0 ? baseRate : 1;
-    // The floor: slowing further than this stops sounding like a wheel.
-    var endRate = Math.max(0.1, base * WHEEL_END_RATE);
-    // A slower wheel starts dying sooner: the name wheels give up a second of
-    // their full-speed hold to a longer wind-down.
-    var holdMs = base < 1 ? HOLD_MS - 1000 : HOLD_MS;
-    var spin = SPIN_MS / 1000, hold = Math.min(holdMs / 1000, spin * 0.8);
-    var t = wheelCtx.currentTime + 0.02;
+    var t0 = wheelCtx.currentTime + 0.02;
 
-    // One voice, start to finish: the steady 90ms slice of the whirr, looped.
-    // Full speed through the hold, then the loop itself is slowed — the same
-    // clicks, further and further apart, pitch sagging with them — down to a
-    // crawl as the wheel lands. No second sound, so nothing to hand over to.
-    var loopSrc = wheelCtx.createBufferSource();
-    loopSrc.buffer = wheelBuf;
-    loopSrc.loop = true;
-    loopSrc.loopStart = wheelLoop.loopStart;
-    loopSrc.loopEnd = wheelLoop.loopEnd;
-    loopSrc.playbackRate.setValueAtTime(base, t);
-    loopSrc.playbackRate.setValueAtTime(base, t + hold);
-    loopSrc.playbackRate.linearRampToValueAtTime(endRate, t + spin);
+    var master = wheelCtx.createGain();
+    master.gain.setValueAtTime(vol, t0);
+    master.connect(wheelCtx.destination);
 
-    var loopG = wheelCtx.createGain();
-    loopG.gain.setValueAtTime(vol, t);
-    // Land, don't cut.
-    loopG.gain.setValueAtTime(vol, t + spin - 0.15);
-    loopG.gain.linearRampToValueAtTime(0.0001, t + spin);
-    loopSrc.connect(loopG); loopG.connect(wheelCtx.destination);
-    loopSrc.start(t, wheelLoop.loopStart);
-    loopSrc.stop(t + spin + 0.05);
+    var srcs = [];
+    for (var i = 0; i < clickTimes.length; i++) {
+      var s = wheelCtx.createBufferSource();
+      s.buffer = wheelClick;
+      // A hair of variation, so a run of even clicks doesn't sound machine-made.
+      s.playbackRate.value = 0.96 + Math.random() * 0.08;
+      s.connect(master);
+      s.start(t0 + clickTimes[i]);
+      srcs.push(s);
+    }
 
-    wheelNode = [loopSrc];
-    wheelGain = [loopG];
-    loopSrc.onended = function () {
-      if (wheelNode && wheelNode[0] === loopSrc) { wheelNode = null; wheelGain = null; }
+    wheelNode = srcs;
+    wheelGain = master;
+    srcs[srcs.length - 1].onended = function () {
+      if (wheelGain === master) { wheelNode = null; wheelGain = null; }
     };
   } catch (e) { /* nothing to do */ }
 }
 
-/* Cut it short — closing the wheel mid-spin, or a second spin starting. */
+/* Cut it short — closing the wheel mid-spin, or a second spin starting. The
+   clicks still waiting on the clock are cancelled one by one. */
 function stopWheelSound(silent) {
-  var nodes = wheelNode, gains = wheelGain;
+  var srcs = wheelNode, master = wheelGain;
   wheelNode = null; wheelGain = null;
-  if (!nodes) return;
+  if (!srcs) return;
   var now = wheelCtx ? wheelCtx.currentTime : 0;
-  for (var i = 0; i < nodes.length; i++) {
+  if (master && !silent) {
     try {
-      if (gains && gains[i] && !silent) {
-        gains[i].gain.cancelScheduledValues(now);
-        gains[i].gain.setValueAtTime(gains[i].gain.value, now);
-        gains[i].gain.linearRampToValueAtTime(0.0001, now + 0.12);
-        nodes[i].stop(now + 0.14);
-      } else {
-        nodes[i].stop(now);
-      }
-    } catch (e) { /* already stopped */ }
+      master.gain.cancelScheduledValues(now);
+      master.gain.setValueAtTime(master.gain.value, now);
+      master.gain.linearRampToValueAtTime(0.0001, now + 0.1);
+    } catch (e) { /* nothing to do */ }
+  }
+  var when = silent ? now : now + 0.12;
+  for (var i = 0; i < srcs.length; i++) {
+    try { srcs[i].stop(when); } catch (e) { /* already done */ }
   }
 }
 
@@ -3117,6 +3120,10 @@ function spinWheel(kind) {
   }
   var seg = 360 / n;
   var target = 5 * 360 + (360 - (idx * seg + seg / 2)) + (Math.random() - 0.5) * 0.6 * seg;
+  // Where the wheel is turning FROM — every spin starts at rest at 0, but read
+  // it rather than assume it, so a re-spin of a stale wheel still clicks right.
+  var fromRot = kind === "name" ? wheel.nameRot : kind === "fate" ? wheel.fateRot
+    : kind === "mate" ? wheel.mateRot : wheel.cardRot;
   if (kind === "name") wheel.nameRot = target;
   else if (kind === "fate") wheel.fateRot = target;
   else if (kind === "mate") wheel.mateRot = target;
@@ -3155,10 +3162,10 @@ function spinWheel(kind) {
   }
   el.addEventListener("transitionend", settle, { once: true });
   setTimeout(settle, SPIN_MS + 300);
-  // The card wheel is a blur of segments and gets the full-speed clicks; the
-  // name wheels have a handful of big segments, so their clicks run at a third
-  // of that — a slower wheel from the moment it's flicked.
-  startWheelSound(sfxVolume(), kind === "card" ? 1 : 0.33);
+  // One click per segment boundary crossing the pointer, timed off the same
+  // curve the CSS animates — the sound IS the wheel. The card wheel's slivers
+  // rattle; a name wheel's big slices knock past slowly.
+  startWheelSound(sfxVolume(), segmentCrossings(fromRot, target, n));
   el.classList.add("go");
   requestAnimationFrame(function () {
     requestAnimationFrame(function () { el.style.transform = "rotate(" + target + "deg)"; });
