@@ -138,6 +138,8 @@ const WHEEL_SETTLED = {
   37: "Stays off the wheel. Playable from a hand only.",
   46: "Stays off the wheel. Playable from a hand only.",
   55: "Stays off the wheel. Playable from a hand only.",
+  49: "Stays off the wheel. It plays itself the moment you draw it.",
+  58: "Stays off the wheel. Playable from a hand only.",
   13: "Renamed Can I Borrow This? → \"Can I Borrow This Card?\" Stays off the wheel. Playable from a hand only.",
   2: "On the wheel: straddle putting starts once you're inside Circle 2, and runs for every putt from there.",
   3: "Back on the wheel, landing on the exempt player alone: not so exempt, they tee off left handed with the aerobie. Its good/bad halves are a hand-only thing now, so the fate spin reads the wheel wording instead of the card's own and skips this one.",
