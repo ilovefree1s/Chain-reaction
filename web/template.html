@@ -1371,6 +1371,7 @@ var ALERT_LINES = {
    than promising somebody an exemption the card never gives them. */
 var IGNORES_EXEMPT = [
   10,  // Big Putted! — the first player to make a putt starts it, and that can be anyone
+  12,  // Call Your Shot — the CTP decides it, and everyone is throwing for it
 ];
 function ignoresExempt(id) { return IGNORES_EXEMPT.indexOf(id) !== -1; }
 
@@ -1382,6 +1383,7 @@ var WHEEL_TEXT = {
   9:  "[chooser] moves your next lie up to 10 paces (30 ft) in any direction, as long as it isn't out of bounds.",
   10: "The first player to make a PUTT Big Putts everyone — everyone else has to use their left hand on their next putt! Must putt in correct distance order.",
   11: "Everyone but [exempt] must drive with a putter and putt with a driver this hole.",
+  12: "Everyone is in for CTP on this hole. Whoever wins it takes the immunity — nobody can play cards on them next hole — and their next attack card hits every opponent.",
   15: "Everyone but [exempt] throws a tomahawk on their drive or approach.",
   16: "Everyone but [exempt] takes their next putt with their eyes closed.",
   17: "Everyone but [exempt] can't say \"yes\" or \"no\" this hole. 1 stroke penalty every time they do. ANY variation of the words counts.",
