@@ -146,6 +146,9 @@ const grassImage = copyArt("moregrass.png", "grass.png");
 const iconImage = copyArt("chainreactionicon.png", "icon.png");
 const menuSound = copyAudio("chains.mp3");
 const wheelSound = copyAudio("gamble.mp3");
+// The soundtrack, played back to back on the menu-side screens only.
+const musicTracks = [copyAudio("chainsofglory.mp3"), copyAudio("DiscHoarderBlues.mp3")]
+  .filter(Boolean);
 
 // ---- card faces: card_01 .. one per card, dropped into the Android drawables ----
 // Optional, per card — any card without art keeps its text tile. Alphabetical
@@ -228,6 +231,7 @@ const html = template
   .replace("__GRASS_IMAGE__", grassImage)
   .replace("__MENU_SOUND__", menuSound)
   .replace("__WHEEL_SOUND__", wheelSound)
+  .replace("/*__MUSIC_TRACKS__*/", JSON.stringify(musicTracks))
   .replace("__APP_VERSION__", versionLabel)
   ;
 fs.writeFileSync(path.join(dist, "index.html"), html, "utf8");

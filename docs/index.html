@@ -619,7 +619,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.0 · 26 Aug 00:15";
+var APP_VERSION = "v1.0 · 26 Aug 00:17";
 function versionLine() {
   return '<div class="ver">' + esc(APP_VERSION) + "</div>";
 }
@@ -638,6 +638,40 @@ var GRASS_IMAGE = "assets/grass.png";
  */
 var MENU_SOUND = "assets/chains.mp3";
 var menuAudio = MENU_SOUND ? new Audio(MENU_SOUND) : null;
+
+/*
+ * The soundtrack: the dropped-in tracks, back to back on repeat — and only on
+ * the screens where nobody is lining up a putt: the menu, Settings, and the
+ * cards reference. Leaving those screens pauses it in place; coming back picks
+ * the song up where it left off.
+ */
+var MUSIC_TRACKS = ["assets/chainsofglory.mp3","assets/DiscHoarderBlues.mp3"];
+var MUSIC_SCREENS = ["menu", "settings", "cards"];
+var musicEl = null, musicIdx = 0;
+
+function musicShouldPlay() {
+  return MUSIC_TRACKS.length > 0 && MUSIC_SCREENS.indexOf(screen) !== -1 && musicVolume() > 0;
+}
+
+function syncMusic() {
+  if (!musicShouldPlay()) {
+    if (musicEl) musicEl.pause();
+    return;
+  }
+  if (!musicEl) {
+    musicEl = new Audio(MUSIC_TRACKS[musicIdx]);
+    musicEl.addEventListener("ended", function () {
+      musicIdx = (musicIdx + 1) % MUSIC_TRACKS.length;
+      musicEl.src = MUSIC_TRACKS[musicIdx];
+      musicEl.volume = musicVolume();
+      musicEl.play().catch(function () { /* the next tap restarts it */ });
+    });
+  }
+  musicEl.volume = musicVolume();
+  // Autoplay needs a gesture: a rejected play here is fine, because render runs
+  // inside every tap, so the first tap on a music screen starts it for real.
+  if (musicEl.paused) musicEl.play().catch(function () { /* until then, quiet */ });
+}
 
 function playMenuSound(volume) {
   if (!menuAudio || !(volume > 0)) return;
@@ -2042,6 +2076,7 @@ function render() {
   document.body.classList.toggle("menu-screen", screen === "menu");
   document.body.classList.toggle("rules-screen", screen === "rules");
   document.body.classList.toggle("settings-screen", screen === "settings");
+  syncMusic();
 }
 
 /*
@@ -3447,6 +3482,8 @@ app.addEventListener("input", function (e) {
     var label = app.querySelector('[data-vol-label="' + which + '"]');
     if (label) label.innerHTML = volumeLabel(+e.target.value / 100,
       which === "music" ? "Music" : "Sound effects");
+    // The music is playing on this very screen, so the drag IS the preview.
+    if (which === "music" && musicEl) musicEl.volume = Math.min(1, Math.max(0, +e.target.value / 100));
     return;
   }
   var artSlot = e.target.getAttribute("data-slot");
@@ -3474,6 +3511,10 @@ function syncButton(selector, enabled) {
   if (btn) btn.disabled = !enabled;
 }
 
+/* Autoplay is gesture-gated, so the very first touch anywhere doubles as the
+   play button — even a tap that lands on nothing. Cheap when already playing. */
+document.addEventListener("pointerdown", function () { syncMusic(); });
+
 var faceTouchX = null;
 /* Release, not drag: one write and one preview per adjustment. */
 app.addEventListener("change", function (e) {
@@ -3482,8 +3523,9 @@ app.addEventListener("change", function (e) {
   if (e.target.getAttribute("data-vol") === "music") {
     settings.musicVolume = v;
     putSettings(settings);
-    // No preview: there is no music track in the build yet — the slider is
-    // the dial waiting for one. The rattle previewing "music" would only lie.
+    // Applies the new volume, and starts or stops the music if the slider
+    // crossed zero — the release is a gesture, so play is allowed here.
+    syncMusic();
   } else {
     settings.sfxVolume = v;
     putSettings(settings);
