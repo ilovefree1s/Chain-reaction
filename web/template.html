@@ -1366,12 +1366,13 @@ var ALERT_LINES = {
  * one after this text is already on screen. Anything already written as a plain
  * instruction to you — Foot Wedge, GAMBLE! — needs no entry and gets none.
  */
-/* Cards that carry their own trigger — whoever does the thing sets the rest of
-   the table off — so the spun name means nothing and the screen says so rather
-   than promising somebody an exemption the card never gives them. */
+/* Cards where the spun name buys nobody an exemption — either the card carries
+   its own trigger, or it deals the name a different hand rather than none at
+   all. The screen says so instead of promising an exemption that isn't there. */
 var IGNORES_EXEMPT = [
   10,  // Big Putted! — the first player to make a putt starts it, and that can be anyone
   12,  // Call Your Shot — the CTP decides it, and everyone is throwing for it
+  29,  // Globetrotter Shit — the name putts behind the back for free, everyone else pays
 ];
 function ignoresExempt(id) { return IGNORES_EXEMPT.indexOf(id) !== -1; }
 
@@ -1401,7 +1402,7 @@ var WHEEL_TEXT = {
   26: "Everyone but [exempt] gets to move their lie up to 10 paces (30 ft) in any direction, one time this hole.",
   27: "Everyone but [exempt] must GAMBLE if they miss their first putt — putt again. Make it and that was a free mulligan. Miss and that stroke counts too — play whichever disc landed farthest away, then +1 stroke after the hole.",
   28: "[exempt] gets to join whatever player they want, as if they drove on top of that player's disc, after everyone tees off.",
-  29: "Good half: putt behind the back at no stroke cost. Bad half: putt behind the back and it counts as a normal stroke.",
+  29: "[exempt] gets to putt behind the back for no stroke. Everyone else has to as well, and it counts as a stroke. Must be inside Circle 1 to take effect.",
   31: "If anyone but [exempt] hits metal at any point on this hole, it counts as in.",
   33: "Everyone but [exempt] takes their next drive with their off hand.",
   34: "Your first throw off the box is with your offhand, for free — that's throw 0.",
@@ -2708,7 +2709,7 @@ function renderWheel() {
             ? ' sits this one out. Everyone else takes the good half.'
             : ' sits this one out. Everyone else takes the bad half.')) + '</p>';
     } else if (ignoresExempt(wheel.card.id)) {
-      html += '<p>The card sets its own trigger. Every player is in it, spun name included.</p>';
+      html += '<p>Every player is in this one, spun name included &mdash; the card&rsquo;s own words say who gets what.</p>';
     } else if (onlyExempt(wheel.card.id)) {
       html += '<p>This one lands the other way round: it&rsquo;s on the name alone, and the rest of the table just watches.</p>';
     } else {
