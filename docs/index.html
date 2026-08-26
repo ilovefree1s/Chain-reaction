@@ -619,7 +619,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.0 · 26 Aug 15:27";
+var APP_VERSION = "v1.0 · 26 Aug 15:29";
 function versionLine() {
   return '<div class="ver">' + esc(APP_VERSION) + "</div>";
 }
@@ -1139,6 +1139,7 @@ function liveHello() {
     // carries the choices — from the round once one is running, or the Setup
     // draft before that, so joiners watch the picks land as they're made.
     hosting: !!live.hosting,
+    since: live.hosting ? (live.hostSince || 0) : null,
     // started separates browsing from committed: joiners watch the picks land
     // but can't start until the host's round actually exists.
     cfg: live.hosting ? (state
@@ -1172,6 +1173,19 @@ function liveHear(p) {
   // would otherwise stare at an empty room until the 15s heartbeats trickle
   // round. Answering its hello straight away fills its lobby in one exchange.
   var newcomer = !live.peers[p.id];
+  // Two phones claiming the host's chair: the earlier claim wins, the later
+  // one quietly becomes a joiner at the standing table. A missing timestamp
+  // (an older build) counts as earliest of all — never dethrone what stands.
+  if (live.hosting && p.hosting) {
+    var mine = live.hostSince || 0;
+    var theirs = typeof p.since === "number" ? p.since : 0;
+    if (theirs < mine || (theirs === mine && p.id < MY_PEER_ID)) {
+      live.hosting = false;
+      live.hostSince = null;
+      localNote((typeof p.name === "string" && p.name ? p.name : "Someone") +
+        " was already hosting — you're at their table.", "Lobby");
+    }
+  }
   live.peers[p.id] = {
     v: typeof p.v === "string" ? p.v : "",
     name: typeof p.name === "string" ? p.name : "",
@@ -3959,6 +3973,9 @@ app.addEventListener("click", function (e) {
     case "liveJoin":
       liveConnect(LIVE_ROOM);
       live.hosting = act === "liveHost";
+      // When hosting began — the tie-breaker if two phones both claim the
+      // chair. Earliest claim wins; the other demotes itself on first hello.
+      if (live.hosting) live.hostSince = Date.now();
       if (s) { s.liveCode = LIVE_ROOM; commit(s); } else render();
       break;
     case "liveLeave":
