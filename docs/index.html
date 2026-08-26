@@ -619,7 +619,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.0 · 25 Aug 22:04";
+var APP_VERSION = "v1.0 · 25 Aug 22:20";
 function versionLine() {
   return '<div class="ver">' + esc(APP_VERSION) + "</div>";
 }
@@ -1083,7 +1083,15 @@ function liveHello() {
       ? state.characters[state.meIndex]
       : settings.myCharacter,
     handCount: state ? state.hand.length : null,
-    locks: helloLocks()
+    locks: helloLocks(),
+    // The host's table. Course and format are the host's call, so their hello
+    // carries the choices — from the round once one is running, or the Setup
+    // draft before that, so joiners watch the picks land as they're made.
+    hosting: !!live.hosting,
+    cfg: live.hosting ? (state
+      ? { holes: state.holeCount, pars: state.pars, courseName: state.courseName, mode: state.mode }
+      : { holes: setup.holes, pars: setupPars(), courseName: setup.courseName, mode: setup.mode })
+      : null
   });
 }
 
@@ -1112,10 +1120,38 @@ function liveHear(p) {
     characterId: typeof p.characterId === "number" ? p.characterId : null,
     handCount: typeof p.handCount === "number" ? p.handCount : null,
     locks: (p.locks && typeof p.locks === "object") ? p.locks : null,
+    hosting: !!p.hosting,
+    cfg: (p.cfg && typeof p.cfg === "object") ? p.cfg : null,
     at: Date.now()
   };
   liveSeat(live.peers[p.id]);
+  // A joiner's Setup follows the host's table as the choices land.
+  adoptHostTable();
   liveRefresh();
+}
+
+/* The host's course and format, when somebody else at the table is hosting. */
+function liveHostTable() {
+  if (!live || live.hosting) return null;
+  var peers = livePeers();
+  for (var i = 0; i < peers.length; i++) {
+    if (peers[i].hosting && peers[i].cfg) return peers[i];
+  }
+  return null;
+}
+
+/* Copy the host's picks into this phone's Setup draft, so Start builds the
+   identical round. Only on the Setup screen, only while somebody else hosts —
+   a phone mid-round or offline is never touched. */
+function adoptHostTable() {
+  if (screen !== "setup") return;
+  var h = liveHostTable();
+  if (!h || !h.cfg || !(h.cfg.holes > 0)) return;
+  setup.holes = h.cfg.holes;
+  setup.pars = (h.cfg.pars || parList(h.cfg.holes)).slice();
+  resizePars(setup.holes);
+  setup.courseName = h.cfg.courseName || null;
+  setup.mode = h.cfg.mode === "skins" ? "skins" : "stroke";
 }
 
 /* Everyone heard from lately. Quiet phones are filtered, never removed — the
@@ -2052,6 +2088,52 @@ function renderSetup() {
   var courseReady = setup.holes > 0;
   var ready = namesReady && courseReady;
 
+  // Somebody else is hosting: the course and format are their call, so the
+  // pickers become read-outs of whatever their hellos carry. Waiting for the
+  // host to pick blocks Start — starting a different round defeats the point.
+  var host = live && !live.hosting ? liveHostTable() : null;
+  var hostPicked = host && host.cfg && host.cfg.holes > 0;
+  if (host && !hostPicked) ready = false;
+
+  var courseBlock, formatBlock;
+  if (host) {
+    var who = esc(host.name || "the host");
+    courseBlock =
+      '<div class="panel course' + (hostPicked ? " sel" : "") + '">' +
+        '<div class="cname' + (hostPicked ? " picked" : "") + '">' +
+          (hostPicked ? esc(setup.courseName || "Custom pars") : "Waiting on " + who + "&hellip;") + '</div>' +
+        '<div class="dim">' + (hostPicked
+          ? setup.holes + ' holes &middot; par ' + sum(setupPars()) + ' &middot; ' + who + "'s pick"
+          : who + " is choosing the course") + '</div>' +
+      '</div>';
+    formatBlock = hostPicked
+      ? '<div class="panel"><div class="cname picked">' +
+          (setup.mode === "skins" ? "Skins" : "Stroke play") + '</div>' +
+          '<div class="dim">' + who + "'s call for the table</div></div>"
+      : "";
+  } else {
+    courseBlock =
+      '<div class="panel course' + (setup.courseName ? " sel" : "") + '" data-act="openPars">' +
+        '<div class="cname' + (setup.courseName ? " picked" : "") + '">' +
+          esc(setup.courseName || (courseReady ? "Custom pars" : "Choose a course")) + '</div>' +
+        '<div class="dim">' + (courseReady
+          ? setup.holes + ' holes &middot; par ' + sum(setupPars())
+          : 'Pick one, or set the pars yourself') + '</div>' +
+      '</div>';
+    // The picked one is the loud button, so the format reads off the screen at a
+    // glance rather than needing both labels compared.
+    formatBlock =
+      '<div class="acts">' +
+        '<button class="big ' + (setup.mode === "stroke" ? "primary" : "quiet") +
+          '" data-act="mode" data-t="stroke">Stroke play</button>' +
+        '<button class="big ' + (setup.mode === "skins" ? "primary" : "quiet") +
+          '" data-act="mode" data-t="skins">Skins</button>' +
+      '</div>' +
+      '<p class="hint">' + (setup.mode === "skins"
+        ? "Each hole is a skin. Tie it and it rolls onto the next."
+        : "Fewest strokes over the round wins.") + '</p>';
+  }
+
   // No title block — the back bar already says NEW ROUND.
   return renderLiveSection() +
     '<div class="label">Players</div>' +
@@ -2060,30 +2142,14 @@ function renderSetup() {
       // the same thing four times over.
       ? "You're player 1. Hit the + to easily add the rest of the boys on your card."
       : "You're player 1. Name the rest of the group.") + "</p>" + rows + addRemove +
-    '<div class="label">Course</div>' +
-    '<div class="panel course' + (setup.courseName ? " sel" : "") + '" data-act="openPars">' +
-      '<div class="cname' + (setup.courseName ? " picked" : "") + '">' +
-        esc(setup.courseName || (courseReady ? "Custom pars" : "Choose a course")) + '</div>' +
-      '<div class="dim">' + (courseReady
-        ? setup.holes + ' holes &middot; par ' + sum(setupPars())
-        : 'Pick one, or set the pars yourself') + '</div>' +
-    '</div>' +
-    '<div class="label">Format</div>' +
-    // The picked one is the loud button, so the format reads off the screen at a
-    // glance rather than needing both labels compared.
-    '<div class="acts">' +
-      '<button class="big ' + (setup.mode === "stroke" ? "primary" : "quiet") +
-        '" data-act="mode" data-t="stroke">Stroke play</button>' +
-      '<button class="big ' + (setup.mode === "skins" ? "primary" : "quiet") +
-        '" data-act="mode" data-t="skins">Skins</button>' +
-    '</div>' +
-    '<p class="hint">' + (setup.mode === "skins"
-      ? "Each hole is a skin. Tie it and it rolls onto the next."
-      : "Fewest strokes over the round wins.") + '</p>' +
+    '<div class="label">Course</div>' + courseBlock +
+    '<div class="label">Format</div>' + formatBlock +
     '<div style="height:36px"></div>' +
     '<button class="big primary" data-act="start"' + (ready ? "" : " disabled") + '>Start round</button>' +
     '<p class="hint" data-start-hint' + (ready ? ' style="display:none"' : "") + '>' +
-      (namesReady ? "Choose a course first." : "Every player needs a name.") + '</p>';
+      (!namesReady ? "Every player needs a name."
+        : host && !hostPicked ? "The host is picking the course."
+        : "Choose a course first.") + '</p>';
 }
 
 /* Typing deliberately does not re-render (that would drop focus mid-name),
@@ -2092,12 +2158,14 @@ function syncStartButton() {
   var btn = app.querySelector('[data-act="start"]');
   if (!btn) return;
   var namesReady = seatsReady();
-  var ready = namesReady && setup.holes > 0;
+  var waitingOnHost = live && !live.hosting && liveHostTable() && setup.holes <= 0;
+  var ready = namesReady && setup.holes > 0 && !waitingOnHost;
   btn.disabled = !ready;
   var hint = app.querySelector("[data-start-hint]");
   if (hint) {
     hint.style.display = ready ? "none" : "";
-    hint.textContent = namesReady ? "Choose a course first." : "Every player needs a name.";
+    hint.textContent = !namesReady ? "Every player needs a name."
+      : waitingOnHost ? "The host is picking the course." : "Choose a course first.";
   }
 }
 
@@ -3349,6 +3417,12 @@ app.addEventListener("click", function (e) {
   // it rattles either way. The other menu buttons are silent.
   if (act === "play") playMenuSound(sfxVolume());
 
+  // Somebody else's table: the course and format actions are dead on this
+  // phone, even if a stale render still shows something tappable.
+  var followingHost = screen === "setup" && live && !live.hosting && liveHostTable();
+  if (followingHost && (act === "holes" || act === "openPars" || act === "mode" ||
+      act === "cyclePar" || act === "resetPars" || act === "loadCourse")) return;
+
   switch (act) {
 
     case "holes":
@@ -3630,6 +3704,11 @@ app.addEventListener("click", function (e) {
       savedAs = null;
       render(); break;
   }
+
+  // A hosting phone announces its table after every Setup action, so joiners
+  // watch the course and format land the moment they're picked rather than on
+  // the next 15-second heartbeat.
+  if (live && live.hosting && screen === "setup") liveHello();
 });
 
 /* A round marked live rejoins the lobby by itself — a reloaded page is back in
