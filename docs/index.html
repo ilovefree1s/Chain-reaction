@@ -619,7 +619,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.0 · 25 Aug 21:42";
+var APP_VERSION = "v1.0 · 25 Aug 21:45";
 function versionLine() {
   return '<div class="ver">' + esc(APP_VERSION) + "</div>";
 }
@@ -664,6 +664,7 @@ var WHEEL_SOUND = "assets/GAMBLE.mp3";
 var wheelAudio = null, wheelFade = null, wheelRamp = null;
 
 var SPIN_MS = 5200;                       // matches .wheelbox svg.go
+var HOLD_MS = 2000;                       // full-speed clicks before the wind-down
 var SPIN_EASE = [0.12, 0.8, 0.08, 1];     // and its cubic-bezier
 
 /* One axis of a cubic bezier with the endpoints pinned at 0 and 1. */
@@ -695,28 +696,48 @@ function startWheelSound(volume) {
     var p = a.play();
     if (p && p.catch) p.catch(function () { /* blocked; the wheel spins on */ });
 
-    // The clip is stretched to fit the spin exactly: one play, starting as the
-    // wheel starts, its last moment landing as the wheel stops. Rate = clip
-    // remaining ÷ spin remaining, re-read every tick, so a slow phone or a late
-    // start is corrected on the fly rather than drifting to a cut or a gap.
-    var t0 = performance.now();
+    /*
+     * Two phases. For HOLD_MS the clip runs at full speed and loops — the wheel
+     * at full tilt, rapid clicks, no wind-down yet. Then it rewinds once and the
+     * whole clip is stretched across whatever is left of the spin: rate = clip
+     * remaining ÷ spin remaining, re-read every tick, so the last moment of the
+     * sound lands on the wheel stopping however slow the phone is.
+     */
+    var t0 = performance.now(), winding = false;
     clearInterval(wheelRamp);
     wheelRamp = setInterval(function () {
       if (wheelAudio !== a) { clearInterval(wheelRamp); wheelRamp = null; return; }
-      var leftMs = SPIN_MS - (performance.now() - t0);
+      var since = performance.now() - t0;
+      var leftMs = SPIN_MS - since;
       if (leftMs <= 60) {
         clearInterval(wheelRamp); wheelRamp = null;
         fadeWheelSound(a);
         return;
       }
+
+      if (since < HOLD_MS) {
+        try { a.playbackRate = 1; } catch (e) { /* older browser: full speed */ }
+        // Round again if the clip runs out inside the hold.
+        if (a.ended || (a.duration && a.currentTime >= a.duration - 0.05)) {
+          try { a.currentTime = 0; a.play(); } catch (e) { /* nothing to do */ }
+        }
+        return;
+      }
+
+      // No rewind, no second play: the clip carries straight on from where the
+      // full-speed section left it and what remains is stretched over what
+      // remains of the spin. Restarting it here is what made one spin sound
+      // like two.
       var clipLeft = (a.duration || 0) - a.currentTime;   // NaN duration until metadata lands
       if (clipLeft > 0) {
-        // Shaped, not flat: the wheel is quickest off the line, so the sound is
-        // too — up to a quarter faster at the start, paying it back at the end.
-        // The pull towards the exact fit is what keeps the two ending together.
         var fit = clipLeft / (leftMs / 1000);
-        var lead = 1 + 0.25 * (leftMs / SPIN_MS);
-        var rate = Math.max(0.07, Math.min(4, fit * lead));
+        var want = Math.max(0.07, Math.min(4, fit));
+        // Eased into over a few ticks rather than dropped in one: a jump from
+        // full speed to the stretch rate reads as a cut, a glide reads as a
+        // wheel losing its legs.
+        var now = winding ? a.playbackRate : 1;
+        winding = true;
+        var rate = now + Math.max(-0.05, Math.min(0.05, want - now));
         try { a.playbackRate = rate; } catch (e) { /* older browser: full speed */ }
       }
     }, 50);
