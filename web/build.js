@@ -145,7 +145,7 @@ const buttonsImage = copyArt("mainbuttons.png", "buttons.png");
 const grassImage = copyArt("moregrass.png", "grass.png");
 const iconImage = copyArt("chainreactionicon.png", "icon.png");
 const menuSound = copyAudio("chains.mp3");
-const wheelSound = copyAudio("GAMBLE.mp3");
+const wheelSound = copyAudio("gamble.mp3");
 
 // ---- card faces: card_01 .. one per card, dropped into the Android drawables ----
 // Optional, per card — any card without art keeps its text tile. Alphabetical
