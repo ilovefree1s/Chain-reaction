@@ -330,7 +330,10 @@ self.addEventListener("fetch", (event) => {
 
   if (event.request.mode === "navigate") {
     event.respondWith(
-      fetch(event.request)
+      // cache: "no-store" goes past the browser's HTTP cache as well as ours.
+      // GitHub Pages serves the page with max-age=600, so without this a reload
+      // can be handed a ten-minute-old copy and look like nothing shipped.
+      fetch(event.request, { cache: "no-store" })
         .then((res) => {
           const copy = res.clone();
           caches.open(PAGE_CACHE).then((c) => c.put(event.request, copy)).catch(() => {});
