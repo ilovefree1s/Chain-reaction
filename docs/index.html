@@ -1373,6 +1373,7 @@ var IGNORES_EXEMPT = [
   10,  // Big Putted! — the first player to make a putt starts it, and that can be anyone
   12,  // Call Your Shot — the CTP decides it, and everyone is throwing for it
   29,  // Globetrotter Shit — the name putts behind the back for free, everyone else pays
+  34,  // Lefty Off the Box — the name's offhand throw is free, everyone else's counts
 ];
 function ignoresExempt(id) { return IGNORES_EXEMPT.indexOf(id) !== -1; }
 
@@ -1419,7 +1420,7 @@ var WHEEL_TEXT = {
   30: "[exempt] and [mate] are a team for this hole, against everyone else. Same rules for both teams: a birdie counts as an eagle, no birdie is +1, and a card played on either teammate counts against both. Both take the same score.",
   31: "If anyone but [exempt] hits metal at any point on this hole, it counts as in.",
   33: "Everyone but [exempt] takes their next drive with their off hand.",
-  34: "Your first throw off the box is with your offhand, for free — that's throw 0.",
+  34: "[exempt] throws offhand off the box for free — that's throw 0. Everyone else throws lefty too, and theirs counts as throw 1.",
   36: "Everyone but [exempt] gets to make their own tee pad, up to 10 paces (30 ft) from the original.",
   38: "[chooser] picks a reasonable mando on the next hole. Everyone else has to play it.",
   40: "[chooser] forces all opponents to play the hole with only 1 DISC this hole! (If someone gives or already gave them an Aerobie or mini, that counts as their 1 disc.)",
