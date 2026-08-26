@@ -1375,6 +1375,13 @@ var IGNORES_EXEMPT = [
 ];
 function ignoresExempt(id) { return IGNORES_EXEMPT.indexOf(id) !== -1; }
 
+/* The other way round: cards where the spun name is the only one who gets it,
+   and the rest of the table watches. Sitting out is the prize. */
+var ONLY_EXEMPT = [
+  28,  // I'll Have What He's Having — the exempt player takes somebody's drive
+];
+function onlyExempt(id) { return ONLY_EXEMPT.indexOf(id) !== -1; }
+
 var WHEEL_TEXT = {
   2:  "Once you're inside Circle 2, every putt you take is a straddle putt.",
   3:  "Good half: use an aerobie for your drive. Bad half: drive with the aerobie using your off hand. Normal stroke either way.",
@@ -1391,6 +1398,7 @@ var WHEEL_TEXT = {
   19: "[chooser] picks the disc everyone else tees off with this hole.",
   26: "Everyone but [exempt] gets to move their lie up to 10 paces (30 ft) in any direction, one time this hole.",
   27: "Everyone but [exempt] must GAMBLE if they miss their first putt — putt again. Make it and that was a free mulligan. Miss and that stroke counts too — play whichever disc landed farthest away, then +1 stroke after the hole.",
+  28: "[exempt] gets to join whatever player they want, as if they drove on top of that player's disc, after everyone tees off.",
   29: "Good half: putt behind the back at no stroke cost. Bad half: putt behind the back and it counts as a normal stroke.",
   33: "Everyone but [exempt] takes their next drive with their off hand.",
   34: "Your first throw off the box is with your offhand, for free — that's throw 0.",
@@ -1421,10 +1429,12 @@ function wheelWords(c, w) {
     chooser: free ? (me || "the spinner") : landed,
     exempt: free ? "the player you exempt" : landed
   };
-  return t.replace(/(^|[.!?—] )?\[(chooser|exempt)\]/g, function (m, lead, key) {
+  // Capitalised where the token opens a sentence, plain everywhere else. The
+  // offset is what says "start of string" — a ^ match is an empty lead, which
+  // reads as no lead at all and left "the player you exempt" in lower case.
+  return t.replace(/([.!?—] )?\[(chooser|exempt)\]/g, function (m, lead, key, at) {
     var who = fill[key];
-    // Capitalised where the token opens a sentence, plain everywhere else.
-    if (lead) who = who.charAt(0).toUpperCase() + who.slice(1);
+    if (lead || at === 0) who = who.charAt(0).toUpperCase() + who.slice(1);
     return (lead || "") + who;
   });
 }
@@ -2640,11 +2650,14 @@ function renderWheel() {
     // A few cards run on their own trigger and let nobody off, so once one of
     // them lands the name that was spun stops meaning anything.
     var noExempt = cardSettled && ignoresExempt(wheel.card.id);
+    var lone = cardSettled && onlyExempt(wheel.card.id);
     html += '<div class="exempt">' + (noExempt
       ? "Nobody sits this one out"
-      : free
-        ? "Free spin &mdash; the name doesn't matter"
-        : esc(wheel.name) + " is exempt") + '</div>';
+      : lone
+        ? (free ? "Whoever you name gets it" : esc(wheel.name) + " gets this one")
+        : free
+          ? "Free spin &mdash; the name doesn't matter"
+          : esc(wheel.name) + " is exempt") + '</div>';
     // Like the name wheel, the effect wheel collapses to its result — the
     // card — once it lands, keeping the sheet one screen tall.
     if (!cardSettled) {
@@ -2681,6 +2694,8 @@ function renderWheel() {
             : ' sits this one out. Everyone else takes the bad half.')) + '</p>';
     } else if (ignoresExempt(wheel.card.id)) {
       html += '<p>The card sets its own trigger. Every player is in it, spun name included.</p>';
+    } else if (onlyExempt(wheel.card.id)) {
+      html += '<p>This one lands the other way round: the name gets it, and the rest of the table just watches.</p>';
     } else {
       html += '<p>' + (free
         ? 'You choose who gets the benefit or the punishment.'
