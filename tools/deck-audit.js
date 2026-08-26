@@ -154,7 +154,7 @@ const WHEEL_SETTLED = {
   43: "Off the wheel. Playable from a hand only, and its wheel wording is deleted with it.",
   34: "On the wheel it splits like Globetrotter: the spun name gets the offhand throw free as throw 0, everyone else throws lefty and wears it as throw 1. Nobody is exempt, so no exemption line.",
   30: "Joins the wheel with a mechanic of its own: after the card lands the wheel spins a SECOND name, and those two play the hole as a team against everybody else. Birdie counts as an eagle, cards on either teammate count against both. The refuse-and-everyone-discards clause is gone from the card entirely.",
-  29: "On the wheel it splits the table rather than exempting anyone: the spun name putts behind the back for free, everyone else putts behind the back and pays a stroke. Circle 1 only, and no good/bad spin any more.",
+  29: "On the wheel: the spun player gets the behind-the-back putt free, everyone else does it for a regular stroke. No header above it — the card already names who got the free one.",
   12: "Joins the wheel, nobody exempt: the whole table throws for CTP and the winner takes the immunity plus a table-wide attack card.",
   10: "Joins the wheel, and lets nobody off: the first player to make a putt sets it going, so the spun name means nothing. The screen says \"Nobody sits this one out\" instead of naming somebody.",
   23: "Renamed Double Wheel → GAMBLE WHEEL!!, everywhere it appears — card, buttons, rules screen, spec.",
