@@ -1368,11 +1368,35 @@ function myRoundName() {
    player carries out the effect — so its result lands as a hot alert on every
    other phone, the same rattle and buzz as a card played on you. Fired once,
    when the spin settles for good (after the fate spin, for a dual card). */
+/* One spinner has at most one "on the wheel" banner up at a time — the result
+   (or backing out) takes it down. */
+function dropSpinStart(who) {
+  liveAlerts = liveAlerts.filter(function (a) {
+    return !(a.spinStart && a.who === who);
+  });
+}
+
 function liveWheel(p) {
+  var who = typeof p.name === "string" ? p.name : "";
+  // The moment the spin is bought, before anything lands: heads up, banner up.
+  if (p.spinning) {
+    dropSpinStart(who);
+    var eid = p.eid;
+    liveAlerts.push({ eid: eid, spinStart: true, who: who });
+    playMenuSound(sfxVolume());
+    try { if (navigator.vibrate) navigator.vibrate([80, 40, 80]); } catch (e) { /* banner only */ }
+    // Safety net: a spinner who walks away mid-wheel shouldn't pin a banner forever.
+    setTimeout(function () { dropAlert(eid); }, 90000);
+    liveRefresh();
+    return;
+  }
+  // The spinner closed the wheel without a result — take the banner down.
+  if (p.cancel) { dropSpinStart(who); liveRefresh(); return; }
   var c = BY_ID[p.card];
   if (!c) return; // an id this build doesn't know
+  dropSpinStart(who); // the result replaces the heads-up
   liveAlerts.push({
-    eid: p.eid, wheel: true, who: typeof p.name === "string" ? p.name : "",
+    eid: p.eid, wheel: true, who: who,
     card: c.id,
     exempt: typeof p.exempt === "string" ? p.exempt : null,
     mate: typeof p.mate === "string" ? p.mate : null,
@@ -1432,6 +1456,12 @@ function renderAlerts() {
       return '<div class="alert" data-act="alertTap" data-eid="' + esc(a.eid) + '">' +
         '<div class="who">Deal corrected</div>' +
         '<div class="what" style="font-size:16px">' + esc(a.note) + '</div></div>';
+    }
+    if (a.spinStart) {
+      return '<div class="alert you" data-act="alertTap" data-eid="' + esc(a.eid) + '">' +
+        '<div class="who">' + esc(a.who || "Someone") + ' is on the wheel</div>' +
+        '<div class="what">GAMBLE WHEEL!!</div>' +
+        '<div class="onwho">spinning&hellip;</div></div>';
     }
     if (a.wheel) {
       var wc = BY_ID[a.card];
@@ -2468,6 +2498,9 @@ function renderWheelCost() {
  * after its first wheel.
  */
 function openWheelNow(free) {
+  // The table hears the wheel the second it's bought — the cards are already
+  // discarded (or GAMBLE WHEEL!! already played), so this moment is committed.
+  if (live) liveCast("wheel", { name: state.players[state.meIndex], spinning: true });
   // The whole pool rides the wheel — what you see is exactly what can hit.
   var ring = shuffled(WHEEL_POOL);
   var ringIdx = Math.floor(Math.random() * ring.length);
@@ -3712,8 +3745,14 @@ app.addEventListener("click", function (e) {
     case "spinFate": spinWheel("fate"); break;
     case "spinName": spinWheel("name"); break;
     case "spinMate": spinWheel("mate"); break;
-    // Closing mid-spin takes the sound with it.
-    case "closeWheel": stopWheelSound(); wheel = null; render(); break;
+    // Closing mid-spin takes the sound with it — and the heads-up banner off
+    // everyone else's phone, when no result ever announced itself.
+    case "closeWheel":
+      stopWheelSound();
+      if (wheel && wheel.stage !== "done" && live && s) {
+        liveCast("wheel", { name: s.players[s.meIndex], cancel: true });
+      }
+      wheel = null; render(); break;
 
     // ---- live room ----
     // Host and Join are the same wire; the flag only changes the waiting copy.
