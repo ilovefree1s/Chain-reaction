@@ -652,122 +652,122 @@ function playMenuSound(volume) {
 
 /*
  * The wheel's own noise, and the one sound in here that has to follow something
- * on screen. The wheel is a CSS transition — 3.6s on cubic-bezier(.12,.8,.08,1)
- * — so the sound is dragged along the same curve: each frame asks how far the
- * wheel actually moved since the last one and sets the playback rate to match.
- * It winds down as the wheel does, and lands with it.
+ * on screen.
  *
- * preservesPitch off is the whole effect: slowing the tape drops the pitch, the
- * way a real wheel does. Then a short fade so it stops rather than cuts.
+ * The clip is a burst of clicks with a long silent tail, so it is not played as
+ * a clip at all: the clicky part is cut out and looped, seamlessly, for as long
+ * as the wheel turns. Full speed for HOLD_MS — the wheel at full tilt — then the
+ * playback rate ramps down to a crawl, which spreads the clicks apart exactly
+ * the way a real wheel does, and the loop stops as the wheel stops.
+ *
+ * Web Audio rather than an <audio> element: an element cannot loop without a
+ * gap, and a gap in a click track is heard as a second spin starting.
  */
 var WHEEL_SOUND = "__WHEEL_SOUND__";
-var wheelAudio = null, wheelFade = null, wheelRamp = null;
+var wheelCtx = null, wheelBuf = null, wheelLoopEnd = 0;
+var wheelNode = null, wheelGain = null;
 
 var SPIN_MS = 5200;                       // matches .wheelbox svg.go
-var HOLD_MS = 2000;                       // full-speed clicks before the wind-down
-var SPIN_EASE = [0.12, 0.8, 0.08, 1];     // and its cubic-bezier
+var HOLD_MS = 3000;                       // full-speed clicks before the wind-down
+var WHEEL_END_RATE = 0.28;                // where the wind-down leaves the clicks
 
-/* One axis of a cubic bezier with the endpoints pinned at 0 and 1. */
-function bezierAxis(t, a, b) {
-  var u = 1 - t;
-  return 3 * u * u * t * a + 3 * u * t * t * b + t * t * t;
-}
-/* CSS eases against x, so solve x(s) = progress before reading y. Newton with a
-   bisection fallback: fast where the curve is steep, safe where it flattens. */
-function easeOut(progress) {
-  var lo = 0, hi = 1, s = progress;
-  for (var i = 0; i < 12; i++) {
-    var x = bezierAxis(s, SPIN_EASE[0], SPIN_EASE[2]) - progress;
-    if (Math.abs(x) < 1e-4) break;
-    if (x > 0) hi = s; else lo = s;
-    s = (lo + hi) / 2;
+/*
+ * Where the clicks stop and the silence starts. Measured rather than assumed, so
+ * a re-cut of the file just works: walk 20ms windows and take the last one with
+ * real level in it, then back off to the last dense window so the loop doesn't
+ * include the decaying tail (which would pulse once per lap).
+ */
+function findClickBed(buf) {
+  var sr = buf.sampleRate, chans = [];
+  for (var c = 0; c < buf.numberOfChannels; c++) chans.push(buf.getChannelData(c));
+  var win = Math.round(sr * 0.02), levels = [];
+  for (var s = 0; s + win <= buf.length; s += win) {
+    var sum = 0;
+    for (var i = s; i < s + win; i++) {
+      var v = 0;
+      for (var ch = 0; ch < chans.length; ch++) v += chans[ch][i];
+      sum += v * v;
+    }
+    levels.push(Math.sqrt(sum / win));
   }
-  return bezierAxis(s, SPIN_EASE[1], SPIN_EASE[3]);
+  var peak = Math.max.apply(null, levels);
+  if (!(peak > 0)) return buf.duration;
+  var dense = peak * 0.08, lastDense = 0;
+  for (var k = 0; k < levels.length; k++) if (levels[k] > dense) lastDense = k;
+  var end = (lastDense + 1) * 0.02;
+  return Math.max(0.3, Math.min(buf.duration, end));
+}
+
+/* Fetched and decoded up front so the first spin has nothing to wait for. The
+   context starts suspended — no gesture needed until something actually plays. */
+function primeWheelSound() {
+  if (!WHEEL_SOUND || wheelCtx) return;
+  var Ctx = window.AudioContext || window.webkitAudioContext;
+  if (!Ctx) return;
+  try {
+    wheelCtx = new Ctx();
+    fetch(WHEEL_SOUND)
+      .then(function (r) { return r.arrayBuffer(); })
+      .then(function (bytes) {
+        return new Promise(function (ok, no) { wheelCtx.decodeAudioData(bytes, ok, no); });
+      })
+      .then(function (buf) { wheelBuf = buf; wheelLoopEnd = findClickBed(buf); })
+      .catch(function () { /* no wheel sound; the wheel still spins */ });
+  } catch (e) { /* nothing to do */ }
 }
 
 function startWheelSound(volume) {
   stopWheelSound(true);
-  if (!WHEEL_SOUND || !(volume > 0)) return;
+  if (!wheelCtx || !wheelBuf || !(volume > 0)) return;
   try {
-    var a = new Audio(WHEEL_SOUND);
-    a.volume = Math.min(1, Math.max(0, volume));
-    a.preservesPitch = a.mozPreservesPitch = a.webkitPreservesPitch = false;
-    wheelAudio = a;
-    var p = a.play();
-    if (p && p.catch) p.catch(function () { /* blocked; the wheel spins on */ });
+    if (wheelCtx.state === "suspended") wheelCtx.resume();
+    var spin = SPIN_MS / 1000, hold = Math.min(HOLD_MS / 1000, spin * 0.8);
+    var t = wheelCtx.currentTime + 0.02;
 
-    /*
-     * Two phases. For HOLD_MS the clip runs at full speed and loops — the wheel
-     * at full tilt, rapid clicks, no wind-down yet. Then it rewinds once and the
-     * whole clip is stretched across whatever is left of the spin: rate = clip
-     * remaining ÷ spin remaining, re-read every tick, so the last moment of the
-     * sound lands on the wheel stopping however slow the phone is.
-     */
-    var t0 = performance.now(), winding = false;
-    clearInterval(wheelRamp);
-    wheelRamp = setInterval(function () {
-      if (wheelAudio !== a) { clearInterval(wheelRamp); wheelRamp = null; return; }
-      var since = performance.now() - t0;
-      var leftMs = SPIN_MS - since;
-      if (leftMs <= 60) {
-        clearInterval(wheelRamp); wheelRamp = null;
-        fadeWheelSound(a);
-        return;
-      }
+    var src = wheelCtx.createBufferSource();
+    src.buffer = wheelBuf;
+    src.loop = true;
+    src.loopStart = 0;
+    src.loopEnd = wheelLoopEnd;
 
-      if (since < HOLD_MS) {
-        try { a.playbackRate = 1; } catch (e) { /* older browser: full speed */ }
-        // Round again if the clip runs out inside the hold.
-        if (a.ended || (a.duration && a.currentTime >= a.duration - 0.05)) {
-          try { a.currentTime = 0; a.play(); } catch (e) { /* nothing to do */ }
-        }
-        return;
-      }
+    var g = wheelCtx.createGain();
+    g.gain.setValueAtTime(Math.min(1, Math.max(0, volume)), t);
+    src.connect(g);
+    g.connect(wheelCtx.destination);
 
-      // No rewind, no second play: the clip carries straight on from where the
-      // full-speed section left it and what remains is stretched over what
-      // remains of the spin. Restarting it here is what made one spin sound
-      // like two.
-      var clipLeft = (a.duration || 0) - a.currentTime;   // NaN duration until metadata lands
-      if (clipLeft > 0) {
-        var fit = clipLeft / (leftMs / 1000);
-        var want = Math.max(0.07, Math.min(4, fit));
-        // Eased into over a few ticks rather than dropped in one: a jump from
-        // full speed to the stretch rate reads as a cut, a glide reads as a
-        // wheel losing its legs.
-        var now = winding ? a.playbackRate : 1;
-        winding = true;
-        var rate = now + Math.max(-0.05, Math.min(0.05, want - now));
-        try { a.playbackRate = rate; } catch (e) { /* older browser: full speed */ }
-      }
-    }, 50);
+    // Flat out, then losing its legs. Scheduled on the audio clock, so it holds
+    // its timing whatever the screen is doing.
+    src.playbackRate.setValueAtTime(1, t);
+    src.playbackRate.setValueAtTime(1, t + hold);
+    src.playbackRate.linearRampToValueAtTime(WHEEL_END_RATE, t + spin);
+    // Land, don't cut.
+    g.gain.setValueAtTime(Math.min(1, Math.max(0, volume)), t + spin - 0.22);
+    g.gain.linearRampToValueAtTime(0.0001, t + spin);
+
+    src.start(t);
+    src.stop(t + spin + 0.05);
+    wheelNode = src;
+    wheelGain = g;
+    src.onended = function () { if (wheelNode === src) { wheelNode = null; wheelGain = null; } };
   } catch (e) { /* nothing to do */ }
 }
 
-/* Land, don't cut: 220ms down to nothing. */
-function fadeWheelSound(a) {
-  var from = a.volume, t0 = performance.now();
-  clearInterval(wheelFade);
-  wheelFade = setInterval(function () {
-    var k = (performance.now() - t0) / 220;
-    if (k >= 1 || wheelAudio !== a) {
-      clearInterval(wheelFade); wheelFade = null;
-      try { a.pause(); a.currentTime = 0; } catch (e) { /* nothing to do */ }
-      if (wheelAudio === a) wheelAudio = null;
-      return;
-    }
-    try { a.volume = from * (1 - k); } catch (e) { /* nothing to do */ }
-  }, 30);
-}
-
+/* Cut it short — closing the wheel mid-spin, or a second spin starting. */
 function stopWheelSound(silent) {
-  clearInterval(wheelRamp); wheelRamp = null;
-  clearInterval(wheelFade); wheelFade = null;
-  var a = wheelAudio;
-  wheelAudio = null;
-  if (!a) return;
-  if (silent) { try { a.pause(); a.currentTime = 0; } catch (e) { /* nothing */ } return; }
-  fadeWheelSound(a);
+  var src = wheelNode, g = wheelGain;
+  wheelNode = null; wheelGain = null;
+  if (!src) return;
+  try {
+    var now = wheelCtx ? wheelCtx.currentTime : 0;
+    if (g && !silent) {
+      g.gain.cancelScheduledValues(now);
+      g.gain.setValueAtTime(g.gain.value, now);
+      g.gain.linearRampToValueAtTime(0.0001, now + 0.12);
+      src.stop(now + 0.14);
+    } else {
+      src.stop(now);
+    }
+  } catch (e) { /* already stopped */ }
 }
 
 /* ---------- persistence ---------- */
@@ -3594,6 +3594,9 @@ app.addEventListener("click", function (e) {
    the room before anyone notices. LIVE_ROOM, not the stored value: rounds saved
    in the room-code era carry an old code, and there is only one lobby now. */
 if (state && state.liveCode) liveConnect(LIVE_ROOM);
+
+/* Decoded now, so the first spin of the round starts on the beat. */
+primeWheelSound();
 
 render();
 
