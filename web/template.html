@@ -1383,12 +1383,12 @@ var IGNORES_EXEMPT = [
 ];
 function ignoresExempt(id) { return IGNORES_EXEMPT.indexOf(id) !== -1; }
 
-/* Cards whose own words name the spun player, so the banner above them would
-   only say it again. They get the card and nothing else. */
-var NO_HEADER = [
+/* Cards that say the whole thing themselves — who was spun, who is in it, what
+   each side does. No banner over them, no summing-up under them: just the card. */
+var SAYS_IT_ALL = [
   29,  // Globetrotter Shit
 ];
-function hideHeader(id) { return NO_HEADER.indexOf(id) !== -1; }
+function saysItAll(id) { return SAYS_IT_ALL.indexOf(id) !== -1; }
 
 /* The other way round: cards where the spun name is the only one it lands on
    and the rest of the table watches — which can be the prize or the price, so
@@ -1429,7 +1429,7 @@ var WHEEL_TEXT = {
   26: "Everyone but [exempt] gets to move their lie up to 10 paces (30 ft) in any direction, one time this hole.",
   27: "Everyone but [exempt] must GAMBLE if they miss their first putt — putt again. Make it and that was a free mulligan. Miss and that stroke counts too — play whichever disc landed farthest away, then +1 stroke after the hole.",
   28: "[exempt] gets to join whatever player they want, as if they drove on top of that player's disc, after everyone tees off.",
-  29: "[exempt] gets a free putt behind the back for no stroke while everyone else has to do it and counts as a regular stroke.",
+  29: "[exempt] gets a free putt behind the back for no stroke. Everyone else still has to do it but it does count as a regular stroke for them. Must be inside Circle 1 to take effect.",
   30: "[exempt] and [mate] are a team for this hole, against everyone else. Same rules for both teams: a birdie counts as an eagle, no birdie is +1, and a card played on either teammate counts against both. Both take the same score.",
   31: "If anyone but [exempt] hits metal at any point on this hole, it counts as in.",
   33: "Everyone but [exempt] takes their next drive with their off hand.",
@@ -2699,7 +2699,7 @@ function renderWheel() {
     var noExempt = cardSettled && ignoresExempt(wheel.card.id);
     var lone = cardSettled && onlyExempt(wheel.card.id);
     var team = cardSettled && needsMate(wheel.card.id);
-    var quiet = cardSettled && hideHeader(wheel.card.id);
+    var quiet = cardSettled && saysItAll(wheel.card.id);
     if (!quiet) html += '<div class="exempt">' + (noExempt
       ? "Nobody sits this one out"
       : team
@@ -2740,7 +2740,7 @@ function renderWheel() {
       '</div>' +
       '<button class="big wheel" data-act="spinFate">Spin good or bad</button>';
   }
-  if (stage === "done") {
+  if (stage === "done" && !saysItAll(wheel.card.id)) {
     if (wheel.isDual) {
       html += '<div class="exempt" style="color:' + (wheel.fateGood ? '#4DC3FF' : '#FF8A1E') + '">' +
         (wheel.fateGood ? 'GOOD EFFECT' : 'BAD EFFECT') + '</div>' +
