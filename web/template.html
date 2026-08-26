@@ -1695,7 +1695,7 @@ var WHEEL_TEXT = {
   36: "Everyone but [exempt] gets to make their own tee pad.",
   38: "[chooser] chooses a reasonable mando on the next hole. Everyone else has to play it.",
   40: "[chooser] forces all opponents to play the hole with only 1 DISC this hole! (If someone gives or already gave them an Aerobie or mini, that counts as their 1 disc.)",
-  41: "[chooser] gives everyone a disc from their own bag to tee off with on this hole.",
+  41: "[chooser] gives everyone a disc from his own bag to tee off with on this hole.",
   42: "Everyone but [exempt] has to plant their feet! No run up for this next tee shot!",
   45: "Everyone but [exempt] has to throw a roller this drive or approach shot.",
   47: "Everyone but [exempt] can take a free putt with their shoe at no stroke cost, if they want, when inside Circle 2.",
@@ -3079,28 +3079,20 @@ function renderWheel() {
       '</div>' +
       '<button class="big wheel" data-act="spinFate">Spin good or bad</button>';
   }
+  // The wheel wording carries the whole story with the names filled in, so no
+  // summing-up line under it. What stays: which half a dual card landed on,
+  // and a free spin's reminder that the spinner still has a pick to make.
   if (stage === "done" && !saysItAll(wheel.card.id)) {
     if (wheel.isDual) {
       html += '<div class="exempt" style="color:' + (wheel.fateGood ? '#4DC3FF' : '#FF8A1E') + '">' +
         (wheel.fateGood ? 'GOOD EFFECT' : 'BAD EFFECT') + '</div>' +
-        '<p>' + (free
-          ? (wheel.fateGood
+        (free
+          ? '<p>' + (wheel.fateGood
             ? 'You choose who gets the good half.'
-            : 'You choose who takes the bad half.')
-          : esc(wheel.name) + (wheel.fateGood
-            ? ' sits this one out. Everyone else takes the good half.'
-            : ' sits this one out. Everyone else takes the bad half.')) + '</p>';
-    } else if (ignoresExempt(wheel.card.id)) {
-      html += '<p>Every player is in this one, spun name included &mdash; the card&rsquo;s own words say who gets what.</p>';
-    } else if (needsMate(wheel.card.id)) {
-      html += '<p>' + esc(wheel.name || "The first name") + ' and ' + esc(wheel.mate || "the second") +
-        ' play the hole as a team. Everybody else is against them.</p>';
-    } else if (onlyExempt(wheel.card.id)) {
-      html += '<p>This one lands the other way round: it&rsquo;s on the name alone, and the rest of the table just watches.</p>';
-    } else {
-      html += '<p>' + (free
-        ? 'You choose who gets the benefit or the punishment.'
-        : esc(wheel.name) + ' sits this one out. Everyone else carries out the effect.') + '</p>';
+            : 'You choose who takes the bad half.') + '</p>'
+          : "");
+    } else if (free && !ignoresExempt(wheel.card.id) && !needsMate(wheel.card.id)) {
+      html += '<p>You choose who gets the benefit or the punishment.</p>';
     }
   }
   html += '<button class="big quiet" data-act="closeWheel">' +
