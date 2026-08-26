@@ -619,7 +619,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.0 · 26 Aug 15:21";
+var APP_VERSION = "v1.0 · 26 Aug 15:27";
 function versionLine() {
   return '<div class="ver">' + esc(APP_VERSION) + "</div>";
 }
@@ -1625,6 +1625,14 @@ function renderLiveSection() {
   if (!liveConfigured()) return "";
   var head = '<div class="label">Live</div>';
   if (!live) {
+    // No profile, no lobby: a nameless phone can't be seated, renamed, or
+    // told apart — every lobby headache so far started with one.
+    if (!(settings.myName || "").trim()) {
+      return head +
+        '<p class="hint">Link the group\'s phones — card plays and hand counts on every screen. Scores stay yours alone.</p>' +
+        '<button class="big quiet" data-act="goSettings" style="margin-bottom:14px">' +
+        'Save your profile in Settings to go live &nbsp;&rsaquo;</button>';
+    }
     return head +
       '<p class="hint">Link the group\'s phones — card plays and hand counts on every screen. Scores stay yours alone.</p>' +
       '<div class="acts" style="margin-bottom:14px">' +
@@ -2087,6 +2095,7 @@ var viewOnly = false;
 var pileOpen = false; // the discard pile sheet, opened from its counter
 var confirming = false;
 var parsUI = { open: false, name: "" };
+var confirmDeleteCourse = null; // course name awaiting its delete confirmation
 /* Which name slot is choosing a character, and on which screen. Null when closed. */
 var charPick = null;
 /* Cards picked to pay for a spin. Null when the cost sheet is closed. */
@@ -3299,13 +3308,24 @@ function renderParGrid() {
     // Selection and the Play shortcut only make sense while setting up a round —
     // the same sheet doubles as Settings' course manager.
     var sel = screen === "setup" && c.name === setup.courseName;
+    // A tapped ✕ asks first — a saved course with hand-set pars is real work,
+    // and this button sits exactly where a scrolling thumb lands.
+    if (confirmDeleteCourse === c.name) {
+      return '<div class="courserow">' +
+        '<div class="pick"><div class="cname">Delete ' + esc(c.name) + '?</div>' +
+        '<div class="dim">Gone from this phone for good.</div></div></div>' +
+        '<div class="acts" style="margin:6px 0 12px">' +
+        '<button class="big raised" data-act="keepCourse">Keep it</button>' +
+        '<button class="big primary" data-act="deleteCourse" data-course="' + esc(c.name) + '">Delete</button>' +
+        '</div>';
+    }
     return '<div class="courserow' + (sel ? " sel" : "") + '">' +
       '<div class="pick" data-act="loadCourse" data-course="' + esc(c.name) + '">' +
         '<div class="cname">' + esc(c.name) + '</div>' +
         '<div class="dim">' + c.holeCount + ' holes &middot; par ' + sum(c.pars) + '</div>' +
       '</div>' +
       (canDeleteCourse(c.name)
-        ? '<button class="del" data-act="deleteCourse" data-course="' + esc(c.name) + '">&times;</button>'
+        ? '<button class="del" data-act="askDeleteCourse" data-course="' + esc(c.name) + '">&times;</button>'
         : "") +
       '</div>' +
       (sel
@@ -3678,8 +3698,11 @@ app.addEventListener("click", function (e) {
       setup.holes = n; resizePars(n); setup.courseName = null; render(); break;
 
     case "openPars":
-      resizePars(setup.holes); parsUI = { open: true, name: "" }; render(); break;
-    case "closePars": parsUI.open = false; render(); break;
+      resizePars(setup.holes); parsUI = { open: true, name: "" };
+      confirmDeleteCourse = null; render(); break;
+    case "closePars": parsUI.open = false; confirmDeleteCourse = null; render(); break;
+    case "askDeleteCourse": confirmDeleteCourse = courseName; render(); break;
+    case "keepCourse": confirmDeleteCourse = null; render(); break;
     case "cyclePar":
       setup.pars[i] = PAR_CYCLE[(PAR_CYCLE.indexOf(setup.pars[i]) + 1) % PAR_CYCLE.length];
       setup.courseName = null; render(); break;
@@ -3696,6 +3719,7 @@ app.addEventListener("click", function (e) {
     case "deleteCourse":
       putSavedCourses(savedCourses().filter(function (c) { return c.name !== courseName; }));
       if (setup.courseName === courseName) setup.courseName = null;
+      confirmDeleteCourse = null;
       render(); break;
     case "saveCourse":
       if (parsUI.name.trim()) {
