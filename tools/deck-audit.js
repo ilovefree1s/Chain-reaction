@@ -133,7 +133,7 @@ const WHEEL_SETTLED = {
   25: "Stays off the wheel. Playable from a hand only.",
   13: "Renamed Can I Borrow This? → \"Can I Borrow This Card?\" Stays off the wheel. Playable from a hand only.",
   2: "On the wheel: straddle putting starts once you're inside Circle 2, and runs for every putt from there.",
-  3: "Comes OFF the wheel — first card to go the other way. Hand only, and its wheel wording is deleted rather than left lying around.",
+  3: "Back on the wheel, landing on the exempt player alone: not so exempt, they tee off left handed with the aerobie. Its good/bad halves are a hand-only thing now, so the fate spin reads the wheel wording instead of the card's own and skips this one.",
   52: "Joins the wheel. Free tree insurance for everyone but the exempt player, with the payout spelled out since the wheel shows this instead of the card's own words.",
   36: "On the wheel: everyone but the exempt player builds their own tee pad. Kept the 10 paces; dropped the 2-disc marker, which is the hand version's detail.",
   31: "Joins the wheel. Metal counts as in for everyone but the exempt player, all hole.",

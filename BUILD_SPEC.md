@@ -107,7 +107,7 @@ Suggested palette: deep pine ground (`#0C1A14`), panels (`#132A21`), muted sage 
   "maxCardsOnOnePlayerPerHole": 2,
   "wheelCost": 2,
   "freeSpinCard": 23,
-  "wheelExcludes": [1, 3, 4, 6, 7, 13, 14, 20, 21, 22, 23, 24, 25, 30, 32, 35, 37, 39, 44, 46, 49, 55, 58],
+  "wheelExcludes": [1, 4, 6, 7, 13, 14, 20, 21, 22, 23, 24, 25, 30, 32, 35, 37, 39, 44, 46, 49, 55, 58],
   "timings": [
     "Before shot",
     "Before tee shot",

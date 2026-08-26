@@ -1375,15 +1375,18 @@ var IGNORES_EXEMPT = [
 ];
 function ignoresExempt(id) { return IGNORES_EXEMPT.indexOf(id) !== -1; }
 
-/* The other way round: cards where the spun name is the only one who gets it,
-   and the rest of the table watches. Sitting out is the prize. */
+/* The other way round: cards where the spun name is the only one it lands on
+   and the rest of the table watches — which can be the prize or the price, so
+   the wording around them stays neutral about which. */
 var ONLY_EXEMPT = [
+  3,   // Aerobie — not so exempt: they tee off lefty with it
   28,  // I'll Have What He's Having — the exempt player takes somebody's drive
 ];
 function onlyExempt(id) { return ONLY_EXEMPT.indexOf(id) !== -1; }
 
 var WHEEL_TEXT = {
   2:  "Once you're inside Circle 2, every putt you take is a straddle putt.",
+  3:  "[exempt] is not so exempt — they tee off left handed with the aerobie. Counts as a normal stroke.",
   5:  "Throw a mini for your next drive or putt — it applies until you do one or the other. Minis that fall through the basket still count as in.",
   8:  "[chooser] picks a disc out of any bag for each of you. That's what you tee off with on the next hole.",
   9:  "[chooser] moves your next lie up to 10 paces (30 ft) in any direction, as long as it isn't out of bounds.",
@@ -1419,6 +1422,17 @@ var WHEEL_TEXT = {
   56: "If anyone but [exempt] misses a putt inside C1, they carry their putter in either hand until they finish the next hole. (They can putt with it.) Drop it or bag it and it's +1 stroke.",
   57: "[chooser] marks a new tee pad up to 10 paces (30 ft) from the original tee pad. Everyone else tees from there."
 };
+/*
+ * Whether the fate spin has anything to decide. It reads the wheel wording
+ * where one exists, since that is what will be on screen: a card can spell out
+ * both halves in your hand and land as a single fixed outcome off the wheel.
+ */
+function wheelHasHalves(c) {
+  var t = WHEEL_TEXT[c.id];
+  if (t) return /good half:/i.test(t) && /bad half:/i.test(t);
+  return hasTwoHalves(c);
+}
+
 function wheelWords(c, w) {
   var t = WHEEL_TEXT[c.id] || c.text;
   var free = !!(w && w.free);
@@ -2141,7 +2155,7 @@ function openWheelNow(free) {
     cardLabels: ring.map(function (c) { return c.name; }),
     cardIdx: ringIdx, cardRot: 0,
     // Cards with a written good and bad half get a third spin to pick one.
-    isDual: hasTwoHalves(winner),
+    isDual: wheelHasHalves(winner),
     fateLabels: fateLabels, fateIdx: null, fateRot: 0, fateGood: null,
     spinning: false
   };
@@ -2655,7 +2669,7 @@ function renderWheel() {
     html += '<div class="exempt">' + (noExempt
       ? "Nobody sits this one out"
       : lone
-        ? (free ? "Whoever you name gets it" : esc(wheel.name) + " gets this one")
+        ? (free ? "Whoever you name, and only them" : esc(wheel.name) + ", and only " + esc(wheel.name))
         : free
           ? "Free spin &mdash; the name doesn't matter"
           : esc(wheel.name) + " is exempt") + '</div>';
@@ -2696,7 +2710,7 @@ function renderWheel() {
     } else if (ignoresExempt(wheel.card.id)) {
       html += '<p>The card sets its own trigger. Every player is in it, spun name included.</p>';
     } else if (onlyExempt(wheel.card.id)) {
-      html += '<p>This one lands the other way round: the name gets it, and the rest of the table just watches.</p>';
+      html += '<p>This one lands the other way round: it&rsquo;s on the name alone, and the rest of the table just watches.</p>';
     } else {
       html += '<p>' + (free
         ? 'You choose who gets the benefit or the punishment.'
