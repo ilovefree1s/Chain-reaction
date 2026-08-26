@@ -148,8 +148,8 @@ const menuSound = copyAudio("chains.mp3");
 const wheelSound = copyAudio("gamble.mp3");
 // The soundtrack, played back to back on the menu-side screens only.
 const musicTracks = [
-  copyAudio("chainsofglory.mp3"),
   copyAudio("dischoarderblues.mp3"),
+  copyAudio("chainsofglory.mp3"),
   copyAudio("discgolferbeeotch.mp3"),
 ].filter(Boolean);
 
