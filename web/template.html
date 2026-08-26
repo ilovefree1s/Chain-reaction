@@ -1916,6 +1916,9 @@ var confirmDiscard = null; // card id awaiting a discard confirmation
 var playTarget = null; // card id awaiting the name of whoever it lands on
 var viewCard = null; // card id enlarged to its full face
 var viewWords = null; // replaces the face's words — a wheel alert opens the wheel wording
+// A face opened from an alert is somebody else's moment: no Play, no Discard,
+// no walking into your own hand — you may well hold the same card yourself.
+var viewOnly = false;
 var pileOpen = false; // the discard pile sheet, opened from its counter
 var confirming = false;
 var parsUI = { open: false, name: "" };
@@ -2204,6 +2207,22 @@ function skinLine(s, h) {
   return s.players[taker].toUpperCase() + " TAKES " + (stake === 1 ? "THE SKIN" : plural(stake, "skin").toUpperCase());
 }
 
+/* UDisc-style honors: who tees first on hole [h], which is the order the rows
+   sit in. Walk every locked hole before it, best score bubbling up each time;
+   ties keep the order they already had, which is how honors carry — win a hole
+   and you stay on top until somebody beats you. */
+function teeOrder(s, h) {
+  var order = s.players.map(function (_, i) { return i; });
+  for (var g = 0; g < h; g++) {
+    if (!s.locked[g]) continue;
+    var prev = order.slice();
+    order.sort(function (a, b) {
+      return (s.scores[g][a] - s.scores[g][b]) || (prev.indexOf(a) - prev.indexOf(b));
+    });
+  }
+  return order;
+}
+
 /* ---------- score ---------- */
 function renderScore() {
   var s = state, h = s.currentHole, locked = s.locked[h], par = s.pars[h];
@@ -2228,7 +2247,10 @@ function renderScore() {
   // be winning, which is the entire appeal of the format.
   var mostSkins = isSkins(s)
     ? Math.max.apply(null, s.players.map(function (_, i) { return skinsFor(s, i); })) : 0;
-  var players = s.players.map(function (name, i) {
+  // Rows sit in tee order, honors carrying hole to hole — birdie a hole and
+  // your name climbs on everyone's card, exactly like the walk to the tee.
+  var players = teeOrder(s, h).map(function (i) {
+    var name = s.players[i];
     var score = s.scores[h][i], me = i === s.meIndex;
     var total = totalFor(s, i), rel = relFor(s, i);
     var lead = lockedCount(s) > 0 &&
@@ -2874,7 +2896,7 @@ function cardFaceSvg(c) {
 
 function renderFaceModal() {
   var c = BY_ID[viewCard];
-  var inHand = state && state.hand.indexOf(c.id) !== -1;
+  var inHand = !viewOnly && state && state.hand.indexOf(c.id) !== -1;
   var art = CARD_ART[c.id];
   // A wheel alert opens the wheel wording, names filled in, exactly as the
   // spinner's screen shows it — the plain face would tell a different story.
@@ -3652,12 +3674,12 @@ app.addEventListener("click", function (e) {
 
     case "askDiscard": confirmDiscard = i; render(); break;
     case "keepCard": confirmDiscard = null; render(); break;
-    case "viewCard": viewCard = i; viewWords = null; render(); break;
+    case "viewCard": viewCard = i; viewWords = null; viewOnly = false; render(); break;
     case "prevCard": stepViewCard(-1); break;
     case "nextCard": stepViewCard(1); break;
     // Close is the picker's cancel too, so it clears the pending target —
     // otherwise reopening the card would land straight back in the picker.
-    case "closeView": viewCard = null; viewWords = null; confirmDiscard = null; playTarget = null; render(); break;
+    case "closeView": viewCard = null; viewWords = null; viewOnly = false; confirmDiscard = null; playTarget = null; render(); break;
 
     // Paying for a spin: choose the cards first, then the wheel opens.
     case "openWheel":
@@ -3716,6 +3738,7 @@ app.addEventListener("click", function (e) {
       liveAlerts = liveAlerts.filter(function (a) { return a.eid !== eid; });
       if (hit && hit.card != null) {
         viewCard = hit.card;
+        viewOnly = true;
         // A wheel result opens as the wheel wording; a played card as itself.
         viewWords = hit.wheel
           ? wheelWords(BY_ID[hit.card], { free: hit.free, name: hit.exempt, mate: hit.mate, spinner: hit.who })
