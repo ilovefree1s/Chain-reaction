@@ -1122,6 +1122,9 @@ function liveHello() {
   if (!live) return;
   liveCast("hello", {
     id: MY_PEER_ID,
+    // Knows nobody yet — just joined or just reloaded. Whoever hears this
+    // answers straight away instead of leaving it to the 15s heartbeat.
+    fresh: livePeers().length === 0,
     name: (state ? state.players[state.meIndex] : settings.myName) || "",
     characterId: state && state.characters
       ? state.characters[state.meIndex]
@@ -1161,6 +1164,10 @@ function helloLocks() {
 
 function liveHear(p) {
   if (!live || !p.id) return;
+  // A phone heard for the first time just walked in — it knows nobody yet and
+  // would otherwise stare at an empty room until the 15s heartbeats trickle
+  // round. Answering its hello straight away fills its lobby in one exchange.
+  var newcomer = !live.peers[p.id];
   live.peers[p.id] = {
     name: typeof p.name === "string" ? p.name : "",
     characterId: typeof p.characterId === "number" ? p.characterId : null,
@@ -1170,7 +1177,8 @@ function liveHear(p) {
     cfg: (p.cfg && typeof p.cfg === "object") ? p.cfg : null,
     at: Date.now()
   };
-  liveSeat(live.peers[p.id]);
+  liveSeat(live.peers[p.id], p.id);
+  if (newcomer || p.fresh) liveHello();
   // A joiner's Setup follows the host's table as the choices land.
   adoptHostTable();
   liveRefresh();
@@ -1215,14 +1223,39 @@ function livePeers() {
 /* The roster builds itself: a phone arriving during Setup takes the first empty
    seat, name and face already filled from its saved profile. Nobody types a
    name for somebody who is standing right there. */
-function liveSeat(peer) {
+function liveSeat(peer, id) {
   if (screen !== "setup") return;
   var name = peer.name.trim();
   if (!name) return;
+  // Which name each phone is seated under, by peer id — so a phone that comes
+  // back with a NEW name renames its own chair instead of ghosting the old
+  // name in one seat and taking a second.
+  if (live && !live.seated) live.seated = {};
+  var before = id && live ? live.seated[id] : null;
+  if (before && before.toLowerCase() !== name.toLowerCase()) {
+    for (var r = 0; r < setup.names.length; r++) {
+      if (r === setup.meIndex) continue;
+      if (setup.names[r].trim().toLowerCase() === before.toLowerCase()) {
+        setup.names[r] = name;
+        // The face follows the phone too: their current pick if nobody else
+        // holds it, cleared if they no longer have one.
+        var claimed = peer.characterId != null ? setup.chars.indexOf(peer.characterId) : -1;
+        setup.chars[r] = (peer.characterId != null && (claimed === -1 || claimed === r))
+          ? peer.characterId : null;
+        live.seated[id] = name;
+        return;
+      }
+    }
+  }
   var have = setup.names.some(function (n) {
     return n.trim().toLowerCase() === name.toLowerCase();
   });
-  if (have) return;
+  if (have) {
+    // Already in the roster (often typed in by hand) — remember this phone
+    // owns that chair, so a later rename moves it rather than adding one.
+    if (id && live) live.seated[id] = name;
+    return;
+  }
   var slot = -1;
   for (var i = 0; i < setup.names.length; i++) {
     // Seat 1 is this phone's own, even while its name is still blank — a peer
@@ -1240,6 +1273,7 @@ function liveSeat(peer) {
   if (peer.characterId != null && setup.chars.indexOf(peer.characterId) === -1) {
     setup.chars[slot] = peer.characterId;
   }
+  if (id && live) live.seated[id] = name;
 }
 
 /* What [p] is holding: yours from the round in front of you, everyone else's
