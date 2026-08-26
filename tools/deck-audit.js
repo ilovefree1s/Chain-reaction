@@ -133,6 +133,7 @@ const WHEEL_SETTLED = {
   25: "Stays off the wheel. Playable from a hand only.",
   13: "Renamed Can I Borrow This? → \"Can I Borrow This Card?\" Stays off the wheel. Playable from a hand only.",
   2: "On the wheel: straddle putting starts once you're inside Circle 2, and runs for every putt from there.",
+  31: "Joins the wheel. Metal counts as in for everyone but the exempt player, all hole.",
   28: "Joins the wheel, and lands the other way round: the spun name is the only player who gets it and everyone else watches. The screen says \"Lucy gets this one\" rather than naming her as exempt.",
   27: "On the wheel it stops being optional: miss your first putt and you're gambling, exempt player aside. The terms are spelled out rather than referred to, since the wheel shows this text instead of the card's own.",
   26: "On the wheel: everyone but the exempt player gets one free lie move this hole.",
