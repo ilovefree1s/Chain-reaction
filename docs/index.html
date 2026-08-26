@@ -619,7 +619,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.0 · 26 Aug 14:47";
+var APP_VERSION = "v1.0 · 26 Aug 14:54";
 function versionLine() {
   return '<div class="ver">' + esc(APP_VERSION) + "</div>";
 }
@@ -3722,6 +3722,9 @@ app.addEventListener("click", function (e) {
       settings.myName = myNameDraft.trim();
       settings.myCharacter = myCharacterDraft;
       putSettings(settings);
+      // Already at the table? The table hears the new name now, not at the
+      // next 15-second heartbeat.
+      if (live) liveHello();
       savedGroup = true; render(); break;
 
     case "hole":
@@ -3858,7 +3861,15 @@ app.addEventListener("click", function (e) {
       break;
     case "liveLeave":
       liveDisconnect();
-      if (s) { delete s.liveCode; commit(s); } else render();
+      if (s) { delete s.liveCode; commit(s); }
+      else {
+        // Leaving a lobby that never started empties the chairs the lobby
+        // filled: back to just you. The course and format picks survive.
+        setup.names = [settings.myName || "", "", "", ""];
+        setup.chars = [settings.myCharacter != null ? settings.myCharacter : null,
+                       null, null, null];
+        render();
+      }
       break;
     // Tapping a banner answers "what does that card do?" — the face opens,
     // and the banner is done arguing for attention.
