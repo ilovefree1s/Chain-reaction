@@ -183,9 +183,22 @@ if (problems.length) {
   process.exit(1);
 }
 
+/*
+ * The version everyone reads off the bottom of the menu. VERSION is yours to
+ * bump; the build stamp is added automatically, so two phones can be compared
+ * even when the version hasn't changed between deploys.
+ */
+const version = fs.readFileSync(path.join(__dirname, "VERSION"), "utf8").trim();
+const now = new Date();
+const MONTHS = "Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec".split(" ");
+const two = (n) => String(n).padStart(2, "0");
+const stamp = `${now.getDate()} ${MONTHS[now.getMonth()]} ${two(now.getHours())}:${two(now.getMinutes())}`;
+const versionLabel = `v${version} · ${stamp}`;
+
 // ---- the page ----
 const template = fs.readFileSync(path.join(__dirname, "template.html"), "utf8");
 [
+  "__APP_VERSION__",
   "/*__CARD_DATA__*/",
   "/*__COURSE_DATA__*/",
   "/*__CARD_ART__*/",
@@ -212,6 +225,7 @@ const html = template
   .replace("__BUTTONS_IMAGE__", buttonsImage)
   .replace("__GRASS_IMAGE__", grassImage)
   .replace("__MENU_SOUND__", menuSound)
+  .replace("__APP_VERSION__", versionLabel)
   ;
 fs.writeFileSync(path.join(dist, "index.html"), html, "utf8");
 

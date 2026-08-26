@@ -322,7 +322,7 @@
   /* The button sheet is transparent, so it just sits on the photo. */
   .menu-buttons {
     position: absolute; left: 0; right: 0; z-index: 1;
-    bottom: env(safe-area-inset-bottom); height: 40%;
+    bottom: calc(env(safe-area-inset-bottom) + 30px); height: 40%;
     display: flex; justify-content: center;
   }
   .menu-buttons .sheet { position: relative; height: 100%; aspect-ratio: 1024 / 1536; }
@@ -331,7 +331,7 @@
   /* Clamped to the paint: the buttons span 5.1-94.5% of the sheet's width. */
   .hit { position: absolute; left: 5.1%; right: 5.5%; cursor: pointer; }
   .menu-buttons-plain { position: absolute; left: 0; right: 0; z-index: 1;
-                        bottom: env(safe-area-inset-bottom); padding: 0 20px; }
+                        bottom: calc(env(safe-area-inset-bottom) + 30px); padding: 0 20px; }
   .big.play { background: #F7941E; color: var(--pine); }
   .big.menublue { background: #1B62B5; color: var(--off); }
 
@@ -470,6 +470,17 @@
                   text-overflow: ellipsis; white-space: nowrap; }
 
 
+  /* Build marker. Quiet enough to ignore, legible enough to compare. */
+  .ver {
+    text-align: center; font-size: 12px; letter-spacing: 1px;
+    color: color-mix(in srgb, var(--sage) 55%, var(--pine));
+    padding: 14px 0 calc(14px + env(safe-area-inset-bottom));
+  }
+  /* The button art is anchored to the bottom of the menu, so the version gets
+     its own strip below it and the art lifts by exactly that much. */
+  .menu .ver { position: absolute; left: 0; right: 0; bottom: 0; z-index: 3;
+               padding: 5px 0 calc(5px + env(safe-area-inset-bottom)); }
+
   nav {
     position: fixed; left: 0; right: 0; bottom: 0; display: flex; background: var(--panel);
     padding-bottom: env(safe-area-inset-bottom);
@@ -593,6 +604,16 @@ function renameCharacter(id, name) {
 }
 
 applyCharacterNames();
+
+/*
+ * Which build this phone is running, stamped in by web/build.js from web/VERSION
+ * plus the time it was built. Shown at the foot of the menu and of Settings, so
+ * the group can hold two phones side by side and see who needs to reload.
+ */
+var APP_VERSION = "v1.0 · 25 Aug 21:25";
+function versionLine() {
+  return '<div class="ver">' + esc(APP_VERSION) + "</div>";
+}
 
 /* Artwork, inlined as data URIs by web/build.js so this stays one file. */
 var MENU_IMAGE = "assets/menu.png";
@@ -1838,6 +1859,7 @@ function renderMenu() {
         '<button class="big menublue" data-act="goCards">Cards</button>' +
         '<button class="big menublue" data-act="goRules">Rules</button>' +
         '<button class="big menublue" data-act="goSettings">Settings</button></div>') +
+    versionLine() +
     '</div>';
 }
 
@@ -2438,7 +2460,8 @@ function renderSettings() {
     '<p class="nbody" data-vol-label style="margin:0 0 6px">' +
     volumeLabel(sfxVolume()) + "</p>" +
     '<input class="vol" type="range" min="0" max="100" step="1" data-vol value="' +
-    Math.round(sfxVolume() * 100) + '">';
+    Math.round(sfxVolume() * 100) + '">' +
+    versionLine();
 }
 
 /* ---------- character select ----------

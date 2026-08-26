@@ -51,3 +51,11 @@ node tools/sync-check.js 28
 
 Passing an id prints that card's stored JSON back. Read it. A shell that eats
 an apostrophe reports success just as cheerfully as one that doesn't.
+
+## The version everyone reads
+
+`web/VERSION` holds the number — `1.0` today. Bump it when you want the group
+to see a new one; `web/build.js` stamps the build time next to it, so two
+phones can be compared even between version bumps.
+
+It shows at the foot of the menu and at the foot of Settings.
