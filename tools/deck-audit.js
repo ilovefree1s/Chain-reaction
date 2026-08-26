@@ -143,6 +143,7 @@ const WHEEL_SETTLED = {
   28: "Joins the wheel, and lands the other way round: the spun name is the only player who gets it and everyone else watches. The screen says \"Lucy gets this one\" rather than naming her as exempt.",
   27: "On the wheel it stops being optional: miss your first putt and you're gambling, exempt player aside. The terms are spelled out rather than referred to, since the wheel shows this text instead of the card's own.",
   26: "On the wheel: everyone but the exempt player gets one free lie move this hole.",
+  47: "On the wheel it turns into an option rather than a punishment: everyone but the exempt player may take a free shoe putt inside C2. No halves left, so the good/bad spin drops off it.",
   43: "Off the wheel. Playable from a hand only, and its wheel wording is deleted with it.",
   34: "On the wheel it splits like Globetrotter: the spun name gets the offhand throw free as throw 0, everyone else throws lefty and wears it as throw 1. Nobody is exempt, so no exemption line.",
   30: "Joins the wheel with a mechanic of its own: after the card lands the wheel spins a SECOND name, and those two play the hole as a team against everybody else. Birdie counts as an eagle, cards on either teammate count against both. The refuse-and-everyone-discards clause is gone from the card entirely.",
