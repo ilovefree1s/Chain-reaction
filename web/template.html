@@ -1088,6 +1088,7 @@ function liveOpen() {
     }
     if (m.payload.event === "play") livePlayed(p);
     if (m.payload.event === "wheel") liveWheel(p);
+    if (m.payload.event === "bye") liveBye(p);
   };
 
   sock.onclose = function () {
@@ -1122,6 +1123,9 @@ function liveHello() {
   if (!live) return;
   liveCast("hello", {
     id: MY_PEER_ID,
+    // The build this phone runs, so the lobby can point at the phone that
+    // needs a reload instead of everyone comparing Settings screens.
+    v: APP_VERSION,
     // Knows nobody yet — just joined or just reloaded. Whoever hears this
     // answers straight away instead of leaving it to the 15s heartbeat.
     fresh: livePeers().length === 0,
@@ -1169,6 +1173,7 @@ function liveHear(p) {
   // round. Answering its hello straight away fills its lobby in one exchange.
   var newcomer = !live.peers[p.id];
   live.peers[p.id] = {
+    v: typeof p.v === "string" ? p.v : "",
     name: typeof p.name === "string" ? p.name : "",
     characterId: typeof p.characterId === "number" ? p.characterId : null,
     handCount: typeof p.handCount === "number" ? p.handCount : null,
@@ -1486,6 +1491,42 @@ function liveWheel(p) {
   liveRefresh();
 }
 
+/* Back to a table of one: the chairs the lobby filled empty out. */
+function resetLobbySeats() {
+  setup.names = [settings.myName || "", "", "", ""];
+  setup.chars = [settings.myCharacter != null ? settings.myCharacter : null,
+                 null, null, null];
+}
+
+/* A deliberate goodbye — somebody tapped "Leave the lobby" — so the others
+   react now instead of watching the quiet phone age out over 45 seconds. */
+function liveBye(p) {
+  if (!live || !p.id) return;
+  var name = (live.seated && live.seated[p.id]) || (typeof p.name === "string" ? p.name : "");
+  delete live.peers[p.id];
+  if (live.seated) delete live.seated[p.id];
+  // The host closing an unstarted lobby closes it for the whole table: no
+  // quiet handover, no half-lobby. Everyone's out, and a fresh host starts
+  // a fresh one. A running round is left alone.
+  if (p.hosting && !live.hosting && !state && screen === "setup") {
+    liveDisconnect();
+    resetLobbySeats();
+    localNote((name || "The host") + " closed the lobby.", "Lobby closed");
+    render();
+    return;
+  }
+  // A player left: their chair empties right away.
+  if (screen === "setup" && name) {
+    for (var i = 0; i < setup.names.length; i++) {
+      if (i === setup.meIndex) continue;
+      if (setup.names[i].trim().toLowerCase() === name.toLowerCase()) {
+        setup.names[i] = ""; setup.chars[i] = null; break;
+      }
+    }
+  }
+  liveRefresh();
+}
+
 function livePlayed(p) {
   var c = BY_ID[p.card];
   if (!c) return; // an id this build doesn't know — a different deck version
@@ -1521,9 +1562,9 @@ function dropAlert(eid) {
 /* This phone talking to its own player — a corrected deal, not a broadcast.
    Same banner, quiet style, fades on its own. */
 var noteN = 0;
-function localNote(text) {
+function localNote(text, head) {
   var eid = "local." + (++noteN);
-  liveAlerts.push({ eid: eid, note: text });
+  liveAlerts.push({ eid: eid, note: text, head: head || "Deal corrected" });
   setTimeout(function () { dropAlert(eid); }, ALERT_FADE_MS);
 }
 
@@ -1532,7 +1573,7 @@ function renderAlerts() {
   return '<div class="alerts">' + liveAlerts.map(function (a) {
     if (a.note) {
       return '<div class="alert" data-act="alertTap" data-eid="' + esc(a.eid) + '">' +
-        '<div class="who">Deal corrected</div>' +
+        '<div class="who">' + esc(a.head || "Deal corrected") + '</div>' +
         '<div class="what" style="font-size:16px">' + esc(a.note) + '</div></div>';
     }
     if (a.spinStart) {
@@ -1584,14 +1625,24 @@ function renderLiveSection() {
       '<button class="big wheel" data-act="liveHost" style="margin:0">Host a lobby</button>' +
       '<button class="big quiet" data-act="liveJoin" style="margin:0">Join the lobby</button></div>';
   }
-  var names = livePeers().map(function (p) { return p.name.trim(); }).filter(Boolean);
+  var peers = livePeers().filter(function (p) { return p.name.trim(); });
+  var names = peers.map(function (p) { return p.name.trim(); });
+  // Phones running a different build than this one see different rules and
+  // different lobby behaviour — name them, so "reload your app" has a target.
+  var stale = peers.filter(function (p) { return p.v !== APP_VERSION; })
+    .map(function (p) { return p.name.trim(); });
   return head +
     '<div class="panel sel" style="text-align:center">' +
     '<div style="font-size:24px;font-weight:900;letter-spacing:8px;color:#FF8A1E">LIVE</div>' +
     '<div class="dim">' + (names.length
       ? 'You + ' + names.map(esc).join(", ")
       : live.hosting ? 'Lobby&rsquo;s open &mdash; tell the boys to join.'
-                     : 'Looking for the group&hellip;') + '</div></div>' +
+                     : 'Looking for the group&hellip;') + '</div>' +
+    (stale.length
+      ? '<div class="dim" style="color:#FF8A1E;margin-top:6px">' +
+        stale.map(esc).join(", ") + (stale.length === 1 ? " isn&rsquo;t" : " aren&rsquo;t") +
+        ' on this version &mdash; have them reload the app.</div>'
+      : "") + '</div>' +
     '<button class="big quiet" data-act="liveLeave">Leave the lobby</button>';
 }
 
@@ -3860,14 +3911,21 @@ app.addEventListener("click", function (e) {
       if (s) { s.liveCode = LIVE_ROOM; commit(s); } else render();
       break;
     case "liveLeave":
+      // Say goodbye before hanging up. A plain player's goodbye empties their
+      // chair on the other phones; the HOST's goodbye closes the whole lobby.
+      if (live) {
+        liveCast("bye", {
+          id: MY_PEER_ID,
+          name: (s ? s.players[s.meIndex] : settings.myName) || "",
+          hosting: !!live.hosting
+        });
+      }
       liveDisconnect();
       if (s) { delete s.liveCode; commit(s); }
       else {
         // Leaving a lobby that never started empties the chairs the lobby
         // filled: back to just you. The course and format picks survive.
-        setup.names = [settings.myName || "", "", "", ""];
-        setup.chars = [settings.myCharacter != null ? settings.myCharacter : null,
-                       null, null, null];
+        resetLobbySeats();
         render();
       }
       break;
