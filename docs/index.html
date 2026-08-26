@@ -1143,6 +1143,7 @@ function liveWheel(p) {
     eid: p.eid, wheel: true, who: typeof p.name === "string" ? p.name : "",
     card: c.id,
     exempt: typeof p.exempt === "string" ? p.exempt : null,
+    mate: typeof p.mate === "string" ? p.mate : null,
     dual: !!p.dual, good: !!p.good, free: !!p.free,
     you: true // a table moment — everyone feels it
   });
@@ -1203,7 +1204,12 @@ function renderAlerts() {
     if (a.wheel) {
       var wc = BY_ID[a.card];
       var fate = a.dual ? (a.good ? " · good half" : " · bad half") : "";
+      // The same four shapes the wheel screen knows about, said in a line: a
+      // team, a card nobody sits out, a card on one name alone, or an exemption.
       var sub = a.free ? "free spin — you pick who"
+        : a.mate && a.exempt ? esc(a.exempt) + " &amp; " + esc(a.mate) + " are a team"
+        : ignoresExempt(a.card) ? "nobody sits this one out"
+        : a.exempt && onlyExempt(a.card) ? "on " + esc(a.exempt) + " alone"
         : a.exempt ? esc(a.exempt) + " is exempt" : "";
       return '<div class="alert you" data-act="alertTap" data-eid="' + esc(a.eid) + '">' +
         '<div class="who">' + esc(a.who || "Someone") + ' spun the wheel</div>' +
@@ -2945,6 +2951,9 @@ function spinWheel(kind) {
         name: state.players[state.meIndex],
         card: wheel.card.id,
         exempt: wheel.free ? null : wheel.name,
+        // The partner off a team card's second spin. Everything else about how
+        // the card lands, the other phones work out from their own lists.
+        mate: wheel.mate || null,
         dual: !!wheel.isDual,
         good: wheel.isDual ? !!wheel.fateGood : false,
         free: !!wheel.free
