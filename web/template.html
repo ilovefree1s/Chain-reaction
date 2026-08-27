@@ -3357,18 +3357,26 @@ function renderParGrid() {
         : "");
   }).join("");
 
-  var lengths = '<div class="label">' +
-    (list.length ? "Or set up a new one" : "Set up a course") + '</div>' +
-    '<div class="row">' + [9, 18].map(function (n) {
-      return '<button class="big ' + (setup.holes === n ? "primary" : "quiet") +
-        '" data-act="holes" data-n="' + n + '" style="margin:0">' + n + ' holes</button>';
-    }).join("") + '</div>';
+  // One "New course" button; the 9-or-18 question and the pars only come out
+  // once somebody actually means to build one.
+  var lengths;
+  if (parsUI.creating) {
+    lengths = '<div class="label">' + (setup.holes > 0 ? "New course" : "How many holes?") + '</div>' +
+      '<div class="row">' + [9, 18].map(function (n) {
+        return '<button class="big ' + (setup.holes === n ? "primary" : "quiet") +
+          '" data-act="holes" data-n="' + n + '" style="margin:0">' + n + ' holes</button>';
+      }).join("") + '</div>';
+  } else {
+    lengths = '<div class="label">' +
+      (list.length ? "Or set up a new one" : "Set up a course") + '</div>' +
+      '<button class="big quiet" data-act="newCourse">New course</button>';
+  }
 
   // Nothing to edit until we know how long the course is. And a picked saved
   // course is already saved — no pars grid, no "save for next time", just an
   // Edit pars button that opens all of it when something actually needs fixing.
   var editor = "";
-  if (setup.holes > 0) {
+  if (setup.holes > 0 && (setup.courseName || parsUI.creating || parsUI.editing)) {
     if (setup.courseName && !parsUI.editing) {
       editor = '<button class="big quiet" data-act="editPars">Edit pars</button>';
     } else {
@@ -3726,8 +3734,16 @@ app.addEventListener("click", function (e) {
       setup.holes = n; resizePars(n); setup.courseName = null; render(); break;
 
     case "openPars":
-      resizePars(setup.holes); parsUI = { open: true, name: "", editing: false };
+      resizePars(setup.holes);
+      // An unsaved custom setup in progress reopens straight into its editor
+      // rather than hiding half-built pars behind the New course button.
+      parsUI = { open: true, name: "", editing: false,
+                 creating: setup.holes > 0 && !setup.courseName };
       confirmDeleteCourse = null; render(); break;
+    case "newCourse":
+      parsUI.creating = true; parsUI.editing = false; parsUI.name = "";
+      setup.courseName = null; setup.holes = 0; setup.pars = [];
+      render(); break;
     // The saved course's own name pre-fills the save box, so fixing a par and
     // saving it back over the course is two taps.
     case "editPars":
@@ -3749,6 +3765,7 @@ app.addEventListener("click", function (e) {
         setup.pars = found.pars.slice();
         setup.courseName = found.name;
         parsUI.editing = false;
+        parsUI.creating = false;
       }
       render(); break;
     case "deleteCourse":
@@ -3762,6 +3779,7 @@ app.addEventListener("click", function (e) {
         setup.courseName = parsUI.name.trim();
         parsUI.name = "";
         parsUI.editing = false;
+        parsUI.creating = false;
       }
       render(); break;
     case "saveRoundCourse":
