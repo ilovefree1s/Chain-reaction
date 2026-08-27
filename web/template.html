@@ -1651,6 +1651,10 @@ function renderLiveSection() {
   if (!liveConfigured()) return "";
   var head = '<div class="label">Live</div>';
   if (!live) {
+    // Mid-round and not connected: no Host/Join buttons — the game is already
+    // going, and lobbies are formed before a round, not during one. (A phone
+    // that reloads mid-round rejoins its room by itself, no buttons needed.)
+    if (state) return "";
     // No profile, no lobby: a nameless phone can't be seated, renamed, or
     // told apart — every lobby headache so far started with one.
     if (!(settings.myName || "").trim()) {
