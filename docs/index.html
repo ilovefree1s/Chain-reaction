@@ -619,7 +619,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.0 · 26 Aug 22:25";
+var APP_VERSION = "v1.0 · 26 Aug 22:32";
 function versionLine() {
   return '<div class="ver">' + esc(APP_VERSION) + "</div>";
 }
@@ -3365,7 +3365,6 @@ function wheelSvg(id, labels, rotation, winner, fontSize, duo) {
 /* ---------- course & pars ---------- */
 function renderParGrid() {
   var list = allCourses();
-  var namesOk = seatsReady();
   var saved = list.map(function (c) {
     // Selection and the Play shortcut only make sense while setting up a round —
     // the same sheet doubles as Settings' course manager.
@@ -3400,10 +3399,10 @@ function renderParGrid() {
         ? '<button class="del" data-act="askDeleteCourse" data-course="' + esc(c.name) + '">&times;</button>'
         : "") +
       '</div>' +
+      // Confirm just closes the sheet with the course loaded — rounds only
+      // ever start from the Start round button on the Setup screen.
       (sel
-        ? '<button class="big primary courseplay" data-act="playCourse"' +
-          (namesOk ? "" : " disabled") + '>Play</button>' +
-          (namesOk ? "" : '<p class="hint">Every player needs a name first.</p>')
+        ? '<button class="big primary courseplay" data-act="closePars">Confirm course</button>'
         : "");
   }).join("");
 
@@ -3873,11 +3872,6 @@ app.addEventListener("click", function (e) {
         charPick = null;
       }
       render(); break;
-    // Straight from the course list into the round — the course is already loaded
-    // by the tap that selected it, so this is Start with the sheet closed.
-    case "playCourse":
-      parsUI.open = false;
-      /* falls through */
     case "start":
       commit(newRound(
         setup.names.slice(0, activeSeats()).map(function (x) { return x.trim(); }),
@@ -4175,7 +4169,7 @@ app.addEventListener("click", function (e) {
   // watch the course and format land the moment they're picked rather than on
   // the next 15-second heartbeat. Start itself leaves the Setup screen, but is
   // exactly the announcement that unlocks everyone else's Start button.
-  if (live && live.hosting && (screen === "setup" || act === "start" || act === "playCourse"))
+  if (live && live.hosting && (screen === "setup" || act === "start"))
     liveHello();
 });
 
