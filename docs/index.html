@@ -619,7 +619,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.0 · 26 Aug 20:59";
+var APP_VERSION = "v1.0 · 26 Aug 21:01";
 function versionLine() {
   return '<div class="ver">' + esc(APP_VERSION) + "</div>";
 }
@@ -2900,17 +2900,20 @@ function renderRules() {
 }
 
 function renderHouseRules() {
-  var rules = houseRules(rulesMode).map(function (r) {
+  // Mid-round the format is a fact, not a choice: the rules show the game
+  // being played and the stroke/skins picker stays home.
+  var mode = state ? state.mode : rulesMode;
+  var rules = houseRules(mode).map(function (r) {
     return '<div class="panel"><div style="font-size:22px;font-weight:700">' + esc(r[1]) +
       '</div><p style="margin:4px 0 0;color:var(--sage)">' + esc(r[2]) + '</p></div>';
   }).join("");
 
-  var table = (rulesMode === "skins" ? SKINS_DRAW_TABLE : DRAW_TABLE).map(function (r) {
+  var table = (mode === "skins" ? SKINS_DRAW_TABLE : DRAW_TABLE).map(function (r) {
     return '<div class="total"><span class="name" style="font-size:17px;font-weight:400;color:var(--sage)">' +
       esc(r[0]) + '</span><span class="v">' + r[1] + '</span></div>';
   }).join("");
 
-  return '<div class="label">How it works</div>' + formatPicker() + rules +
+  return '<div class="label">How it works</div>' + (state ? "" : formatPicker()) + rules +
     '<div class="label">Cards drawn at the end of a hole</div>' + table;
 }
 
