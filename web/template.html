@@ -2795,14 +2795,18 @@ function cardHtml(c, withActions, altText) {
       (acts ? '<div class="artacts">' + acts + '</div>' : "") + '</div>';
   }
   return '<div class="card"' + tap + '><div class="body">' +
+    // The little GAMBLE WHEEL!! in the top corner — this card lives there.
+    (wheelOnlyCard(c.id)
+      ? '<svg width="30" height="38" viewBox="-18 -27 36 45" style="float:right;margin:-4px 0 4px 10px">' +
+        '<polygon points="-5,-24 5,-24 0,-13" fill="#FF8A1E"/>' +
+        '<circle r="15" fill="#061022" stroke="#4DC3FF" stroke-width="3"/>' +
+        '<path d="M0 0L15 0M0 0L7.5 13M0 0L-7.5 13M0 0L-15 0M0 0L-7.5 -13M0 0L7.5 -13" stroke="#4DC3FF" stroke-width="2"/>' +
+        '<circle r="3.5" fill="#4DC3FF"/></svg>'
+      : "") +
     '<div class="tags"><span class="tag timing">' + c.kind + '</span>' +
     '<span class="tag timing">' + esc(c.timing) + '</span>' +
     (wheelOnlyCard(c.id)
-      ? '<span class="tag timing" style="color:#FF8A1E;border-color:rgba(255,138,30,.55)">' +
-        '<svg width="11" height="11" viewBox="-16 -16 32 32" style="vertical-align:-1px;margin-right:4px">' +
-        '<circle r="14" fill="none" stroke="#4DC3FF" stroke-width="3"/>' +
-        '<path d="M0 0L14 0M0 0L7 12M0 0L-7 12M0 0L-14 0M0 0L-7 -12M0 0L7 -12" stroke="#4DC3FF" stroke-width="2.5"/>' +
-        '</svg>wheel only</span>'
+      ? '<span class="tag timing" style="color:#FF8A1E;border-color:rgba(255,138,30,.55)">wheel only</span>'
       : "") + '</div>' +
     '<h3>' + esc(c.name) + '</h3><p>' + esc(words) + '</p>' + acts +
     '</div></div>';
