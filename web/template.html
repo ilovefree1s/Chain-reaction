@@ -1058,7 +1058,7 @@ function liveConnect(code) {
   liveDisconnect();
   live = { code: code, sock: null, joined: false, refN: 0, peers: {},
            backoff: 1000, lastHeard: 0, closing: false,
-           hbTimer: null, sayTimer: null, retryTimer: null };
+           hbTimer: null, sayTimer: null, retryTimer: null, joinTimer: null };
   liveOpen();
   keepAwake();
 }
@@ -1222,6 +1222,8 @@ function liveHear(p) {
     cfg: (p.cfg && typeof p.cfg === "object") ? p.cfg : null,
     at: Date.now()
   };
+  // A host answered — the join search is over, stop the give-up clock.
+  if (p.hosting && live.joinTimer) { clearTimeout(live.joinTimer); live.joinTimer = null; }
   liveSeat(live.peers[p.id], p.id);
   if (newcomer || p.fresh) liveHello();
   // A joiner's Setup follows the host's table as the choices land.
@@ -1441,7 +1443,7 @@ function liveDisconnect() {
   live = null;
   l.closing = true;
   clearInterval(l.hbTimer); clearInterval(l.sayTimer);
-  clearTimeout(l.retryTimer);
+  clearTimeout(l.retryTimer); clearTimeout(l.joinTimer);
   if (l.sock) { try { l.sock.close(); } catch (e) { /* already gone */ } }
   if (wakeLock) {
     try { wakeLock.release(); } catch (e) { /* released with the page */ }
@@ -4103,6 +4105,18 @@ app.addEventListener("click", function (e) {
       // When hosting began — the tie-breaker if two phones both claim the
       // chair. Earliest claim wins; the other demotes itself on first hello.
       if (live.hosting) live.hostSince = Date.now();
+      // Joining looks for a host for 30 seconds, then gives up cleanly — a
+      // real lobby answers inside one. Only the Setup Join button does this;
+      // a phone rejoining its round mid-game must ride out quiet stretches.
+      if (!live.hosting && !s) {
+        live.joinTimer = setTimeout(function () {
+          if (!live || live.hosting || state || liveHostTable()) return;
+          liveDisconnect();
+          resetLobbySeats();
+          localNote("No lobby found. Have somebody host one, then tap Join.", "Lobby");
+          render();
+        }, 30000);
+      }
       if (s) { s.liveCode = LIVE_ROOM; commit(s); } else render();
       break;
     case "liveLeave":
