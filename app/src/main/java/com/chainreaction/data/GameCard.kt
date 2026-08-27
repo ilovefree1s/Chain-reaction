@@ -140,7 +140,7 @@ object CardDeck {
         GameCard(57, "Before tee shot", CardKind.ATTACK, "Your Tee Pad Is Over There!", "Use 2 of your discs to mark a new tee for everyone else, up to 10 paces (30 ft) from the original. They all tee from it."),
         GameCard(58, "Before all tee", CardKind.SABOTAGE, "I Think It's Broke", "The first player to hit a tree loses that disc — they can't throw it again for the rest of the round."),
         GameCard(59, "After card", CardKind.REACT, "UNO REVERSO", "Reverse any cards that effect you back to the person that used the card. (Doesn't work on wheel spins.)"),
-        GameCard(60, "Before all tee", CardKind.GROUP, "LONE WOLF!", "Wheel only — never dealt to a hand. Whoever it lands on is the LONE WOLF! Cards played on the wolf effect everyone else! A lone wolf win gives him the right to go through everyone's cards and play 1 card from everyone's hand that effects that player. If the 3 players win then nobody cares, cuz 3 people should beat 1 every time — but they can flip fight for 1 free mulligan. Wolf calls heads or tails."),
+        GameCard(60, "Before all tee", CardKind.GROUP, "LONE WOLF!", "Wheel only — never dealt to a hand. Whoever it lands on is the LONE WOLF! Cards played by the wolf effect everyone else! A lone wolf win gives him the right to go through everyone's cards and play 1 card from everyone's hand that effects that player. If the 3 players win then nobody cares, cuz 3 people should beat 1 every time — but they can flip fight for 1 free mulligan. Wolf calls heads or tails."),
     )
 
     private val byId: Map<Int, GameCard> = ALL.associateBy { it.id }
