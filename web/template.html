@@ -3039,14 +3039,23 @@ function wrapWords(s, max) {
   return lines;
 }
 
-function kindGlyph(kind, cx, cy) {
+function kindGlyph(kind, cx, cy, id) {
   var ICE = "#4DC3FF", ORG = "#FF8A1E";
   function person(x, y, s, col) {
     return '<circle cx="' + x + '" cy="' + (y - 14 * s) + '" r="' + 12 * s + '" stroke="' + col + '"/>' +
       '<path d="M' + (x - 20 * s) + ' ' + (y + 22 * s) + ' a' + 20 * s + ' ' + 20 * s + ' 0 0 1 ' + 40 * s + ' 0" stroke="' + col + '"/>';
   }
   var g = '<g fill="none" stroke-width="6" stroke-linecap="round">';
-  if (kind === "attack") {
+  if (id === 59) {
+    // The UNO reverse: two interlocked bent arrows chasing each other, set on
+    // the diagonal like the real card. One arrow drawn, the other is it
+    // rotated 180° about the centre.
+    var arrow = '<g transform="translate(-16 2)">' +
+      '<polygon points="-7,-12 -7,34 26,34 26,20 7,20 7,-12"/>' +
+      '<polygon points="-18,-10 18,-10 0,-38"/></g>';
+    g += '<g transform="translate(' + cx + ' ' + cy + ') rotate(-40)" fill="' + ICE + '" stroke="none">' +
+      arrow + '<g transform="rotate(180)">' + arrow + '</g></g>';
+  } else if (kind === "attack") {
     g += '<circle cx="' + cx + '" cy="' + cy + '" r="34" stroke="' + ORG + '"/>' +
       '<circle cx="' + cx + '" cy="' + cy + '" r="5" fill="' + ORG + '" stroke="none"/>' +
       '<path d="M' + cx + ' ' + (cy - 52) + 'v20M' + cx + ' ' + (cy + 32) + 'v20M' +
@@ -3086,7 +3095,7 @@ function cardFaceSvg(c) {
   var oct = '<polygon points="314,' + octTop + ' 406,' + octTop + ' 460,' + (octTop + 54) + ' 460,' +
     (octTop + 146) + ' 406,' + (octTop + 200) + ' 314,' + (octTop + 200) + ' 260,' + (octTop + 146) +
     ' 260,' + (octTop + 54) + '" fill="#061022" stroke="url(#facechip)" stroke-width="5"/>' +
-    kindGlyph(c.kind, 360, octTop + 100);
+    kindGlyph(c.kind, 360, octTop + 100, c.id);
 
   var textLines = wrapWords(c.text, 40);
   var bf = textLines.length > 7 ? 27 : 30;
