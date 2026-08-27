@@ -622,7 +622,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.0 · 26 Aug 23:15";
+var APP_VERSION = "v1.0 · 26 Aug 23:19";
 function versionLine() {
   return '<div class="ver">' + esc(APP_VERSION) + "</div>";
 }
@@ -2711,17 +2711,6 @@ function renderWheelCost() {
  * and a free spin skips the name stage entirely, starting where a paid one arrives
  * after its first wheel.
  */
-/* TEMPORARY TEST RIG — delete after the LONE WOLF walkthrough. With a player
-   named "jachob" in the round, the name wheel lands on them and the card
-   wheel lands on LONE WOLF!, so the whole flow can be watched end to end. */
-function rigTarget() {
-  if (!state) return -1;
-  for (var i = 0; i < state.players.length; i++) {
-    if (state.players[i].trim().toLowerCase() === "jachob") return i;
-  }
-  return -1;
-}
-
 function openWheelNow(free) {
   // The table hears the wheel the second it's bought — the cards are already
   // discarded (or GAMBLE WHEEL!! already played), so this moment is committed.
@@ -2729,11 +2718,6 @@ function openWheelNow(free) {
   // The whole pool rides the wheel — what you see is exactly what can hit.
   var ring = shuffled(WHEEL_POOL);
   var ringIdx = Math.floor(Math.random() * ring.length);
-  if (rigTarget() !== -1) {
-    for (var ri = 0; ri < ring.length; ri++) {
-      if (ring[ri].id === 60) { ringIdx = ri; break; }
-    }
-  }
   var winner = ring[ringIdx];
   var nameLabels = [];
   // Each player's actual name, twice around the wheel, so even 3 players fill it out.
@@ -3532,7 +3516,6 @@ function spinWheel(kind) {
   var n, idx;
   if (kind === "name") {
     var p = Math.floor(Math.random() * state.players.length);
-    if (rigTarget() !== -1) p = rigTarget(); // TEMPORARY TEST RIG
     wheel.name = state.players[p];
     // The player owns two opposite segments — land on either.
     wheel.nameSeg = p + state.players.length * (Math.random() < 0.5 ? 0 : 1);
