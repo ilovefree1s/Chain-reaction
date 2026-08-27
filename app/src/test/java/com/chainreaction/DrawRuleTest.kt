@@ -92,9 +92,15 @@ class DrawRuleTest {
     // ---- deck integrity ----
 
     @Test
-    fun `deck is 59 cards with unique ids one through 59`() {
-        assertEquals(59, CardDeck.ALL.size)
-        assertEquals((1..59).toSet(), CardDeck.ALL.map { it.id }.toSet())
+    fun `deck is 60 cards with unique ids one through 60`() {
+        assertEquals(60, CardDeck.ALL.size)
+        assertEquals((1..60).toSet(), CardDeck.ALL.map { it.id }.toSet())
+        // Wheel-only cards ride the wheel but never a hand.
+        assertEquals(CardDeck.ALL.size - Rules.WHEEL_ONLY.size, CardDeck.DEALT.size)
+        Rules.WHEEL_ONLY.forEach { id ->
+            assertTrue("card $id must not be dealt", CardDeck.DEALT.none { it.id == id })
+            assertTrue("card $id must be on the wheel", CardDeck.WHEEL_POOL.any { it.id == id })
+        }
     }
 
     @Test
@@ -127,7 +133,7 @@ class DrawRuleTest {
     fun `new round deals four cards and leaves the rest in the deck`() {
         val state = GameState.newRound(listOf("A", "B", "C"), meIndex = 0, holeCount = 18)
         assertEquals(Rules.HAND_SIZE, state.hand.size)
-        assertEquals(CardDeck.ALL.size - Rules.HAND_SIZE, state.deck.size)
+        assertEquals(CardDeck.DEALT.size - Rules.HAND_SIZE, state.deck.size)
         assertTrue(state.discard.isEmpty())
         assertEquals(0, state.owed)
     }
@@ -226,7 +232,7 @@ class DrawRuleTest {
         assertEquals("re-lock deals nothing", startHand + 3, state.hand.size)
         assertEquals(0, state.owed)
         assertEquals(
-            CardDeck.ALL.size,
+            CardDeck.DEALT.size,
             state.hand.size + state.deck.size + state.discard.size,
         )
     }

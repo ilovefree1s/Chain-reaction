@@ -59,6 +59,9 @@ object Rules {
     // Wheel itself, so the wheel can never demand another wheel.
     val WHEEL_EXCLUDES = setOf(1, 4, 6, 7, 13, 14, 20, 21, 22, 23, 24, 25, 32, 35, 37, 39, 43, 44, 46, 49, 55, 58, 59)
 
+    /** Cards that live on the wheel alone — never shuffled into a deck. */
+    val WHEEL_ONLY = setOf(60)
+
     /** Display order for the rules reference. */
     val TIMINGS = listOf(
         "Before shot",
@@ -137,6 +140,7 @@ object CardDeck {
         GameCard(57, "Before tee shot", CardKind.ATTACK, "Your Tee Pad Is Over There!", "Use 2 of your discs to mark a new tee for everyone else, up to 10 paces (30 ft) from the original. They all tee from it."),
         GameCard(58, "Before all tee", CardKind.SABOTAGE, "I Think It's Broke", "The first player to hit a tree loses that disc — they can't throw it again for the rest of the round."),
         GameCard(59, "After card", CardKind.REACT, "UNO REVERSO", "Reverse any cards that effect you back to the person that used the card. (Doesn't work on wheel spins.)"),
+        GameCard(60, "Before all tee", CardKind.GROUP, "LONE WOLF!", "Wheel only — never dealt to a hand. Whoever it lands on is the LONE WOLF! Cards played on the wolf effect everyone else! A lone wolf win gives him the right to go through everyone's cards and play 1 card from everyone's hand that effects that player. If the 3 players win then nobody cares, cuz 3 people should beat 1 every time — but they can flip fight for 1 free mulligan. Wolf calls heads or tails."),
     )
 
     private val byId: Map<Int, GameCard> = ALL.associateBy { it.id }
@@ -144,8 +148,11 @@ object CardDeck {
     /** The wheel pool for the GAMBLE WHEEL!! card. Excludes the reaction cards. */
     val WHEEL_POOL: List<GameCard> = ALL.filter { it.id !in Rules.WHEEL_EXCLUDES }
 
+    /** What actually gets shuffled into hands — everything but the wheel-only cards. */
+    val DEALT: List<GameCard> = ALL.filter { it.id !in Rules.WHEEL_ONLY }
+
     fun card(id: Int): GameCard = byId.getValue(id)
 
     /** A fresh deck, shuffled. Every player has their own. */
-    fun freshShuffledDeck(): List<Int> = ALL.map { it.id }.shuffled()
+    fun freshShuffledDeck(): List<Int> = DEALT.map { it.id }.shuffled()
 }

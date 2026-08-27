@@ -551,6 +551,9 @@ var CARDS = DATA.cards;
 var BY_ID = {};
 CARDS.forEach(function (c) { BY_ID[c.id] = c; });
 var WHEEL_POOL = CARDS.filter(function (c) { return DATA.wheelExcludes.indexOf(c.id) === -1; });
+/* Cards that live on the wheel alone — they can land on a spin but are never
+   shuffled into anyone's deck. */
+function wheelOnlyCard(id) { return (DATA.wheelOnly || []).indexOf(id) !== -1; }
 var MIN_PLAYERS = 3, MAX_PLAYERS = 5, DEFAULT_PAR = 3;
 var PAR_CYCLE = [3, 4, 5];
 
@@ -1834,6 +1837,7 @@ function ignoresExempt(id) { return IGNORES_EXEMPT.indexOf(id) !== -1; }
    each side does. No banner over them, no summing-up under them: just the card. */
 var SAYS_IT_ALL = [
   29,  // Globetrotter Shit
+  60,  // LONE WOLF! — the wolf isn't sitting anything out, so no exempt banner
 ];
 function saysItAll(id) { return SAYS_IT_ALL.indexOf(id) !== -1; }
 
@@ -1895,7 +1899,8 @@ var WHEEL_TEXT = {
   53: "[chooser] gives everyone advice for their tee shot — can be different advice for each of them — and they have to follow it as best they can. (Somewhat reasonable advice — nothing like throw it backwards.)",
   54: "Everyone but [exempt] turbo putts their next putt.",
   56: "If anyone but [exempt] misses a putt inside C1, they have to carry their putter in either hand until they finish the next hole. (They can putt with it.) Drop it or bag it and it's +1 stroke.",
-  57: "[chooser] marks a new tee pad up to 10 paces (30 ft) from the original tee pad. Everyone else tees from there."
+  57: "[chooser] marks a new tee pad up to 10 paces (30 ft) from the original tee pad. Everyone else tees from there.",
+  60: "[exempt] is the LONE WOLF! Cards played on [exempt] effect everyone else! A lone wolf win gives him the right to go through everyone's cards and play 1 card from everyone's hand that effects that player. If the 3 players win then nobody cares, cuz 3 people should beat 1 every time — but they can flip fight for 1 free mulligan. Wolf calls heads or tails."
 };
 /*
  * Whether the fate spin has anything to decide. It reads the wheel wording
@@ -1956,7 +1961,8 @@ function shuffled(arr) {
 }
 
 function newRound(players, meIndex, holeCount, coursePars, courseName, characters, mode) {
-  var deck = shuffled(CARDS.map(function (c) { return c.id; }));
+  var deck = shuffled(CARDS.filter(function (c) { return !wheelOnlyCard(c.id); })
+    .map(function (c) { return c.id; }));
   var source = (coursePars && coursePars.length === holeCount) ? coursePars : parList(holeCount);
   var pars = [], scores = [], locked = [];
   for (var h = 0; h < holeCount; h++) {
@@ -2798,7 +2804,9 @@ function cardHtml(c, withActions, altText) {
    everything else is how the deck works, which is the same game either way. */
 var SHARED_RULES = [
   ["cards", "Starting hand & hand cap", "4 cards, dealt at the start of the round. The cap is 7 — you cannot draw past it, discard first."],
-  ["deck", "Your own deck", "Every player shuffles their own " + CARDS.length + "-card deck. Duplicates across players are expected and fine. This phone only tracks your deck."],
+  ["deck", "Your own deck", "Every player shuffles their own " +
+    (CARDS.length - (DATA.wheelOnly || []).length) +
+    "-card deck. Duplicates across players are expected and fine. This phone only tracks your deck."],
   ["recycle", "Discard", "Played and discarded cards go to your own discard pile. If your deck runs out, the discard is reshuffled back in."],
   ["wheel", "Buy a spin", "Discard " + DATA.wheelCost + " cards to buy a spin on the GAMBLE WHEEL!! Spin it from the Hand tab. Playing GAMBLE WHEEL!! spins for free instead."],
   ["people", "Two per player, per hole", "At most 2 cards may be played on any one player per hole. The app does not enforce this — track it yourselves."],

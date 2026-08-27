@@ -97,7 +97,7 @@ private val sharedRules = listOf(
     HouseRule(
         NeonIcon.DECK,
         "Your own deck",
-        "Every player shuffles their own ${CardDeck.ALL.size}-card deck. Duplicates across " +
+        "Every player shuffles their own ${CardDeck.DEALT.size}-card deck. Duplicates across " +
             "players are expected and fine. This phone only tracks your deck.",
     ),
     HouseRule(

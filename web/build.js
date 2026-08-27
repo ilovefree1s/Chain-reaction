@@ -55,6 +55,11 @@ data.cards.forEach((c) => {
 data.wheelExcludes.forEach((id) => {
   if (!ids.includes(id)) problems.push(`wheelExcludes references unknown card ${id}`);
 });
+(data.wheelOnly || []).forEach((id) => {
+  if (!ids.includes(id)) problems.push(`wheelOnly references unknown card ${id}`);
+  // A card can't be wheel-only and also barred from the wheel — it'd be nowhere.
+  if (data.wheelExcludes.includes(id)) problems.push(`card ${id} is both wheelOnly and wheelExcluded`);
+});
 if (!Number.isInteger(data.wheelCost) || data.wheelCost < 0) {
   problems.push("wheelCost must be a whole number of cards");
 }

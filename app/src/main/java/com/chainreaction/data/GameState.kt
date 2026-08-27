@@ -434,7 +434,7 @@ data class GameState(
             scores.size == holeCount &&
             scores.all { it.size == players.size } &&
             currentHole in 0 until holeCount &&
-            hand.size + deck.size + discard.size == CardDeck.ALL.size
+            hand.size + deck.size + discard.size == CardDeck.DEALT.size
 }
 
 private fun <T> List<T>.replaceAt(index: Int, value: T): List<T> =
