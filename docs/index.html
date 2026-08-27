@@ -619,7 +619,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.0 · 26 Aug 20:48";
+var APP_VERSION = "v1.0 · 26 Aug 20:50";
 function versionLine() {
   return '<div class="ver">' + esc(APP_VERSION) + "</div>";
 }
@@ -3361,7 +3361,8 @@ function renderParGrid() {
   // once somebody actually means to build one.
   var lengths;
   if (parsUI.creating) {
-    lengths = '<div class="label">' + (setup.holes > 0 ? "New course" : "How many holes?") + '</div>' +
+    lengths = '<button class="big quiet" data-act="backToCourses">&lsaquo;&nbsp; Back to saved courses</button>' +
+      '<div class="label">' + (setup.holes > 0 ? "New course" : "How many holes?") + '</div>' +
       '<div class="row">' + [9, 18].map(function (n) {
         return '<button class="big ' + (setup.holes === n ? "primary" : "quiet") +
           '" data-act="holes" data-n="' + n + '" style="margin:0">' + n + ' holes</button>';
@@ -3398,7 +3399,9 @@ function renderParGrid() {
   }
 
   return '<div class="modal nmodal">' +
-    (list.length ? '<div class="label">Saved courses</div>' + saved : "") +
+    // Building a new course gets the whole screen: the saved list disappears
+    // so all that's in front of you is the course you're working on.
+    (list.length && !parsUI.creating ? '<div class="label">Saved courses</div>' + saved : "") +
     lengths + editor +
     '<div style="height:16px"></div>' +
     '<button class="big quiet" data-act="closePars">Done</button></div>';
@@ -3742,8 +3745,11 @@ app.addEventListener("click", function (e) {
       confirmDeleteCourse = null; render(); break;
     case "newCourse":
       parsUI.creating = true; parsUI.editing = false; parsUI.name = "";
-      setup.courseName = null; setup.holes = 0; setup.pars = [];
+      // A saved course was on deck: start the builder blank. An unsaved draft
+      // (backed out of mid-build) resumes instead of being wiped.
+      if (setup.courseName) { setup.courseName = null; setup.holes = 0; setup.pars = []; }
       render(); break;
+    case "backToCourses": parsUI.creating = false; render(); break;
     // The saved course's own name pre-fills the save box, so fixing a par and
     // saving it back over the course is two taps.
     case "editPars":
