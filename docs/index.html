@@ -619,7 +619,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.0 · 26 Aug 15:39";
+var APP_VERSION = "v1.0 · 26 Aug 20:43";
 function versionLine() {
   return '<div class="ver">' + esc(APP_VERSION) + "</div>";
 }
@@ -3364,23 +3364,29 @@ function renderParGrid() {
         '" data-act="holes" data-n="' + n + '" style="margin:0">' + n + ' holes</button>';
     }).join("") + '</div>';
 
-  // Nothing to edit until we know how long the course is.
+  // Nothing to edit until we know how long the course is. And a picked saved
+  // course is already saved — no pars grid, no "save for next time", just an
+  // Edit pars button that opens all of it when something actually needs fixing.
   var editor = "";
   if (setup.holes > 0) {
-    editor = '<div class="label">Pars <span class="total-par">Total ' +
-      sum(setupPars()) + '</span></div>' +
-      '<div class="pargrid">' + setupPars().map(function (p, i) {
-        return '<button class="parcell' + (p !== DEFAULT_PAR ? " off" : "") +
-          '" data-act="cyclePar" data-i="' + i + '"><span>' + (i + 1) + '</span><b>' +
-          p + '</b></button>';
-      }).join("") + '</div>' +
-      '<button class="big quiet" data-act="resetPars">Reset to all par 3</button>' +
-      '<div class="label">Save for next time</div>' +
-      '<input type="text" data-course-name placeholder="Course name" value="' +
-      esc(parsUI.name) + '">' +
-      '<div style="height:10px"></div>' +
-      '<button class="big primary" data-act="saveCourse"' +
-      (parsUI.name.trim() ? "" : " disabled") + '>Save as course</button>';
+    if (setup.courseName && !parsUI.editing) {
+      editor = '<button class="big quiet" data-act="editPars">Edit pars</button>';
+    } else {
+      editor = '<div class="label">Pars <span class="total-par">Total ' +
+        sum(setupPars()) + '</span></div>' +
+        '<div class="pargrid">' + setupPars().map(function (p, i) {
+          return '<button class="parcell' + (p !== DEFAULT_PAR ? " off" : "") +
+            '" data-act="cyclePar" data-i="' + i + '"><span>' + (i + 1) + '</span><b>' +
+            p + '</b></button>';
+        }).join("") + '</div>' +
+        '<button class="big quiet" data-act="resetPars">Reset to all par 3</button>' +
+        '<div class="label">Save for next time</div>' +
+        '<input type="text" data-course-name placeholder="Course name" value="' +
+        esc(parsUI.name) + '">' +
+        '<div style="height:10px"></div>' +
+        '<button class="big primary" data-act="saveCourse"' +
+        (parsUI.name.trim() ? "" : " disabled") + '>Save as course</button>';
+    }
   }
 
   return '<div class="modal nmodal">' +
@@ -3720,8 +3726,14 @@ app.addEventListener("click", function (e) {
       setup.holes = n; resizePars(n); setup.courseName = null; render(); break;
 
     case "openPars":
-      resizePars(setup.holes); parsUI = { open: true, name: "" };
+      resizePars(setup.holes); parsUI = { open: true, name: "", editing: false };
       confirmDeleteCourse = null; render(); break;
+    // The saved course's own name pre-fills the save box, so fixing a par and
+    // saving it back over the course is two taps.
+    case "editPars":
+      parsUI.editing = true;
+      parsUI.name = setup.courseName || parsUI.name || "";
+      render(); break;
     case "closePars": parsUI.open = false; confirmDeleteCourse = null; render(); break;
     case "askDeleteCourse": confirmDeleteCourse = courseName; render(); break;
     case "keepCourse": confirmDeleteCourse = null; render(); break;
@@ -3736,6 +3748,7 @@ app.addEventListener("click", function (e) {
         setup.holes = found.holeCount;
         setup.pars = found.pars.slice();
         setup.courseName = found.name;
+        parsUI.editing = false;
       }
       render(); break;
     case "deleteCourse":
@@ -3748,6 +3761,7 @@ app.addEventListener("click", function (e) {
         putCourse(parsUI.name.trim(), setup.holes, setupPars());
         setup.courseName = parsUI.name.trim();
         parsUI.name = "";
+        parsUI.editing = false;
       }
       render(); break;
     case "saveRoundCourse":
