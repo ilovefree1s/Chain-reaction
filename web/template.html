@@ -2750,7 +2750,9 @@ function miniCardHtml(c, act, picked, held) {
     (act || "viewCard") + '" data-i="' + c.id + '">';
   if (art) return open + tag + '<img src="' + art + '" alt="' + esc(c.name) + '"></div>';
   return open + tag +
-    '<div class="minimeta">' + esc(c.kind) + ' &middot; ' + esc(c.timing) + '</div>' +
+    '<div class="minimeta">' + (wheelOnlyCard(c.id)
+      ? '<span style="color:#FF8A1E">wheel only</span> &middot; ' : "") +
+    esc(c.kind) + ' &middot; ' + esc(c.timing) + '</div>' +
     '<div class="mininame">' + esc(c.name) + '</div>' +
     '<div class="minitext">' + esc(c.text) + '</div></div>';
 }
@@ -2794,7 +2796,14 @@ function cardHtml(c, withActions, altText) {
   }
   return '<div class="card"' + tap + '><div class="body">' +
     '<div class="tags"><span class="tag timing">' + c.kind + '</span>' +
-    '<span class="tag timing">' + esc(c.timing) + '</span></div>' +
+    '<span class="tag timing">' + esc(c.timing) + '</span>' +
+    (wheelOnlyCard(c.id)
+      ? '<span class="tag timing" style="color:#FF8A1E;border-color:rgba(255,138,30,.55)">' +
+        '<svg width="11" height="11" viewBox="-16 -16 32 32" style="vertical-align:-1px;margin-right:4px">' +
+        '<circle r="14" fill="none" stroke="#4DC3FF" stroke-width="3"/>' +
+        '<path d="M0 0L14 0M0 0L7 12M0 0L-7 12M0 0L-14 0M0 0L-7 -12M0 0L7 -12" stroke="#4DC3FF" stroke-width="2.5"/>' +
+        '</svg>wheel only</span>'
+      : "") + '</div>' +
     '<h3>' + esc(c.name) + '</h3><p>' + esc(words) + '</p>' + acts +
     '</div></div>';
 }
@@ -3152,6 +3161,17 @@ function cardFaceSvg(c) {
     // The card's number used to sit opposite — nobody ever needed it to play.
     '<text x="270" y="929" fill="#4DC3FF" font-size="21" font-weight="900" letter-spacing="2">' +
     esc(c.kind.toUpperCase()) + '</text>' +
+    // Wheel-only cards say so where the card number used to live — the one
+    // fact about them a browsing player needs: you can't draw this. The little
+    // pie is the GAMBLE WHEEL!! itself, pointer and all.
+    (wheelOnlyCard(c.id)
+      ? '<g transform="translate(432 921)">' +
+        '<polygon points="-5,-24 5,-24 0,-13" fill="#FF8A1E"/>' +
+        '<circle r="15" fill="#061022" stroke="#4DC3FF" stroke-width="3"/>' +
+        '<path d="M0 0L15 0M0 0L7.5 13M0 0L-7.5 13M0 0L-15 0M0 0L-7.5 -13M0 0L7.5 -13" stroke="#4DC3FF" stroke-width="2"/>' +
+        '<circle r="3.5" fill="#4DC3FF"/></g>' +
+        '<text x="462" y="929" fill="#FF8A1E" font-size="21" font-weight="900" letter-spacing="2">WHEEL ONLY</text>'
+      : "") +
     '</svg>';
 }
 
