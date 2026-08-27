@@ -772,18 +772,32 @@ function primeWheelSound() {
  * blur is a blur, not a wall of sound.
  */
 function segmentCrossings(fromDeg, toDeg, segments) {
-  var segDeg = 360 / segments, delta = toDeg - fromDeg, times = [];
-  var steps = Math.round(SPIN_MS / 2), lastSeg = Math.floor(fromDeg / segDeg), lastAt = -1;
+  var segDeg = 360 / segments, delta = toDeg - fromDeg, raw = [];
+  var steps = Math.round(SPIN_MS / 2), lastSeg = Math.floor(fromDeg / segDeg);
   for (var i = 1; i <= steps; i++) {
     var at = i / steps;
     var seg = Math.floor((fromDeg + delta * easeOut(at)) / segDeg);
-    if (seg !== lastSeg) {
-      lastSeg = seg;
-      var tSec = at * SPIN_MS / 1000;
-      if (tSec - lastAt >= 0.024) { times.push(tSec); lastAt = tSec; }
-    }
+    if (seg !== lastSeg) { lastSeg = seg; raw.push(at * SPIN_MS / 1000); }
   }
-  return times;
+  if (raw.length < 2) return raw;
+  // While boundaries fly past faster than distinct clicks can be heard, the
+  // rattle runs at a steady MIN beat; the true crossings take over the moment
+  // they spread wider than that. The old approach dropped too-close crossings
+  // instead, which thinned the blur to every-other-boundary and then jumped
+  // back to every-boundary as the wheel slowed — heard as a mid-spin speed-up
+  // on the 36-sliver card wheel. A wheel may now only ever slow down.
+  var MIN = 0.024;
+  var sw = raw.length;
+  for (var k = 1; k < raw.length; k++) {
+    if (raw[k] - raw[k - 1] >= MIN) { sw = k; break; }
+  }
+  var out = [];
+  var bound = raw[sw - 1] + MIN / 2;
+  for (var t = raw[0]; t < bound; t += MIN) out.push(t);
+  for (var r = sw; r < raw.length; r++) {
+    if (!out.length || raw[r] - out[out.length - 1] >= MIN * 0.8) out.push(raw[r]);
+  }
+  return out;
 }
 
 /* Fire the clicks. Scheduled up front on the audio clock, so the pattern holds
