@@ -896,6 +896,18 @@ function allCourses() {
 function canDeleteCourse(name) {
   return savedCourses().some(function (c) { return c.name === name; });
 }
+/* The shipped version a saved course is standing in front of, if any. */
+function shippedCourse(name) {
+  return BUILT_IN_COURSES.filter(function (c) {
+    return c.name.toLowerCase() === name.toLowerCase();
+  })[0] || null;
+}
+/* A saved copy of a built-in whose pars were actually changed. */
+function editedShipped(c) {
+  var orig = canDeleteCourse(c.name) ? shippedCourse(c.name) : null;
+  if (!orig) return false;
+  return orig.holeCount !== c.holeCount || orig.pars.join(",") !== c.pars.join(",");
+}
 function putCourse(name, holeCount, pars) {
   var next = savedCourses().filter(function (c) {
     return c.name.toLowerCase() !== name.toLowerCase();
@@ -3332,21 +3344,31 @@ function renderParGrid() {
     var sel = screen === "setup" && c.name === setup.courseName;
     // A tapped ✕ asks first — a saved course with hand-set pars is real work,
     // and this button sits exactly where a scrolling thumb lands.
+    // A saved copy of a built-in with changed pars wears a ✱, and its confirm
+    // offers a reset to the original rather than a delete. Only a course this
+    // phone made up from scratch gets the ✕.
+    var edited = editedShipped(c);
     if (confirmDeleteCourse === c.name) {
       return '<div class="courserow">' +
-        '<div class="pick"><div class="cname">Delete ' + esc(c.name) + '?</div>' +
-        '<div class="dim">Gone from this phone for good.</div></div></div>' +
+        '<div class="pick"><div class="cname">' +
+        (edited ? 'Reset ' + esc(c.name) + ' to its original pars?' : 'Delete ' + esc(c.name) + '?') + '</div>' +
+        '<div class="dim">' + (edited ? 'Your par changes on this phone go away.'
+                                      : 'Gone from this phone for good.') + '</div></div></div>' +
         '<div class="acts" style="margin:6px 0 12px">' +
-        '<button class="big raised" data-act="keepCourse">Keep it</button>' +
-        '<button class="big primary" data-act="deleteCourse" data-course="' + esc(c.name) + '">Delete</button>' +
+        '<button class="big raised" data-act="keepCourse">' + (edited ? "Keep my pars" : "Keep it") + '</button>' +
+        '<button class="big primary" data-act="deleteCourse" data-course="' + esc(c.name) + '">' +
+        (edited ? "Reset" : "Delete") + '</button>' +
         '</div>';
     }
     return '<div class="courserow' + (sel ? " sel" : "") + '">' +
       '<div class="pick" data-act="loadCourse" data-course="' + esc(c.name) + '">' +
-        '<div class="cname">' + esc(c.name) + '</div>' +
-        '<div class="dim">' + c.holeCount + ' holes &middot; par ' + sum(c.pars) + '</div>' +
+        '<div class="cname">' + esc(c.name) + (edited ? ' <span style="color:#FF8A1E">*</span>' : "") + '</div>' +
+        '<div class="dim">' + c.holeCount + ' holes &middot; par ' + sum(c.pars) +
+        (edited ? ' &middot; pars edited' : "") + '</div>' +
       '</div>' +
-      (canDeleteCourse(c.name)
+      (edited
+        ? '<button class="del" data-act="askDeleteCourse" data-course="' + esc(c.name) + '">*</button>'
+        : canDeleteCourse(c.name) && !shippedCourse(c.name)
         ? '<button class="del" data-act="askDeleteCourse" data-course="' + esc(c.name) + '">&times;</button>'
         : "") +
       '</div>' +
