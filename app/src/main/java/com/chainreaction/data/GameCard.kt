@@ -89,7 +89,7 @@ object CardDeck {
         GameCard(9, "After throw", CardKind.ATTACK, "Big Ooof, Bud.", "Move an opponent's lie up to 10 paces (30 ft) in any direction, as long as it isn't out of bounds."),
         GameCard(10, "After throw", CardKind.SELF, "Big Putted!", "If you make a putt from outside C1 while any other players are inside C1, they all must use their left hand to putt this hole."),
         GameCard(11, "Before tee shot", CardKind.ATTACK, "Bizarro Golf!", "Force an opponent to drive with a putter and putt with a driver this hole."),
-        GameCard(12, "Before all tee", CardKind.SELF, "Call Your Shot", "Call CTP. If you win it, nobody can play cards on you next hole, and your next attack card hits every opponent — not you."),
+        GameCard(12, "Before all tee", CardKind.SELF, "Call Your Shot", "Call CTP. If you win it, you're immune to cards and bad wheel effects next hole, and your next attack card hits every opponent — not you."),
         GameCard(13, "Any time", CardKind.ATTACK, "Can I Borrow This Card?", "Pick anyone you want. Look through their cards and play one on anyone."),
         GameCard(14, "Any time", CardKind.REACT, "Change Is Good", "Hijack a card as it's played and re-aim it at the player of your choice — including the player who played it."),
         GameCard(15, "Before shot", CardKind.ATTACK, "CHRIS SPECIAL!", "Force an opponent to throw a tomahawk on the upcoming drive or approach."),
