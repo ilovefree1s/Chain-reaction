@@ -619,7 +619,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.0 · 26 Aug 21:01";
+var APP_VERSION = "v1.0 · 26 Aug 21:27";
 function versionLine() {
   return '<div class="ver">' + esc(APP_VERSION) + "</div>";
 }
@@ -2798,7 +2798,7 @@ function houseRules(mode) {
       // Ties are the whole shape of skins, so they get their own rule rather than a
       // clause somebody skims past.
       ["recycle", "Ties roll over", "Tie a hole and nobody wins it. Its skin rides onto the next, so the hole after a tie is worth two, then three, until somebody takes them."],
-      ["cards", "Skins buy cards", "Skins are worth cards — to everybody but the winner. Take a hole worth 3 skins and you draw nothing; everyone else draws 3. A tied hole wins nobody a skin but still deals everyone one, so the table is never left without cards to play."],
+      ["cards", "Losing skins = winning cards", "Skins are worth cards — to everybody but the winner. Take a hole worth 3 skins and you draw nothing; everyone else draws 3. A tied hole wins nobody a skin but still deals everyone one, so the table is never left without cards to play."],
       ["scales", "No ties around here", "Skins still on the table when the last hole is done don't sit there. Go back to the first tee pad and play on until every one is taken."]
     ].concat(SHARED_RULES);
   }
