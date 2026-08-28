@@ -622,7 +622,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.0 · 28 Aug 17:16";
+var APP_VERSION = "v1.0 · 28 Aug 17:23";
 function versionLine() {
   return '<div class="ver">' + esc(APP_VERSION) + "</div>";
 }
@@ -1585,6 +1585,12 @@ function livePlayed(p) {
   var c = BY_ID[p.card];
   if (!c) return; // an id this build doesn't know — a different deck version
   var target = typeof p.target === "string" ? p.target : null;
+  // The round remembers every play the table announces, so anyone's pile can
+  // be flipped through from the discard sheet later — reload included.
+  if (state && typeof p.name === "string" && p.name) {
+    state.tableLog = (state.tableLog || []).concat([{ n: p.name, c: c.id, t: target }]);
+    save(state);
+  }
   // A whole-table card hits everyone, so everyone gets the hot alert.
   var all = target === ALL_TARGET;
   var onYou = all || (!!target && target.trim().toLowerCase() === myRoundName());
@@ -2148,6 +2154,7 @@ var viewWords = null; // replaces the face's words — a wheel alert opens the w
 // no walking into your own hand — you may well hold the same card yourself.
 var viewOnly = false;
 var pileOpen = false; // the discard pile sheet, opened from its counter
+var pileAt = null; // whose pile the sheet is showing; null = your own
 var confirming = false;
 var parsUI = { open: false, name: "" };
 var confirmDeleteCourse = null; // course name awaiting its delete confirmation
@@ -2611,27 +2618,68 @@ function renderResults() {
 /* The discard pile, opened from its counter: everything that has left your hand this
    round, newest first, saying which you played and which you dumped. */
 function renderPile() {
-  var s = state, log = (s.playLog || []).slice().reverse();
-  var playedCount = (s.playLog || []).filter(function (e) { return e.played; }).length;
+  var s = state;
+  var at = pileAt == null ? s.meIndex : pileAt;
+  var mine = at === s.meIndex;
   var head = '<div class="modal nmodal">' +
     '<div class="nheader"><button class="back" data-act="closePile">&lsaquo;&nbsp; Back</button>' +
     "<h1>DISCARD</h1></div>";
 
-  if (!log.length) {
-    return head + '<p class="nbody">Nothing yet. Cards land here once you play or discard them.</p>' +
-      '<div style="height:20px"></div>' +
+  // The same control as the hole header: arrows walk the table, wrapping, so
+  // anyone's pile is two taps away. Only worth showing in a linked round —
+  // offline, the other players' cards live in their pockets, not the app.
+  var manyPiles = (live || (s.tableLog || []).length > 0) && s.players.length > 1;
+  var picker = manyPiles
+    ? '<div class="row" style="margin:4px 0 14px">' +
+      '<button class="step" data-act="pilePrev">&lsaquo;</button>' +
+      '<div class="hole-title"><strong>' + esc(s.players[at]) + (mine ? " &middot; YOU" : "") + '</strong></div>' +
+      '<button class="step" data-act="pileNext">&rsaquo;</button></div>'
+    : "";
+
+  if (mine) {
+    var log = (s.playLog || []).slice().reverse();
+    var playedCount = (s.playLog || []).filter(function (e) { return e.played; }).length;
+    if (!log.length) {
+      return head + picker +
+        '<p class="nbody">Nothing yet. Cards land here once you play or discard them.</p>' +
+        '<div style="height:20px"></div>' +
+        '<button class="big quiet" data-act="closePile">Close</button></div>';
+    }
+    var rows = log.map(function (e) {
+      return '<div class="pilerow' + (e.played ? " played" : "") + '">' +
+        (e.played ? "PLAYED" : "DISCARDED") + "</div>" + cardHtml(BY_ID[e.id], false);
+    }).join("");
+    return head + picker +
+      '<p class="nbody">' + log.length + ' in the pile &middot; ' + playedCount + ' played, ' +
+      (log.length - playedCount) + ' discarded.</p>' +
+      '<div style="height:14px"></div>' + rows +
+      '<div style="height:16px"></div>' +
       '<button class="big quiet" data-act="closePile">Close</button></div>';
   }
 
-  var rows = log.map(function (e) {
-    return '<div class="pilerow' + (e.played ? " played" : "") + '">' +
-      (e.played ? "PLAYED" : "DISCARDED") + "</div>" + cardHtml(BY_ID[e.id], false);
+  // Somebody else's pile: every play their phone announced this round. Their
+  // quiet discards never travel — only hand counts do — so this is the part
+  // of their pile the table is entitled to see anyway.
+  var name = s.players[at].trim().toLowerCase();
+  var seen = (s.tableLog || []).filter(function (e) {
+    return BY_ID[e.c] && e.n.trim().toLowerCase() === name;
+  }).slice().reverse();
+  if (!seen.length) {
+    return head + picker +
+      '<p class="nbody">Nothing played by ' + esc(s.players[at]) +
+      ' yet. Only plays travel between phones &mdash; quiet discards stay theirs.</p>' +
+      '<div style="height:20px"></div>' +
+      '<button class="big quiet" data-act="closePile">Close</button></div>';
+  }
+  var theirRows = seen.map(function (e) {
+    return '<div class="pilerow played">PLAYED' +
+      (e.t ? " &middot; on " + (e.t === ALL_TARGET ? "EVERYONE" : esc(e.t)) : "") +
+      "</div>" + cardHtml(BY_ID[e.c], false);
   }).join("");
-
-  return head +
-    '<p class="nbody">' + log.length + ' in the pile &middot; ' + playedCount + ' played, ' +
-    (log.length - playedCount) + ' discarded.</p>' +
-    '<div style="height:14px"></div>' + rows +
+  return head + picker +
+    '<p class="nbody">' + plural(seen.length, "play") + ' seen from ' + esc(s.players[at]) +
+    ' this round. Their quiet discards stay theirs.</p>' +
+    '<div style="height:14px"></div>' + theirRows +
     '<div style="height:16px"></div>' +
     '<button class="big quiet" data-act="closePile">Close</button></div>';
 }
@@ -3954,8 +4002,14 @@ app.addEventListener("click", function (e) {
     case "mode": setup.mode = el.getAttribute("data-t"); render(); break;
     case "rulesMode": rulesMode = el.getAttribute("data-t"); render(); break;
 
-    case "openPile": pileOpen = true; render(); break;
+    case "openPile": pileOpen = true; pileAt = s ? s.meIndex : null; render(); break;
     case "closePile": pileOpen = false; render(); break;
+    case "pilePrev":
+      pileAt = ((pileAt == null ? s.meIndex : pileAt) - 1 + s.players.length) % s.players.length;
+      render(); break;
+    case "pileNext":
+      pileAt = ((pileAt == null ? s.meIndex : pileAt) + 1) % s.players.length;
+      render(); break;
 
     case "tab":
       tab = el.getAttribute("data-t");
