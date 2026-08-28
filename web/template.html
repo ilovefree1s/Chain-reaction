@@ -1547,6 +1547,12 @@ function liveWheel(p) {
     dual: !!p.dual, good: !!p.good, free: !!p.free,
     you: true // a table moment — everyone feels it
   });
+  // A heard result retires the card here too, so this phone's next spin
+  // offers the same shrunken wheel as everyone else's.
+  if (state && (state.wheelUsed || []).indexOf(c.id) === -1) {
+    state.wheelUsed = (state.wheelUsed || []).concat([c.id]);
+    save(state);
+  }
   // LONE WOLF! howls on every phone; everything else gets the usual rattle.
   if (c.id === 60) playWolfSound(sfxVolume()); else playMenuSound(sfxVolume());
   try { if (navigator.vibrate) navigator.vibrate([120, 60, 120, 60, 320]); } catch (e) { /* banner only */ }
@@ -2780,8 +2786,18 @@ function openWheelNow(free) {
   // The table hears the wheel the second it's bought — the cards are already
   // discarded (or GAMBLE WHEEL!! already played), so this moment is committed.
   if (live) liveCast("wheel", { name: state.players[state.meIndex], spinning: true });
-  // The whole pool rides the wheel — what you see is exactly what can hit.
-  var ring = shuffled(WHEEL_POOL);
+  // What rides the wheel is the pool MINUS everything that already landed
+  // this round — a settled result retires its card on every phone, so the
+  // wheel shrinks identically for the whole table as the round goes on.
+  var pool = WHEEL_POOL.filter(function (c) {
+    return !(state && state.wheelUsed && state.wheelUsed.indexOf(c.id) !== -1);
+  });
+  // A round long enough to land everything starts the wheel over, full.
+  if (!pool.length) {
+    if (state) { state.wheelUsed = []; save(state); }
+    pool = WHEEL_POOL;
+  }
+  var ring = shuffled(pool);
   var ringIdx = Math.floor(Math.random() * ring.length);
   var winner = ring[ringIdx];
   var nameLabels = [];
@@ -3652,6 +3668,12 @@ function spinWheel(kind) {
       : "done";
     // The wolf announces itself the moment the effect wheel lands on it.
     if (kind === "card" && wheel.card.id === 60) playWolfSound(sfxVolume());
+    // Settled for good: this card is off the wheel for the rest of the round.
+    if (wheel.stage === "done" && state && wheel.card &&
+        (state.wheelUsed || []).indexOf(wheel.card.id) === -1) {
+      state.wheelUsed = (state.wheelUsed || []).concat([wheel.card.id]);
+      save(state);
+    }
     // Settled for good: tell the table what the wheel decided.
     if (wheel.stage === "done" && live) {
       liveCast("wheel", {
