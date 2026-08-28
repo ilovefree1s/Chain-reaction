@@ -151,6 +151,7 @@ const grassImage = copyArt("moregrass.png", "grass.png");
 const iconImage = copyArt("chainreactionicon.png", "icon.png");
 const menuSound = copyAudio("chains.mp3");
 const wheelSound = copyAudio("gamble.mp3");
+const wolfSound = copyAudio("lonewolf.mp3");
 // The soundtrack, played back to back on the menu-side screens only.
 const musicTracks = [
   copyAudio("dischoarderblues.mp3"),
@@ -221,6 +222,7 @@ const template = fs.readFileSync(path.join(__dirname, "template.html"), "utf8");
   "__GRASS_IMAGE__",
   "__MENU_SOUND__",
   "__WHEEL_SOUND__",
+  "__WOLF_SOUND__",
 ].forEach((token) => {
   if (!template.includes(token)) {
     console.error(`template.html is missing the ${token} placeholder`);
@@ -239,6 +241,7 @@ const html = template
   .replace("__GRASS_IMAGE__", grassImage)
   .replace("__MENU_SOUND__", menuSound)
   .replace("__WHEEL_SOUND__", wheelSound)
+  .replace("__WOLF_SOUND__", wolfSound)
   .replace("/*__MUSIC_TRACKS__*/", JSON.stringify(musicTracks))
   .replace("__APP_VERSION__", versionLabel)
   ;

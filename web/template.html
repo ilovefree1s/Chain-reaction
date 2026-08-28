@@ -687,6 +687,19 @@ function playMenuSound(volume) {
   } catch (e) { /* nothing to do */ }
 }
 
+/* The wolf's own noise: fires on every phone the moment LONE WOLF! lands. */
+var WOLF_SOUND = "__WOLF_SOUND__";
+var wolfAudio = WOLF_SOUND ? new Audio(WOLF_SOUND) : null;
+function playWolfSound(volume) {
+  if (!wolfAudio || !(volume > 0)) return;
+  try {
+    var a = wolfAudio.cloneNode();
+    a.volume = Math.min(1, Math.max(0, volume));
+    var p = a.play();
+    if (p && p.catch) p.catch(function () { /* nothing to do */ });
+  } catch (e) { /* nothing to do */ }
+}
+
 /*
  * The wheel's own noise, and the one sound in here that has to follow something
  * on screen — so it is generated FROM the thing on screen.
@@ -1534,7 +1547,8 @@ function liveWheel(p) {
     dual: !!p.dual, good: !!p.good, free: !!p.free,
     you: true // a table moment — everyone feels it
   });
-  playMenuSound(sfxVolume());
+  // LONE WOLF! howls on every phone; everything else gets the usual rattle.
+  if (c.id === 60) playWolfSound(sfxVolume()); else playMenuSound(sfxVolume());
   try { if (navigator.vibrate) navigator.vibrate([120, 60, 120, 60, 320]); } catch (e) { /* banner only */ }
   liveRefresh();
 }
@@ -3636,6 +3650,8 @@ function spinWheel(kind) {
     wheel.stage = kind === "name" ? "nameDone"
       : kind === "card" && (wheel.isDual || needsMate(wheel.card.id)) ? "cardDone"
       : "done";
+    // The wolf announces itself the moment the effect wheel lands on it.
+    if (kind === "card" && wheel.card.id === 60) playWolfSound(sfxVolume());
     // Settled for good: tell the table what the wheel decided.
     if (wheel.stage === "done" && live) {
       liveCast("wheel", {
