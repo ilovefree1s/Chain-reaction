@@ -1172,7 +1172,10 @@ function liveHello() {
     // started separates browsing from committed: joiners watch the picks land
     // but can't start until the host's round actually exists.
     cfg: live.hosting ? (state
-      ? { holes: state.holeCount, pars: state.pars, courseName: state.courseName, mode: state.mode, started: true }
+      ? { holes: state.holeCount, pars: state.pars, courseName: state.courseName, mode: state.mode,
+          // The tee order the host's Start dealt — joiners build their round
+          // in exactly this order, so every card reads the same.
+          order: state.players, started: true }
       : { holes: setup.holes, pars: setupPars(), courseName: setup.courseName, mode: setup.mode, started: false })
       : null
   });
@@ -3904,12 +3907,43 @@ app.addEventListener("click", function (e) {
         charPick = null;
       }
       render(); break;
-    case "start":
-      commit(newRound(
-        setup.names.slice(0, activeSeats()).map(function (x) { return x.trim(); }),
-        setup.meIndex, setup.holes, setupPars(), setup.courseName,
-        setup.chars.slice(0, activeSeats()), setup.mode,
-      ));
+    case "start": {
+      var rNames = setup.names.slice(0, activeSeats()).map(function (x) { return x.trim(); });
+      var rChars = setup.chars.slice(0, activeSeats());
+      var rMe = setup.meIndex;
+      if (live && live.hosting) {
+        // The host's Start deals the tee order: one shuffle, and the hello
+        // that announces the round carries it, so every phone builds the same
+        // card top to bottom — no more "I'm always row 1 on my own phone".
+        var ord = shuffled(rNames.map(function (_, i) { return i; }));
+        rNames = ord.map(function (i) { return rNames[i]; });
+        rChars = ord.map(function (i) { return rChars[i]; });
+        rMe = ord.indexOf(setup.meIndex);
+      } else if (live && !live.hosting) {
+        // A joiner adopts the host's dealt order wholesale, finding their own
+        // seat by name. Falls back to the local roster if the order doesn't
+        // cover this phone (mid-swap weirdness) rather than mis-seating.
+        var h = liveHostTable();
+        var order = h && h.cfg && h.cfg.order;
+        if (order && order.length) {
+          var adoptedN = [], adoptedC = [], meAt = -1;
+          var myName = (settings.myName || "").trim().toLowerCase();
+          order.forEach(function (n) {
+            var at = -1;
+            for (var i = 0; i < rNames.length; i++) {
+              if (rNames[i].toLowerCase() === n.trim().toLowerCase()) { at = i; break; }
+            }
+            adoptedN.push(at !== -1 ? rNames[at] : n.trim());
+            adoptedC.push(at !== -1 ? rChars[at] : null);
+          });
+          for (var j = 0; j < adoptedN.length; j++) {
+            if (adoptedN[j].trim().toLowerCase() === myName) meAt = j;
+          }
+          if (meAt !== -1) { rNames = adoptedN; rChars = adoptedC; rMe = meAt; }
+        }
+      }
+      commit(newRound(rNames, rMe, setup.holes, setupPars(), setup.courseName, rChars, setup.mode));
+    }
       // The room rides with the round: a reload rejoins it without asking.
       if (live) { state.liveCode = live.code; save(state); }
       roundCourseName = state.courseName || "";

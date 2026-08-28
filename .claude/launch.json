@@ -2,9 +2,9 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "web",
+      "name": "chainreaction",
       "runtimeExecutable": "node",
-      "runtimeArgs": ["web/serve.js"],
+      "runtimeArgs": ["tools/dev-server.js"],
       "port": 5173
     }
   ]
