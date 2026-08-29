@@ -337,6 +337,11 @@
     content: ""; position: absolute; inset: 0; pointer-events: none;
     background: linear-gradient(to bottom, transparent 55%, rgba(0, 0, 0, 0.28) 100%);
   }
+  /* FOR THE BOYS, tucked under the title art. Sized to the screen, above the
+     crew photo, and never in the way of a tap. */
+  .menu-ftb { position: absolute; top: 29%; left: 50%; transform: translateX(-50%);
+              width: 62%; max-width: 340px; z-index: 1; pointer-events: none;
+              filter: drop-shadow(0 3px 10px rgba(0, 0, 0, 0.65)); }
   /* The button sheet is transparent, so it just sits on the photo. */
   .menu-buttons {
     position: absolute; left: 0; right: 0; z-index: 1;
@@ -715,6 +720,7 @@ var GRASS_IMAGE = "__GRASS_IMAGE__";
 var NAV_RULES = "__NAV_RULES__";
 var NAV_HAND = "__NAV_HAND__";
 var NAV_SCORE = "__NAV_SCORE__";
+var FTB_IMAGE = "__FTB_IMAGE__";
 
 /*
  * The app's only noise: a chain rattle on the menu buttons. Copied out of the Android
@@ -2447,6 +2453,8 @@ function renderMenu() {
 
   return '<div class="menu">' + hint +
     (MENU_IMAGE ? '<div class="menu-art"><img src="' + MENU_IMAGE + '" alt=""></div>' : "") +
+    // FOR THE BOYS, riding right under the CHAIN REACTION title art.
+    (FTB_IMAGE ? '<img class="menu-ftb" src="' + FTB_IMAGE + '" alt="FOR THE BOYS">' : "") +
     (GRASS_IMAGE
       ? '<div class="menu-grass" style="background-image:url(' + GRASS_IMAGE + ')"></div>'
       : "") +
