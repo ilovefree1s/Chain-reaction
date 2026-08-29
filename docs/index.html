@@ -478,6 +478,13 @@
     color: #F7941E;
     padding: 10px 0 calc(10px + env(safe-area-inset-bottom));
   }
+  /* The update check: a tap re-pulls the app from the server. Padded well past
+     the glyph so a thumb can actually hit it. */
+  .verbtn {
+    background: none; border: none; color: #F7941E; cursor: pointer;
+    font: inherit; font-size: 18px; font-weight: 900;
+    margin-left: 6px; padding: 4px 10px; vertical-align: -1px;
+  }
   /* The button art is anchored to the bottom of the menu, so the version gets
      its own strip below it and the art lifts by exactly that much. */
   /* Straight under the Settings button, inside the sheet's own empty bottom
@@ -622,9 +629,12 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.0 · 28 Aug 20:38";
+var APP_VERSION = "v1.0 · 28 Aug 20:40";
 function versionLine() {
-  return '<div class="ver">' + esc(APP_VERSION) + "</div>";
+  // The ↻ reloads the page in place; navigations always fetch fresh from the
+  // network, so this IS "check for updates" without reopening the app.
+  return '<div class="ver">' + esc(APP_VERSION) +
+    '<button class="verbtn" data-act="refreshApp" aria-label="Check for updates">&#8635;</button></div>';
 }
 
 /* Artwork, inlined as data URIs by web/build.js so this stays one file. */
@@ -4038,6 +4048,7 @@ app.addEventListener("click", function (e) {
         screen = "setup";
       }
       render(); break;
+    case "refreshApp": window.location.reload(); break;
     case "goCards": screen = "cards"; render(); break;
     case "goRules": screen = "rules"; rulesMode = state ? state.mode : "stroke"; render(); break;
     case "goSettings":
