@@ -322,7 +322,9 @@
   /* The button sheet is transparent, so it just sits on the photo. */
   .menu-buttons {
     position: absolute; left: 0; right: 0; z-index: 1;
-    bottom: env(safe-area-inset-bottom); height: 40%;
+    /* Lifted a touch off the floor, so the stack breathes above the version
+       line on tall phones. */
+    bottom: calc(env(safe-area-inset-bottom) + 22px); height: 40%;
     display: flex; justify-content: center;
   }
   .menu-buttons .sheet { position: relative; height: 100%; aspect-ratio: 1024 / 1536; }
