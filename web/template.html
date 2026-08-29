@@ -259,6 +259,11 @@
                 text-transform: uppercase; }
   .alert .what { font-size: 20px; font-weight: 900; color: #F4F8FF; }
   .alert .onwho { font-size: 14px; font-weight: 900; color: #A9B8D4; }
+  .alert { position: relative; }
+  /* The ✕ on a wheel-result banner: just puts the banner away. The rest of
+     the banner keeps doing what it does (opens the wheel wording). */
+  .alertx { position: absolute; top: 4px; right: 4px; background: none; color: #A9B8D4;
+            font-size: 18px; font-weight: 900; padding: 6px 10px; line-height: 1; }
   /* A whole sentence of trash talk, not a label — set like one. */
   .alert .taunt { font-weight: 600; line-height: 1.35; margin-top: 2px; }
   /* Aimed at you: the panel goes hot and breathes until you deal with it. */
@@ -1726,6 +1731,7 @@ function renderAlerts() {
       // definition the spinner is reading, not the card's hand text.
       var sub = wheelWords(wc, { free: a.free, name: a.exempt, mate: a.mate, spinner: a.who });
       return '<div class="alert you" data-act="alertTap" data-eid="' + esc(a.eid) + '">' +
+        '<button class="alertx" data-act="alertClose" data-eid="' + esc(a.eid) + '">&times;</button>' +
         '<div class="who">' + esc(a.who || "Someone") + ' spun the wheel</div>' +
         '<div class="what">' + esc(wc.name) + fate + '</div>' +
         (sub ? '<div class="onwho">' + esc(sub) + '</div>' : "") +
@@ -4433,6 +4439,10 @@ app.addEventListener("click", function (e) {
         resetLobbySeats();
         render();
       }
+      break;
+    // The ✕ just puts the banner away — no face, no fuss.
+    case "alertClose":
+      dropAlert(el.getAttribute("data-eid"));
       break;
     // Tapping a banner answers "what does that card do?" — the face opens,
     // and the banner is done arguing for attention.
