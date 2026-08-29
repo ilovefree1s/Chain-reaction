@@ -544,7 +544,7 @@
   .wheelbox svg { display: block; width: 100%; }
   /* The 4 THE BOYS badge on the hub. Overlaid on the box rather than drawn in
      the svg so it holds still while the wheel spins under it. */
-  .wheelhub { position: absolute; top: 50%; left: 50%; width: 16%;
+  .wheelhub { position: absolute; top: 50%; left: 50%; width: 28%;
               transform: translate(-50%, -50%); pointer-events: none; }
   /* 5.2s: long enough for the GAMBLE sound to play out under it. SPIN_MS and the
      settle fallback in spinWheel() are the same number — change all three. */
@@ -638,7 +638,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.0 · 28 Aug 21:11";
+var APP_VERSION = "v1.0 · 28 Aug 21:15";
 function versionLine() {
   // The ↻ reloads the page in place; navigations always fetch fresh from the
   // network, so this IS "check for updates" without reopening the app.
@@ -3491,7 +3491,9 @@ function wheelSvg(id, labels, rotation, winner, fontSize, duo) {
     '<stop offset="0" stop-color="#1E6FFF"/><stop offset="0.5" stop-color="#3FA9FF"/>' +
     '<stop offset="1" stop-color="#FF8A1E"/></linearGradient></defs>' + parts +
     '<circle cx="160" cy="160" r="' + R + '" fill="none" stroke="url(#' + id + '-rim)" stroke-width="4"/>' +
-    '<circle cx="160" cy="160" r="24" fill="#061022" stroke="#4DC3FF" stroke-width="2"/>' +
+    // A hub disc drawn over the wedges: it swallows the segment lines where
+    // they converge, leaving a clean stage for the badge.
+    '<circle cx="160" cy="160" r="42" fill="#061022" stroke="#4DC3FF" stroke-width="2"/>' +
     '</svg>' +
     (HUB_LOGO ? '<img class="wheelhub" src="' + HUB_LOGO + '" alt="">' : '');
 }
