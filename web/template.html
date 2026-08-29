@@ -542,6 +542,10 @@
   /* ---- the double wheel itself ---- */
   .wheelbox { position: relative; max-width: 340px; margin: 0 auto 12px; }
   .wheelbox svg { display: block; width: 100%; }
+  /* The 4 THE BOYS badge on the hub. Overlaid on the box rather than drawn in
+     the svg so it holds still while the wheel spins under it. */
+  .wheelhub { position: absolute; top: 50%; left: 50%; width: 16%;
+              transform: translate(-50%, -50%); pointer-events: none; }
   /* 5.2s: long enough for the GAMBLE sound to play out under it. SPIN_MS and the
      settle fallback in spinWheel() are the same number — change all three. */
   .wheelbox svg.go { transition: transform 5.2s cubic-bezier(0.12, 0.8, 0.08, 1); }
@@ -727,6 +731,7 @@ function playWolfSound(volume) {
  * Nothing is ever played at reduced speed, so the pitch never sags into mud.
  */
 var WHEEL_SOUND = "__WHEEL_SOUND__";
+var HUB_LOGO = "__HUB_LOGO__";
 var wheelCtx = null, wheelClick = null;
 var wheelNode = null, wheelGain = null;
 
@@ -3483,8 +3488,9 @@ function wheelSvg(id, labels, rotation, winner, fontSize, duo) {
     '<stop offset="0" stop-color="#1E6FFF"/><stop offset="0.5" stop-color="#3FA9FF"/>' +
     '<stop offset="1" stop-color="#FF8A1E"/></linearGradient></defs>' + parts +
     '<circle cx="160" cy="160" r="' + R + '" fill="none" stroke="url(#' + id + '-rim)" stroke-width="4"/>' +
-    '<circle cx="160" cy="160" r="15" fill="#061022" stroke="#4DC3FF" stroke-width="2"/>' +
-    '</svg>';
+    '<circle cx="160" cy="160" r="24" fill="#061022" stroke="#4DC3FF" stroke-width="2"/>' +
+    '</svg>' +
+    (HUB_LOGO ? '<img class="wheelhub" src="' + HUB_LOGO + '" alt="">' : '');
 }
 
 /* ---------- course & pars ---------- */

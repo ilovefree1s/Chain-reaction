@@ -149,6 +149,8 @@ const menuImage = copyArt("chainreactionmain.png", "menu.png");
 const buttonsImage = copyArt("mainbuttons.png", "buttons.png");
 const grassImage = copyArt("moregrass.png", "grass.png");
 const iconImage = copyArt("chainreactionicon.png", "icon.png");
+// The 4 THE BOYS badge riding the hub of every wheel.
+const hubLogo = copyArt("blue4theboys.png", "hublogo.png");
 const menuSound = copyAudio("chains.mp3");
 const wheelSound = copyAudio("gamble.mp3");
 const wolfSound = copyAudio("lonewolf.mp3");
@@ -220,6 +222,7 @@ const template = fs.readFileSync(path.join(__dirname, "template.html"), "utf8");
   "__MENU_IMAGE__",
   "__BUTTONS_IMAGE__",
   "__GRASS_IMAGE__",
+  "__HUB_LOGO__",
   "__MENU_SOUND__",
   "__WHEEL_SOUND__",
   "__WOLF_SOUND__",
@@ -239,6 +242,7 @@ const html = template
   .replace("__MENU_IMAGE__", menuImage)
   .replace("__BUTTONS_IMAGE__", buttonsImage)
   .replace("__GRASS_IMAGE__", grassImage)
+  .replace("__HUB_LOGO__", hubLogo)
   .replace("__MENU_SOUND__", menuSound)
   .replace("__WHEEL_SOUND__", wheelSound)
   .replace("__WOLF_SOUND__", wolfSound)
