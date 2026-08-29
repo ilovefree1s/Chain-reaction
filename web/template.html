@@ -2302,6 +2302,13 @@ function render() {
   // few seconds); only an actual hole change recenters it.
   var strip0 = document.getElementById("holestrip");
   var stripScroll = strip0 ? strip0.scrollLeft : null;
+  // Same for an open sheet: scrolling the course list mustn't snap to the top
+  // every time a hello repaints. The signature keeps a freshly opened or
+  // swapped sheet from inheriting the old one's scroll.
+  var sheet0 = document.querySelector(".modal");
+  var sheetScroll = sheet0 ? sheet0.scrollTop : null;
+  var sheetSig = sheet0 ? sheet0.className + "|" +
+    (sheet0.firstElementChild ? sheet0.firstElementChild.className : "") : null;
   if (screen === "menu") {
     html = renderMenu();
   } else if (screen === "setup") {
@@ -2329,6 +2336,13 @@ function render() {
   html += renderAlerts(); // rides over everything, on every screen
   app.innerHTML = html;
   fitMetaLines();
+  if (sheetScroll != null && sheetScroll > 0) {
+    var sheet1 = document.querySelector(".modal");
+    if (sheet1 && sheetSig === sheet1.className + "|" +
+        (sheet1.firstElementChild ? sheet1.firstElementChild.className : "")) {
+      sheet1.scrollTop = sheetScroll;
+    }
+  }
   var strip = document.getElementById("holestrip");
   if (strip) {
     var onChip = strip.querySelector(".holechip.on");
