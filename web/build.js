@@ -153,6 +153,7 @@ const iconImage = copyArt("chainreactionicon.png", "icon.png");
 const hubLogo = copyArt("blue4theboys.png", "hublogo.png");
 // Tab-bar plates, replacing the dot-and-text buttons one at a time as they land.
 const navRules = copyArt("navrules.png", "navrules.png");
+const navHand = copyArt("navhand.png", "navhand.png");
 const menuSound = copyAudio("chains.mp3");
 const wheelSound = copyAudio("gamble.mp3");
 const wolfSound = copyAudio("lonewolf.mp3");
@@ -226,6 +227,7 @@ const template = fs.readFileSync(path.join(__dirname, "template.html"), "utf8");
   "__GRASS_IMAGE__",
   "__HUB_LOGO__",
   "__NAV_RULES__",
+  "__NAV_HAND__",
   "__MENU_SOUND__",
   "__WHEEL_SOUND__",
   "__WOLF_SOUND__",
@@ -247,6 +249,7 @@ const html = template
   .replace("__GRASS_IMAGE__", grassImage)
   .replace("__HUB_LOGO__", hubLogo)
   .replace("__NAV_RULES__", navRules)
+  .replace("__NAV_HAND__", navHand)
   .replace("__MENU_SOUND__", menuSound)
   .replace("__WHEEL_SOUND__", wheelSound)
   .replace("__WOLF_SOUND__", wolfSound)

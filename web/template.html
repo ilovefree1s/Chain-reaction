@@ -567,6 +567,13 @@
                           filter: brightness(0.45) saturate(0.6); }
   nav button.imgtab.on img { filter: none; }
   nav button.imgtab .badge { top: -4px; left: auto; right: -2px; }
+  /* The live hand count, centred above the HAND plate. */
+  .imgct { position: absolute; top: -9px; left: 50%; transform: translateX(-50%);
+           font-size: 10px; font-weight: 900;
+           color: #FFE3D6; line-height: 1; padding: 2px 5px; border-radius: 6px;
+           background: rgba(7, 11, 20, 0.88); border: 1px solid rgba(255, 70, 35, 0.65);
+           text-shadow: 0 0 5px rgba(255, 60, 30, 0.9); opacity: 0.5; }
+  nav button.imgtab.on .imgct { opacity: 1; }
 
   .modal {
     position: fixed; inset: 0; background: var(--pine); z-index: 20; overflow-y: auto;
@@ -697,6 +704,7 @@ var MENU_IMAGE = "__MENU_IMAGE__";
 var BUTTONS_IMAGE = "__BUTTONS_IMAGE__";
 var GRASS_IMAGE = "__GRASS_IMAGE__";
 var NAV_RULES = "__NAV_RULES__";
+var NAV_HAND = "__NAV_HAND__";
 
 /*
  * The app's only noise: a chain rattle on the menu buttons. Copied out of the Android
@@ -3266,13 +3274,16 @@ function renderNav() {
   var tabs = [["score", "Score"], ["hand", "Hand"], ["rules", "Rules"]];
   // The painted plates land one at a time; a tab whose art is in swaps the
   // dot-and-text button for its plate.
-  var art = { rules: NAV_RULES };
+  var art = { rules: NAV_RULES, hand: NAV_HAND };
   return "<nav>" + tabs.map(function (t) {
     var badge = t[0] === "hand" && state.owed > 0
       ? '<span class="badge">' + state.owed + "</span>" : "";
+    // The live hand count rides the HAND plate's corner.
+    var count = t[0] === "hand" && art.hand
+      ? '<span class="imgct">' + state.hand.length + "/" + DATA.handCap + '</span>' : "";
     if (art[t[0]]) {
       return '<button class="imgtab' + (tab === t[0] ? " on" : "") + '" data-act="tab" data-t="' + t[0] + '">' +
-        '<span class="imgwrap"><img src="' + art[t[0]] + '" alt="' + t[1] + '">' + badge + '</span></button>';
+        '<span class="imgwrap"><img src="' + art[t[0]] + '" alt="' + t[1] + '">' + count + badge + '</span></button>';
     }
     return '<button class="' + (tab === t[0] ? "on" : "") + '" data-act="tab" data-t="' + t[0] + '">' +
       '<span class="dot ' + t[0] + '">' + badge + '</span>' + t[1] + '</button>';
