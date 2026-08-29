@@ -160,14 +160,18 @@
   .rel .lead { margin-right: 7px; }
 
   .counters { display: flex; gap: 8px; margin-bottom: 12px; }
-  .counter { flex: 1; border: 2px solid transparent; border-radius: 12px; padding: 6px 4px;
-             text-align: center;
+  /* A pinned height, not padding: inherited line boxes were quietly inflating
+     the tiles to nearly double what the glance they serve needs. */
+  .counter { flex: 1; height: 68px; box-sizing: border-box;
+             display: flex; flex-direction: column; justify-content: center;
+             border: 2px solid transparent; border-radius: 12px; padding: 4px;
+             text-align: center; line-height: 1.15;
              background: linear-gradient(var(--panel), var(--panel)) padding-box,
                          linear-gradient(100deg, #1E6FFF, #3FA9FF 45%, #FF8A1E) border-box;
              box-shadow: 0 0 10px rgba(30, 111, 255, 0.2); }
-  .counter b { display: block; font-size: 20px; font-weight: 900; }
+  .counter b { display: block; font-size: 20px; font-weight: 900; line-height: 1.1; }
   .counter span { font-size: 11px; font-weight: 900; letter-spacing: 1px; color: var(--sage);
-                  text-transform: uppercase; }
+                  text-transform: uppercase; line-height: 1.15; }
 
   .card { display: flex; border: 2px solid transparent; border-radius: 18px; overflow: hidden;
           margin-bottom: 12px;
@@ -692,7 +696,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.1 · 29 Aug 16:26";
+var APP_VERSION = "v1.1 · 29 Aug 16:32";
 function versionLine() {
   // The ↻ reloads the page in place; navigations always fetch fresh from the
   // network, so this IS "check for updates" without reopening the app.
