@@ -577,11 +577,11 @@
   nav button.imgtab .badge { top: -4px; left: auto; right: -2px; }
   /* The live hand count, centred on the HAND plate's top edge — fully inside
      the bar, so it never pokes up into the hole strip above. */
+  /* Bare glowing digits, no pill — reads bigger in the same space. */
   .imgct { position: absolute; top: 1px; left: 50%; transform: translateX(-50%);
-           font-size: 12px; font-weight: 900;
-           color: #FFE3D6; line-height: 1; padding: 2px 6px; border-radius: 7px;
-           background: rgba(7, 11, 20, 0.88); border: 1px solid rgba(255, 70, 35, 0.65);
-           text-shadow: 0 0 5px rgba(255, 60, 30, 0.9); opacity: 0.5; }
+           font-size: 14px; font-weight: 900;
+           color: #FFE3D6; line-height: 1;
+           text-shadow: 0 0 6px rgba(255, 60, 30, 0.95), 0 0 2px #000; opacity: 0.5; }
   nav button.imgtab.on .imgct { opacity: 1; }
 
   .modal {
@@ -700,7 +700,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.1 · 29 Aug 16:40";
+var APP_VERSION = "v1.1 · 29 Aug 16:41";
 function versionLine() {
   // The ↻ reloads the page in place; navigations always fetch fresh from the
   // network, so this IS "check for updates" without reopening the app.
