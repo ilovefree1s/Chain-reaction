@@ -35,7 +35,12 @@
     font-size: 17px;
     line-height: 1.45;
     overscroll-behavior-y: none;
+    /* A game UI, not a document: long-pressing a card must never turn into
+       Android text selection and a search bubble instead of a tap. */
+    -webkit-user-select: none;
+    user-select: none;
   }
+  input, textarea { -webkit-user-select: text; user-select: text; }
   body {
     padding: env(safe-area-inset-top) env(safe-area-inset-right) 0 env(safe-area-inset-left);
   }
@@ -2787,6 +2792,12 @@ function renderWheelCost() {
     "<h1>SPIN COSTS " + DATA.wheelCost + "</h1></div>" +
     '<p class="nbody" style="margin:0 0 14px">Pick ' + DATA.wheelCost +
     " cards to discard, then spin. Playing GAMBLE WHEEL!! instead gives you a free spin.</p>" +
+    // The refusal explains itself: a held card silently ignoring taps just
+    // reads as a broken screen.
+    (Object.keys(held).length
+      ? '<p class="hint" style="margin:0 0 14px">HELD cards can\'t buy a spin &mdash; ' +
+        "they free up once the whole table locks the hole in agreement.</p>"
+      : "") +
     '<div class="handgrid">' + tiles + "</div>" +
     '<p class="hint"' + (ready ? ' style="color:#FF8A1E"' : "") + ">" +
     wheelPay.length + " of " + DATA.wheelCost + " chosen</p>" +
