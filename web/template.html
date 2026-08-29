@@ -705,6 +705,7 @@ var BUTTONS_IMAGE = "__BUTTONS_IMAGE__";
 var GRASS_IMAGE = "__GRASS_IMAGE__";
 var NAV_RULES = "__NAV_RULES__";
 var NAV_HAND = "__NAV_HAND__";
+var NAV_SCORE = "__NAV_SCORE__";
 
 /*
  * The app's only noise: a chain rattle on the menu buttons. Copied out of the Android
@@ -3274,7 +3275,7 @@ function renderNav() {
   var tabs = [["score", "Score"], ["hand", "Hand"], ["rules", "Rules"]];
   // The painted plates land one at a time; a tab whose art is in swaps the
   // dot-and-text button for its plate.
-  var art = { rules: NAV_RULES, hand: NAV_HAND };
+  var art = { score: NAV_SCORE, rules: NAV_RULES, hand: NAV_HAND };
   return "<nav>" + tabs.map(function (t) {
     var badge = t[0] === "hand" && state.owed > 0
       ? '<span class="badge">' + state.owed + "</span>" : "";

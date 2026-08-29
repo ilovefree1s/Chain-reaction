@@ -691,7 +691,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.1 · 29 Aug 15:48";
+var APP_VERSION = "v1.1 · 29 Aug 15:49";
 function versionLine() {
   // The ↻ reloads the page in place; navigations always fetch fresh from the
   // network, so this IS "check for updates" without reopening the app.
@@ -705,6 +705,7 @@ var BUTTONS_IMAGE = "assets/buttons.png";
 var GRASS_IMAGE = "assets/grass.png";
 var NAV_RULES = "assets/navrules.png";
 var NAV_HAND = "assets/navhand.png";
+var NAV_SCORE = "assets/navscore.png";
 
 /*
  * The app's only noise: a chain rattle on the menu buttons. Copied out of the Android
@@ -3274,7 +3275,7 @@ function renderNav() {
   var tabs = [["score", "Score"], ["hand", "Hand"], ["rules", "Rules"]];
   // The painted plates land one at a time; a tab whose art is in swaps the
   // dot-and-text button for its plate.
-  var art = { rules: NAV_RULES, hand: NAV_HAND };
+  var art = { score: NAV_SCORE, rules: NAV_RULES, hand: NAV_HAND };
   return "<nav>" + tabs.map(function (t) {
     var badge = t[0] === "hand" && state.owed > 0
       ? '<span class="badge">' + state.owed + "</span>" : "";
