@@ -638,7 +638,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.0 · 28 Aug 21:05";
+var APP_VERSION = "v1.0 · 28 Aug 21:10";
 function versionLine() {
   // The ↻ reloads the page in place; navigations always fetch fresh from the
   // network, so this IS "check for updates" without reopening the app.
@@ -3401,7 +3401,10 @@ function renderWheel() {
     // Like the name wheel, the effect wheel collapses to its result — the
     // card — once it lands, keeping the sheet one screen tall.
     if (!cardSettled) {
-      html += '<div class="label">The effect</div>' +
+      // How many cards still ride the wheel — the count shrinks as landed
+      // cards retire for the round, so it's worth reading here.
+      html += '<div class="label">The effect <span style="color:#FF8A1E">&middot; ' +
+        wheel.cardLabels.length + '</span></div>' +
         '<div class="wheelbox"><div class="wheelptr"></div>' +
         wheelSvg("wheel-card", wheel.cardLabels, wheel.cardRot, null, 7.5) +
         '</div>';
