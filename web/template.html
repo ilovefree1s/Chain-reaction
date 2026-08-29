@@ -353,7 +353,10 @@
              min-height: 64px; }
   .nheader .back { position: absolute; left: 0; background: none; color: #A9B8D4;
                    font-weight: 700; font-size: 17px; padding: 0 10px; }
-  .nheader h1 { margin: 0 76px; white-space: nowrap; font-style: italic; font-weight: 900; font-size: 32px;
+  /* nowrap text ignores margins and spills — the real guard against running
+     under the Back button is a font that scales down on narrow phones. */
+  .nheader h1 { margin: 0 8px; white-space: nowrap; font-style: italic; font-weight: 900;
+                font-size: min(32px, 6.5vw);
                 letter-spacing: 3px; color: #F4F8FF;
                 text-shadow: 0 0 16px rgba(63, 169, 255, 0.55); }
   .nsec { display: flex; align-items: center; color: #4DC3FF; font-weight: 900;
