@@ -513,6 +513,22 @@
     padding-bottom: env(safe-area-inset-bottom);
     border-top: 1px solid var(--edge);
   }
+  /* UDisc-style hole strip riding above the tab bar on the Score screen:
+     a swipeable row of hole chips, tap one to jump. */
+  .holestrip { position: fixed; left: 0; right: 0;
+               bottom: calc(65px + env(safe-area-inset-bottom));
+               display: flex; gap: 8px; overflow-x: auto; padding: 8px 12px;
+               background: var(--panel); border-top: 1px solid var(--edge); z-index: 5;
+               -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+  .holestrip::-webkit-scrollbar { display: none; }
+  .holechip { flex: 0 0 auto; min-width: 62px; border-radius: 12px; padding: 6px 0 5px;
+              background: none; border: 1px solid var(--edge); color: var(--off);
+              display: flex; flex-direction: column; align-items: center; gap: 1px; }
+  .holechip strong { font-size: 18px; font-weight: 900; line-height: 1.1; }
+  .holechip span { font-size: 10px; font-weight: 700; letter-spacing: 1px; color: var(--sage); }
+  .holechip.on { border-color: var(--self); }
+  .holechip.on strong { color: var(--self); }
+  .holechip.done strong { color: var(--sage); }
   nav button {
     flex: 1; background: none; border-radius: 0; min-height: 64px; color: var(--sage);
     font-size: 14px; font-weight: 700; display: flex; flex-direction: column;
@@ -646,7 +662,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.1 · 28 Aug 22:44";
+var APP_VERSION = "v1.1 · 28 Aug 22:53";
 function versionLine() {
   // The ↻ reloads the page in place; navigations always fetch fresh from the
   // network, so this IS "check for updates" without reopening the app.
@@ -2214,6 +2230,8 @@ var confirmDeleteCourse = null; // course name awaiting its delete confirmation
 var charPick = null;
 /* Cards picked to pay for a spin. Null when the cost sheet is closed. */
 var wheelPay = null;
+// Which hole the strip was centred on at last render — see render().
+var holeStripAt = null;
 var savedGroup = false;
 /* Reopening the scorecard after a round finishes is a deliberate act; finishing it
    again puts the result back in front. */
@@ -2258,6 +2276,10 @@ var app = document.getElementById("app");
 
 function render() {
   var html;
+  // The hole strip's swipe position survives re-renders (hellos repaint every
+  // few seconds); only an actual hole change recenters it.
+  var strip0 = document.getElementById("holestrip");
+  var stripScroll = strip0 ? strip0.scrollLeft : null;
   if (screen === "menu") {
     html = renderMenu();
   } else if (screen === "setup") {
@@ -2285,6 +2307,16 @@ function render() {
   html += renderAlerts(); // rides over everything, on every screen
   app.innerHTML = html;
   fitMetaLines();
+  var strip = document.getElementById("holestrip");
+  if (strip) {
+    var onChip = strip.querySelector(".holechip.on");
+    if (state && holeStripAt === state.currentHole && stripScroll != null) {
+      strip.scrollLeft = stripScroll;
+    } else if (onChip) {
+      strip.scrollLeft = Math.max(0, onChip.offsetLeft - (strip.clientWidth - onChip.offsetWidth) / 2);
+    }
+    if (state) holeStripAt = state.currentHole;
+  }
   document.body.classList.toggle("menu-screen", screen === "menu");
   document.body.classList.toggle("rules-screen", screen === "rules");
   document.body.classList.toggle("settings-screen", screen === "settings");
@@ -2607,7 +2639,20 @@ function renderScore() {
       'loud. Tap to open hole ' + (g.hole + 1) + ' and fix whichever card is wrong.</div></div>';
   }).join("");
 
-  return head + players + disputeBlock + lockBlock;
+  // UDisc-style hole strip riding above the tab bar: every hole as a chip,
+  // swipe through them, tap one to jump. A locked chip trades its par line
+  // for your locked score under a check.
+  var strip = '<div class="holestrip" id="holestrip">';
+  for (var hc = 0; hc < s.holeCount; hc++) {
+    strip += '<button class="holechip' + (hc === h ? " on" : "") + (s.locked[hc] ? " done" : "") +
+      '" data-act="hole" data-n="' + hc + '"><strong>' + (hc + 1) + '</strong>' +
+      '<span>' + (s.locked[hc] ? "&#10003; " + s.scores[hc][s.meIndex] : "PAR " + s.pars[hc]) +
+      '</span></button>';
+  }
+  strip += '</div>';
+
+  // The spacer keeps the lock button clear of the fixed strip.
+  return head + players + disputeBlock + lockBlock + '<div style="height:66px"></div>' + strip;
 }
 
 /* ---------- results ----------
