@@ -2813,6 +2813,11 @@ function openWheelNow(free) {
   var ring = shuffled(pool);
   var ringIdx = Math.floor(Math.random() * ring.length);
   var winner = ring[ringIdx];
+  // TEMPORARY DEMO RIG: the card spin lands on GOOD GUYS VS. BAD GUYS! while
+  // it's still in the pool, so the partner wheel can be heard. Remove after.
+  for (var demoI = 0; demoI < ring.length; demoI++) {
+    if (ring[demoI].id === 30) { ringIdx = demoI; winner = ring[ringIdx]; break; }
+  }
   var nameLabels = [];
   // Each player's actual name, twice around the wheel, so even 3 players fill it out.
   for (var pi = 0; pi < state.players.length * 2; pi++) {
