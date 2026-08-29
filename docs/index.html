@@ -662,7 +662,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.1 · 28 Aug 22:53";
+var APP_VERSION = "v1.1 · 28 Aug 22:56";
 function versionLine() {
   // The ↻ reloads the page in place; navigations always fetch fresh from the
   // network, so this IS "check for updates" without reopening the app.
@@ -1568,11 +1568,17 @@ function liveWheel(p) {
   var who = typeof p.name === "string" ? p.name : "";
   // The moment the spin is bought, before anything lands: heads up, banner up.
   if (p.spinning) {
+    // An update to a banner already up (the name landed) swaps it in quietly;
+    // only the first heads-up dings and buzzes.
+    var had = liveAlerts.some(function (a) { return a.spinStart && a.who === who; });
     dropSpinStart(who);
     var eid = p.eid;
-    liveAlerts.push({ eid: eid, spinStart: true, who: who });
-    playMenuSound(sfxVolume());
-    try { if (navigator.vibrate) navigator.vibrate([80, 40, 80]); } catch (e) { /* banner only */ }
+    liveAlerts.push({ eid: eid, spinStart: true, who: who,
+      exempt: typeof p.exempt === "string" ? p.exempt : null });
+    if (!had) {
+      playMenuSound(sfxVolume());
+      try { if (navigator.vibrate) navigator.vibrate([80, 40, 80]); } catch (e) { /* banner only */ }
+    }
     // Safety net: a spinner who walks away mid-wheel shouldn't pin a banner forever.
     setTimeout(function () { dropAlert(eid); }, 90000);
     liveRefresh();
@@ -1704,7 +1710,8 @@ function renderAlerts() {
       return '<div class="alert you" data-act="alertTap" data-eid="' + esc(a.eid) + '">' +
         '<div class="who">' + esc(a.who || "Someone") + ' is on the wheel</div>' +
         '<div class="what">GAMBLE WHEEL!!</div>' +
-        '<div class="onwho">spinning&hellip;</div></div>';
+        '<div class="onwho">' + (a.exempt ? esc(a.exempt) + ' is exempt &mdash; spinning the effect&hellip;'
+          : 'spinning&hellip;') + '</div></div>';
     }
     if (a.wheel) {
       var wc = BY_ID[a.card];
@@ -3749,6 +3756,11 @@ function spinWheel(kind) {
       : "done";
     // The wolf announces itself the moment the effect wheel lands on it.
     if (kind === "card" && wheel.card.id === 60) playWolfSound(sfxVolume());
+    // The name landed: the table's heads-up banner learns who's exempt while
+    // the effect wheel is still to spin.
+    if (kind === "name" && live) {
+      liveCast("wheel", { name: state.players[state.meIndex], spinning: true, exempt: wheel.name });
+    }
     // Settled for good: this card is off the wheel for the rest of the round.
     if (wheel.stage === "done" && state && wheel.card &&
         (state.wheelUsed || []).indexOf(wheel.card.id) === -1) {
