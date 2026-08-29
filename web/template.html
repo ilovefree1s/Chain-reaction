@@ -1895,6 +1895,7 @@ function ignoresExempt(id) { return IGNORES_EXEMPT.indexOf(id) !== -1; }
 var SAYS_IT_ALL = [
   29,  // Globetrotter Shit
   60,  // LONE WOLF! — the wolf isn't sitting anything out, so no exempt banner
+  61,  // GOING ON TILT — it lands on the spinner alone, so no exempt banner
 ];
 function saysItAll(id) { return SAYS_IT_ALL.indexOf(id) !== -1; }
 
@@ -1957,7 +1958,8 @@ var WHEEL_TEXT = {
   54: "Everyone but [exempt] turbo putts their next putt.",
   56: "If anyone but [exempt] misses a putt inside C1, they have to carry their putter in either hand until they finish the next hole. (They can putt with it.) Drop it or bag it and it's +1 stroke.",
   57: "[chooser] marks a new tee pad up to 10 paces (30 ft) from the original tee pad. Everyone else tees from there.",
-  60: "[exempt] is the LONE WOLF! Cards played by [exempt] effect everyone else! A lone wolf win gives him the right to go through everyone's cards and play 1 card from everyone's hand that effects that player. If the 3 players win then nobody cares, cuz 3 people should beat 1 every time — but they can flip fight for 1 free mulligan. Wolf calls heads or tails."
+  60: "[exempt] is the LONE WOLF! Cards played by [exempt] effect everyone else! A lone wolf win gives him the right to go through everyone's cards and play 1 card from everyone's hand that effects that player. If the 3 players win then nobody cares, cuz 3 people should beat 1 every time — but they can flip fight for 1 free mulligan. Wolf calls heads or tails.",
+  61: "[spinner] spun the wheel and has to play the entire hole with the TILT!"
 };
 /*
  * Whether the fate spin has anything to decide. It reads the wheel wording
@@ -1985,12 +1987,14 @@ function wheelWords(c, w) {
       ? (w && w.spinner ? "the player " + spinner + " exempts" : "the player you exempt")
       : landed,
     // The partner off a team card's second spin, before it lands.
-    mate: (w && w.mate) || "the second name"
+    mate: (w && w.mate) || "the second name",
+    // Whoever bought the spin — for cards that land on the spinner alone.
+    spinner: spinner
   };
   // Capitalised where the token opens a sentence, plain everywhere else. The
   // offset is what says "start of string" — a ^ match is an empty lead, which
   // reads as no lead at all and left "the player you exempt" in lower case.
-  return t.replace(/([.!?—] )?\[(chooser|exempt|mate)\]/g, function (m, lead, key, at) {
+  return t.replace(/([.!?—] )?\[(chooser|exempt|mate|spinner)\]/g, function (m, lead, key, at) {
     var who = fill[key];
     if (lead || at === 0) who = who.charAt(0).toUpperCase() + who.slice(1);
     return (lead || "") + who;
