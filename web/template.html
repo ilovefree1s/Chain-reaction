@@ -4078,7 +4078,20 @@ app.addEventListener("pointermove", function (e) {
   if (Math.abs(e.clientX - peekFrom[0]) > 12 || Math.abs(e.clientY - peekFrom[1]) > 12) peekHide();
 });
 window.addEventListener("pointerup", peekHide);
-window.addEventListener("pointercancel", peekHide);
+// Android cancels the pointer stream when it claims a drag for scrolling.
+// Mid-hold that IS a scroll — put the timer away. But with the card already
+// up, keep it: the finger is still down, and touchend catches the lift
+// (a cancelled pointer never gets a pointerup).
+window.addEventListener("pointercancel", function () {
+  if (!peekEl) peekHide();
+});
+window.addEventListener("touchend", peekHide);
+window.addEventListener("touchcancel", peekHide);
+// While a card is up, the thumb wandering must not scroll the page under it —
+// which also keeps the browser from cancelling the touch in the first place.
+document.addEventListener("touchmove", function (e) {
+  if (peekEl) e.preventDefault();
+}, { passive: false });
 // The hold must never open Android's long-press menu instead of the card.
 app.addEventListener("contextmenu", function (e) {
   if (peekEl || peekTimer) e.preventDefault();
