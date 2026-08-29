@@ -151,6 +151,8 @@ const grassImage = copyArt("moregrass.png", "grass.png");
 const iconImage = copyArt("chainreactionicon.png", "icon.png");
 // The 4 THE BOYS badge riding the hub of every wheel.
 const hubLogo = copyArt("blue4theboys.png", "hublogo.png");
+// Tab-bar plates, replacing the dot-and-text buttons one at a time as they land.
+const navRules = copyArt("navrules.png", "navrules.png");
 const menuSound = copyAudio("chains.mp3");
 const wheelSound = copyAudio("gamble.mp3");
 const wolfSound = copyAudio("lonewolf.mp3");
@@ -223,6 +225,7 @@ const template = fs.readFileSync(path.join(__dirname, "template.html"), "utf8");
   "__BUTTONS_IMAGE__",
   "__GRASS_IMAGE__",
   "__HUB_LOGO__",
+  "__NAV_RULES__",
   "__MENU_SOUND__",
   "__WHEEL_SOUND__",
   "__WOLF_SOUND__",
@@ -243,6 +246,7 @@ const html = template
   .replace("__BUTTONS_IMAGE__", buttonsImage)
   .replace("__GRASS_IMAGE__", grassImage)
   .replace("__HUB_LOGO__", hubLogo)
+  .replace("__NAV_RULES__", navRules)
   .replace("__MENU_SOUND__", menuSound)
   .replace("__WHEEL_SOUND__", wheelSound)
   .replace("__WOLF_SOUND__", wolfSound)

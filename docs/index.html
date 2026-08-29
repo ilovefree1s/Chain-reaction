@@ -556,6 +556,17 @@
     border-radius: 9px; background: var(--self); color: var(--pine);
     font-size: 11px; font-weight: 900; line-height: 18px; text-align: center; padding: 0 4px;
   }
+  /* Each tab owns an even third, with a thin line marking the boundary. */
+  nav button { flex: 1 1 0; min-width: 0; }
+  nav button + button { border-left: 1px solid var(--edge); }
+  /* Painted tab plates: the artwork is the button. Inactive plates dim;
+     the active tab burns at full brightness. */
+  nav button.imgtab { padding: 8px 6px; }
+  nav button.imgtab .imgwrap { position: relative; display: block; height: 100%; width: 100%; }
+  nav button.imgtab img { height: 100%; width: 100%; object-fit: contain; display: block;
+                          filter: brightness(0.45) saturate(0.6); }
+  nav button.imgtab.on img { filter: none; }
+  nav button.imgtab .badge { top: -4px; left: auto; right: -2px; }
 
   .modal {
     position: fixed; inset: 0; background: var(--pine); z-index: 20; overflow-y: auto;
@@ -673,7 +684,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.1 · 28 Aug 23:22";
+var APP_VERSION = "v1.1 · 29 Aug 15:44";
 function versionLine() {
   // The ↻ reloads the page in place; navigations always fetch fresh from the
   // network, so this IS "check for updates" without reopening the app.
@@ -685,6 +696,7 @@ function versionLine() {
 var MENU_IMAGE = "assets/menu.png";
 var BUTTONS_IMAGE = "assets/buttons.png";
 var GRASS_IMAGE = "assets/grass.png";
+var NAV_RULES = "assets/navrules.png";
 
 /*
  * The app's only noise: a chain rattle on the menu buttons. Copied out of the Android
@@ -3252,9 +3264,16 @@ function renderCharSheet() {
 /* ---------- nav ---------- */
 function renderNav() {
   var tabs = [["score", "Score"], ["hand", "Hand"], ["rules", "Rules"]];
+  // The painted plates land one at a time; a tab whose art is in swaps the
+  // dot-and-text button for its plate.
+  var art = { rules: NAV_RULES };
   return "<nav>" + tabs.map(function (t) {
     var badge = t[0] === "hand" && state.owed > 0
       ? '<span class="badge">' + state.owed + "</span>" : "";
+    if (art[t[0]]) {
+      return '<button class="imgtab' + (tab === t[0] ? " on" : "") + '" data-act="tab" data-t="' + t[0] + '">' +
+        '<span class="imgwrap"><img src="' + art[t[0]] + '" alt="' + t[1] + '">' + badge + '</span></button>';
+    }
     return '<button class="' + (tab === t[0] ? "on" : "") + '" data-act="tab" data-t="' + t[0] + '">' +
       '<span class="dot ' + t[0] + '">' + badge + '</span>' + t[1] + '</button>';
   }).join("") + "</nav>";
