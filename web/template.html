@@ -2053,8 +2053,9 @@ function newRound(players, meIndex, holeCount, coursePars, courseName, character
     pars.push(source[h]);
     locked.push(false);
     var row = [];
-    // Everyone starts the hole on par; the steppers take it from there.
-    for (var p = 0; p < players.length; p++) row.push(source[h]);
+    // Every score starts empty (a dash). The first tap of − enters one under
+    // par, the first tap of + enters par; the steppers take it from there.
+    for (var p = 0; p < players.length; p++) row.push(null);
     scores.push(row);
   }
   return {
@@ -2116,6 +2117,8 @@ function isSkins(s) { return s && s.mode === "skins"; }
    locked, so the payout can be shown before you commit to it. */
 function holeWinner(s, hole) {
   var row = s.scores[hole];
+  // A dash on the card means the hole isn't decided yet.
+  for (var e = 0; e < row.length; e++) if (row[e] == null) return null;
   var low = Math.min.apply(null, row);
   var leaders = [];
   for (var i = 0; i < row.length; i++) if (row[i] === low) leaders.push(i);
@@ -2618,19 +2621,24 @@ function renderScore() {
         '</div></div>' +
       '<div class="steps">' +
       '<button class="step" data-act="score" data-i="' + i + '" data-n="-1"' +
-        (locked || score <= 1 ? " disabled" : "") + '>&minus;</button>' +
-      '<div class="num">' + score + '</div>' +
+        (locked || (score != null && score <= 1) ? " disabled" : "") + '>&minus;</button>' +
+      '<div class="num">' + (score == null ? "&ndash;" : score) + '</div>' +
       '<button class="step" data-act="score" data-i="' + i + '" data-n="1"' + (locked ? " disabled" : "") + '>+</button>' +
       '</div></div></div>';
   }).join("");
 
+  // No locking a hole with a dash on it — every score is entered on purpose.
+  var allEntered = s.scores[h].every(function (v) { return v != null; });
   var lockBlock = locked
     ? '<p class="hint">You drew ' + drawForHole(s, h) + ' on this hole.</p>' +
       '<button class="big quiet" data-act="unlock">Unlock hole ' + (h + 1) + '</button>'
-    : '<button class="big primary" data-act="lock">Lock hole &amp; draw</button>' +
-      '<p class="hint">' + (s.dealt && s.dealt[h]
-        ? 'Already dealt &mdash; locking again gives no new cards.'
-        : 'Locking gives you ' + drawForHole(s, h) + ' card(s).') + '</p>';
+    : '<button class="big primary" data-act="lock"' + (allEntered ? "" : " disabled") +
+      '>Lock hole &amp; draw</button>' +
+      '<p class="hint">' + (!allEntered
+        ? 'Enter every score to lock the hole.'
+        : s.dealt && s.dealt[h]
+          ? 'Already dealt &mdash; locking again gives no new cards.'
+          : 'Locking gives you ' + drawForHole(s, h) + ' card(s).') + '</p>';
 
   // Every locked hole's disagreements, not just this one's: locking auto-
   // advances, so a flag pinned to its own hole would talk to an empty room.
@@ -4174,10 +4182,16 @@ app.addEventListener("click", function (e) {
       commit(s); break;
     case "score":
       if (s.locked[s.currentHole]) break;
-      s.scores[s.currentHole][i] = Math.max(1, s.scores[s.currentHole][i] + n);
+      // An empty score enters on the first tap: − starts at one under par,
+      // + starts at par. After that the steppers move it one at a time.
+      s.scores[s.currentHole][i] = s.scores[s.currentHole][i] == null
+        ? (n < 0 ? s.pars[s.currentHole] - 1 : s.pars[s.currentHole])
+        : Math.max(1, s.scores[s.currentHole][i] + n);
       commit(s); break;
     case "lock":
       if (s.locked[s.currentHole]) break;
+      // The button is disabled with a dash on the card, but belt and braces.
+      if (s.scores[s.currentHole].some(function (v) { return v == null; })) break;
       var lockedHole = s.currentHole;
       if (!s.dealt) s.dealt = [];
       // Use-it-or-lose-it: a fresh hole's deal REPLACES whatever is still owed
