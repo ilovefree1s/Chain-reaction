@@ -2825,6 +2825,11 @@ function openWheelNow(free) {
     nameLabels: nameLabels, nameSeg: null, nameRot: 0,
     cardLabels: ring.map(function (c) { return c.name; }),
     cardIdx: ringIdx, cardRot: 0,
+    // The partner wheel a team card spins up. mateRot must start at a real 0:
+    // the click track counts segment crossings from it, and counting from
+    // undefined made every sample a crossing — a flat-out rattle for the whole
+    // spin that had nothing to do with the wheel.
+    mate: null, mateLabels: null, mateSeg: null, mateRot: 0,
     // Cards with a written good and bad half get a third spin to pick one.
     isDual: wheelHasHalves(winner),
     fateLabels: fateLabels, fateIdx: null, fateRot: 0, fateGood: null,

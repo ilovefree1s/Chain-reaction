@@ -634,7 +634,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.0 · 28 Aug 20:47";
+var APP_VERSION = "v1.0 · 28 Aug 20:57";
 function versionLine() {
   // The ↻ reloads the page in place; navigations always fetch fresh from the
   // network, so this IS "check for updates" without reopening the app.
@@ -2825,6 +2825,11 @@ function openWheelNow(free) {
     nameLabels: nameLabels, nameSeg: null, nameRot: 0,
     cardLabels: ring.map(function (c) { return c.name; }),
     cardIdx: ringIdx, cardRot: 0,
+    // The partner wheel a team card spins up. mateRot must start at a real 0:
+    // the click track counts segment crossings from it, and counting from
+    // undefined made every sample a crossing — a flat-out rattle for the whole
+    // spin that had nothing to do with the wheel.
+    mate: null, mateLabels: null, mateSeg: null, mateRot: 0,
     // Cards with a written good and bad half get a third spin to pick one.
     isDual: wheelHasHalves(winner),
     fateLabels: fateLabels, fateIdx: null, fateRot: 0, fateGood: null,
