@@ -122,8 +122,12 @@
   /* The skins line sits under par, in ice, so it never reads as part of the par. */
   .hole-title span.stake { display: block; color: #4DC3FF; font-weight: 900; }
   /* Its own line under the label, and ice rather than sage: this is the tap target. */
-  .counter .sub { display: block; color: #4DC3FF; font-weight: 900; }
-  button.counter { cursor: pointer; font: inherit; text-align: center; }
+  /* margin 0 kills the page-subtitle .sub rule's 28px, which was shoving the
+     Discard tile's three lines off-centre. */
+  .counter .sub { display: block; color: #4DC3FF; font-weight: 900; margin: 0; }
+  /* line-height after the font shorthand, or the shorthand resets it and the
+     three-line Discard tile overflows its pinned height. */
+  button.counter { cursor: pointer; font: inherit; line-height: 1.15; text-align: center; }
   .pilerow { font-size: 12px; font-weight: 900; letter-spacing: 1px; color: #5E6C88;
              margin: 12px 0 4px; }
   .pilerow.played { color: #4DC3FF; }
@@ -163,12 +167,12 @@
   /* A pinned height, not padding: inherited line boxes were quietly inflating
      the tiles to nearly double what the glance they serve needs. */
   .counter { flex: 1; height: 68px; box-sizing: border-box;
-             display: flex; flex-direction: column; justify-content: center;
              border: 2px solid transparent; border-radius: 12px; padding: 4px;
              text-align: center; line-height: 1.15;
              background: linear-gradient(var(--panel), var(--panel)) padding-box,
                          linear-gradient(100deg, #1E6FFF, #3FA9FF 45%, #FF8A1E) border-box;
              box-shadow: 0 0 10px rgba(30, 111, 255, 0.2); }
+  .cwrap { display: flex; flex-direction: column; justify-content: center; height: 100%; }
   .counter b { display: block; font-size: 20px; font-weight: 900; line-height: 1.1; }
   .counter span { font-size: 11px; font-weight: 900; letter-spacing: 1px; color: var(--sage);
                   text-transform: uppercase; line-height: 1.15; }
@@ -2994,9 +2998,11 @@ function miniCardHtml(c, act, picked, held) {
 function counter(label, value, sublabel, act) {
   // Ice, not sage, on the second line: it is the tap target, and it has to look like
   // something rather than like a caption.
+  // The inner wrap does the vertical centring: a <button> refuses to lay its
+  // own children out as a flex column, so the tile can't.
   return (act ? '<button class="counter" data-act="' + act + '">' : '<div class="counter">') +
-    '<b>' + value + '</b><span>' + label + '</span>' +
-    (sublabel ? '<span class="sub">' + sublabel + '</span>' : "") +
+    '<span class="cwrap"><b>' + value + '</b><span>' + label + '</span>' +
+    (sublabel ? '<span class="sub">' + sublabel + '</span>' : "") + '</span>' +
     (act ? "</button>" : "</div>");
 }
 
