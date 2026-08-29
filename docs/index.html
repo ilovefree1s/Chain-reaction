@@ -638,7 +638,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.0 · 28 Aug 21:21";
+var APP_VERSION = "v1.0 · 28 Aug 21:28";
 function versionLine() {
   // The ↻ reloads the page in place; navigations always fetch fresh from the
   // network, so this IS "check for updates" without reopening the app.
@@ -4195,6 +4195,9 @@ app.addEventListener("click", function (e) {
       wheelPay.forEach(function (id) {
         var k = s.hand.indexOf(id);
         if (k !== -1) { s.hand.splice(k, 1); s.discard.push(id); }
+        // Into the log too, or the pay never shows in the discard pile.
+        if (!s.playLog) s.playLog = [];
+        s.playLog.push({ id: id, played: false });
       });
       wheelPay = null;
       save(s);
@@ -4220,6 +4223,12 @@ app.addEventListener("click", function (e) {
           var k = s.discard.lastIndexOf(id);
           if (k !== -1) s.discard.splice(k, 1);
           if (s.hand.indexOf(id) === -1) s.hand.push(id);
+          // The refund unwrites the log entry the pay just made.
+          for (var lg = (s.playLog || []).length - 1; lg >= 0; lg--) {
+            if (s.playLog[lg].id === id && !s.playLog[lg].played) {
+              s.playLog.splice(lg, 1); break;
+            }
+          }
         });
         save(s);
         localNote("No spin, no charge — your 2 cards are back in your hand.", "Wheel closed");
