@@ -646,7 +646,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.1 · 28 Aug 22:28";
+var APP_VERSION = "v1.1 · 28 Aug 22:44";
 function versionLine() {
   // The ↻ reloads the page in place; navigations always fetch fresh from the
   // network, so this IS "check for updates" without reopening the app.
@@ -2798,7 +2798,7 @@ function renderWheelCost() {
     '<div class="nheader"><button class="back" data-act="payCancel">&lsaquo;&nbsp; Back</button>' +
     "<h1>SPIN COSTS " + DATA.wheelCost + "</h1></div>" +
     '<p class="nbody" style="margin:0 0 14px">Pick ' + DATA.wheelCost +
-    " cards to discard, then spin. Playing GAMBLE WHEEL!! instead gives you a free spin.</p>" +
+    " cards to discard to buy a spin on the GAMBLE WHEEL! Sometimes maybe good... sometimes maybe shit... &#x1F608;</p>" +
     // The refusal explains itself: a held card silently ignoring taps just
     // reads as a broken screen.
     (Object.keys(held).length
