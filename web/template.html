@@ -2799,6 +2799,13 @@ function openWheelNow(free) {
   }
   var ring = shuffled(pool);
   var ringIdx = Math.floor(Math.random() * ring.length);
+  // TEMPORARY DEMO RIG — delete after the walkthrough: the first spin of any
+  // round lands LONE WOLF!, so the howl can be heard on demand.
+  if (state && (state.wheelUsed || []).length === 0) {
+    for (var ri = 0; ri < ring.length; ri++) {
+      if (ring[ri].id === 60) { ringIdx = ri; break; }
+    }
+  }
   var winner = ring[ringIdx];
   var nameLabels = [];
   // Each player's actual name, twice around the wheel, so even 3 players fill it out.
