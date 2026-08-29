@@ -561,7 +561,7 @@
   nav button + button { border-left: 1px solid var(--edge); }
   /* Painted tab plates: the artwork is the button. Inactive plates dim;
      the active tab burns at full brightness. */
-  nav button.imgtab { padding: 8px 6px; }
+  nav button.imgtab { padding: 7px 6px 3px; }
   nav button.imgtab .imgwrap { position: relative; display: block; height: 100%; width: 100%; }
   nav button.imgtab img { height: 100%; width: 100%; object-fit: contain; display: block;
                           filter: brightness(0.45) saturate(0.6); }
@@ -692,7 +692,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.1 · 29 Aug 16:09";
+var APP_VERSION = "v1.1 · 29 Aug 16:11";
 function versionLine() {
   // The ↻ reloads the page in place; navigations always fetch fresh from the
   // network, so this IS "check for updates" without reopening the app.
