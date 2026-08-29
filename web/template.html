@@ -2182,8 +2182,6 @@ var confirmDeleteCourse = null; // course name awaiting its delete confirmation
 var charPick = null;
 /* Cards picked to pay for a spin. Null when the cost sheet is closed. */
 var wheelPay = null;
-var roundCourseName = "";
-var savedAs = null;
 var savedGroup = false;
 /* Reopening the scorecard after a round finishes is a deliberate act; finishing it
    again puts the result back in front. */
@@ -2963,21 +2961,10 @@ function renderRoundRules() {
       '<button class="big quiet" data-act="endNo" style="margin:0">Keep playing</button></div></div>'
     : '<button class="big danger" data-act="endAsk">End round</button>';
 
-  // You usually learn a course's real pars by playing it — capture them here.
-  var saveCourse = '<div class="label">Save this course</div>' +
-    '<p class="hint">Keeps these ' + state.holeCount + ' pars (par ' + sum(state.pars) +
-    ') for next time.</p>' +
-    '<input type="text" data-round-course placeholder="Course name" value="' +
-    esc(roundCourseName) + '">' +
-    '<div style="height:10px"></div>' +
-    '<button class="big primary" data-act="saveRoundCourse"' +
-    (roundCourseName.trim() ? "" : " disabled") + '>Save course</button>' +
-    (savedAs ? '<p class="hint" style="color:var(--react)">Saved as &ldquo;' +
-      esc(savedAs) + '&rdquo;.</p>' : "");
-
   // Live first: joining mid-round shouldn't mean scrolling past the whole deck.
+  // Courses are made and saved in Setup's course sheet — mid-round the Rules
+  // tab is for rules, cards and ending the round, nothing else.
   return renderLiveSection() + renderHouseRules() + renderCardLibrary() +
-    '<div style="height:16px"></div>' + saveCourse +
     '<div style="height:16px"></div>' + danger;
 }
 
@@ -3813,12 +3800,6 @@ app.addEventListener("input", function (e) {
     syncButton('[data-act="saveCourse"]', parsUI.name.trim() !== "");
     return;
   }
-  if (e.target.hasAttribute("data-round-course")) {
-    roundCourseName = e.target.value;
-    savedAs = null;
-    syncButton('[data-act="saveRoundCourse"]', roundCourseName.trim() !== "");
-    return;
-  }
   if (e.target.hasAttribute("data-vol")) {
     // Track the drag in place — re-rendering mid-drag would drop the thumb. Saving
     // and the preview sound wait for release, in the change handler below.
@@ -3965,13 +3946,6 @@ app.addEventListener("click", function (e) {
         parsUI.creating = false;
       }
       render(); break;
-    case "saveRoundCourse":
-      if (roundCourseName.trim()) {
-        putCourse(roundCourseName.trim(), s.holeCount, s.pars);
-        savedAs = roundCourseName.trim();
-        roundCourseName = "";
-      }
-      render(); break;
     case "addPlayer":
       if (setup.names.length < MAX_PLAYERS) { setup.names.push(""); setup.chars.push(null); }
       render(); break;
@@ -4039,7 +4013,6 @@ app.addEventListener("click", function (e) {
     }
       // The room rides with the round: a reload rejoins it without asking.
       if (live) { state.liveCode = live.code; save(state); }
-      roundCourseName = state.courseName || "";
       screen = "round";
       render();
       break;
@@ -4066,8 +4039,6 @@ app.addEventListener("click", function (e) {
     case "menu": screen = "menu"; render(); break;
     case "play":
       if (state) {
-        // Pre-fill "save this course" so correcting its pars is a one-tap save.
-        roundCourseName = state.courseName || "";
         screen = "round";
       } else {
         setup = freshSetup();
@@ -4139,8 +4110,6 @@ app.addEventListener("click", function (e) {
       screen = "menu";
       showScorecard = false;
       setup = freshSetup();
-      roundCourseName = "";
-      savedAs = null;
       render(); break;
     case "unlock":
       if (!s.locked[s.currentHole]) break;
@@ -4325,8 +4294,6 @@ app.addEventListener("click", function (e) {
       tab = "score";
       screen = "menu";
       setup = freshSetup();
-      roundCourseName = "";
-      savedAs = null;
       render(); break;
   }
 
