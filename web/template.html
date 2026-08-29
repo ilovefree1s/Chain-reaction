@@ -529,6 +529,12 @@
   .holechip.on { border-color: var(--self); }
   .holechip.on strong { color: var(--self); }
   .holechip.done strong { color: var(--sage); }
+  /* Press-and-hold peek at a full card face — rides over any sheet, and takes
+     no touches of its own so letting go lands wherever the finger was. */
+  .peekwrap { position: fixed; inset: 0; z-index: 30; display: flex; align-items: center;
+              justify-content: center; padding: 24px; pointer-events: none;
+              background: rgba(4, 10, 20, 0.78); }
+  .peekwrap .card { width: min(340px, 90vw); }
   nav button {
     flex: 1; background: none; border-radius: 0; min-height: 64px; color: var(--sage);
     font-size: 14px; font-weight: 700; display: flex; flex-direction: column;
@@ -3977,7 +3983,46 @@ app.addEventListener("touchend", function (e) {
   stepViewCard(dx < 0 ? 1 : -1);
 }, { passive: true });
 
+/* Press-and-hold on a spin-cost tile peeks at the full card; letting go puts
+   it away. A quick tap still picks the card — the hold eats its own click. */
+var peekTimer = null, peekEl = null, peekAte = false, peekFrom = null;
+function peekHide() {
+  if (peekTimer) { clearTimeout(peekTimer); peekTimer = null; }
+  if (peekEl && peekEl.parentNode) peekEl.parentNode.removeChild(peekEl);
+  peekEl = null; peekFrom = null;
+}
+app.addEventListener("pointerdown", function (e) {
+  var el = e.target.closest('[data-act="payPick"]');
+  if (!el) return;
+  var id = +el.getAttribute("data-i");
+  peekFrom = [e.clientX, e.clientY];
+  peekAte = false;
+  peekTimer = setTimeout(function () {
+    peekTimer = null;
+    var c = BY_ID[id];
+    if (!c) return;
+    peekAte = true;
+    peekEl = document.createElement("div");
+    peekEl.className = "peekwrap";
+    peekEl.innerHTML = cardHtml(c, false);
+    document.body.appendChild(peekEl);
+  }, 350);
+});
+// A drag is a scroll, not a hold.
+app.addEventListener("pointermove", function (e) {
+  if (!peekFrom) return;
+  if (Math.abs(e.clientX - peekFrom[0]) > 12 || Math.abs(e.clientY - peekFrom[1]) > 12) peekHide();
+});
+window.addEventListener("pointerup", peekHide);
+window.addEventListener("pointercancel", peekHide);
+// The hold must never open Android's long-press menu instead of the card.
+app.addEventListener("contextmenu", function (e) {
+  if (peekEl || peekTimer) e.preventDefault();
+});
+
 app.addEventListener("click", function (e) {
+  // The release that ends a peek is not a pick.
+  if (peekAte) { peekAte = false; return; }
   var el = e.target.closest("[data-act]");
   if (!el) return;
   var act = el.getAttribute("data-act");
