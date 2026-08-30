@@ -399,6 +399,7 @@
   .pcard .pr { font-size: 60px; font-weight: 900; line-height: 1; }
   .pcard .ps { font-size: 52px; line-height: 1.15; }
   .pcard.back { background: linear-gradient(135deg, #1E6FFF, #10182A); color: #4DC3FF; font-size: 64px; }
+  .pcard.backimg { display: block; object-fit: cover; background: none; }
   .menu-buttons-plain { position: absolute; left: 0; right: 0; z-index: 1;
                         /* The fallback has no empty band, so it lifts clear of the line. */
                         bottom: calc(env(safe-area-inset-bottom) + 34px); padding: 0 20px; }
@@ -4030,6 +4031,7 @@ function rollDice() {
 }
 
 /* ---- cards: one standard 52-card deck, drawn down and reshuffled on demand ---- */
+var CARD_BACK = "__CARD_BACK__";
 var CARD_SUITS = ["♠", "♥", "♦", "♣"];
 var CARD_RANKS = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"];
 function freshDeck52() {
@@ -4041,7 +4043,9 @@ function renderCardsGame() {
   var c = secret.cards;
   var face;
   if (c.last == null) {
-    face = '<div class="pcard back">&#9733;</div>';
+    face = CARD_BACK
+      ? '<img class="pcard backimg" src="' + CARD_BACK + '" alt="">'
+      : '<div class="pcard back">&#9733;</div>';
   } else {
     var suit = CARD_SUITS[Math.floor(c.last / 13)];
     var red = suit === "♥" || suit === "♦";
