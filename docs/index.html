@@ -417,7 +417,8 @@
   }
   .sgmenu .label { margin-bottom: auto; }
   /* The painted plates, restacked with tight gaps so the splash stays seen. */
-  .sgstack { width: min(80%, 310px); margin: 0 auto; display: flex;
+  /* 15% down from the full-size stack, per the eyeball test on the phone. */
+  .sgstack { width: min(68%, 264px); margin: 0 auto; display: flex;
              flex-direction: column; gap: 7px; }
   .sgplate { position: relative; overflow: hidden; cursor: pointer; }
   .sgplate img { position: absolute; left: 0; width: 100%; }
@@ -800,7 +801,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.10 · 30 Aug 12:54";
+var APP_VERSION = "v1.10 · 30 Aug 13:04";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. Opening the app fetches fresh anyway.
