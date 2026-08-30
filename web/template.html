@@ -416,9 +416,9 @@
     padding-bottom: calc(28px + env(safe-area-inset-bottom));
   }
   .sgmenu .label { margin-bottom: auto; }
-  .sgmenu [data-act="closeSecret"] { margin-top: 26px; }
-  /* Close in the house orange, turned down so the games carry the glow. */
-  .big.sgclose { background: linear-gradient(180deg, #B4711F, #955716); color: #F3E3CE; }
+  /* The painted button sheet, hit bands laid over it like the main menu's. */
+  .sgsheet { position: relative; width: min(78%, 300px); margin: 0 auto; }
+  .sgsheet img { width: 100%; display: block; }
   /* The card table: two buttons up top, felt everywhere else. */
   .modal.cardtable {
     overflow: hidden; touch-action: none;
@@ -4071,12 +4071,23 @@ function renderSecret() {
   }
   // The landing: three side games, one door out — the whole cluster rides the
   // bottom of the screen, where a thumb already is after five quick taps.
+  // The buttons are one painted sheet, cut into tap bands like the main menu's
+  // (alpha scan of secretbuttons.png, 941x1672: plates at rows 134-452,
+  // 482-804, 834-1156, 1190-1518; splits at the gap midpoints).
+  var bands = [
+    ["secretWheel", 8.0, 19.9],
+    ["secretDice", 27.9, 21.1],
+    ["secretCards", 49.0, 21.2],
+    ["closeSecret", 70.2, 20.6]
+  ];
+  var hits = bands.map(function (b) {
+    return '<div class="hit" data-act="' + b[0] + '" style="left:1.3%;top:' + b[1] +
+      '%;width:97.6%;height:' + b[2] + '%"></div>';
+  }).join("");
   return '<div class="modal sgmenu sgscreen">' +
     '<div class="label">Secret gamble games</div>' +
-    '<button class="big wheel" data-act="secretWheel">Wheel</button>' +
-    '<button class="big wheel" data-act="secretDice">Dice</button>' +
-    '<button class="big wheel" data-act="secretCards">Cards</button>' +
-    '<button class="big sgclose" data-act="closeSecret">Close</button></div>';
+    '<div class="sgsheet"><img src="' + SG_BUTTONS + '" alt="" draggable="false">' +
+    hits + '</div></div>';
 }
 
 /* ---- dice: a tray of 1-6 dice, rolled together ---- */
@@ -4125,6 +4136,7 @@ function rollDice() {
 
 /* ---- cards: one standard 52-card deck, drawn down and reshuffled on demand ---- */
 var CARD_BACK = "__CARD_BACK__";
+var SG_BUTTONS = "__SG_BUTTONS__";
 var CARD_SUITS = ["♠", "♥", "♦", "♣"];
 var CARD_RANKS = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"];
 function freshDeck52() {
