@@ -180,7 +180,7 @@ const WHEEL_SETTLED = {
   33: "On the wheel: everyone but the exempt player drives off hand.",
   19: "Joins the wheel — first card taken off the blacklist. The exempt player picks the disc everyone else tees with. Close to Bag Raid on the wheel, but from your own bag and this hole rather than the next.",
   18: "On the wheel: it flips — the exempt player is the one being commentated, and everyone else has to call their shots. Written as \"anyone who forgets\" rather than \"any one of the 3\", since the table can be 3, 4 or 5.",
-  17: "On the wheel: everyone but the exempt player is off the words for the hole. Kept the stroke penalty and the any-variation clause — without them there's nothing to enforce.",
+  17: "On the wheel, reworded 2026-08-29 in the user's words: nobody says YES or NO, any variation counts (yea, yep, nah, etc.), +1 stroke per slip, doesn't apply to [exempt], obviously.",
   16: "On the wheel: everyone but the exempt player takes their next putt with their eyes closed.",
   15: "On the wheel: everyone but the exempt player throws a tomahawk on their drive or approach.",
   11: "On the wheel: worded \"everyone but [exempt]\" outright. That split the token in two — [chooser] for whoever makes the picks, [exempt] for whoever is sitting out — since a free spin has a spinner but no exempt player.",
