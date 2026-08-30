@@ -146,7 +146,7 @@ function copyAudio(name) {
 }
 
 const menuImage = copyArt("chainreactionmain.png", "menu.png");
-const buttonsImage = copyArt("mainbuttons.png", "buttons.png");
+const buttonsImage = copyArt("homebuttons.png", "buttons.png");
 const grassImage = copyArt("moregrass.png", "grass.png");
 const iconImage = copyArt("chainreactionicon.png", "icon.png");
 // The 4 THE BOYS badge riding the hub of every wheel.
