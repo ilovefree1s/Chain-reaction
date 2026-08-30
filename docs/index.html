@@ -398,6 +398,8 @@
   }
   .sgmenu .label { margin-bottom: auto; }
   .sgmenu [data-act="closeSecret"] { margin-top: 26px; }
+  /* Close in the house orange, turned down so the games carry the glow. */
+  .big.sgclose { background: linear-gradient(180deg, #B4711F, #955716); color: #F3E3CE; }
   /* The card table: two buttons up top, felt everywhere else. */
   .modal.cardtable {
     overflow: hidden; touch-action: none;
@@ -777,7 +779,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.10 · 30 Aug 12:28";
+var APP_VERSION = "v1.10 · 30 Aug 12:30";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. Opening the app fetches fresh anyway.
@@ -4053,9 +4055,9 @@ function renderSecret() {
   return '<div class="modal sgmenu">' +
     '<div class="label">Secret gamble games</div>' +
     '<button class="big wheel" data-act="secretWheel">Wheel</button>' +
-    '<button class="big primary" data-act="secretDice">Dice</button>' +
-    '<button class="big raised" data-act="secretCards">Cards</button>' +
-    '<button class="big quiet" data-act="closeSecret">Close</button></div>';
+    '<button class="big wheel" data-act="secretDice">Dice</button>' +
+    '<button class="big wheel" data-act="secretCards">Cards</button>' +
+    '<button class="big sgclose" data-act="closeSecret">Close</button></div>';
 }
 
 /* ---- dice: a tray of 1-6 dice, rolled together ---- */
