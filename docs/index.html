@@ -395,13 +395,13 @@
     overflow: hidden; touch-action: none;
     padding: calc(10px + env(safe-area-inset-top)) 12px 0;
   }
-  /* Buttons stack on the left, the deck sits on the right — one shared top
-     row, so the felt below starts that much higher. */
-  .cardtable .tbar { display: flex; flex-direction: column; gap: 8px; width: 62%; max-width: 250px; }
-  .cardtable .tbar .big { margin-bottom: 0; }
+  /* Shuffle on the left edge, Back on the right, the deck between them. */
+  .cardtable .tbar { display: flex; justify-content: space-between; gap: 8px; }
+  .cardtable .tbar .big { margin-bottom: 0; flex: 0 1 32%; min-width: 96px; }
   /* The deck, sitting there with a stacked-paper shadow and its count. */
   .tdeck {
-    position: absolute; right: 16px; top: calc(env(safe-area-inset-top) + 10px);
+    position: absolute; left: 50%; transform: translateX(-50%);
+    top: calc(env(safe-area-inset-top) + 8px);
     width: 84px; height: 118px;
   }
   .tdeck img, .tdeck .tface { width: 100%; height: 100%; display: block; border-radius: 8px;
@@ -425,7 +425,7 @@
   .tface .tr { font-size: 30px; font-weight: 900; line-height: 1; }
   .tface .ts { font-size: 24px; line-height: 1.1; }
   /* Five card-sized cut-outs across the middle of the felt. */
-  .slotrow { position: absolute; left: 0; right: 0; top: 45%; transform: translateY(-50%);
+  .slotrow { position: absolute; left: 0; right: 0; top: 50%; transform: translateY(-50%);
              display: flex; justify-content: center; gap: 8px; }
   .slot { width: 64px; height: 90px; box-sizing: border-box; border-radius: 8px;
           border: 2px dashed rgba(77, 195, 255, 0.45); flex: 0 0 auto; }
@@ -769,7 +769,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.10 · 30 Aug 12:06";
+var APP_VERSION = "v1.10 · 30 Aug 12:17";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. Opening the app fetches fresh anyway.
@@ -4128,7 +4128,7 @@ function renderCardsGame() {
   }).join("");
   return '<div class="modal cardtable" id="cardtable">' +
     '<div class="tbar">' +
-    '<button class="big raised" data-act="shuffleCards">Shuffle it all back</button>' +
+    '<button class="big raised" data-act="shuffleCards">Shuffle all</button>' +
     '<button class="big quiet" data-act="secretBack">Back</button></div>' +
     '<div class="tdeck' + (c.deck.length ? "" : " empty") + '" id="tdeck">' +
     tcardBackHtml() +
