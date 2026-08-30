@@ -393,8 +393,16 @@
   /* Every secret screen wears the 4 THE BOYS splash, dimmed so the buttons,
      wheel, dice and cards stay the loudest thing on it. */
   .modal.sgscreen {
+    --sgbg: url("assets/sgbg.png");
     background: linear-gradient(rgba(3, 6, 12, 0.55), rgba(3, 6, 12, 0.55)),
-                url("assets/sgbg.png") center / cover no-repeat #05070C;
+                var(--sgbg) center / cover no-repeat #05070C;
+  }
+  /* On the menu the splash rides the empty space above the buttons — sized to
+     it, centred in it — and the button zone below stays plain black. */
+  .modal.sgmenu.sgscreen {
+    background: linear-gradient(rgba(3, 6, 12, 0.4), rgba(3, 6, 12, 0.4)),
+                linear-gradient(180deg, transparent 48%, #05070C 72%),
+                var(--sgbg) center -170px / cover no-repeat #05070C;
   }
   /* The games sink to the bottom, in reach of the thumb; the title stays up
      top, and Close keeps a little distance from the three games. */
@@ -785,7 +793,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.10 · 30 Aug 12:40";
+var APP_VERSION = "v1.10 · 30 Aug 12:44";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. Opening the app fetches fresh anyway.
