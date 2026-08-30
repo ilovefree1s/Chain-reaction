@@ -364,8 +364,18 @@
   }
   .menu-buttons .sheet { position: relative; height: 100%; aspect-ratio: 941 / 1672; }
   .menu-buttons img { height: 100%; width: 100%; display: block; }
-  /* Each hit box is measured off the artwork's pixels — see BUTTON_BANDS. */
-  .hit { position: absolute; cursor: pointer; }
+  /* Each hit box is measured off the artwork's pixels — see BUTTON_BANDS.
+     touch-action none: the browser never claims a long hold as a scroll, so
+     the 5-second secret-wheel press on SETTINGS survives to its timer. */
+  .hit { position: absolute; cursor: pointer; touch-action: none; }
+  /* The secret wheel's list — one name per line, kept between visits. */
+  .secretbox {
+    width: 100%; min-height: 130px; box-sizing: border-box; resize: none;
+    background: var(--panel); color: var(--off);
+    border: 2px solid var(--edge); border-radius: 14px; padding: 10px 14px;
+    font-family: inherit; font-size: 17px; margin-bottom: 10px;
+  }
+  .secretbox:focus { outline: none; border-color: var(--self); }
   .menu-buttons-plain { position: absolute; left: 0; right: 0; z-index: 1;
                         /* The fallback has no empty band, so it lifts clear of the line. */
                         bottom: calc(env(safe-area-inset-bottom) + 34px); padding: 0 20px; }
@@ -702,7 +712,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.10 · 30 Aug 10:47";
+var APP_VERSION = "v1.10 · 30 Aug 11:11";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. Opening the app fetches fresh anyway.
@@ -2342,6 +2352,10 @@ function render() {
   var sheetScroll = sheet0 ? sheet0.scrollTop : null;
   var sheetSig = sheet0 ? sheet0.className + "|" +
     (sheet0.firstElementChild ? sheet0.firstElementChild.className : "") : null;
+  // Typing on the secret wheel survives a repaint — caret and all.
+  var act0 = document.activeElement;
+  var secretSel = act0 && act0.id === "secretnames"
+    ? [act0.selectionStart, act0.selectionEnd] : null;
   if (screen === "menu") {
     html = renderMenu();
   } else if (screen === "setup") {
@@ -2362,6 +2376,7 @@ function render() {
   }
   if (viewCard != null) html += renderFaceModal();
   if (wheel) html += renderWheel();
+  if (secret) html += renderSecret();
   if (pileOpen) html += renderPile();
   if (parsUI.open) html += renderParGrid();
   if (charPick) html += renderCharSheet();
@@ -2369,6 +2384,10 @@ function render() {
   html += renderAlerts(); // rides over everything, on every screen
   app.innerHTML = html;
   fitMetaLines();
+  if (secretSel) {
+    var ta1 = document.getElementById("secretnames");
+    if (ta1) { ta1.focus(); ta1.setSelectionRange(secretSel[0], secretSel[1]); }
+  }
   if (sheetScroll != null && sheetScroll > 0) {
     var sheet1 = document.querySelector(".modal");
     if (sheet1 && sheetSig === sheet1.className + "|" +
@@ -3877,6 +3896,91 @@ function spinWheel(kind) {
   });
 }
 
+/* ---------- the secret name wheel ----------
+   Not on any menu: holding the SETTINGS button for 5 seconds opens it. The same
+   wheel the game spins, but the names on it are whatever gets typed underneath —
+   one per line, remembered between visits. It decides nothing in the app; it
+   just spins, clicks and lands, for whatever the table needs decided. */
+var SECRET_KEY = "chainreaction.secretNames";
+var secret = null;
+
+function openSecretWheel() {
+  var saved = "";
+  try { saved = localStorage.getItem(SECRET_KEY) || ""; } catch (e) { /* memory only */ }
+  secret = { text: saved, rot: 0, name: null, spinning: false };
+  render();
+}
+
+function secretEntries() {
+  return (secret.text || "").split("\n")
+    .map(function (s) { return s.trim(); })
+    .filter(function (s) { return s; })
+    .slice(0, 24);
+}
+/* Short lists ride the wheel twice around, like the name wheel's roster does,
+   so 2 names make 4 fat slices instead of a coin flip drawn as a circle. */
+function secretLabels() {
+  var e = secretEntries();
+  return e.length && e.length < 7 ? e.concat(e) : e;
+}
+
+function secretWheelHtml() {
+  var labels = secretLabels();
+  return '<div class="wheelptr"></div>' +
+    (labels.length >= 2
+      ? wheelSvg("wheel-secret", labels, secret.rot, null, 14)
+      : '<p class="hint" style="text-align:center;padding-top:40%">Type at least 2 names below &mdash; one per line.</p>');
+}
+
+function renderSecret() {
+  var labels = secretLabels();
+  return '<div class="modal">' +
+    '<div class="label">The name wheel</div>' +
+    '<div class="wheelbox" id="secretwheelbox">' + secretWheelHtml() + '</div>' +
+    '<div class="exempt" id="secretResult">' +
+    (secret.name && !secret.spinning ? esc(secret.name) : "") + '</div>' +
+    '<button class="big wheel" data-act="spinSecret"' +
+    (labels.length >= 2 ? "" : " disabled") + '>Spin</button>' +
+    '<textarea id="secretnames" class="secretbox" rows="6" spellcheck="false" ' +
+    'placeholder="One name per line">' + esc(secret.text || "") + '</textarea>' +
+    '<button class="big quiet" data-act="closeSecret">Close</button></div>';
+}
+
+function spinSecret() {
+  if (!secret || secret.spinning) return;
+  var entries = secretEntries(), labels = secretLabels();
+  var el = document.getElementById("wheel-secret");
+  if (!el || labels.length < 2) return;
+  secret.spinning = true;
+  var p = Math.floor(Math.random() * entries.length);
+  secret.name = entries[p];
+  // A doubled list owns two opposite segments — land on either.
+  var idx = labels.length > entries.length
+    ? p + entries.length * (Math.random() < 0.5 ? 0 : 1) : p;
+  var n = labels.length, seg = 360 / n;
+  // Re-spins keep turning forward: five laps past wherever the wheel rests.
+  var fromRot = secret.rot;
+  var target = fromRot - (fromRot % 360) + 5 * 360 +
+    (360 - (idx * seg + seg / 2)) + (Math.random() - 0.5) * 0.6 * seg;
+  secret.rot = target;
+  var btn = document.querySelector('[data-act="spinSecret"]');
+  if (btn) btn.style.visibility = "hidden";
+  var s = secret, settled = false;
+  function settle() {
+    if (settled || secret !== s) return;
+    settled = true;
+    secret.spinning = false;
+    render();
+  }
+  el.addEventListener("transitionend", settle, { once: true });
+  setTimeout(settle, SPIN_MS + 300);
+  startWheelSound(sfxVolume(), segmentCrossings(fromRot, target, n));
+  el.classList.add("go");
+  requestAnimationFrame(function () {
+    requestAnimationFrame(function () { el.style.transform = "rotate(" + target + "deg)"; });
+  });
+}
+
 /* ---------- actions ---------- */
 /* Every commit re-announces: the hand count on the other phones tracks yours as
    fast as the wire allows, with no separate bookkeeping about what changed. */
@@ -3968,6 +4072,19 @@ function doDraw() {
 /* Typing never re-renders (that would drop focus), so each text field syncs the one
    button that depends on it by hand. */
 app.addEventListener("input", function (e) {
+  if (e.target.id === "secretnames" && secret) {
+    secret.text = e.target.value;
+    try { localStorage.setItem(SECRET_KEY, secret.text); } catch (err) { /* memory only */ }
+    // Redraw only the wheel — a full render would steal the caret mid-word.
+    secret.rot = 0; secret.name = null;
+    var wb = document.getElementById("secretwheelbox");
+    if (wb) wb.innerHTML = secretWheelHtml();
+    var res = document.getElementById("secretResult");
+    if (res) res.textContent = "";
+    var sbtn = document.querySelector('[data-act="spinSecret"]');
+    if (sbtn) { sbtn.disabled = secretLabels().length < 2; sbtn.style.visibility = ""; }
+    return;
+  }
   var idx = e.target.getAttribute("data-name");
   if (idx !== null) {
     setup.names[+idx] = e.target.value;
@@ -4103,9 +4220,43 @@ app.addEventListener("contextmenu", function (e) {
   if (peekEl || peekTimer) e.preventDefault();
 });
 
+/* The secret way in: 5 seconds held on the menu's SETTINGS button. A drifting
+   finger gets 24px of grace — nobody holds a phone perfectly still for 5s. */
+var secretTimer = null, secretFrom = null, secretAte = false;
+function secretHoldEnd() {
+  secretFrom = null;
+  if (secretTimer) { clearTimeout(secretTimer); secretTimer = null; }
+  // The swallow flag only has to outlive the lift's own click. If that click
+  // never comes (a cancel, a drifted finger), it must not eat the next tap.
+  if (secretAte) setTimeout(function () { secretAte = false; }, 400);
+}
+app.addEventListener("pointerdown", function (e) {
+  if (!e.target.closest || !e.target.closest('.hit[data-act="goSettings"]')) return;
+  secretFrom = [e.clientX, e.clientY];
+  clearTimeout(secretTimer);
+  secretTimer = setTimeout(function () {
+    secretTimer = null;
+    secretAte = true;
+    openSecretWheel();
+  }, 5000);
+});
+app.addEventListener("pointermove", function (e) {
+  if (!secretFrom) return;
+  if (Math.abs(e.clientX - secretFrom[0]) > 24 ||
+      Math.abs(e.clientY - secretFrom[1]) > 24) secretHoldEnd();
+});
+window.addEventListener("pointerup", secretHoldEnd);
+window.addEventListener("pointercancel", secretHoldEnd);
+// A 5s press is a long-press: no browser menu over the button bands.
+app.addEventListener("contextmenu", function (e) {
+  if (e.target.closest && e.target.closest(".hit")) e.preventDefault();
+});
+
 app.addEventListener("click", function (e) {
   // The release that ends a peek is not a pick.
   if (peekAte) { peekAte = false; return; }
+  // The release that ends the secret hold opens nothing else.
+  if (secretAte) { secretAte = false; return; }
   var el = e.target.closest("[data-act]");
   if (!el) return;
   var act = el.getAttribute("data-act");
@@ -4427,6 +4578,8 @@ app.addEventListener("click", function (e) {
     case "spinFate": spinWheel("fate"); break;
     case "spinName": spinWheel("name"); break;
     case "spinMate": spinWheel("mate"); break;
+    case "spinSecret": spinSecret(); break;
+    case "closeSecret": stopWheelSound(true); secret = null; render(); break;
     // Closing mid-spin takes the sound with it — and the heads-up banner off
     // everyone else's phone, when no result ever announced itself.
     case "closeWheel":
