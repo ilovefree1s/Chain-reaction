@@ -515,8 +515,8 @@
     background: #000; border: none; border-radius: 7px; color: #F7941E; cursor: pointer;
     font: inherit; font-size: 24px; font-weight: 900; line-height: 1;
     display: inline-flex; align-items: center; justify-content: center;
-    width: 34px; height: 34px; padding: 0;
-    margin-left: 8px; vertical-align: -9px;
+    width: 42px; height: 42px; padding: 0;
+    margin-left: 8px; vertical-align: -13px;
   }
   /* The button art is anchored to the bottom of the menu, so the version gets
      its own strip below it and the art lifts by exactly that much. */
@@ -529,7 +529,7 @@
     bottom: calc(env(safe-area-inset-bottom) + 1px);
     padding: 0; line-height: 20px; font-size: 13px;
   }
-  .menu .verbtn { font-size: 18px; width: 28px; height: 28px; vertical-align: -8px; }
+  .menu .verbtn { font-size: 20px; width: 36px; height: 36px; vertical-align: -12px; }
 
   nav {
     position: fixed; left: 0; right: 0; bottom: 0; display: flex; background: var(--panel);
@@ -710,7 +710,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.1 · 29 Aug 22:24";
+var APP_VERSION = "v1.1 · 29 Aug 22:27";
 function versionLine() {
   // The ↻ reloads the page in place; navigations always fetch fresh from the
   // network, so this IS "check for updates" without reopening the app.
