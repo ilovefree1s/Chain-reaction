@@ -131,7 +131,7 @@ object CardDeck {
         GameCard(48, "Before shot", CardKind.ATTACK, "Forehand only!", "Force an opponent to throw a forehand on the upcoming drive or approach."),
         GameCard(49, "On draw", CardKind.SABOTAGE, "Everybody But Me", "You must play this card immediately after drawing, you can't discard it. Everyone gets a free mulligan on the next hole but me =("),
         GameCard(50, "Before shot", CardKind.DUAL, "That's Definitely a Gimme", "Pick up a putt as a gimme, as long as it's inside C1 — you definitely woulda made it. The player in last place gets one too. If 2 players are tied for last, they rock paper scissors for it."),
-        GameCard(51, "Before tee shot", CardKind.ATTACK, "Too Many Choices", "Pick 2 discs out of 1 person's bag. They choose 1 to tee off with. Tee off, nerds!"),
+        GameCard(51, "Before tee shot", CardKind.ATTACK, "Too Many Choices", "Pick 2 discs out of 1 person's bag. They choose 1 to tee off with."),
         GameCard(52, "Before tee shot", CardKind.SELF, "Tree Insurance", "Play before your tee shot. If you hit a tree, take a free mulligan."),
         GameCard(53, "Before shot", CardKind.ATTACK, "Trust Me Bro", "Give another player advice for their tee shot. They have to follow it as best they can. (Somewhat reasonable advice — don't tell them something like throw it backwards.)"),
         GameCard(54, "Before shot", CardKind.ATTACK, "Turbo Time", "All opponents in C1 must turbo putt their next shot."),
