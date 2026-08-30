@@ -161,7 +161,7 @@ const cardBack = copyArt("cardbacks.png", "cardback.png");
 const menuSound = copyAudio("chains.mp3");
 const wheelSound = copyAudio("gamble.mp3");
 const wolfSound = copyAudio("lonewolf.mp3");
-const drawSound = copyAudio("draw.mp3");
+const drawSound = copyAudio("draw.wav");
 const diceSound = copyAudio("dice.mp3");
 // The soundtrack, played back to back on the menu-side screens only.
 const musicTracks = [

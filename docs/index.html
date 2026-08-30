@@ -760,7 +760,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.10 · 30 Aug 11:59";
+var APP_VERSION = "v1.10 · 30 Aug 12:01";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. Opening the app fetches fresh anyway.
@@ -835,7 +835,7 @@ function playMenuSound(volume) {
 var WOLF_SOUND = "assets/lonewolf.mp3";
 var wolfAudio = WOLF_SOUND ? new Audio(WOLF_SOUND) : null;
 /* The side games' own noises: a card sliding off the deck, dice hitting the table. */
-var DRAW_SOUND = "assets/draw.mp3";
+var DRAW_SOUND = "assets/draw.wav";
 var drawAudio = DRAW_SOUND ? new Audio(DRAW_SOUND) : null;
 var DICE_SOUND = "assets/dice.mp3";
 var diceAudio = DICE_SOUND ? new Audio(DICE_SOUND) : null;
@@ -846,8 +846,7 @@ function playClip(base, volume, maxSeconds) {
     a.volume = Math.min(1, Math.max(0, volume));
     var p = a.play();
     if (p && p.catch) p.catch(function () { /* nothing to do */ });
-    // A clip longer than its moment gets faded out early — the draw sound's
-    // current export runs 14 seconds, and a deal needs one swish of it.
+    // A clip longer than its moment gets faded out early.
     if (maxSeconds) {
       setTimeout(function () {
         var fade = setInterval(function () {
@@ -4184,7 +4183,7 @@ function tableDrop(cancelled) {
         up: false
       });
       c.deck = c.deck.slice(1);
-      playClip(drawAudio, sfxVolume(), 1.2);
+      playClip(drawAudio, sfxVolume());
     }
   } else {
     var item = null;

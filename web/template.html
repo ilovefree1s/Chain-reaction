@@ -846,8 +846,7 @@ function playClip(base, volume, maxSeconds) {
     a.volume = Math.min(1, Math.max(0, volume));
     var p = a.play();
     if (p && p.catch) p.catch(function () { /* nothing to do */ });
-    // A clip longer than its moment gets faded out early — the draw sound's
-    // current export runs 14 seconds, and a deal needs one swish of it.
+    // A clip longer than its moment gets faded out early.
     if (maxSeconds) {
       setTimeout(function () {
         var fade = setInterval(function () {
@@ -4184,7 +4183,7 @@ function tableDrop(cancelled) {
         up: false
       });
       c.deck = c.deck.slice(1);
-      playClip(drawAudio, sfxVolume(), 1.2);
+      playClip(drawAudio, sfxVolume());
     }
   } else {
     var item = null;
