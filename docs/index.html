@@ -132,6 +132,16 @@
              margin: 12px 0 4px; }
   .pilerow.played { color: #4DC3FF; }
 
+  .holehead { margin-bottom: 16px; }
+  .stripgap { height: 66px; }
+  /* Four or fewer on the card: everything shaves a few pixels so the whole
+     screen sits still — no just-barely scroll. Five players scroll instead. */
+  .scorepage.tight .holehead { margin-bottom: 8px; }
+  .scorepage.tight .player { padding: 8px 12px; margin-bottom: 8px; }
+  .scorepage.tight .player .name { font-size: 20px; }
+  .scorepage.tight .hint { margin: 0 0 6px; }
+  .scorepage.tight .big { margin-bottom: 6px; }
+  .scorepage.tight .stripgap { height: 48px; }
   .player { border: 2px solid transparent; border-radius: 14px; padding: 12px; margin-bottom: 10px;
             background: linear-gradient(var(--panel), var(--panel)) padding-box,
                         linear-gradient(100deg, #1E6FFF, #3FA9FF 45%, #FF8A1E) border-box;
@@ -692,7 +702,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.10 · 29 Aug 22:53";
+var APP_VERSION = "v1.10 · 29 Aug 22:58";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. Opening the app fetches fresh anyway.
@@ -2622,7 +2632,7 @@ function teeOrder(s, h) {
 function renderScore() {
   var s = state, h = s.currentHole, locked = s.locked[h], par = s.pars[h];
 
-  var head = '<div class="row" style="margin-bottom:16px">' +
+  var head = '<div class="row holehead">' +
     '<button class="step" data-act="hole" data-n="' + (h - 1) + '"' + (h > 0 ? "" : " disabled") + '>&lsaquo;</button>' +
     '<div class="hole-title"><strong>HOLE ' + (h + 1) + '</strong>' +
       // Par is fixed by the course — shown, not editable.
@@ -2715,8 +2725,12 @@ function renderScore() {
   }
   strip += '</div>';
 
-  // The spacer keeps the lock button clear of the fixed strip.
-  return head + players + disputeBlock + lockBlock + '<div style="height:66px"></div>' + strip;
+  // The spacer keeps the lock button clear of the fixed strip. Four players
+  // ride in the tight wrapper so the whole page fits without scrolling —
+  // a fifth player brings the scroll back rather than shrinking further.
+  return '<div class="scorepage' + (s.players.length <= 4 ? " tight" : "") + '">' +
+    head + players + disputeBlock + lockBlock +
+    '<div class="stripgap"></div>' + strip + '</div>';
 }
 
 /* ---------- results ----------
