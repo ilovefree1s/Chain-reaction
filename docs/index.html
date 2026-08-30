@@ -397,6 +397,11 @@
     background: linear-gradient(rgba(3, 6, 12, 0.55), rgba(3, 6, 12, 0.55)),
                 var(--sgbg) center / cover no-repeat #05070C;
   }
+  /* The card table dims its splash deeper, so the cards own the felt. */
+  .modal.cardtable.sgscreen {
+    background: linear-gradient(rgba(3, 6, 12, 0.7), rgba(3, 6, 12, 0.7)),
+                var(--sgbg) center / cover no-repeat #05070C;
+  }
   /* On the menu the splash rides the empty space above the buttons — sized to
      it, centred in it — and the button zone below stays plain black. */
   .modal.sgmenu.sgscreen {
@@ -793,7 +798,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.10 · 30 Aug 12:45";
+var APP_VERSION = "v1.10 · 30 Aug 12:48";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. Opening the app fetches fresh anyway.
