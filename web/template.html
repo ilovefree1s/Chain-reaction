@@ -388,18 +388,38 @@
   .pip.on { background: #10182A; }
   .dicecount { flex: 0 0 auto; min-width: 84px; text-align: center;
                font-size: 18px; font-weight: 900; color: var(--sage); }
-  /* One playing card, drawn big enough to read across a picnic table. */
-  .pcard {
-    width: 150px; height: 210px; margin: 16px auto 4px;
-    background: #F4F6FA; border-radius: 14px; color: #10182A;
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.45);
+  /* The card table: two buttons up top, felt everywhere else. */
+  .modal.cardtable {
+    overflow: hidden; touch-action: none;
+    padding: calc(10px + env(safe-area-inset-top)) 12px 0;
   }
-  .pcard.red { color: #C42430; }
-  .pcard .pr { font-size: 60px; font-weight: 900; line-height: 1; }
-  .pcard .ps { font-size: 52px; line-height: 1.15; }
-  .pcard.back { background: linear-gradient(135deg, #1E6FFF, #10182A); color: #4DC3FF; font-size: 64px; }
-  .pcard.backimg { display: block; object-fit: cover; background: none; }
+  .cardtable .tbar { display: flex; gap: 10px; }
+  .cardtable .tbar .big { flex: 1 1 0; margin-bottom: 0; }
+  /* The deck, sitting there with a stacked-paper shadow and its count. */
+  .tdeck {
+    position: absolute; left: 50%; top: calc(env(safe-area-inset-top) + 78px);
+    transform: translateX(-50%); width: 84px; height: 118px;
+  }
+  .tdeck img, .tdeck .tface { width: 100%; height: 100%; display: block; border-radius: 8px;
+    box-shadow: 2px 2px 0 #0A1322, 4px 4px 0 #0A1322, 0 10px 16px rgba(0, 0, 0, 0.5); }
+  .tdeck.empty img, .tdeck.empty .tface { opacity: 0.25; }
+  .tcount {
+    position: absolute; right: -10px; top: -10px; z-index: 1;
+    background: #F7941E; color: #10182A;
+    font-weight: 900; font-size: 13px; border-radius: 999px; padding: 3px 8px;
+  }
+  /* Cards on the felt — face down until tapped over. */
+  .tcard { position: absolute; width: 78px; height: 109px; border-radius: 8px; }
+  .tcard img { width: 100%; height: 100%; display: block; border-radius: 8px;
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.5); }
+  .tface {
+    width: 100%; height: 100%; background: #F4F6FA; border-radius: 8px; color: #10182A;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.5);
+  }
+  .tface.red { color: #C42430; }
+  .tface .tr { font-size: 30px; font-weight: 900; line-height: 1; }
+  .tface .ts { font-size: 24px; line-height: 1.1; }
   .menu-buttons-plain { position: absolute; left: 0; right: 0; z-index: 1;
                         /* The fallback has no empty band, so it lifts clear of the line. */
                         bottom: calc(env(safe-area-inset-bottom) + 34px); padding: 0 20px; }
@@ -2364,6 +2384,9 @@ function setupPars() { return setup.pars.slice(0, setup.holes); }
 var app = document.getElementById("app");
 
 function render() {
+  // Mid-drag on the card table nothing repaints — a hello landing during a
+  // drag would swap the element out from under the finger. The drop renders.
+  if (tDrag) return;
   var html;
   // The hole strip's swipe position survives re-renders (hellos repaint every
   // few seconds); only an actual hole change recenters it.
@@ -3935,9 +3958,9 @@ function openSecretWheel() {
     mode: "menu",
     // The name wheel's slate.
     text: saved, rot: 0, name: null, spinning: false,
-    // The dice tray and the card deck ride along, fresh each visit.
+    // The dice tray and the card table ride along, fresh each visit.
     dice: { count: 2, vals: [3, 4], rolling: false },
-    cards: { deck: [], last: null }
+    cards: { deck: [], board: [] }
   };
   render();
 }
@@ -4039,29 +4062,116 @@ function freshDeck52() {
   for (var i = 0; i < 52; i++) ids.push(i);
   return shuffled(ids);
 }
+/* The card table: the deck sits there, cards get dragged off the top and land
+   wherever they're dropped, face down. A tap turns a card over. Everything
+   below the two buttons is open felt. */
+function tcardBackHtml() {
+  return CARD_BACK
+    ? '<img src="' + CARD_BACK + '" alt="" draggable="false">'
+    : '<div class="tface">&#9733;</div>';
+}
+function tcardFace(id) {
+  var suit = CARD_SUITS[Math.floor(id / 13)];
+  var red = suit === "♥" || suit === "♦";
+  return '<div class="tface' + (red ? " red" : "") + '">' +
+    '<span class="tr">' + CARD_RANKS[id % 13] + '</span>' +
+    '<span class="ts">' + suit + '</span></div>';
+}
 function renderCardsGame() {
   var c = secret.cards;
-  var face;
-  if (c.last == null) {
-    face = CARD_BACK
-      ? '<img class="pcard backimg" src="' + CARD_BACK + '" alt="">'
-      : '<div class="pcard back">&#9733;</div>';
-  } else {
-    var suit = CARD_SUITS[Math.floor(c.last / 13)];
-    var red = suit === "♥" || suit === "♦";
-    face = '<div class="pcard' + (red ? " red" : "") + '">' +
-      '<span class="pr">' + CARD_RANKS[c.last % 13] + '</span>' +
-      '<span class="ps">' + suit + '</span></div>';
-  }
-  return '<div class="modal"><div class="label">Cards</div>' +
-    face +
-    '<p class="hint" style="text-align:center">' + c.deck.length +
-    ' left in the deck</p>' +
-    '<button class="big wheel" data-act="drawCard"' + (c.deck.length ? "" : " disabled") + '>' +
-    (c.deck.length ? "Draw" : "Deck is out") + '</button>' +
+  var cards = c.board.map(function (b) {
+    return '<div class="tcard" data-tc="' + b.id + '" style="left:' + b.x + 'px;top:' + b.y + 'px">' +
+      (b.up ? tcardFace(b.id) : tcardBackHtml()) + '</div>';
+  }).join("");
+  return '<div class="modal cardtable" id="cardtable">' +
+    '<div class="tbar">' +
     '<button class="big raised" data-act="shuffleCards">Shuffle it all back</button>' +
-    '<button class="big quiet" data-act="secretBack">Back</button></div>';
+    '<button class="big quiet" data-act="secretBack">Back</button></div>' +
+    '<div class="tdeck' + (c.deck.length ? "" : " empty") + '" id="tdeck">' +
+    tcardBackHtml() +
+    '<span class="tcount">' + c.deck.length + '</span></div>' +
+    cards + '</div>';
 }
+
+/* Dragging on the table. Grabbing the deck peels the top card off face down;
+   grabbing a dealt card lifts it above the rest and moves it. A press that
+   never moves is a tap, and a tap on a dealt card turns it over. */
+var tDrag = null;
+function tclampX(x) { return Math.max(2, Math.min(window.innerWidth - 80, x)); }
+function tclampY(y) { return Math.max(2, Math.min(window.innerHeight - 111, y)); }
+app.addEventListener("pointerdown", function (e) {
+  if (!secret || secret.mode !== "cards" || tDrag) return;
+  var cardEl = e.target.closest ? e.target.closest(".tcard") : null;
+  var deckEl = e.target.closest ? e.target.closest("#tdeck") : null;
+  if (cardEl) {
+    var id = +cardEl.getAttribute("data-tc");
+    // Top of the pile: last in the list is last in the DOM.
+    var b = secret.cards.board;
+    for (var i = 0; i < b.length; i++) {
+      if (b[i].id === id) { b.push(b.splice(i, 1)[0]); break; }
+    }
+    cardEl.parentNode.appendChild(cardEl);
+    var r = cardEl.getBoundingClientRect();
+    tDrag = { kind: "move", id: id, el: cardEl, dx: e.clientX - r.left, dy: e.clientY - r.top,
+              sx: e.clientX, sy: e.clientY, moved: false };
+    e.preventDefault();
+  } else if (deckEl && secret.cards.deck.length) {
+    tDrag = { kind: "deal", el: null, sx: e.clientX, sy: e.clientY, moved: false };
+    e.preventDefault();
+  }
+});
+app.addEventListener("pointermove", function (e) {
+  if (!tDrag) return;
+  if (!tDrag.moved &&
+      Math.abs(e.clientX - tDrag.sx) < 6 && Math.abs(e.clientY - tDrag.sy) < 6) return;
+  tDrag.moved = true;
+  if (tDrag.kind === "deal" && !tDrag.el) {
+    var table = document.getElementById("cardtable");
+    if (!table) { tDrag = null; return; }
+    var el = document.createElement("div");
+    el.className = "tcard";
+    el.innerHTML = tcardBackHtml();
+    table.appendChild(el);
+    // Carried by its middle.
+    tDrag.el = el; tDrag.dx = 39; tDrag.dy = 54;
+  }
+  if (tDrag.el) {
+    tDrag.el.style.left = tclampX(e.clientX - tDrag.dx) + "px";
+    tDrag.el.style.top = tclampY(e.clientY - tDrag.dy) + "px";
+  }
+});
+function tableDrop(cancelled) {
+  if (!tDrag) return;
+  var d = tDrag; tDrag = null;
+  var c = secret && secret.cards;
+  if (!c) { if (d.kind === "deal" && d.el) d.el.remove(); return; }
+  if (d.kind === "deal") {
+    // Never left the deck (or the gesture died): the card stays on top.
+    if (!d.el || !d.moved || cancelled) { if (d.el) d.el.remove(); }
+    else {
+      c.board.push({
+        id: c.deck[0],
+        x: parseInt(d.el.style.left, 10) || 0,
+        y: parseInt(d.el.style.top, 10) || 0,
+        up: false
+      });
+      c.deck = c.deck.slice(1);
+    }
+  } else {
+    var item = null;
+    for (var i = 0; i < c.board.length; i++) if (c.board[i].id === d.id) item = c.board[i];
+    if (item) {
+      if (!d.moved && !cancelled) item.up = !item.up;
+      else if (d.el) {
+        item.x = parseInt(d.el.style.left, 10) || item.x;
+        item.y = parseInt(d.el.style.top, 10) || item.y;
+      }
+    }
+  }
+  render();
+}
+window.addEventListener("pointerup", function () { tableDrop(false); });
+window.addEventListener("pointercancel", function () { tableDrop(true); });
 
 function spinSecret() {
   if (!secret || secret.spinning) return;
@@ -4699,7 +4809,7 @@ app.addEventListener("click", function (e) {
     case "secretWheel": secret.mode = "wheel"; render(); break;
     case "secretDice": secret.mode = "dice"; render(); break;
     case "secretCards":
-      if (!secret.cards.deck.length && secret.cards.last == null) secret.cards.deck = freshDeck52();
+      if (!secret.cards.deck.length && !secret.cards.board.length) secret.cards.deck = freshDeck52();
       secret.mode = "cards"; render(); break;
     case "secretBack": stopWheelSound(true); secret.mode = "menu"; render(); break;
     case "rollDice": rollDice(); break;
@@ -4713,15 +4823,8 @@ app.addEventListener("click", function (e) {
         render();
       }
       break;
-    case "drawCard":
-      if (secret.cards.deck.length) {
-        secret.cards.last = secret.cards.deck[0];
-        secret.cards.deck = secret.cards.deck.slice(1);
-        render();
-      }
-      break;
     case "shuffleCards":
-      secret.cards.deck = freshDeck52(); secret.cards.last = null; render(); break;
+      secret.cards.deck = freshDeck52(); secret.cards.board = []; render(); break;
     case "closeSecret": stopWheelSound(true); secret = null; render(); break;
     // Closing mid-spin takes the sound with it — and the heads-up banner off
     // everyone else's phone, when no result ever announced itself.
