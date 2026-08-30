@@ -348,14 +348,13 @@
   /* The button sheet is transparent, so it just sits on the photo. */
   .menu-buttons {
     position: absolute; left: 0; right: 0; z-index: 1;
-    /* Lifted off the floor, so the grid breathes above the version line. */
-    bottom: calc(env(safe-area-inset-bottom) + 48px);
+    /* Lifted off the floor, so the stack breathes above the version line. */
+    bottom: calc(env(safe-area-inset-bottom) + 48px); height: 40%;
     display: flex; justify-content: center;
   }
-  /* A wide 2x2 grid now, so it sizes by width and its height follows. */
-  .menu-buttons .sheet { position: relative; width: min(92%, 430px); aspect-ratio: 1672 / 941; }
+  .menu-buttons .sheet { position: relative; height: 100%; aspect-ratio: 941 / 1672; }
   .menu-buttons img { height: 100%; width: 100%; display: block; }
-  /* Each hit box is a full quadrant, so every tap snaps to the nearest button. */
+  /* Each hit box is measured off the artwork's pixels — see BUTTON_BANDS. */
   .hit { position: absolute; cursor: pointer; }
   .menu-buttons-plain { position: absolute; left: 0; right: 0; z-index: 1;
                         /* The fallback has no empty band, so it lifts clear of the line. */
@@ -719,7 +718,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.1 · 29 Aug 22:33";
+var APP_VERSION = "v1.1 · 29 Aug 22:50";
 function versionLine() {
   // The ↻ reloads the page in place; navigations always fetch fresh from the
   // network, so this IS "check for updates" without reopening the app.
@@ -2438,17 +2437,17 @@ function backBar(title) {
 
 /*
  * The button artwork is one sheet with all four buttons painted in, so they can't be
- * laid out individually — invisible tap targets are tiled over it instead. The sheet
- * is a 2x2 grid (PLAY | CARDS / RULES | SETTINGS); the split was measured off the
- * actual pixels (alpha scan of homebuttons.png: the column gap is 830-848 of 1672,
- * the row gap 474-490 of 941), and each hit box is the full quadrant up to those
- * midpoints, so every tap lands on the nearest button with no dead gaps.
+ * laid out individually — the sheet is cropped to the button stack and four invisible
+ * tap targets are tiled over it. Measured off newbuttons.png's actual pixels (alpha
+ * scan of 941x1672): buttons sit at rows 164-468, 514-820, 862-1168 and 1208-1518,
+ * paint spans columns 34-902. Band boundaries split the gaps at their midpoints, so
+ * every tap snaps to the nearest button with no dead zones.
  */
 var BUTTON_BANDS = [
-  ["play",       0,    0,    50.2, 51.2],
-  ["goCards",    50.2, 0,    49.8, 51.2],
-  ["goRules",    0,    51.2, 50.2, 48.8],
-  ["goSettings", 50.2, 51.2, 49.8, 48.8]
+  ["play", 3.6, 9.81, 92.3, 19.56],
+  ["goCards", 3.6, 29.37, 92.3, 20.93],
+  ["goRules", 3.6, 50.30, 92.3, 20.75],
+  ["goSettings", 3.6, 71.05, 92.3, 19.74]
 ];
 
 function renderMenu() {
