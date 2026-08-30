@@ -777,7 +777,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.10 · 30 Aug 12:25";
+var APP_VERSION = "v1.10 · 30 Aug 12:28";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. Opening the app fetches fresh anyway.
@@ -4089,15 +4089,17 @@ function rollDice() {
   if (!d || d.rolling) return;
   d.rolling = true;
   playClip(diceAudio, sfxVolume());
-  var ticks = 0;
+  // The dice tumble for as long as the rattle plays, and settle when it ends.
+  var rollMs = diceAudio && diceAudio.duration > 0 ? diceAudio.duration * 1000 : 900;
+  var ticks = 0, need = Math.max(3, Math.round(rollMs / 90));
   var iv = setInterval(function () {
     if (!secret || secret.mode !== "dice") { clearInterval(iv); return; }
     d.vals = [];
     for (var i = 0; i < d.count; i++) d.vals.push(1 + Math.floor(Math.random() * 6));
     ticks++;
-    if (ticks >= 9) { clearInterval(iv); d.rolling = false; }
+    if (ticks >= need) { clearInterval(iv); d.rolling = false; }
     render();
-  }, 80);
+  }, 90);
 }
 
 /* ---- cards: one standard 52-card deck, drawn down and reshuffled on demand ---- */
