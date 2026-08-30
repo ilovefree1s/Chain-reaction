@@ -415,10 +415,17 @@
     display: flex; flex-direction: column; justify-content: flex-end;
     padding-bottom: calc(14px + env(safe-area-inset-bottom));
   }
-  .sgmenu .label { margin-bottom: auto; }
+  /* Down out of the Back button's lane, then everything else sinks. */
+  .sgmenu .label { margin: 44px 0 auto; }
+  /* The door out lives quietly in the top-left corner. */
+  .sgback {
+    position: absolute; left: 8px; top: calc(env(safe-area-inset-top) + 10px);
+    z-index: 2; background: none; border: none; cursor: pointer;
+    color: #A9B8D4; font-family: inherit; font-size: 17px; font-weight: 700;
+    padding: 10px 14px;
+  }
   /* The painted plates, restacked with tight gaps so the splash stays seen. */
-  /* 15% down from the full-size stack, per the eyeball test on the phone. */
-  .sgstack { width: min(68%, 264px); margin: 0 auto; display: flex;
+  .sgstack { width: min(80%, 310px); margin: 0 auto; display: flex;
              flex-direction: column; gap: 7px; }
   .sgplate { position: relative; overflow: hidden; cursor: pointer; }
   .sgplate img { position: absolute; left: 0; width: 100%; }
@@ -801,7 +808,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.10 · 30 Aug 13:04";
+var APP_VERSION = "v1.10 · 30 Aug 19:40";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. Opening the app fetches fresh anyway.
@@ -4080,14 +4087,14 @@ function renderSecret() {
   var plates = [
     ["secretWheel", 318, -42.14],
     ["secretDice", 322, -149.69],
-    ["secretCards", 322, -259.01],
-    ["closeSecret", 328, -362.8]
+    ["secretCards", 322, -259.01]
   ];
   var stack = plates.map(function (p) {
     return '<div class="sgplate" data-act="' + p[0] + '" style="aspect-ratio:941/' + p[1] + '">' +
       '<img src="' + SG_BUTTONS + '" alt="" draggable="false" style="top:' + p[2] + '%"></div>';
   }).join("");
   return '<div class="modal sgmenu sgscreen">' +
+    '<button class="sgback" data-act="closeSecret">&lsaquo;&nbsp;&nbsp;Back</button>' +
     '<div class="label">Secret gamble games</div>' +
     '<div class="sgstack">' + stack + '</div></div>';
 }
