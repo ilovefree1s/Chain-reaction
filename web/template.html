@@ -507,37 +507,11 @@
     color: #F7941E;
     padding: 10px 0 calc(10px + env(safe-area-inset-bottom));
   }
-  /* The update check: a tap re-pulls the app from the server. Padded well past
-     the glyph so a thumb can actually hit it. */
-  .verbtn {
-    /* A true square under the glyph — faded black, orange outline, corners
-       barely eased so it still reads as the square it is. */
-    background: rgba(0, 0, 0, 0.55); border: 2px solid #F7941E; border-radius: 2px;
-    box-sizing: border-box; color: #F7941E; cursor: pointer;
-    font: inherit; font-size: 24px; font-weight: 900; line-height: 1;
-    display: inline-flex; align-items: center; justify-content: center;
-    width: 42px; height: 42px; aspect-ratio: 1; padding: 0;
-    margin-left: 8px; vertical-align: -13px;
-  }
-  /* The button art is anchored to the bottom of the menu, so the version gets
-     its own strip below it and the art lifts by exactly that much. */
-  /* Straight under the Settings button, inside the sheet's own empty bottom
-     band — the artwork is transparent there, so nothing is covered up. */
+  /* On the menu it sits alone in the bottom-right corner, off the artwork. */
   .menu .ver {
-    position: absolute; left: 0; right: 0; z-index: 3;
-    /* Tucked up under the button grid rather than hugging the floor. */
-    bottom: calc(env(safe-area-inset-bottom) + 12px);
-    padding: 0; line-height: 20px; font-size: 15px;
+    position: absolute; left: auto; right: 14px; bottom: calc(env(safe-area-inset-bottom) + 8px);
+    z-index: 3; padding: 0; line-height: 20px; font-size: 15px;
   }
-  /* Absolutely placed, so no line-box or phone text-scaling quirk can stretch
-     it — a fixed 32px square riding just right of the centred stamp. */
-  .menu .verbtn {
-    position: absolute; left: calc(50% + 98px); top: 50%;
-    transform: translateY(-50%); margin: 0;
-    font-size: 19px; width: 34px; height: 34px; min-height: 0; max-height: 34px;
-  }
-  /* The strip matches the chip's height so both centre on the same line. */
-  .menu .ver { min-height: 34px; line-height: 34px; }
 
   nav {
     position: fixed; left: 0; right: 0; bottom: 0; display: flex; background: var(--panel);
@@ -720,10 +694,9 @@ applyCharacterNames();
  */
 var APP_VERSION = "__APP_VERSION__";
 function versionLine() {
-  // The ↻ reloads the page in place; navigations always fetch fresh from the
-  // network, so this IS "check for updates" without reopening the app.
-  return '<div class="ver">' + esc(APP_VERSION) +
-    '<button class="verbtn" data-act="refreshApp" aria-label="Check for updates">&#8635;</button></div>';
+  // Just the number on screen — the full build stamp stays in APP_VERSION for
+  // the lobby's stale-phone check. Opening the app fetches fresh anyway.
+  return '<div class="ver">' + esc(APP_VERSION.split(" · ")[0]) + '</div>';
 }
 
 /* Artwork, inlined as data URIs by web/build.js so this stays one file. */
@@ -4294,7 +4267,6 @@ app.addEventListener("click", function (e) {
         screen = "setup";
       }
       render(); break;
-    case "refreshApp": window.location.reload(); break;
     case "goCards": screen = "cards"; render(); break;
     case "goRules": screen = "rules"; rulesMode = state ? state.mode : "stroke"; render(); break;
     case "goSettings":
