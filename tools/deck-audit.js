@@ -170,7 +170,7 @@ const WHEEL_SETTLED = {
   56: "On the wheel: it sits on the whole table but only bites whoever misses inside C1 — the exempt player is safe either way.",
   54: "On the wheel: no C1 limit — everyone but the exempt player turbo putts their next putt from wherever they are.",
   53: "On the wheel: the exempt player advises every other player, and can give each of them something different.",
-  51: "Joins the wheel. The exempt player's own discs go round the table until everyone has one to tee with — a 4th gets added at 5 players.",
+  51: "Reworded on the wheel 2026-08-29 in the user's words: the exempt player picks 2 discs out of each person's bag, and everyone picks 1 of the 2 to tee off with.",
   48: "On the wheel: everyone but the exempt player throws forehand.",
   45: "On the wheel: everyone but the exempt player rolls their drive or approach.",
   42: "On the wheel: everyone but the exempt player is planted for the next tee shot.",
