@@ -834,6 +834,30 @@ function playMenuSound(volume) {
 /* The wolf's own noise: fires on every phone the moment LONE WOLF! lands. */
 var WOLF_SOUND = "__WOLF_SOUND__";
 var wolfAudio = WOLF_SOUND ? new Audio(WOLF_SOUND) : null;
+/* The side games' own noises: a card sliding off the deck, dice hitting the table. */
+var DRAW_SOUND = "__DRAW_SOUND__";
+var drawAudio = DRAW_SOUND ? new Audio(DRAW_SOUND) : null;
+var DICE_SOUND = "__DICE_SOUND__";
+var diceAudio = DICE_SOUND ? new Audio(DICE_SOUND) : null;
+function playClip(base, volume, maxSeconds) {
+  if (!base || !(volume > 0)) return;
+  try {
+    var a = base.cloneNode();
+    a.volume = Math.min(1, Math.max(0, volume));
+    var p = a.play();
+    if (p && p.catch) p.catch(function () { /* nothing to do */ });
+    // A clip longer than its moment gets faded out early — the draw sound's
+    // current export runs 14 seconds, and a deal needs one swish of it.
+    if (maxSeconds) {
+      setTimeout(function () {
+        var fade = setInterval(function () {
+          a.volume = Math.max(0, a.volume - 0.15);
+          if (a.volume <= 0) { clearInterval(fade); try { a.pause(); } catch (e) { /* done */ } }
+        }, 40);
+      }, maxSeconds * 1000);
+    }
+  } catch (e) { /* nothing to do */ }
+}
 function playWolfSound(volume) {
   if (!wolfAudio || !(volume > 0)) return;
   try {
@@ -4045,7 +4069,7 @@ function rollDice() {
   var d = secret && secret.dice;
   if (!d || d.rolling) return;
   d.rolling = true;
-  playMenuSound(sfxVolume());
+  playClip(diceAudio, sfxVolume());
   var ticks = 0;
   var iv = setInterval(function () {
     if (!secret || secret.mode !== "dice") { clearInterval(iv); return; }
@@ -4160,6 +4184,7 @@ function tableDrop(cancelled) {
         up: false
       });
       c.deck = c.deck.slice(1);
+      playClip(drawAudio, sfxVolume(), 1.2);
     }
   } else {
     var item = null;

@@ -161,6 +161,8 @@ const cardBack = copyArt("cardbacks.png", "cardback.png");
 const menuSound = copyAudio("chains.mp3");
 const wheelSound = copyAudio("gamble.mp3");
 const wolfSound = copyAudio("lonewolf.mp3");
+const drawSound = copyAudio("draw.mp3");
+const diceSound = copyAudio("dice.mp3");
 // The soundtrack, played back to back on the menu-side screens only.
 const musicTracks = [
   copyAudio("dischoarderblues.mp3"),
@@ -238,6 +240,8 @@ const template = fs.readFileSync(path.join(__dirname, "template.html"), "utf8");
   "__MENU_SOUND__",
   "__WHEEL_SOUND__",
   "__WOLF_SOUND__",
+  "__DRAW_SOUND__",
+  "__DICE_SOUND__",
 ].forEach((token) => {
   if (!template.includes(token)) {
     console.error(`template.html is missing the ${token} placeholder`);
@@ -263,6 +267,8 @@ const html = template
   .replace("__MENU_SOUND__", menuSound)
   .replace("__WHEEL_SOUND__", wheelSound)
   .replace("__WOLF_SOUND__", wolfSound)
+  .replace("__DRAW_SOUND__", drawSound)
+  .replace("__DICE_SOUND__", diceSound)
   .replace("/*__MUSIC_TRACKS__*/", JSON.stringify(musicTracks))
   .replace("__APP_VERSION__", versionLabel)
   ;
