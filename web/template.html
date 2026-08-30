@@ -390,6 +390,12 @@
   .pip.on { background: #10182A; }
   .dicecount { flex: 0 0 auto; min-width: 84px; text-align: center;
                font-size: 18px; font-weight: 900; color: var(--sage); }
+  /* Every secret screen wears the 4 THE BOYS splash, dimmed so the buttons,
+     wheel, dice and cards stay the loudest thing on it. */
+  .modal.sgscreen {
+    background: linear-gradient(rgba(3, 6, 12, 0.55), rgba(3, 6, 12, 0.55)),
+                url("__SG_BACKGROUND__") center / cover no-repeat #05070C;
+  }
   /* The games sink to the bottom, in reach of the thumb; the title stays up
      top, and Close keeps a little distance from the three games. */
   .modal.sgmenu {
@@ -4039,7 +4045,7 @@ function renderSecret() {
   if (secret.mode === "cards") return renderCardsGame();
   if (secret.mode === "wheel") {
     var labels = secretLabels();
-    return '<div class="modal">' +
+    return '<div class="modal sgscreen">' +
       '<div class="label">The name wheel</div>' +
       '<div class="wheelbox" id="secretwheelbox">' + secretWheelHtml() + '</div>' +
       '<div class="exempt" id="secretResult">' +
@@ -4052,7 +4058,7 @@ function renderSecret() {
   }
   // The landing: three side games, one door out — the whole cluster rides the
   // bottom of the screen, where a thumb already is after five quick taps.
-  return '<div class="modal sgmenu">' +
+  return '<div class="modal sgmenu sgscreen">' +
     '<div class="label">Secret gamble games</div>' +
     '<button class="big wheel" data-act="secretWheel">Wheel</button>' +
     '<button class="big wheel" data-act="secretDice">Dice</button>' +
@@ -4076,7 +4082,7 @@ function renderDiceGame() {
     return '<div class="die">' + pips + '</div>';
   }).join("");
   var total = d.vals.reduce(function (a, b) { return a + b; }, 0);
-  return '<div class="modal"><div class="label">Dice</div>' +
+  return '<div class="modal sgscreen"><div class="label">Dice</div>' +
     '<div class="dicerow">' + dice + '</div>' +
     '<div class="exempt">' + (d.rolling ? "&hellip;" : total) + '</div>' +
     '<div class="row" style="justify-content:center;margin-bottom:10px">' +
@@ -4141,7 +4147,7 @@ function renderCardsGame() {
         (s.up ? tcardFace(s.id) : tcardBackHtml()) + '</div>'
       : "") + '</div>';
   }).join("");
-  return '<div class="modal cardtable" id="cardtable">' +
+  return '<div class="modal cardtable sgscreen" id="cardtable">' +
     '<div class="tbar">' +
     '<button class="big quiet" data-act="secretBack">Back</button>' +
     '<button class="big raised" data-act="shuffleCards">Shuffle all</button></div>' +
