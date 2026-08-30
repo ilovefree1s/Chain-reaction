@@ -526,20 +526,19 @@
      band — the artwork is transparent there, so nothing is covered up. */
   .menu .ver {
     position: absolute; left: 0; right: 0; z-index: 3;
-    /* Hugs the very bottom: on tall phones the art's empty band shrinks, and
-       at the old offset the line crowded the Settings button. */
-    bottom: calc(env(safe-area-inset-bottom) + 1px);
-    padding: 0; line-height: 20px; font-size: 13px;
+    /* Tucked up under the button grid rather than hugging the floor. */
+    bottom: calc(env(safe-area-inset-bottom) + 12px);
+    padding: 0; line-height: 20px; font-size: 15px;
   }
   /* Absolutely placed, so no line-box or phone text-scaling quirk can stretch
      it — a fixed 32px square riding just right of the centred stamp. */
   .menu .verbtn {
-    position: absolute; left: calc(50% + 86px); top: 50%;
+    position: absolute; left: calc(50% + 98px); top: 50%;
     transform: translateY(-50%); margin: 0;
-    font-size: 18px; width: 32px; height: 32px; min-height: 0; max-height: 32px;
+    font-size: 19px; width: 34px; height: 34px; min-height: 0; max-height: 34px;
   }
   /* The strip matches the chip's height so both centre on the same line. */
-  .menu .ver { min-height: 32px; line-height: 32px; }
+  .menu .ver { min-height: 34px; line-height: 34px; }
 
   nav {
     position: fixed; left: 0; right: 0; bottom: 0; display: flex; background: var(--panel);
