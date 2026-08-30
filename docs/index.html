@@ -316,7 +316,10 @@
 
   /* ---- main menu ---- */
   body.menu-screen #app { padding: 0; max-width: none; }
+  /* The measured height last, so it beats dvh where the two disagree —
+     script-set at load and on every resize (see fitViewport). */
   .menu { position: relative; min-height: 100vh; min-height: 100dvh;
+          min-height: var(--vvh, 100dvh); max-height: var(--vvh, none);
           background: var(--pine); overflow: hidden;
           display: flex; flex-direction: column; }
   /* Full width, anchored top: cropping to fill a tall screen would trim the sides and
@@ -704,7 +707,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.1 · 29 Aug 22:09";
+var APP_VERSION = "v1.1 · 29 Aug 22:21";
 function versionLine() {
   // The ↻ reloads the page in place; navigations always fetch fresh from the
   // network, so this IS "check for updates" without reopening the app.
@@ -4567,6 +4570,20 @@ if (state && state.liveCode) liveConnect(LIVE_ROOM);
 
 /* Decoded now, so the first spin of the round starts on the beat. */
 primeWheelSound();
+
+/*
+ * The menu is sized to the height the browser actually shows, measured in
+ * pixels, not trusted from a CSS unit. After the in-app &#8635; reload, Android
+ * Chrome's idea of 100dvh can run a browser-bar taller than the real screen
+ * for that first paint — the menu grows past the fold and the version line
+ * needs a scroll to reach. innerHeight never lies about the visible height;
+ * re-measuring on resize keeps it right when the bar hides again.
+ */
+function fitViewport() {
+  document.documentElement.style.setProperty("--vvh", window.innerHeight + "px");
+}
+window.addEventListener("resize", fitViewport);
+fitViewport();
 
 render();
 
