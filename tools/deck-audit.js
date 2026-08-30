@@ -176,7 +176,7 @@ const WHEEL_SETTLED = {
   42: "On the wheel: everyone but the exempt player is planted for the next tee shot.",
   41: "Joins the wheel. The exempt player hands out discs from their own bag and everyone else tees with them.",
   40: "On the wheel: the exempt player puts everyone else on one disc, and a disc forced on them by another card still counts as that one.",
-  38: "On the wheel: the exempt player sets a mando on the NEXT hole and everyone else plays it — not this hole, since a spin can land with players already past where a mando would sit.",
+  38: "Reworded on the wheel 2026-08-30 in the user's words: the exempt player chooses a somewhat reasonable mando for THIS hole and everyone else plays it. (Was next-hole out of caution about mid-hole spins; the user moved it back to the live hole.)",
   33: "On the wheel: everyone but the exempt player drives off hand.",
   19: "Joins the wheel — first card taken off the blacklist. The exempt player picks the disc everyone else tees with. Close to Bag Raid on the wheel, but from your own bag and this hole rather than the next.",
   18: "On the wheel: it flips — the exempt player is the one being commentated, and everyone else has to call their shots. Written as \"anyone who forgets\" rather than \"any one of the 3\", since the table can be 3, 4 or 5.",
