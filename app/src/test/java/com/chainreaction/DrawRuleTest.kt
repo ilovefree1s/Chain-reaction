@@ -92,9 +92,9 @@ class DrawRuleTest {
     // ---- deck integrity ----
 
     @Test
-    fun `deck is 61 cards with unique ids one through 61`() {
-        assertEquals(61, CardDeck.ALL.size)
-        assertEquals((1..61).toSet(), CardDeck.ALL.map { it.id }.toSet())
+    fun `deck is 62 cards with unique ids one through 62`() {
+        assertEquals(62, CardDeck.ALL.size)
+        assertEquals((1..62).toSet(), CardDeck.ALL.map { it.id }.toSet())
         // Wheel-only cards ride the wheel but never a hand.
         assertEquals(CardDeck.ALL.size - Rules.WHEEL_ONLY.size, CardDeck.DEALT.size)
         Rules.WHEEL_ONLY.forEach { id ->
