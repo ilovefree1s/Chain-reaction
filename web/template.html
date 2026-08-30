@@ -390,11 +390,14 @@
   .pip.on { background: #10182A; }
   .dicecount { flex: 0 0 auto; min-width: 84px; text-align: center;
                font-size: 18px; font-weight: 900; color: var(--sage); }
-  /* The side-games menu sinks to the bottom, in reach of the thumb. */
+  /* The games sink to the bottom, in reach of the thumb; the title stays up
+     top, and Close keeps a little distance from the three games. */
   .modal.sgmenu {
     display: flex; flex-direction: column; justify-content: flex-end;
     padding-bottom: calc(28px + env(safe-area-inset-bottom));
   }
+  .sgmenu .label { margin-bottom: auto; }
+  .sgmenu [data-act="closeSecret"] { margin-top: 26px; }
   /* The card table: two buttons up top, felt everywhere else. */
   .modal.cardtable {
     overflow: hidden; touch-action: none;
@@ -4048,7 +4051,7 @@ function renderSecret() {
   // The landing: three side games, one door out — the whole cluster rides the
   // bottom of the screen, where a thumb already is after five quick taps.
   return '<div class="modal sgmenu">' +
-    '<div class="label">Side games</div>' +
+    '<div class="label">Secret gamble games</div>' +
     '<button class="big wheel" data-act="secretWheel">Wheel</button>' +
     '<button class="big primary" data-act="secretDice">Dice</button>' +
     '<button class="big raised" data-act="secretCards">Cards</button>' +
