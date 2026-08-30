@@ -351,9 +351,11 @@
     background: linear-gradient(to bottom, transparent 55%, rgba(0, 0, 0, 0.28) 100%);
   }
   /* FOR THE BOYS, tucked under the title art. Sized to the screen, above the
-     crew photo, and never in the way of a tap. */
+     crew photo. It takes touches now — holding it 3 seconds is the secret way
+     into the side games — so the browser must not claim the press for itself. */
   .menu-ftb { position: absolute; top: 29.5%; left: 50%; transform: translateX(-50%);
-              width: 50%; max-width: 280px; z-index: 1; pointer-events: none;
+              width: 50%; max-width: 280px; z-index: 1;
+              touch-action: none; -webkit-user-drag: none; -webkit-touch-callout: none;
               filter: drop-shadow(0 3px 10px rgba(0, 0, 0, 0.65)); }
   /* The button sheet is transparent, so it just sits on the photo. */
   .menu-buttons {
@@ -2516,7 +2518,7 @@ function renderMenu() {
   return '<div class="menu">' + hint +
     (MENU_IMAGE ? '<div class="menu-art"><img src="' + MENU_IMAGE + '" alt=""></div>' : "") +
     // FOR THE BOYS, riding right under the CHAIN REACTION title art.
-    (FTB_IMAGE ? '<img class="menu-ftb" src="' + FTB_IMAGE + '" alt="FOR THE BOYS">' : "") +
+    (FTB_IMAGE ? '<img class="menu-ftb" src="' + FTB_IMAGE + '" alt="FOR THE BOYS" draggable="false">' : "") +
     (GRASS_IMAGE
       ? '<div class="menu-grass" style="background-image:url(' + GRASS_IMAGE + ')"></div>'
       : "") +
@@ -4449,8 +4451,8 @@ app.addEventListener("contextmenu", function (e) {
   if (peekEl || peekTimer) e.preventDefault();
 });
 
-/* The secret way in: 5 seconds held on the menu's SETTINGS button. A drifting
-   finger gets 24px of grace — nobody holds a phone perfectly still for 5s. */
+/* The secret way in: 3 seconds held on the FOR THE BOYS banner. A drifting
+   finger gets 24px of grace — nobody holds a phone perfectly still that long. */
 var secretTimer = null, secretFrom = null, secretAte = false;
 function secretHoldEnd() {
   secretFrom = null;
@@ -4460,14 +4462,14 @@ function secretHoldEnd() {
   if (secretAte) setTimeout(function () { secretAte = false; }, 400);
 }
 app.addEventListener("pointerdown", function (e) {
-  if (!e.target.closest || !e.target.closest('.hit[data-act="goSettings"]')) return;
+  if (!e.target.closest || !e.target.closest(".menu-ftb")) return;
   secretFrom = [e.clientX, e.clientY];
   clearTimeout(secretTimer);
   secretTimer = setTimeout(function () {
     secretTimer = null;
     secretAte = true;
     openSecretWheel();
-  }, 5000);
+  }, 3000);
 });
 app.addEventListener("pointermove", function (e) {
   if (!secretFrom) return;
@@ -4476,9 +4478,9 @@ app.addEventListener("pointermove", function (e) {
 });
 window.addEventListener("pointerup", secretHoldEnd);
 window.addEventListener("pointercancel", secretHoldEnd);
-// A 5s press is a long-press: no browser menu over the button bands.
+// A 3s press is a long-press: no browser menu over the banner or the bands.
 app.addEventListener("contextmenu", function (e) {
-  if (e.target.closest && e.target.closest(".hit")) e.preventDefault();
+  if (e.target.closest && e.target.closest(".hit, .menu-ftb")) e.preventDefault();
 });
 
 app.addEventListener("click", function (e) {
