@@ -769,7 +769,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.10 · 30 Aug 12:20";
+var APP_VERSION = "v1.10 · 30 Aug 12:22";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. Opening the app fetches fresh anyway.
@@ -848,6 +848,8 @@ var DRAW_SOUND = "assets/draw.wav";
 var drawAudio = DRAW_SOUND ? new Audio(DRAW_SOUND) : null;
 var DICE_SOUND = "assets/dice.mp3";
 var diceAudio = DICE_SOUND ? new Audio(DICE_SOUND) : null;
+var SHUFFLE_SOUND = "assets/shuffle.wav";
+var shuffleAudio = SHUFFLE_SOUND ? new Audio(SHUFFLE_SOUND) : null;
 function playClip(base, volume, maxSeconds) {
   if (!base || !(volume > 0)) return;
   try {
@@ -4875,7 +4877,8 @@ app.addEventListener("click", function (e) {
       break;
     case "shuffleCards":
       secret.cards.deck = freshDeck52(); secret.cards.board = [];
-      secret.cards.slots = [null, null, null, null, null]; render(); break;
+      secret.cards.slots = [null, null, null, null, null];
+      playClip(shuffleAudio, sfxVolume()); render(); break;
     case "closeSecret": stopWheelSound(true); secret = null; render(); break;
     // Closing mid-spin takes the sound with it — and the heads-up banner off
     // everyone else's phone, when no result ever announced itself.
