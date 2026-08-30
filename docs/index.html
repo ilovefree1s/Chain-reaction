@@ -376,6 +376,29 @@
     font-family: inherit; font-size: 17px; margin-bottom: 10px;
   }
   .secretbox:focus { outline: none; border-color: var(--self); }
+  /* The dice tray: white dice, pips laid on a 3x3 grid. */
+  .dicerow { display: flex; justify-content: center; gap: 14px; margin: 20px 0 4px; flex-wrap: wrap; }
+  .die {
+    width: 74px; height: 74px; background: #F4F6FA; border-radius: 12px;
+    display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr);
+    padding: 11px; box-sizing: border-box; gap: 3px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+  }
+  .pip { border-radius: 50%; }
+  .pip.on { background: #10182A; }
+  .dicecount { flex: 0 0 auto; min-width: 84px; text-align: center;
+               font-size: 18px; font-weight: 900; color: var(--sage); }
+  /* One playing card, drawn big enough to read across a picnic table. */
+  .pcard {
+    width: 150px; height: 210px; margin: 16px auto 4px;
+    background: #F4F6FA; border-radius: 14px; color: #10182A;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.45);
+  }
+  .pcard.red { color: #C42430; }
+  .pcard .pr { font-size: 60px; font-weight: 900; line-height: 1; }
+  .pcard .ps { font-size: 52px; line-height: 1.15; }
+  .pcard.back { background: linear-gradient(135deg, #1E6FFF, #10182A); color: #4DC3FF; font-size: 64px; }
   .menu-buttons-plain { position: absolute; left: 0; right: 0; z-index: 1;
                         /* The fallback has no empty band, so it lifts clear of the line. */
                         bottom: calc(env(safe-area-inset-bottom) + 34px); padding: 0 20px; }
@@ -712,7 +735,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.10 · 30 Aug 11:11";
+var APP_VERSION = "v1.10 · 30 Aug 11:39";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. Opening the app fetches fresh anyway.
@@ -3907,7 +3930,14 @@ var secret = null;
 function openSecretWheel() {
   var saved = "";
   try { saved = localStorage.getItem(SECRET_KEY) || ""; } catch (e) { /* memory only */ }
-  secret = { text: saved, rot: 0, name: null, spinning: false };
+  secret = {
+    mode: "menu",
+    // The name wheel's slate.
+    text: saved, rot: 0, name: null, spinning: false,
+    // The dice tray and the card deck ride along, fresh each visit.
+    dice: { count: 2, vals: [3, 4], rolling: false },
+    cards: { deck: [], last: null }
+  };
   render();
 }
 
@@ -3933,17 +3963,100 @@ function secretWheelHtml() {
 }
 
 function renderSecret() {
-  var labels = secretLabels();
+  if (secret.mode === "dice") return renderDiceGame();
+  if (secret.mode === "cards") return renderCardsGame();
+  if (secret.mode === "wheel") {
+    var labels = secretLabels();
+    return '<div class="modal">' +
+      '<div class="label">The name wheel</div>' +
+      '<div class="wheelbox" id="secretwheelbox">' + secretWheelHtml() + '</div>' +
+      '<div class="exempt" id="secretResult">' +
+      (secret.name && !secret.spinning ? esc(secret.name) : "") + '</div>' +
+      '<button class="big wheel" data-act="spinSecret"' +
+      (labels.length >= 2 ? "" : " disabled") + '>Spin</button>' +
+      '<textarea id="secretnames" class="secretbox" rows="6" spellcheck="false" ' +
+      'placeholder="One name per line">' + esc(secret.text || "") + '</textarea>' +
+      '<button class="big quiet" data-act="secretBack">Back</button></div>';
+  }
+  // The landing: three side games, one door out.
   return '<div class="modal">' +
-    '<div class="label">The name wheel</div>' +
-    '<div class="wheelbox" id="secretwheelbox">' + secretWheelHtml() + '</div>' +
-    '<div class="exempt" id="secretResult">' +
-    (secret.name && !secret.spinning ? esc(secret.name) : "") + '</div>' +
-    '<button class="big wheel" data-act="spinSecret"' +
-    (labels.length >= 2 ? "" : " disabled") + '>Spin</button>' +
-    '<textarea id="secretnames" class="secretbox" rows="6" spellcheck="false" ' +
-    'placeholder="One name per line">' + esc(secret.text || "") + '</textarea>' +
+    '<div class="label">Side games</div>' +
+    '<button class="big wheel" data-act="secretWheel">Wheel</button>' +
+    '<button class="big primary" data-act="secretDice">Dice</button>' +
+    '<button class="big raised" data-act="secretCards">Cards</button>' +
     '<button class="big quiet" data-act="closeSecret">Close</button></div>';
+}
+
+/* ---- dice: a tray of 1-6 dice, rolled together ---- */
+/* Which cells of a die face's 3x3 grid carry a pip, by value. */
+var DIE_PIPS = {
+  1: [4], 2: [0, 8], 3: [0, 4, 8], 4: [0, 2, 6, 8],
+  5: [0, 2, 4, 6, 8], 6: [0, 2, 3, 5, 6, 8]
+};
+function renderDiceGame() {
+  var d = secret.dice;
+  var dice = d.vals.map(function (v) {
+    var pips = "";
+    for (var p = 0; p < 9; p++) {
+      pips += '<span class="pip' + (DIE_PIPS[v].indexOf(p) !== -1 ? " on" : "") + '"></span>';
+    }
+    return '<div class="die">' + pips + '</div>';
+  }).join("");
+  var total = d.vals.reduce(function (a, b) { return a + b; }, 0);
+  return '<div class="modal"><div class="label">Dice</div>' +
+    '<div class="dicerow">' + dice + '</div>' +
+    '<div class="exempt">' + (d.rolling ? "&hellip;" : total) + '</div>' +
+    '<div class="row" style="justify-content:center;margin-bottom:10px">' +
+    '<button class="step" data-act="diceLess"' + (d.count <= 1 || d.rolling ? " disabled" : "") + '>&minus;</button>' +
+    '<div class="dicecount">' + d.count + (d.count === 1 ? " die" : " dice") + '</div>' +
+    '<button class="step" data-act="diceMore"' + (d.count >= 6 || d.rolling ? " disabled" : "") + '>+</button></div>' +
+    '<button class="big wheel" data-act="rollDice"' + (d.rolling ? " disabled" : "") + '>Roll</button>' +
+    '<button class="big quiet" data-act="secretBack">Back</button></div>';
+}
+function rollDice() {
+  var d = secret && secret.dice;
+  if (!d || d.rolling) return;
+  d.rolling = true;
+  playMenuSound(sfxVolume());
+  var ticks = 0;
+  var iv = setInterval(function () {
+    if (!secret || secret.mode !== "dice") { clearInterval(iv); return; }
+    d.vals = [];
+    for (var i = 0; i < d.count; i++) d.vals.push(1 + Math.floor(Math.random() * 6));
+    ticks++;
+    if (ticks >= 9) { clearInterval(iv); d.rolling = false; }
+    render();
+  }, 80);
+}
+
+/* ---- cards: one standard 52-card deck, drawn down and reshuffled on demand ---- */
+var CARD_SUITS = ["♠", "♥", "♦", "♣"];
+var CARD_RANKS = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"];
+function freshDeck52() {
+  var ids = [];
+  for (var i = 0; i < 52; i++) ids.push(i);
+  return shuffled(ids);
+}
+function renderCardsGame() {
+  var c = secret.cards;
+  var face;
+  if (c.last == null) {
+    face = '<div class="pcard back">&#9733;</div>';
+  } else {
+    var suit = CARD_SUITS[Math.floor(c.last / 13)];
+    var red = suit === "♥" || suit === "♦";
+    face = '<div class="pcard' + (red ? " red" : "") + '">' +
+      '<span class="pr">' + CARD_RANKS[c.last % 13] + '</span>' +
+      '<span class="ps">' + suit + '</span></div>';
+  }
+  return '<div class="modal"><div class="label">Cards</div>' +
+    face +
+    '<p class="hint" style="text-align:center">' + c.deck.length +
+    ' left in the deck</p>' +
+    '<button class="big wheel" data-act="drawCard"' + (c.deck.length ? "" : " disabled") + '>' +
+    (c.deck.length ? "Draw" : "Deck is out") + '</button>' +
+    '<button class="big raised" data-act="shuffleCards">Shuffle it all back</button>' +
+    '<button class="big quiet" data-act="secretBack">Back</button></div>';
 }
 
 function spinSecret() {
@@ -4579,6 +4692,32 @@ app.addEventListener("click", function (e) {
     case "spinName": spinWheel("name"); break;
     case "spinMate": spinWheel("mate"); break;
     case "spinSecret": spinSecret(); break;
+    case "secretWheel": secret.mode = "wheel"; render(); break;
+    case "secretDice": secret.mode = "dice"; render(); break;
+    case "secretCards":
+      if (!secret.cards.deck.length && secret.cards.last == null) secret.cards.deck = freshDeck52();
+      secret.mode = "cards"; render(); break;
+    case "secretBack": stopWheelSound(true); secret.mode = "menu"; render(); break;
+    case "rollDice": rollDice(); break;
+    case "diceLess":
+      if (secret.dice.count > 1) { secret.dice.count--; secret.dice.vals.pop(); render(); }
+      break;
+    case "diceMore":
+      if (secret.dice.count < 6) {
+        secret.dice.count++;
+        secret.dice.vals.push(1 + Math.floor(Math.random() * 6));
+        render();
+      }
+      break;
+    case "drawCard":
+      if (secret.cards.deck.length) {
+        secret.cards.last = secret.cards.deck[0];
+        secret.cards.deck = secret.cards.deck.slice(1);
+        render();
+      }
+      break;
+    case "shuffleCards":
+      secret.cards.deck = freshDeck52(); secret.cards.last = null; render(); break;
     case "closeSecret": stopWheelSound(true); secret = null; render(); break;
     // Closing mid-spin takes the sound with it — and the heads-up banner off
     // everyone else's phone, when no result ever announced itself.
