@@ -393,12 +393,14 @@
     overflow: hidden; touch-action: none;
     padding: calc(10px + env(safe-area-inset-top)) 12px 0;
   }
-  .cardtable .tbar { display: flex; gap: 10px; }
-  .cardtable .tbar .big { flex: 1 1 0; margin-bottom: 0; }
+  /* Buttons stack on the left, the deck sits on the right — one shared top
+     row, so the felt below starts that much higher. */
+  .cardtable .tbar { display: flex; flex-direction: column; gap: 8px; width: 62%; max-width: 250px; }
+  .cardtable .tbar .big { margin-bottom: 0; }
   /* The deck, sitting there with a stacked-paper shadow and its count. */
   .tdeck {
-    position: absolute; left: 50%; top: calc(env(safe-area-inset-top) + 78px);
-    transform: translateX(-50%); width: 84px; height: 118px;
+    position: absolute; right: 16px; top: calc(env(safe-area-inset-top) + 10px);
+    width: 84px; height: 118px;
   }
   .tdeck img, .tdeck .tface { width: 100%; height: 100%; display: block; border-radius: 8px;
     box-shadow: 2px 2px 0 #0A1322, 4px 4px 0 #0A1322, 0 10px 16px rgba(0, 0, 0, 0.5); }
@@ -756,7 +758,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.10 · 30 Aug 11:44";
+var APP_VERSION = "v1.10 · 30 Aug 11:47";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. Opening the app fetches fresh anyway.
