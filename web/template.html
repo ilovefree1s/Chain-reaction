@@ -424,6 +424,8 @@
     color: #A9B8D4; font-family: inherit; font-size: 17px; font-weight: 700;
     padding: 10px 14px;
   }
+  /* Any title that follows the corner Back drops out of its lane. */
+  .sgback + .label { margin-top: 44px; }
   /* The painted plates, restacked with tight gaps so the splash stays seen. */
   .sgstack { width: min(80%, 310px); margin: 0 auto; display: flex;
              flex-direction: column; gap: 7px; }
@@ -434,8 +436,8 @@
     overflow: hidden; touch-action: none;
     padding: calc(10px + env(safe-area-inset-top)) 12px 0;
   }
-  /* Shuffle on the left edge, Back on the right, the deck between them. */
-  .cardtable .tbar { display: flex; justify-content: space-between; gap: 8px; }
+  /* Back rides the top-left corner; Shuffle holds the right, deck between. */
+  .cardtable .tbar { display: flex; justify-content: flex-end; gap: 8px; }
   .cardtable .tbar .big { margin-bottom: 0; flex: 0 1 32%; min-width: 96px; }
   /* The deck, sitting there with a stacked-paper shadow and its count. */
   .tdeck {
@@ -4069,6 +4071,7 @@ function renderSecret() {
   if (secret.mode === "wheel") {
     var labels = secretLabels();
     return '<div class="modal sgscreen">' +
+      '<button class="sgback" data-act="secretBack">&lsaquo;&nbsp;&nbsp;Back</button>' +
       '<div class="label">The name wheel</div>' +
       '<div class="wheelbox" id="secretwheelbox">' + secretWheelHtml() + '</div>' +
       '<div class="exempt" id="secretResult">' +
@@ -4076,8 +4079,7 @@ function renderSecret() {
       '<button class="big wheel" data-act="spinSecret"' +
       (labels.length >= 2 ? "" : " disabled") + '>Spin</button>' +
       '<textarea id="secretnames" class="secretbox" rows="6" spellcheck="false" ' +
-      'placeholder="One name per line">' + esc(secret.text || "") + '</textarea>' +
-      '<button class="big quiet" data-act="secretBack">Back</button></div>';
+      'placeholder="One name per line">' + esc(secret.text || "") + '</textarea></div>';
   }
   // The landing: three side games, one door out — the whole cluster rides the
   // bottom of the screen, where a thumb already is after five quick taps.
@@ -4115,15 +4117,16 @@ function renderDiceGame() {
     return '<div class="die">' + pips + '</div>';
   }).join("");
   var total = d.vals.reduce(function (a, b) { return a + b; }, 0);
-  return '<div class="modal sgscreen"><div class="label">Dice</div>' +
+  return '<div class="modal sgscreen">' +
+    '<button class="sgback" data-act="secretBack">&lsaquo;&nbsp;&nbsp;Back</button>' +
+    '<div class="label">Dice</div>' +
     '<div class="dicerow">' + dice + '</div>' +
     '<div class="exempt">' + (d.rolling ? "&hellip;" : total) + '</div>' +
     '<div class="row" style="justify-content:center;margin-bottom:10px">' +
     '<button class="step" data-act="diceLess"' + (d.count <= 1 || d.rolling ? " disabled" : "") + '>&minus;</button>' +
     '<div class="dicecount">' + d.count + (d.count === 1 ? " die" : " dice") + '</div>' +
     '<button class="step" data-act="diceMore"' + (d.count >= 6 || d.rolling ? " disabled" : "") + '>+</button></div>' +
-    '<button class="big wheel" data-act="rollDice"' + (d.rolling ? " disabled" : "") + '>Roll</button>' +
-    '<button class="big quiet" data-act="secretBack">Back</button></div>';
+    '<button class="big wheel" data-act="rollDice"' + (d.rolling ? " disabled" : "") + '>Roll</button></div>';
 }
 function rollDice() {
   var d = secret && secret.dice;
@@ -4182,8 +4185,8 @@ function renderCardsGame() {
       : "") + '</div>';
   }).join("");
   return '<div class="modal cardtable sgscreen" id="cardtable">' +
+    '<button class="sgback" data-act="secretBack">&lsaquo;&nbsp;&nbsp;Back</button>' +
     '<div class="tbar">' +
-    '<button class="big quiet" data-act="secretBack">Back</button>' +
     '<button class="big raised" data-act="shuffleCards">Shuffle all</button></div>' +
     '<div class="tdeck' + (c.deck.length ? "" : " empty") + '" id="tdeck">' +
     tcardBackHtml() +
