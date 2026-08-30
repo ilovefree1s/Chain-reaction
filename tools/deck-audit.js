@@ -94,7 +94,7 @@ const SETTLED = {
   56: "Targeting fine (attack on one player). Wording pins down the details: either hand, and yes they can putt with it.",
   54: "Now whole table — All players picker. Every opponent inside C1 turbo putts their next shot.",
   53: "Targeting fine (attack on one player). Added the guard rail: somewhat reasonable advice — no “throw it backwards.”",
-  51: "Now whole table — All players picker. The 3 discs pass down the line: they pick 1, next person picks from the remaining 2, last person takes what's left.",
+  51: "Simplified 2026-08-30 in the user's words to a one-opponent attack (off the PLAY_ON_ALL list): pick 2 discs out of 1 person's bag, they choose 1 to tee off with. Mirrors the wheel version, scaled down to one bag.",
   48: "Renamed Sidearm → “Forehand only!”, and the text follows it: throw a forehand, not a sidearm. Targeting unchanged.",
   44: "Targeting fine (attack on one player). Wording widened: the replacement disc can come from any bag, and it is spelled out as a forced mulligan with no stroke.",
   42: "Now whole table — All players picker, retimed to Before all tee. Text: “No run-up on everyone else's tee shot.”",
