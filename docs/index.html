@@ -107,6 +107,10 @@
     display: flex; align-items: center; justify-content: center;
   }
   .row { display: flex; align-items: center; gap: 10px; }
+  /* Two choices belong on one line. Stacked full-width they read as a list of
+     things to do rather than a pick between two, and cost a screen of height. */
+  .pair { display: flex; gap: 10px; }
+  .pair .big { flex: 1; margin: 0; min-width: 0; }
   .grow { flex: 1 1 auto; min-width: 0; }
   /* 44, not 56: wide enough for a two-digit blow-up hole, and every pixel saved
      here is a pixel the name beside it gets to keep. */
@@ -994,7 +998,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.10 · 31 Aug 16:20";
+var APP_VERSION = "v1.10 · 31 Aug 16:32";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. Opening the app fetches fresh anyway.
@@ -2166,15 +2170,20 @@ function renderLiveSection() {
     // told apart — every lobby headache so far started with one.
     if (!(settings.myName || "").trim()) {
       return head +
-        '<p class="hint">Link the group\'s phones — card plays and hand counts on every screen. Scores stay yours alone.</p>' +
+        '<p class="hint">Card plays and hand counts on every phone. Scores stay yours.</p>' +
         '<button class="big quiet" data-act="goSettings" style="margin-bottom:14px">' +
         'Save your profile in Settings to go live &nbsp;&rsaquo;</button>';
     }
     return head +
-      '<p class="hint">Link the group\'s phones — card plays and hand counts on every screen. Scores stay yours alone.</p>' +
-      '<div class="acts" style="margin-bottom:14px">' +
-      '<button class="big wheel" data-act="liveHost" style="margin:0">Host a lobby</button>' +
-      '<button class="big quiet" data-act="liveJoin" style="margin:0">Join the lobby</button></div>';
+      '<p class="hint">Card plays and hand counts on every phone. Scores stay yours.</p>' +
+      '<div class="pair">' +
+      '<button class="big wheel" data-act="liveHost">Host a lobby</button>' +
+      '<button class="big quiet" data-act="liveJoin">Join the lobby</button></div>' +
+      // The way out of the lobby idea entirely: name the group by hand and play
+      // with nothing linked. It opens the roster rather than starting anything.
+      '<button class="big quiet" data-act="goOffline"' +
+      (setup.offline ? ' disabled' : '') + ' style="margin:10px 0 14px">' +
+      (setup.offline ? 'Playing offline' : 'Offline &mdash; no lobby') + '</button>';
   }
   var peers = livePeers().filter(function (p) { return p.name.trim(); });
   var names = peers.map(function (p) { return p.name.trim(); });
@@ -2665,6 +2674,8 @@ function freshSetup() {
     holes: 0, pars: [], courseName: null,
     // Stroke play unless the group says otherwise on Setup.
     mode: "stroke",
+    // Set by the Offline button. Until then the roster stays out of the way.
+    offline: false,
   };
 }
 
@@ -2850,7 +2861,9 @@ function renderSetup() {
   if (live) {
     rows = setup.names.map(function (n, i) {
       var name = n.trim();
-      if (i !== setup.meIndex && !name) return "";
+      // You are shown at the top of the page, so the lobby roster is the other
+      // phones only — otherwise you appear on your own card twice.
+      if (i === setup.meIndex || !name) return "";
       return '<div class="nrow center" style="margin-bottom:10px">' +
         (CHARACTERS.length ? badgeHtml(characterById(setup.chars[i]), 48) : "") +
         '<div class="npanel nslot nrow center" style="flex:1;margin:0;min-height:56px;padding:0 16px">' +
@@ -2858,7 +2871,9 @@ function renderSetup() {
         "</div></div>";
     }).join("");
   } else {
+    // You are already shown at the top, so the roster is the rest of the table.
     rows = setup.names.map(function (n, i) {
+      if (i === setup.meIndex) return "";
       return '<div class="nrow center" style="margin-bottom:10px">' +
         (CHARACTERS.length
           ? badgeHtml(characterById(setup.chars[i]), 48, { act: "pickChar", slot: i })
@@ -2919,7 +2934,7 @@ function renderSetup() {
     // The picked one is the loud button, so the format reads off the screen at a
     // glance rather than needing both labels compared.
     formatBlock =
-      '<div class="acts">' +
+      '<div class="pair">' +
         '<button class="big ' + (setup.mode === "stroke" ? "primary" : "quiet") +
           '" data-act="mode" data-t="stroke">Stroke play</button>' +
         '<button class="big ' + (setup.mode === "skins" ? "primary" : "quiet") +
@@ -2930,22 +2945,38 @@ function renderSetup() {
         : "Fewest strokes over the round wins.") + '</p>';
   }
 
+  // Who you are, settled in Settings and shown once at the top rather than sitting
+  // in a list of blanks. Everything below is about the rest of the table.
+  var mine = (settings.myName || "").trim();
+  var meBlock = '<div class="label">You</div>' +
+    '<div class="npanel nrow center" data-act="goSettings" style="cursor:pointer">' +
+    (CHARACTERS.length ? badgeHtml(characterById(settings.myCharacter), 44) : "") +
+    '<div style="flex:1;min-width:0">' +
+    '<div class="ntitle">' + (mine ? esc(mine) : "Name yourself") + '</div>' +
+    '<div class="nbody">' + (mine ? "Player 1 &middot; from Settings"
+      : "Set a name and a face in Settings") + '</div></div>' +
+    '<span class="nchev">&rsaquo;</span></div>';
+
+  // The roster is not the first thing you meet any more: a lobby fills it in by
+  // itself, so it only comes out once you have said you are playing offline —
+  // otherwise the page opens on four empty boxes asking to be typed into.
+  var playersBlock = (live || setup.offline)
+    ? '<div class="label">Players</div>' +
+      '<p class="hint">' + (live
+        // In the lobby the roster fills itself as phones join — telling the host
+        // to hit + would just get everyone seated twice.
+        ? "The rest fill in as their phones join."
+        : CHARACTERS.length
+        ? "Hit + to add the boys."
+        : "Name the rest of the group.") + "</p>" + rows +
+      (live ? "" : addRemove)
+    : "";
+
   // No title block — the back bar already says NEW ROUND.
-  return renderLiveSection() +
-    '<div class="label">Players</div>' +
-    '<p class="hint">' + (live
-      // In the lobby the roster fills itself as phones join — telling the host
-      // to hit + would just get everyone seated twice.
-      ? "You're player 1. The boys fill in by themselves as their phones join."
-      : CHARACTERS.length
-      // You are always player 1, so there is nothing to mark — the old ME chips said
-      // the same thing four times over.
-      ? "You're player 1. Hit the + to easily add the rest of the boys on your card."
-      : "You're player 1. Name the rest of the group.") + "</p>" + rows +
-    (live ? "" : addRemove) +
+  return meBlock + renderLiveSection() + playersBlock +
     '<div class="label">Course</div>' + courseBlock +
     '<div class="label">Format</div>' + formatBlock +
-    '<div style="height:36px"></div>' +
+    '<div style="height:18px"></div>' +
     '<button class="big primary" data-act="start"' + (ready ? "" : " disabled") + '>Start round</button>' +
     '<p class="hint" data-start-hint' + (ready ? ' style="display:none"' : "") + '>' +
       (!namesReady ? "Every player needs a name."
@@ -5644,6 +5675,7 @@ app.addEventListener("click", function (e) {
         parsUI.creating = false;
       }
       render(); break;
+    case "goOffline": setup.offline = true; render(); break;
     case "addPlayer":
       if (setup.names.length < MAX_PLAYERS) { setup.names.push(""); setup.chars.push(null); }
       render(); break;
