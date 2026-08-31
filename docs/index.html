@@ -435,6 +435,16 @@
   .dicefield { position: relative; flex: 1 1 auto; min-height: 300px;
                touch-action: none; perspective: 900px; }
   .dicefield .die { position: absolute; transform: translate(-50%, -50%); }
+  /* The throwing area's near edge. Quiet enough to ignore, there enough to find. */
+  .throwline {
+    position: absolute; left: 7%; right: 7%; bottom: 26%; height: 0; z-index: 1;
+    border-top: 2px dashed rgba(77, 195, 255, 0.3); pointer-events: none;
+  }
+  .throwline span {
+    position: absolute; left: 50%; top: 8px; transform: translateX(-50%);
+    white-space: nowrap; font-size: 11px; font-weight: 900; letter-spacing: 2px;
+    text-transform: uppercase; color: rgba(77, 195, 255, 0.45);
+  }
   /* Thrown, they cross the felt in the time between two tumbles. */
   /* Mid-throw the simulation writes each die's transform every frame, so nothing
      eases: an easing would be the browser arguing with the physics about where
@@ -984,7 +994,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.10 · 31 Aug 16:04";
+var APP_VERSION = "v1.10 · 31 Aug 16:08";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. Opening the app fetches fresh anyway.
@@ -4457,10 +4467,19 @@ function dicePile(at, i, fb) {
 }
 /* Pointer events, not touch: the same handful of listeners then serve a thumb on
    a phone and a mouse on a laptop, and the page is installable on both. */
+/* Below the throw line the felt is for throwing, not for arranging: a flick
+   there is a throw even if it happens to start on a die that has come to rest
+   low down. Above it, a die under the finger is picked up as usual. */
+function inThrowZone(y) {
+  var f = app.querySelector(".dicefield");
+  if (!f) return false;
+  var r = f.getBoundingClientRect();
+  return y >= r.top + r.height * 0.74;
+}
 app.addEventListener("pointerdown", function (e) {
   if (!e.isPrimary || !tossTarget() || !e.target.closest) return;
   var die = e.target.closest(".die");
-  if (die && secret.mode === "dice") {
+  if (die && secret.mode === "dice" && !inThrowZone(e.clientY)) {
     var fieldEl = app.querySelector(".dicefield");
     if (!fieldEl) return;
     var field = fieldEl.getBoundingClientRect();
@@ -4516,14 +4535,20 @@ window.addEventListener("pointermove", function (e) {
   var dy = y - coinTouchY;
   // Downward gives a little and refuses: there is nowhere to throw a coin but up.
   if (dy > 0) dy /= 4;
-  coinDragEl.style.transform = "translateY(" + Math.max(dy, -150) + "px)";
+  // The coin follows the thumb. The dice felt does not — dragging the whole
+  // table around, dice and all, is not what a throwing gesture should look like.
+  if (!coinDragEl.classList.contains("dicefield")) {
+    coinDragEl.style.transform = "translateY(" + Math.max(dy, -150) + "px)";
+  }
 });
 function coinDragEnd(dy) {
   var el = coinDragEl;
   coinTouchY = null; coinDragEl = null;
   if (!el) return;
   el.style.transform = "";
-  if (dy > -COIN_THROW) return;
+  // A swipe that began in the throwing area only has to go somewhere upward.
+  // Everywhere else still wants a proper throw's worth of movement.
+  if (dy > (el.classList.contains("dicefield") ? -22 : -COIN_THROW)) return;
   // A thumb that stopped before letting go threw nothing, however fast it was
   // travelling a moment earlier.
   var speed = Date.now() - coinLastT > 90 ? 0 : coinSpeed;
@@ -4716,6 +4741,10 @@ function renderDiceGame() {
     (d.rolling ? "&nbsp;" : "Flick up to throw &middot; drag to move &middot; tap to set&nbsp;a&nbsp;die") +
     '</p>' +
     '<div class="dicefield tossable' + (d.rolling ? " rolling" : "") + '">' +
+    // Everything under the line is a throwing area, so a flick never has to find
+    // a die to land on. Hidden while they are in the air; there is nothing to
+    // throw mid-throw.
+    (d.rolling ? "" : '<div class="throwline"><span>Flick up from here</span></div>') +
     diceFieldHtml(d) + '</div></div>';
 }
 /*
