@@ -905,7 +905,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.10 · 31 Aug 00:01";
+var APP_VERSION = "v1.10 · 31 Aug 00:05";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. Opening the app fetches fresh anyway.
@@ -4891,9 +4891,11 @@ app.addEventListener("contextmenu", function (e) {
 
 /* The secret way in: five rapid taps on the FOR THE BOYS banner inside one
    second. The banner does nothing else, so stray taps cost nothing. */
-/* Three quick taps on RULES drops you at the foot of it. The tab is a long
-   read and End round lives at the very bottom of it — the one thing down there
-   somebody wants in a hurry, usually with the group already packing up. */
+/* Three quick taps on RULES drops you at the foot of it and asks the question
+   waiting down there. The tab is a long read and ending the round is the one
+   thing at the bottom of it somebody wants in a hurry, usually with the group
+   already packing up. The confirmation is the whole safety net, so the shortcut
+   stops where the button would have — nothing ends without a second tap. */
 var rulesTaps = [];
 function rulesTapJump() {
   var now = Date.now();
@@ -4901,6 +4903,9 @@ function rulesTapJump() {
   rulesTaps = rulesTaps.filter(function (t) { return now - t <= 700; });
   if (rulesTaps.length < 3) return;
   rulesTaps = [];
+  confirming = true;
+  render();
+  // Measured after that render: asking the question changes the page's height.
   var to = document.documentElement.scrollHeight;
   try { window.scrollTo({ top: to, behavior: "smooth" }); }
   catch (e) { window.scrollTo(0, to); } // older webviews take two numbers only
