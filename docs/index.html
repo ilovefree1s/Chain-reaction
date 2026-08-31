@@ -462,10 +462,10 @@
     background: linear-gradient(rgba(3, 6, 12, 0.7), rgba(3, 6, 12, 0.7)),
                 var(--sgbg) center / cover no-repeat #05070C;
   }
-  /* The coin takes the same deeper dim: struck metal against a lit splash was
-     two bright things competing for the same screen. */
+  /* The coin is dimmed deeper than anything else: struck metal against a lit
+     splash was two bright things competing for the same screen. */
   .modal.sgcoin.sgscreen {
-    background: linear-gradient(rgba(3, 6, 12, 0.7), rgba(3, 6, 12, 0.7)),
+    background: linear-gradient(rgba(3, 6, 12, 0.8), rgba(3, 6, 12, 0.8)),
                 var(--sgbg) center / cover no-repeat #05070C;
   }
   /* On the menu the splash rides the empty space above the buttons — sized to
@@ -902,7 +902,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.10 · 30 Aug 23:52";
+var APP_VERSION = "v1.10 · 30 Aug 23:53";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. Opening the app fetches fresh anyway.
