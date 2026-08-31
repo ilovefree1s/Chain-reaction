@@ -873,7 +873,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.10 · 30 Aug 22:49";
+var APP_VERSION = "v1.10 · 30 Aug 22:56";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. Opening the app fetches fresh anyway.
@@ -3891,12 +3891,25 @@ function wheelSvg(id, labels, rotation, winner, fontSize, duo) {
 }
 
 /* ---------- course & pars ---------- */
+/* The length of the course being worked on. A course is whatever length it is —
+   nine and eighteen were only ever the common two, and a course can grow a hole
+   between one round and the next, as Pioneer Park did. */
+function holeSlider() {
+  var holes = setup.holes || NEW_COURSE_HOLES;
+  return '<div class="label">How many holes?</div>' +
+    '<p class="holecount" data-holes-label>' + holes + ' holes</p>' +
+    '<input class="rng" type="range" min="9" max="27" step="1" data-holes value="' +
+    holes + '">';
+}
+
 function renderParGrid() {
   var list = allCourses();
   var saved = list.map(function (c) {
-    // Selection and the Play shortcut only make sense while setting up a round —
-    // the same sheet doubles as Settings' course manager.
-    var sel = screen === "setup" && c.name === setup.courseName;
+    // The highlight says which course the pars below belong to, so it belongs
+    // on both screens. Confirming one into a round does not: the same sheet
+    // doubles as Settings' course manager, where there is no round to start.
+    var sel = c.name === setup.courseName;
+    var confirmable = sel && screen === "setup";
     // A tapped ✕ asks first — a saved course with hand-set pars is real work,
     // and this button sits exactly where a scrolling thumb lands.
     // A saved copy of a built-in with changed pars wears a ✱, and its confirm
@@ -3929,7 +3942,7 @@ function renderParGrid() {
       '</div>' +
       // Confirm just closes the sheet with the course loaded — rounds only
       // ever start from the Start round button on the Setup screen.
-      (sel
+      (confirmable
         ? '<button class="big primary courseplay" data-act="closePars">Confirm course</button>'
         : "");
   }).join("");
@@ -3938,14 +3951,8 @@ function renderParGrid() {
   // once somebody actually means to build one.
   var lengths;
   if (parsUI.creating) {
-    // A course is whatever length it is — nine and eighteen were only ever the
-    // common two, and Pioneer Park is nineteen.
-    var holes = setup.holes || NEW_COURSE_HOLES;
     lengths = '<button class="big quiet" data-act="backToCourses">&lsaquo;&nbsp; Back to saved courses</button>' +
-      '<div class="label">How many holes?</div>' +
-      '<p class="holecount" data-holes-label>' + holes + ' holes</p>' +
-      '<input class="rng" type="range" min="9" max="27" step="1" data-holes value="' +
-      holes + '">';
+      holeSlider();
   } else {
     lengths = '<div class="label">' +
       (list.length ? "Or set up a new one" : "Set up a course") + '</div>' +
@@ -3954,13 +3961,15 @@ function renderParGrid() {
 
   // Nothing to edit until we know how long the course is. And a picked saved
   // course is already saved — no pars grid, no "save for next time", just an
-  // Edit pars button that opens all of it when something actually needs fixing.
+  // Edit course button that opens all of it when something actually needs fixing.
   var editor = "";
   if (setup.holes > 0 && (setup.courseName || parsUI.creating || parsUI.editing)) {
     if (setup.courseName && !parsUI.editing) {
-      editor = '<button class="big quiet" data-act="editPars">Edit pars</button>';
+      editor = '<button class="big quiet" data-act="editPars">Edit course</button>';
     } else {
-      editor = '<div class="label">Pars <span class="total-par">Total ' +
+      // The length comes first: a hole added here is a par tile to fill in below.
+      editor = (parsUI.creating ? "" : holeSlider()) +
+        '<div class="label">Pars <span class="total-par">Total ' +
         sum(setupPars()) + '</span></div>' +
         '<div class="pargrid">' + setupPars().map(function (p, i) {
           return '<button class="parcell' + (p !== DEFAULT_PAR ? " off" : "") +
@@ -3978,6 +3987,10 @@ function renderParGrid() {
   }
 
   return '<div class="modal nmodal">' +
+    // The way out sits where it does on every other sheet. Done at the foot
+    // stays: it is the button your thumb is already near after editing pars.
+    '<div class="nheader"><button class="back" data-act="closePars">&lsaquo;&nbsp; Back</button>' +
+    '<h1>COURSES</h1></div>' +
     // Building a new course gets the whole screen: the saved list disappears
     // so all that's in front of you is the course you're working on.
     (list.length && !parsUI.creating ? '<div class="label">Saved courses</div>' + saved : "") +
@@ -4599,7 +4612,11 @@ var faceDragging = false, faceEnterDir = 0;
 app.addEventListener("change", function (e) {
   if (e.target.hasAttribute("data-holes")) {
     var hn = Math.min(27, Math.max(9, Math.round(+e.target.value) || NEW_COURSE_HOLES));
-    setup.holes = hn; resizePars(hn); setup.courseName = null; render();
+    setup.holes = hn; resizePars(hn);
+    // Building a new course drops whatever was on deck. Editing one leaves it
+    // selected: it is the same course, a hole longer than it was this morning.
+    if (!parsUI.editing) setup.courseName = null;
+    render();
     return;
   }
   if (!e.target.hasAttribute("data-vol")) return;
