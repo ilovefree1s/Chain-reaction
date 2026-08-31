@@ -462,6 +462,12 @@
     background: linear-gradient(rgba(3, 6, 12, 0.7), rgba(3, 6, 12, 0.7)),
                 var(--sgbg) center / cover no-repeat #05070C;
   }
+  /* The coin takes the same deeper dim: struck metal against a lit splash was
+     two bright things competing for the same screen. */
+  .modal.sgcoin.sgscreen {
+    background: linear-gradient(rgba(3, 6, 12, 0.7), rgba(3, 6, 12, 0.7)),
+                var(--sgbg) center / cover no-repeat #05070C;
+  }
   /* On the menu the splash rides the empty space above the buttons — sized to
      it, centred in it — and the button zone below stays plain black. */
   .modal.sgmenu.sgscreen {
@@ -896,7 +902,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.10 · 30 Aug 23:50";
+var APP_VERSION = "v1.10 · 30 Aug 23:52";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. Opening the app fetches fresh anyway.
@@ -4303,7 +4309,7 @@ function renderSecret() {
 /* ---- coin: one coin, two sides, nothing to configure ---- */
 function renderCoinGame() {
   var c = secret.coin;
-  return '<div class="modal sgscreen sgdice">' +
+  return '<div class="modal sgscreen sgdice sgcoin">' +
     '<button class="sgback" data-act="secretBack">&lsaquo;&nbsp;&nbsp;Back</button>' +
     '<div class="sgtitle">Coin flip</div>' +
     // Mid-flip the face swaps every tick like the dice faces do, so the spin is
