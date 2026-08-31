@@ -3611,12 +3611,19 @@ function renderFaceModal() {
       // cards have no one to name.
       // A whole-table card offers exactly one target — everyone. The picker
       // survives as the confirm step; single names would just invite mis-taps
-      // on a card that can't aim at one person anyway.
+      // on a card that can't aim at one person anyway. A dual still offers
+      // yourself alongside it: the table half and the favour half are the two
+      // ways such a card can be played, and neither is a single name.
       acts = '<p class="confirmq" style="text-align:center">Play ' + esc(c.name) + ' on&hellip;</p>' +
         '<div style="margin-top:10px">' +
         (playableOnAll(c.id)
           ? '<button class="big primary" data-act="playOn" data-t="' + ALL_TARGET +
-            '" data-i="' + c.id + '">All players</button>'
+            '" data-i="' + c.id + '">All players</button>' +
+            // A whole-table dual is still yours to take: the same card, the
+            // favour half, aimed at nobody but you.
+            (selfMakesSense(c)
+              ? '<button class="big quiet" data-act="playOn" data-i="' + c.id + '">Myself</button>'
+              : "")
           : state.players.map(function (name, i) {
               return (i === state.meIndex || !name.trim()) ? "" :
                 '<button class="big primary" data-act="playOn" data-t="' + esc(name) +
