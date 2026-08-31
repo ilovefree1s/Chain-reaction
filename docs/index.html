@@ -489,12 +489,26 @@
      it spinning like a wheel on a vertical axis. */
   .coin.spinning { animation: coinspin 180ms linear infinite; }
   @keyframes coinspin { 50% { transform: scaleY(0.06); } }
-  .die {
-    width: 74px; height: 74px; background: #F4F6FA; border-radius: 12px;
+  /* A die is a cube: six faces, each carrying its own number, turned so that the
+     one you are meant to read is toward you. Nothing rewrites its dots. */
+  .die { width: 74px; height: 74px; perspective: 700px; }
+  .cube { position: absolute; inset: 0; transform-style: preserve-3d;
+          transition: transform 260ms ease-out; }
+  .dicefield.rolling .cube { transition: none; }
+  .face {
+    position: absolute; inset: 0; background: #F4F6FA; border-radius: 12px;
     display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr);
     padding: 11px; box-sizing: border-box; gap: 3px;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
   }
+  /* Half of 74px out along each axis, which is what makes it a cube and not six
+     sheets of paper in the same place. */
+  .face.f1 { transform: translateZ(37px); }
+  .face.f6 { transform: rotateY(180deg) translateZ(37px); }
+  .face.f3 { transform: rotateY(90deg) translateZ(37px); }
+  .face.f4 { transform: rotateY(-90deg) translateZ(37px); }
+  .face.f5 { transform: rotateX(90deg) translateZ(37px); }
+  .face.f2 { transform: rotateX(-90deg) translateZ(37px); }
   .pip { border-radius: 50%; }
   .pip.on { background: #10182A; }
   .dicecount { flex: 0 0 auto; min-width: 84px; text-align: center;
@@ -963,7 +977,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.10 · 31 Aug 15:55";
+var APP_VERSION = "v1.10 · 31 Aug 16:01";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. Opening the app fetches fresh anyway.
@@ -4645,20 +4659,37 @@ function dicePlaces(d) {
   }
   return d.pos;
 }
-function diceFieldHtml(d) {
-  var at = dicePlaces(d);
-  return d.vals.map(function (v, i) {
+/* Which way up a die has to be for a given number to face you. Opposite sides of
+   a real die sum to seven, so naming three of them fixes the other three. */
+var DIE_FACING = { 1: [0, 0], 6: [0, 180], 3: [0, -90], 4: [0, 90], 5: [-90, 0], 2: [90, 0] };
+
+function dieFacesHtml() {
+  var out = "";
+  for (var v = 1; v <= 6; v++) {
     var pips = "";
     for (var p = 0; p < 9; p++) {
       pips += '<span class="pip' + (DIE_PIPS[v].indexOf(p) !== -1 ? " on" : "") + '"></span>';
     }
+    out += '<div class="face f' + v + '">' + pips + '</div>';
+  }
+  return out;
+}
+
+function diceFieldHtml(d) {
+  var at = dicePlaces(d);
+  return d.vals.map(function (v, i) {
     // Mid-throw the simulation owns where each die is, and writes it as a
     // transform. The resting left/top has to go, not be overridden: it is inline,
     // and no stylesheet rule can outrank that — the transform was landing on top
     // of it, so every throw was offset by wherever the die had been sitting.
     var place = d.rolling ? 'left:0;top:0'
       : 'left:' + at[i].x.toFixed(2) + '%;top:' + at[i].y.toFixed(2) + '%';
-    return '<div class="die" data-die="' + i + '" style="' + place + '">' + pips + '</div>';
+    // Every face is always there, carrying its own number. Nothing rewrites pips
+    // any more — the die is simply turned until the right side is toward you.
+    var face = DIE_FACING[v] || DIE_FACING[1];
+    return '<div class="die" data-die="' + i + '" style="' + place + '">' +
+      '<div class="cube" style="transform:rotateX(' + face[0] + 'deg) rotateY(' +
+      face[1] + 'deg)">' + dieFacesHtml() + '</div></div>';
   }).join("");
 }
 function renderDiceGame() {
@@ -4728,7 +4759,7 @@ function rollDice(strength) {
       rot: 0, spin: (Math.random() - 0.5) * (700 + 900 * strength),
       // The turn through its own faces, kept apart from the flat spin: one is
       // the die rotating on the felt, the other is it going over and over.
-      tumble: Math.random() * 360, quarter: 0,
+      tumble: Math.random() * 360, roll: Math.random() * 360,
       face: 0
     });
   }
@@ -4803,28 +4834,18 @@ function diceStep(now) {
     if (speed > 26) moving++;
     var el = sim.field.querySelector('[data-die="' + i + '"]');
     if (!el) continue;
-    // It turns through its faces at a rate set by how fast it is travelling, so
-    // a die that has nearly stopped is barely turning over.
+    // It goes over at a rate set by how fast it is travelling, about two axes at
+    // once, so no throw looks like the last one. Nothing is being swapped: the
+    // faces are all on the cube, and you see whichever one is turned toward you.
     b.tumble += speed * 0.8 * dt;
-    // A quarter turn is edge-on, where the face is a line and there is nothing to
-    // see: the new face is put on there, so it comes round as a different side of
-    // the die rather than the same side with its dots rearranged.
-    var quarter = Math.floor(b.tumble / 90);
-    if (quarter !== b.quarter) {
-      b.quarter = quarter;
-      var was = sim.d.vals[i];
-      // Never the same face twice running — a die that lands on what it already
-      // showed looks like it did not turn at all.
-      do { sim.d.vals[i] = 1 + Math.floor(Math.random() * 6); } while (sim.d.vals[i] === was);
-      var pips = "", v = sim.d.vals[i];
-      for (var p = 0; p < 9; p++) {
-        pips += '<span class="pip' + (DIE_PIPS[v].indexOf(p) !== -1 ? " on" : "") + '"></span>';
-      }
-      el.innerHTML = pips;
-    }
+    b.roll += speed * 0.55 * dt;
     el.style.transform = "translate(" + b.x.toFixed(1) + "px, " + b.y.toFixed(1) +
-      "px) translate(-50%, -50%) rotate(" + b.rot.toFixed(1) + "deg) rotateX(" +
-      b.tumble.toFixed(1) + "deg)";
+      "px) translate(-50%, -50%)";
+    var cube = el.firstChild;
+    if (cube) {
+      cube.style.transform = "rotateZ(" + b.rot.toFixed(1) + "deg) rotateX(" +
+        b.tumble.toFixed(1) + "deg) rotateY(" + b.roll.toFixed(1) + "deg)";
+    }
   }
 
   // Still for a few frames running: they have settled, wherever that turned out
@@ -4839,9 +4860,21 @@ function diceStep(now) {
     return { x: Math.max(6, Math.min(94, x.x / sim.w * 100)),
              y: Math.max(4, Math.min(96, x.y / sim.h * 100)) };
   });
+  for (i = 0; i < d.count; i++) d.vals[i] = 1 + Math.floor(Math.random() * 6);
+  // Turned, not cut: the cube rocks the last few degrees onto the side it came
+  // to rest on, and only then does the screen redraw around it.
+  var field = sim.field;
+  field.classList.remove("rolling");
+  for (i = 0; i < d.count; i++) {
+    var settled = field.querySelector('[data-die="' + i + '"]');
+    var box = settled && settled.firstChild;
+    if (!box) continue;
+    var lands = DIE_FACING[d.vals[i]] || DIE_FACING[1];
+    box.style.transform = "rotateX(" + lands[0] + "deg) rotateY(" + lands[1] + "deg)";
+  }
   diceSim = null;
   d.rolling = false;
-  render();
+  setTimeout(function () { if (secret && secret.mode === "dice") render(); }, 300);
 }
 
 /* Moves the dice already on the felt to where the state says they are, and
@@ -4853,11 +4886,9 @@ function placeDice(field, d) {
     if (!el) continue;
     el.style.left = at[i].x.toFixed(2) + "%";
     el.style.top = at[i].y.toFixed(2) + "%";
-    var pips = "", v = d.vals[i];
-    for (var p = 0; p < 9; p++) {
-      pips += '<span class="pip' + (DIE_PIPS[v].indexOf(p) !== -1 ? " on" : "") + '"></span>';
-    }
-    el.innerHTML = pips;
+    var face = DIE_FACING[d.vals[i]] || DIE_FACING[1];
+    var cube = el.querySelector(".cube");
+    if (cube) cube.style.transform = "rotateX(" + face[0] + "deg) rotateY(" + face[1] + "deg)";
   }
 }
 
