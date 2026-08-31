@@ -242,6 +242,17 @@
   .faceinner { width: 100%; max-width: 420px; margin: auto; }
   .cardface { width: 100%; display: block; border-radius: 18px;
               box-shadow: 0 0 22px rgba(30, 111, 255, 0.3); }
+  /* The enlarged card rides the thumb: dragged live, then either thrown off the
+     edge or sprung back. pan-y hands horizontal drags to us and leaves vertical
+     ones as scrolling. The chevrons deliberately skip all of it and cut. */
+  .faceslide { touch-action: pan-y; }
+  .faceslide.settling { transition: transform 180ms ease-out; }
+  .faceslide.leaving { transition: transform 200ms ease-in, opacity 200ms ease-in;
+                       opacity: 0; }
+  .faceslide.fromright { animation: facein-right 200ms ease-out; }
+  .faceslide.fromleft { animation: facein-left 200ms ease-out; }
+  @keyframes facein-right { from { transform: translateX(60%) rotate(6deg); opacity: 0; } }
+  @keyframes facein-left { from { transform: translateX(-60%) rotate(-6deg); opacity: 0; } }
   .facenav { display: flex; align-items: center; justify-content: center; gap: 26px;
              margin-top: 10px; color: #5E6C88; font-weight: 700; font-size: 14px; }
   .facenav span[data-act] { font-size: 30px; line-height: 1; padding: 0 14px;
@@ -3646,7 +3657,12 @@ function renderFaceModal() {
       '<span data-act="nextCard"' + (at < state.hand.length - 1 ? "" : ' style="visibility:hidden"') + '>&rsaquo;</span>' +
       '</div>';
   }
-  return '<div class="modal facemodal"><div class="faceinner">' + face + nav + acts +
+  // A swipe hands the next card a direction to arrive from; a chevron does not,
+  // so it renders with no entry animation and simply cuts.
+  var enter = faceEnterDir === 1 ? " fromright" : faceEnterDir === -1 ? " fromleft" : "";
+  faceEnterDir = 0;
+  return '<div class="modal facemodal"><div class="faceinner">' +
+    '<div class="faceslide' + enter + '">' + face + '</div>' + nav + acts +
     '<button class="big quiet" data-act="closeView" style="margin-top:12px">Close</button></div></div>';
 }
 
@@ -4496,7 +4512,8 @@ function syncButton(selector, enabled) {
    play button — even a tap that lands on nothing. Cheap when already playing. */
 document.addEventListener("pointerdown", function () { syncMusic(); });
 
-var faceTouchX = null;
+var faceTouchX = null, faceTouchY = null, faceDragEl = null;
+var faceDragging = false, faceEnterDir = 0;
 /* Release, not drag: one write and one preview per adjustment. */
 app.addEventListener("change", function (e) {
   if (!e.target.hasAttribute("data-vol")) return;
@@ -4514,16 +4531,65 @@ app.addEventListener("change", function (e) {
   }
 });
 
+/* The enlarged card follows the thumb. Let go short of the throw distance and
+   it springs back; past it, it carries on off the edge and the next card slides
+   in behind it. The chevrons skip all of this on purpose — a tap has no
+   direction to honour, so it stays an instant cut. */
+var FACE_THROW = 60;
+function faceCanStep(dir) {
+  if (viewCard == null || !state) return false;
+  var at = state.hand.indexOf(viewCard);
+  return at >= 0 && at + dir >= 0 && at + dir < state.hand.length;
+}
+function faceDragEnd() {
+  faceTouchX = faceTouchY = faceDragEl = null;
+  faceDragging = false;
+}
 app.addEventListener("touchstart", function (e) {
-  if (viewCard == null) return;
+  if (viewCard == null || e.touches.length !== 1) return;
   faceTouchX = e.touches[0].clientX;
+  faceTouchY = e.touches[0].clientY;
+  faceDragging = false;
+  faceDragEl = app.querySelector(".faceslide");
+}, { passive: true });
+app.addEventListener("touchmove", function (e) {
+  if (faceTouchX == null || !faceDragEl) return;
+  var dx = e.touches[0].clientX - faceTouchX;
+  var dy = e.touches[0].clientY - faceTouchY;
+  // Until the gesture picks an axis, keep out of the way: a mostly-vertical
+  // drag is the modal scrolling, not a swipe.
+  if (!faceDragging) {
+    if (Math.abs(dx) < 10 || Math.abs(dx) <= Math.abs(dy)) return;
+    faceDragging = true;
+    faceDragEl.classList.remove("settling", "fromleft", "fromright");
+  }
+  // Nothing to reach that way — the card gives a little and refuses.
+  if (!faceCanStep(dx < 0 ? 1 : -1)) dx /= 4;
+  faceDragEl.style.transform = "translateX(" + dx + "px) rotate(" + (dx / 26) + "deg)";
 }, { passive: true });
 app.addEventListener("touchend", function (e) {
-  if (viewCard == null || faceTouchX == null) return;
-  var dx = e.changedTouches[0].clientX - faceTouchX;
-  faceTouchX = null;
-  if (Math.abs(dx) < 50) return;
-  stepViewCard(dx < 0 ? 1 : -1);
+  var el = faceDragEl, dragged = faceDragging;
+  var dx = faceTouchX == null ? 0 : e.changedTouches[0].clientX - faceTouchX;
+  faceDragEnd();
+  if (viewCard == null || !el || !dragged) return;
+  var dir = dx < 0 ? 1 : -1;
+  if (Math.abs(dx) < FACE_THROW || !faceCanStep(dir)) {
+    el.classList.add("settling");
+    el.style.transform = "";
+    return;
+  }
+  // Off the edge first, then the swap: rendering mid-flight would pop the next
+  // card in while this one is still moving.
+  faceEnterDir = dir;
+  el.classList.add("leaving");
+  el.style.transform = "translateX(" + (dir === 1 ? "-120%" : "120%") +
+    ") rotate(" + (dir === 1 ? -12 : 12) + "deg)";
+  setTimeout(function () { stepViewCard(dir); }, 200);
+}, { passive: true });
+// Android cancels the stream when it claims the drag; put the card back.
+app.addEventListener("touchcancel", function () {
+  if (faceDragEl) { faceDragEl.classList.add("settling"); faceDragEl.style.transform = ""; }
+  faceDragEnd();
 }, { passive: true });
 
 /* Press-and-hold on a card tile — the spin-cost picker or the hand itself —
