@@ -442,10 +442,11 @@
   /* Thrown, it arcs up and comes back down while the faces tumble. Ease-out on
      the way up and ease-in on the way down: one easing across the whole arc
      floats at the bottom and snaps through the top, which is backwards. */
+  /* Height and duration are both set on the element at the moment of the throw. */
   .coinbox.tossing { animation: cointoss 1200ms; }
   @keyframes cointoss {
     0% { transform: translateY(0); animation-timing-function: ease-out; }
-    50% { transform: translateY(-34vh); animation-timing-function: ease-in; }
+    50% { transform: translateY(var(--toss, -34vh)); animation-timing-function: ease-in; }
     100% { transform: translateY(0); }
   }
   .coin {
@@ -4356,18 +4357,28 @@ function renderCoinGame() {
  * with extra steps — a coin you nudged should not have flipped.
  */
 var COIN_THROW = 42;
+/* Upward thumb speed, in pixels per millisecond, mapped onto 0..1. The floor is
+   about the slowest movement that still reads as a throw; the ceiling is a hard
+   flick, past which it cannot go any higher anyway. */
+var COIN_SLOW = 0.25, COIN_FAST = 2.2;
 var coinTouchY = null, coinDragEl = null;
+var coinLastY = 0, coinLastT = 0, coinSpeed = 0;
 app.addEventListener("touchstart", function (e) {
   if (!secret || secret.mode !== "coin" || secret.coin.flipping) return;
   if (!e.target.closest) return;
   var el = e.target.closest(".coinbox");
   if (!el) return;
   coinTouchY = e.touches[0].clientY;
+  coinLastY = coinTouchY; coinLastT = Date.now(); coinSpeed = 0;
   coinDragEl = el;
 }, { passive: true });
 app.addEventListener("touchmove", function (e) {
   if (coinTouchY == null || !coinDragEl) return;
-  var dy = e.touches[0].clientY - coinTouchY;
+  var y = e.touches[0].clientY, now = Date.now();
+  var dt = now - coinLastT;
+  if (dt > 0) coinSpeed = (coinLastY - y) / dt; // upward is positive
+  coinLastY = y; coinLastT = now;
+  var dy = y - coinTouchY;
   // Downward gives a little and refuses: there is nowhere to throw a coin but up.
   if (dy > 0) dy /= 4;
   coinDragEl.style.transform = "translateY(" + Math.max(dy, -150) + "px)";
@@ -4377,7 +4388,15 @@ function coinDragEnd(dy) {
   coinTouchY = null; coinDragEl = null;
   if (!el) return;
   el.style.transform = "";
-  if (dy <= -COIN_THROW) flipCoin();
+  if (dy > -COIN_THROW) return;
+  // A thumb that stopped before letting go threw nothing, however fast it was
+  // travelling a moment earlier.
+  var speed = Date.now() - coinLastT > 90 ? 0 : coinSpeed;
+  var bySpeed = (speed - COIN_SLOW) / (COIN_FAST - COIN_SLOW);
+  // A long, deliberate pull is a throw too, even taken slowly — it just never
+  // reaches the ceiling a flick does.
+  var byPull = Math.min(1, Math.abs(dy) / 150) * 0.55;
+  flipCoin(Math.max(bySpeed, byPull));
 }
 app.addEventListener("touchend", function (e) {
   if (coinTouchY == null) return;
@@ -4405,14 +4424,28 @@ function coinFaceStyle(img, box) { img.style.cssText = coinFaceCss(box); }
 /* A tossed coin is in the air about a second, so the flip keeps its own clock
    rather than the dice rattle's — the arc and the tumbling have to end together,
    and the clip is faded to match. */
-var COIN_FLIP_MS = 1200;
-function flipCoin() {
+/* A hard flick throws it to the top of the screen and a gentle one barely lifts
+   it, so [strength] (0 to 1) sizes the arc. Flight time goes with height — a coin
+   that clears the screen and comes back in the same beat as a lob reads as two
+   different weights of coin. */
+function flipCoin(strength) {
   var c = secret && secret.coin;
   if (!c || c.flipping) return;
+  if (typeof strength !== "number") strength = 0.4;
+  strength = Math.max(0, Math.min(1, strength));
+  var ms = Math.round(850 + 750 * strength);
   c.flipping = true;
-  playClip(diceAudio, sfxVolume(), COIN_FLIP_MS / 1000);
+  playClip(diceAudio, sfxVolume(), ms / 1000);
   render(); // once, to start the arc and the tumble and blank the call
-  var img = app.querySelector(".coinbox .coin img");
+  var box = app.querySelector(".coinbox");
+  if (box) {
+    // The ceiling is where it sits now, less the header it would fly through.
+    // Even the softest throw leaves the ground, or the gesture reads as ignored.
+    var ceiling = Math.max(60, Math.round(box.getBoundingClientRect().top) - 64);
+    box.style.setProperty("--toss", "-" + Math.round(ceiling * (0.2 + 0.8 * strength)) + "px");
+    box.style.animationDuration = ms + "ms";
+  }
+  var img = box && box.querySelector(".coin img");
   var iv = setInterval(function () {
     if (!secret || secret.mode !== "coin") { clearInterval(iv); return; }
     c.face = Math.random() < 0.5 ? "HEADS" : "TAILS";
@@ -4427,7 +4460,7 @@ function flipCoin() {
     if (!secret || secret.mode !== "coin") return;
     c.flipping = false;
     render();
-  }, COIN_FLIP_MS);
+  }, ms);
 }
 
 /* ---- dice: a tray of 1-6 dice, rolled together ---- */
