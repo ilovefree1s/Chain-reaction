@@ -5,7 +5,8 @@
       "name": "chainreaction",
       "runtimeExecutable": "node",
       "runtimeArgs": ["tools/dev-server.js"],
-      "port": 5173
+      "port": 5173,
+      "autoPort": true
     }
   ]
 }

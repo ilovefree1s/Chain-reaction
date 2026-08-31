@@ -1,10 +1,12 @@
-/* Serves docs/ — the built app — on http://localhost:5173 with caching off,
-   so the page in a test tab is always the file build.js just wrote. */
+/* Serves docs/ — the built app — with caching off, so the page in a test tab is
+   always the file build.js just wrote. The port comes from PORT when the harness
+   assigns one, so a second chat's server does not collide with the first. */
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
 
 const root = path.join(__dirname, "..", "docs");
+const port = Number(process.env.PORT) || 5173;
 const types = {
   ".html": "text/html", ".js": "text/javascript", ".css": "text/css",
   ".png": "image/png", ".webp": "image/webp", ".jpg": "image/jpeg",
@@ -24,4 +26,4 @@ http.createServer((req, res) => {
     "Cache-Control": "no-store",
   });
   fs.createReadStream(f).pipe(res);
-}).listen(5173, () => console.log("serving docs/ on http://localhost:5173"));
+}).listen(port, () => console.log("serving docs/ on http://localhost:" + port));
