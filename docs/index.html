@@ -437,7 +437,7 @@
   .dicefield .die { position: absolute; transform: translate(-50%, -50%); }
   /* The throwing area's near edge. Quiet enough to ignore, there enough to find. */
   .throwline {
-    position: absolute; left: 7%; right: 7%; bottom: 26%; height: 0; z-index: 1;
+    position: absolute; left: 7%; right: 7%; bottom: 30%; height: 0; z-index: 1;
     border-top: 2px dashed rgba(77, 195, 255, 0.3); pointer-events: none;
   }
   .throwline span {
@@ -994,7 +994,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.10 · 31 Aug 16:08";
+var APP_VERSION = "v1.10 · 31 Aug 16:11";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. Opening the app fetches fresh anyway.
@@ -4474,11 +4474,16 @@ function inThrowZone(y) {
   var f = app.querySelector(".dicefield");
   if (!f) return false;
   var r = f.getBoundingClientRect();
-  return y >= r.top + r.height * 0.74;
+  // A band rather than a hard edge, with the dashed line through the middle of
+  // it: a flick aimed at the line lands somewhere either side of it, and having
+  // to start below an invisible boundary is exactly what made this fiddly.
+  return y >= r.top + r.height * 0.62;
 }
 app.addEventListener("pointerdown", function (e) {
   if (!e.isPrimary || !tossTarget() || !e.target.closest) return;
   var die = e.target.closest(".die");
+  // A die lying in the throwing band is there to be thrown. Above it, it is
+  // there to be arranged.
   if (die && secret.mode === "dice" && !inThrowZone(e.clientY)) {
     var fieldEl = app.querySelector(".dicefield");
     if (!fieldEl) return;
@@ -4546,9 +4551,12 @@ function coinDragEnd(dy) {
   coinTouchY = null; coinDragEl = null;
   if (!el) return;
   el.style.transform = "";
-  // A swipe that began in the throwing area only has to go somewhere upward.
-  // Everywhere else still wants a proper throw's worth of movement.
-  if (dy > (el.classList.contains("dicefield") ? -22 : -COIN_THROW)) return;
+  // A flick counts if either end of it was in the throwing band — through it,
+  // out of the top of it, or entirely inside it. What matters is that you flicked
+  // near the line, not that you crossed some boundary in the right direction.
+  var nearLine = el.classList.contains("dicefield") &&
+    (inThrowZone(coinLastY) || inThrowZone(coinLastY - dy));
+  if (dy > (nearLine ? -14 : -COIN_THROW)) return;
   // A thumb that stopped before letting go threw nothing, however fast it was
   // travelling a moment earlier.
   var speed = Date.now() - coinLastT > 90 ? 0 : coinSpeed;
