@@ -164,11 +164,14 @@
   .handct { font-size: 13px; font-weight: 900; color: #4DC3FF; background: #061022;
             border: 1px solid var(--edge); border-radius: 6px; padding: 2px 7px;
             margin-left: 6px; vertical-align: 2px; white-space: nowrap; }
-  /* On a badge the chip sits over the top-left corner, clear of the face and
+  /* The face sits on the floor of its row rather than in the middle of it, and
+     the count takes the space that opens above — off the face entirely, and
      costing the name no width. Off a badge it stays inline under the name. */
-  .pbadge { position: relative; flex: 0 0 auto; line-height: 0; }
-  .pbadge .handct { position: absolute; top: -5px; left: -7px; z-index: 1;
-                    margin: 0; padding: 1px 5px; font-size: 11px;
+  .pbadge { position: relative; flex: 0 0 auto; line-height: 0;
+            align-self: flex-end; }
+  .pbadge .handct { position: absolute; bottom: 100%; left: 50%;
+                    transform: translateX(-50%); z-index: 1;
+                    margin: 0 0 3px; padding: 1px 5px; font-size: 11px;
                     vertical-align: baseline; line-height: 1.3; }
   /* Under par cool blue, even quiet, over par hot orange — the palette does the talking. */
   .rel.under { color: var(--react); }
@@ -858,7 +861,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.10 · 30 Aug 22:35";
+var APP_VERSION = "v1.10 · 30 Aug 22:37";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. Opening the app fetches fresh anyway.
