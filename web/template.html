@@ -427,23 +427,23 @@
   }
   .secretbox:focus { outline: none; border-color: var(--self); }
   /* The dice tray: white dice, pips laid on a 3x3 grid. */
-  .dicerow { display: flex; justify-content: center; gap: 14px; margin: 20px 0 4px; flex-wrap: wrap; }
+  .dicerow { display: flex; justify-content: center; gap: 14px; margin: 0; flex-wrap: wrap; }
   /* The coin is the artwork — struck edge and all — so nothing is drawn under
      it. A window its own shape, with the sheet slid to the landed face. */
   /* The coin lives at the foot of the screen, under the thumb that throws it.
      touch-action none so the browser never reads the toss as a scroll. */
-  .modal.sgcoin {
+  .modal.sgcoin, .modal.sgdice {
     display: flex; flex-direction: column; justify-content: flex-end;
     padding-bottom: calc(30px + env(safe-area-inset-bottom));
   }
-  .sgcoin .label { margin: 44px 0 auto; }
-  .coinbox { display: flex; justify-content: center; margin: 0;
-             touch-action: none; cursor: grab; }
+  .sgcoin .label, .sgdice .label { margin: 44px 0 auto; }
+  .coinbox { display: flex; justify-content: center; margin: 0; }
+  .tossable { touch-action: none; cursor: grab; }
   /* Thrown, it arcs up and comes back down while the faces tumble. Ease-out on
      the way up and ease-in on the way down: one easing across the whole arc
      floats at the bottom and snaps through the top, which is backwards. */
   /* Height and duration are both set on the element at the moment of the throw. */
-  .coinbox.tossing { animation: cointoss 1200ms; }
+  .tossable.tossing { animation: cointoss 1200ms; }
   @keyframes cointoss {
     0% { transform: translateY(0); animation-timing-function: ease-out; }
     50% { transform: translateY(var(--toss, -34vh)); animation-timing-function: ease-in; }
@@ -525,8 +525,6 @@
     color: var(--self); font-size: 24px; font-weight: 900;
     pointer-events: none;
   }
-  .modal.sgdice { display: flex; flex-direction: column; justify-content: center; }
-  .sgdice .sgback + .label { margin-top: 0; }
   /* The painted plates, restacked with tight gaps so the splash stays seen. */
   .sgstack { width: min(80%, 310px); margin: 0 auto; display: flex;
              flex-direction: column; gap: 7px; }
@@ -4346,15 +4344,16 @@ function renderCoinGame() {
     (c.flipping ? "&nbsp;" : "Swipe the coin up to flip it") + '</p>' +
     // Mid-flip the face swaps every tick like the dice faces do, so the spin is
     // the coin actually turning rather than a placeholder standing in for it.
-    '<div class="coinbox' + (c.flipping ? " tossing" : "") + '">' +
+    '<div class="coinbox tossable' + (c.flipping ? " tossing" : "") + '">' +
     '<div class="coin' + (c.flipping ? " spinning" : "") + '">' +
     coinFaceImg(c.face === "TAILS" ? COIN_TAILS : COIN_HEADS) + '</div></div></div>';
 }
 
 /*
- * The toss: your thumb pushes the coin up and lets go. Under the throw it drops
- * back unspent, which is what makes it a gesture rather than a tap you perform
- * with extra steps — a coin you nudged should not have flipped.
+ * The toss, shared by the coin and the dice: your thumb pushes the tray up and
+ * lets go. Under the throw distance it drops back unspent, which is what makes
+ * it a gesture rather than a tap performed with extra steps — something you only
+ * nudged should not have been thrown.
  */
 var COIN_THROW = 42;
 /* Upward thumb speed, in pixels per millisecond, mapped onto 0..1. The floor is
@@ -4363,10 +4362,16 @@ var COIN_THROW = 42;
 var COIN_SLOW = 0.25, COIN_FAST = 2.2;
 var coinTouchY = null, coinDragEl = null;
 var coinLastY = 0, coinLastT = 0, coinSpeed = 0;
+/* Whether there is anything to throw right now, and what throwing it does. */
+function tossTarget() {
+  if (!secret) return null;
+  if (secret.mode === "coin" && !secret.coin.flipping) return flipCoin;
+  if (secret.mode === "dice" && !secret.dice.rolling) return rollDice;
+  return null;
+}
 app.addEventListener("touchstart", function (e) {
-  if (!secret || secret.mode !== "coin" || secret.coin.flipping) return;
-  if (!e.target.closest) return;
-  var el = e.target.closest(".coinbox");
+  if (!tossTarget() || !e.target.closest) return;
+  var el = e.target.closest(".tossable");
   if (!el) return;
   coinTouchY = e.touches[0].clientY;
   coinLastY = coinTouchY; coinLastT = Date.now(); coinSpeed = 0;
@@ -4396,7 +4401,8 @@ function coinDragEnd(dy) {
   // A long, deliberate pull is a throw too, even taken slowly — it just never
   // reaches the ceiling a flick does.
   var byPull = Math.min(1, Math.abs(dy) / 150) * 0.55;
-  flipCoin(Math.max(bySpeed, byPull));
+  var throwIt = tossTarget();
+  if (throwIt) throwIt(Math.max(bySpeed, byPull));
 }
 app.addEventListener("touchend", function (e) {
   if (coinTouchY == null) return;
@@ -4404,6 +4410,17 @@ app.addEventListener("touchend", function (e) {
 }, { passive: true });
 // Android cancels the stream when it claims the drag; the coin just settles.
 app.addEventListener("touchcancel", function () { coinDragEnd(0); }, { passive: true });
+
+/* Sizes a thrown thing's arc: the ceiling is where it sits now, less the header
+   it would otherwise fly through, so it clears the screen without leaving it.
+   Even the softest throw gets a fifth of that — a throw that did not move would
+   read as a gesture the app ignored. */
+function tossArc(el, strength, ms) {
+  if (!el) return;
+  var ceiling = Math.max(60, Math.round(el.getBoundingClientRect().top) - 64);
+  el.style.setProperty("--toss", "-" + Math.round(ceiling * (0.2 + 0.8 * strength)) + "px");
+  el.style.animationDuration = ms + "ms";
+}
 
 /* One face of the sheet, seen through a window of that face's shape: the sheet
    is scaled until the face fills the window, then slid until it is what shows. */
@@ -4438,13 +4455,7 @@ function flipCoin(strength) {
   playClip(diceAudio, sfxVolume(), ms / 1000);
   render(); // once, to start the arc and the tumble and blank the call
   var box = app.querySelector(".coinbox");
-  if (box) {
-    // The ceiling is where it sits now, less the header it would fly through.
-    // Even the softest throw leaves the ground, or the gesture reads as ignored.
-    var ceiling = Math.max(60, Math.round(box.getBoundingClientRect().top) - 64);
-    box.style.setProperty("--toss", "-" + Math.round(ceiling * (0.2 + 0.8 * strength)) + "px");
-    box.style.animationDuration = ms + "ms";
-  }
+  tossArc(box, strength, ms);
   var img = box && box.querySelector(".coin img");
   var iv = setInterval(function () {
     if (!secret || secret.mode !== "coin") { clearInterval(iv); return; }
@@ -4469,43 +4480,60 @@ var DIE_PIPS = {
   1: [4], 2: [0, 8], 3: [0, 4, 8], 4: [0, 2, 6, 8],
   5: [0, 2, 4, 6, 8], 6: [0, 2, 3, 5, 6, 8]
 };
-function renderDiceGame() {
-  var d = secret.dice;
-  var dice = d.vals.map(function (v) {
+/* The faces alone: rebuilt in place on every tick of a roll, inside a tray that
+   is not, so the throw's arc runs uninterrupted above them. */
+function diceFacesHtml(vals) {
+  return vals.map(function (v) {
     var pips = "";
     for (var p = 0; p < 9; p++) {
       pips += '<span class="pip' + (DIE_PIPS[v].indexOf(p) !== -1 ? " on" : "") + '"></span>';
     }
     return '<div class="die">' + pips + '</div>';
   }).join("");
+}
+function renderDiceGame() {
+  var d = secret.dice;
   var total = d.vals.reduce(function (a, b) { return a + b; }, 0);
   return '<div class="modal sgscreen sgdice">' +
     '<button class="sgback" data-act="secretBack">&lsaquo;&nbsp;&nbsp;Back</button>' +
+    // The total rides the Back button's line, the way the coin's call does.
+    '<div class="sgtop">' + (d.rolling ? "&hellip;" : total) + '</div>' +
     '<div class="label">Dice</div>' +
-    '<div class="dicerow">' + dice + '</div>' +
-    '<div class="exempt">' + (d.rolling ? "&hellip;" : total) + '</div>' +
     '<div class="row" style="justify-content:center;margin-bottom:10px">' +
     '<button class="step" data-act="diceLess"' + (d.count <= 1 || d.rolling ? " disabled" : "") + '>&minus;</button>' +
     '<div class="dicecount">' + d.count + (d.count === 1 ? " die" : " dice") + '</div>' +
     '<button class="step" data-act="diceMore"' + (d.count >= 6 || d.rolling ? " disabled" : "") + '>+</button></div>' +
-    '<button class="big wheel" data-act="rollDice"' + (d.rolling ? " disabled" : "") + '>Roll</button></div>';
+    '<p class="hint" style="text-align:center;margin:0 0 10px">' +
+    (d.rolling ? "&nbsp;" : "Swipe the dice up to roll them") + '</p>' +
+    '<div class="dicerow tossable' + (d.rolling ? " tossing" : "") + '">' +
+    diceFacesHtml(d.vals) + '</div></div>';
 }
-function rollDice() {
+/* Thrown the same way the coin is, and sized the same way: [strength] 0 to 1. */
+function rollDice(strength) {
   var d = secret && secret.dice;
   if (!d || d.rolling) return;
+  if (typeof strength !== "number") strength = 0.4;
+  strength = Math.max(0, Math.min(1, strength));
+  var ms = Math.round(850 + 750 * strength);
   d.rolling = true;
-  playClip(diceAudio, sfxVolume());
-  // The dice tumble for as long as the rattle plays, and settle when it ends.
-  var rollMs = diceAudio && diceAudio.duration > 0 ? diceAudio.duration * 1000 : 900;
-  var ticks = 0, need = Math.max(3, Math.round(rollMs / 90));
+  playClip(diceAudio, sfxVolume(), ms / 1000);
+  render(); // once, to start the throw and blank the total
+  var tray = app.querySelector(".dicerow");
+  tossArc(tray, strength, ms);
   var iv = setInterval(function () {
     if (!secret || secret.mode !== "dice") { clearInterval(iv); return; }
     d.vals = [];
     for (var i = 0; i < d.count; i++) d.vals.push(1 + Math.floor(Math.random() * 6));
-    ticks++;
-    if (ticks >= need) { clearInterval(iv); d.rolling = false; }
-    render();
+    // Only the faces are rebuilt. A full render would replace the tray and
+    // restart its arc from the floor ninety times a second.
+    if (tray) tray.innerHTML = diceFacesHtml(d.vals);
   }, 90);
+  setTimeout(function () {
+    clearInterval(iv);
+    if (!secret || secret.mode !== "dice") return;
+    d.rolling = false;
+    render();
+  }, ms);
 }
 
 /* ---- cards: one standard 52-card deck, drawn down and reshuffled on demand ---- */
@@ -5385,7 +5413,6 @@ app.addEventListener("click", function (e) {
       if (slotc) { slotc.up = !slotc.up; render(); }
       break;
     case "secretBack": stopWheelSound(true); secret.mode = "menu"; render(); break;
-    case "rollDice": rollDice(); break;
     case "flipCoin": flipCoin(); break;
     case "diceLess":
       if (secret.dice.count > 1) { secret.dice.count--; secret.dice.vals.pop(); render(); }
