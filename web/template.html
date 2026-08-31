@@ -3742,7 +3742,7 @@ function renderWheel() {
       '</div>';
   }
   if (stage === "idle") {
-    html += '<button class="big wheel" data-act="spinName">Spin the name</button>';
+    html += plateButton(NAME_BUTTON, 2172, "spinName", PLATE_SPIN_NAME, "Spin the name", false);
   }
   var cardSettled = stage === "cardDone" || stage === "done";
   if (nameSettled) {
@@ -4241,6 +4241,11 @@ var PLATE_KEEP_SPINNING = [397, 253], PLATE_CLOSE_ANYWAY = [708, 255];
 function confirmPlate(act, band, label) {
   return plateButton(CONFIRM_BUTTONS, 1448, act, band, label, false);
 }
+// The name spin has a sheet to itself (2172x724), the button on rows 126-536.
+// Sliced like the rest rather than used whole, so its own transparent margin
+// doesn't pad the tap target.
+var NAME_BUTTON = "__NAME_BUTTON__";
+var PLATE_SPIN_NAME = [126, 411];
 function spinPlate(act, band, label) {
   return plateButton(SPIN_BUTTONS, 1536, act, band, label, false);
 }

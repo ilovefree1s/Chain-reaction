@@ -175,6 +175,8 @@ const spinButtons = copyArt("spintheeffectandclose.png", "spinbuttons.png");
 const payButtons = copyArt("discardnevermind.png", "paybuttons.png");
 // The pair guarding a paid-for wheel you are about to walk away from.
 const confirmButtons = copyArt("spinscloseanyway.png", "confirmbuttons.png");
+// The name spin, alone on its sheet.
+const nameButton = copyArt("spinthename.png", "namebutton.png");
 const menuSound = copyAudio("chains.mp3");
 const wheelSound = copyAudio("gamble.mp3");
 const wolfSound = copyAudio("lonewolf.mp3");
@@ -261,6 +263,7 @@ const template = fs.readFileSync(path.join(__dirname, "template.html"), "utf8");
   "__SPIN_BUTTONS__",
   "__PAY_BUTTONS__",
   "__CONFIRM_BUTTONS__",
+  "__NAME_BUTTON__",
   "__MENU_SOUND__",
   "__WHEEL_SOUND__",
   "__WOLF_SOUND__",
@@ -295,6 +298,7 @@ const html = template
   .replace("__SPIN_BUTTONS__", spinButtons)
   .replace("__PAY_BUTTONS__", payButtons)
   .replace("__CONFIRM_BUTTONS__", confirmButtons)
+  .replace("__NAME_BUTTON__", nameButton)
   .replace("__MENU_SOUND__", menuSound)
   .replace("__WHEEL_SOUND__", wheelSound)
   .replace("__WOLF_SOUND__", wolfSound)
