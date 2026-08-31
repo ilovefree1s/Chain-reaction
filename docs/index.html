@@ -499,8 +499,15 @@
     position: absolute; inset: 0; background: #F4F6FA; border-radius: 12px;
     display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr);
     padding: 11px; box-sizing: border-box; gap: 3px;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
   }
+  /* One shadow for the die, cast from its rendered shape, rather than six faces
+     each casting their own — those crossed at the corners and read as points. */
+  .dicefield .die { filter: drop-shadow(0 5px 9px rgba(0, 0, 0, 0.45)); }
+  /* At rest the cube is square to the screen, so its outline is exactly one
+     face: rounding the die itself takes off the corners of the side faces that
+     otherwise poke past the rounded front. Mid-throw it is turned, and its
+     outline is not a rectangle any more, so nothing is clipped then. */
+  .dicefield:not(.rolling) .die { border-radius: 13px; overflow: hidden; }
   /* Half of 74px out along each axis, which is what makes it a cube and not six
      sheets of paper in the same place. */
   .face.f1 { transform: translateZ(37px); }
@@ -977,7 +984,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.10 · 31 Aug 16:01";
+var APP_VERSION = "v1.10 · 31 Aug 16:04";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. Opening the app fetches fresh anyway.
