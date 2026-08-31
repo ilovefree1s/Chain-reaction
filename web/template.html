@@ -493,15 +493,16 @@
   /* Any title that follows the corner Back drops out of its lane. */
   .sgback + .label { margin-top: 44px; }
   /* The whole dice tray floats at the middle of the screen. */
-  /* A title riding the Back button's line, centred between the corners. Out of
-     flow, so the game below stays centred on the screen rather than on what is
-     left under a header. No flanking rules: they would run in under Back. */
-  .sgtitle {
+  /* The call the coin landed on, riding the Back button's line and centred
+     between the corners. Out of flow, so the coin below stays centred on the
+     screen rather than on what is left under a header. Its box is var(--tap) —
+     the height that makes the Back button the size it is, so the two sit on one
+     line without a number guessed to match. */
+  .sgtop {
     position: absolute; left: 0; right: 0;
     top: calc(env(safe-area-inset-top) + 10px); height: var(--tap);
     display: flex; align-items: center; justify-content: center;
-    text-transform: uppercase; color: #4DC3FF;
-    font-size: 13px; font-weight: 900; letter-spacing: 3px;
+    color: var(--self); font-size: 24px; font-weight: 900;
     pointer-events: none;
   }
   .modal.sgdice { display: flex; flex-direction: column; justify-content: center; }
@@ -4311,12 +4312,14 @@ function renderCoinGame() {
   var c = secret.coin;
   return '<div class="modal sgscreen sgdice sgcoin">' +
     '<button class="sgback" data-act="secretBack">&lsaquo;&nbsp;&nbsp;Back</button>' +
-    '<div class="sgtitle">Coin flip</div>' +
+    // The call itself rides the Back button's line, where nothing else on this
+    // screen is, and the coin keeps the middle to itself.
+    '<div class="sgtop">' + (c.flipping ? "&hellip;" : esc(c.face)) + '</div>' +
+    '<div class="label">Coin flip</div>' +
     // Mid-flip the face swaps every tick like the dice faces do, so the spin is
     // the coin actually turning rather than a placeholder standing in for it.
     '<div class="coinbox"><div class="coin' + (c.flipping ? " spinning" : "") + '">' +
     coinFaceImg(c.face === "TAILS" ? COIN_TAILS : COIN_HEADS) + '</div></div>' +
-    '<div class="exempt">' + (c.flipping ? "&hellip;" : esc(c.face)) + '</div>' +
     '<button class="big wheel" data-act="flipCoin"' + (c.flipping ? " disabled" : "") +
     '>Flip</button></div>';
 }
