@@ -807,7 +807,7 @@ var PAR_CYCLE = [3, 4, 5];
 
 /* Courses that ship with the app, from shared/courses.json — the same file the
    Android build reads. */
-var BUILT_IN_COURSES = [{"name":"W.S. Gibbs Memorial Disc Golf Course — White/Shorts","holeCount":18,"pars":[3,4,3,3,4,3,4,3,3,4,3,3,3,3,3,4,3,3]},{"name":"Pioneer Park","holeCount":18,"pars":[3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3]},{"name":"Mt. Gilead","holeCount":18,"pars":[3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3]},{"name":"Washington Township Park","holeCount":18,"pars":[3,3,3,3,3,3,4,3,3,3,4,3,5,4,3,4,3,4]},{"name":"Walnut Ridge","holeCount":18,"pars":[3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,5]},{"name":"Hawks Nest","holeCount":18,"pars":[3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3]},{"name":"Avon Town Hall","holeCount":9,"pars":[3,3,3,3,3,3,3,3,3]},{"name":"Faith Baptist","holeCount":18,"pars":[3,3,3,3,3,3,3,3,3,3,3,4,3,4,3,3,3,3]},{"name":"Jimmy Nash Park","holeCount":18,"pars":[3,3,3,3,3,4,3,3,3,3,3,3,3,3,3,4,3,3]},{"name":"Masters 9","holeCount":9,"pars":[3,3,3,3,3,3,3,3,3]},{"name":"Masters 18","holeCount":18,"pars":[4,3,3,3,3,3,3,3,3,3,3,3,3,3,4,3,3,3]}];
+var BUILT_IN_COURSES = [{"name":"W.S. Gibbs Memorial Disc Golf Course — White/Shorts","holeCount":18,"pars":[3,4,3,3,4,3,4,3,3,4,3,3,3,3,3,4,3,3]},{"name":"Pioneer Park","holeCount":19,"pars":[3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3]},{"name":"Mt. Gilead","holeCount":18,"pars":[3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3]},{"name":"Washington Township Park","holeCount":18,"pars":[3,3,3,3,3,3,4,3,3,3,4,3,5,4,3,4,3,4]},{"name":"Walnut Ridge","holeCount":18,"pars":[3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,5]},{"name":"Hawks Nest","holeCount":18,"pars":[3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3]},{"name":"Avon Town Hall","holeCount":9,"pars":[3,3,3,3,3,3,3,3,3]},{"name":"Faith Baptist","holeCount":18,"pars":[3,3,3,3,3,3,3,3,3,3,3,4,3,4,3,3,3,3]},{"name":"Jimmy Nash Park","holeCount":18,"pars":[3,3,3,3,3,4,3,3,3,3,3,3,3,3,3,4,3,3]},{"name":"Masters 9","holeCount":9,"pars":[3,3,3,3,3,3,3,3,3]},{"name":"Masters 18","holeCount":18,"pars":[4,3,3,3,3,3,3,3,3,3,3,3,3,3,4,3,3,3]}];
 
 /* Card faces present in the Android drawables, id -> asset path. Injected by
    web/build.js; empty until artwork lands. */
@@ -870,7 +870,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.10 · 30 Aug 22:41";
+var APP_VERSION = "v1.10 · 30 Aug 22:46";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. Opening the app fetches fresh anyway.
