@@ -177,6 +177,9 @@ const payButtons = copyArt("discardnevermind.png", "paybuttons.png");
 const confirmButtons = copyArt("spinscloseanyway.png", "confirmbuttons.png");
 // The name spin, alone on its sheet.
 const nameButton = copyArt("spinthename.png", "namebutton.png");
+// The card face's three: PLAY across the top, DISCARD and CLOSE sharing the row
+// below — the only sheet whose buttons sit side by side as well as stacked.
+const faceButtons = copyArt("playdiscardclose.png", "facebuttons.png");
 const menuSound = copyAudio("chains.mp3");
 const wheelSound = copyAudio("gamble.mp3");
 const wolfSound = copyAudio("lonewolf.mp3");
@@ -264,6 +267,7 @@ const template = fs.readFileSync(path.join(__dirname, "template.html"), "utf8");
   "__PAY_BUTTONS__",
   "__CONFIRM_BUTTONS__",
   "__NAME_BUTTON__",
+  "__FACE_BUTTONS__",
   "__MENU_SOUND__",
   "__WHEEL_SOUND__",
   "__WOLF_SOUND__",
@@ -299,6 +303,7 @@ const html = template
   .replace("__PAY_BUTTONS__", payButtons)
   .replace("__CONFIRM_BUTTONS__", confirmButtons)
   .replace("__NAME_BUTTON__", nameButton)
+  .replace("__FACE_BUTTONS__", faceButtons)
   .replace("__MENU_SOUND__", menuSound)
   .replace("__WHEEL_SOUND__", wheelSound)
   .replace("__WOLF_SOUND__", wolfSound)

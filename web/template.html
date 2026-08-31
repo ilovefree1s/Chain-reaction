@@ -105,6 +105,10 @@
   .wplate img { position: absolute; left: 0; width: 100%; display: block; }
   .wplate[disabled] { cursor: default; }
   .wplate[disabled] img { filter: brightness(0.45) saturate(0.6); }
+  /* A Close with nothing beside it keeps the half width it was painted for,
+     centred, rather than stretching to a button twice as tall as its row. */
+  .facepair.solo { justify-content: center; }
+  .facepair.solo .wplate { flex: 0 0 calc(50% - 5px); }
   /* For use *on* a panel, where .quiet would vanish into the background. */
   .big.raised { background: #0B1526; color: var(--sage); border: 2px solid var(--edge); }
   .big.danger { background: var(--panel); color: var(--attack); border: 2px solid var(--edge); }
@@ -3634,7 +3638,7 @@ function renderFaceModal() {
     : cardFaceSvg(c);
 
   var acts = "";
-  var closeBtn = '<button class="big quiet" data-act="closeView">Close</button>';
+  var closeBtn = facePlate("closeView", BOX_CLOSE, "Close", "");
   var closeUsed = false;
   if (inHand) {
     if (playTarget === c.id) {
@@ -3676,12 +3680,14 @@ function renderFaceModal() {
       // Close joins Discard on one line here rather than standing alone below
       // it — so it is claimed, and the standalone copy is left off.
       closeUsed = true;
+      var mine = ' data-i="' + c.id + '"';
+      // Held has no plate of its own, and never appears except greyed out.
       acts = '<div class="acts" style="margin-top:14px">' +
         (heldAt != null
           ? '<button class="big primary" disabled>Held</button>'
-          : '<button class="big primary" data-act="playCard" data-i="' + c.id + '">Play</button>') +
+          : facePlate("playCard", BOX_PLAY, "Play", mine)) +
         '</div><div class="facepair">' +
-        '<button class="big raised" data-act="askDiscard" data-i="' + c.id + '">Discard</button>' +
+        facePlate("askDiscard", BOX_DISCARD, "Discard", mine) +
         closeBtn + '</div>' +
         (heldAt != null
           ? '<p class="hint" style="text-align:center;margin-top:10px">Fresh from hole ' +
@@ -3706,7 +3712,7 @@ function renderFaceModal() {
   faceEnterDir = 0;
   return '<div class="modal facemodal"><div class="faceinner">' +
     '<div class="faceslide' + enter + '">' + face + '</div>' + nav + acts +
-    (closeUsed ? "" : '<div class="facepair">' + closeBtn + '</div>') + '</div></div>';
+    (closeUsed ? "" : '<div class="facepair solo">' + closeBtn + '</div>') + '</div></div>';
 }
 
 /* Step the enlarged view to a neighbouring hand card. Clamped at the ends. */
@@ -4249,12 +4255,30 @@ var PLATE_SPIN_NAME = [126, 411];
 function spinPlate(act, band, label) {
   return plateButton(SPIN_BUTTONS, 1536, act, band, label, false);
 }
-/* One band of a sheet, shown through a window its own height. */
+/* A full-width band of a sheet — the common case, in terms of the general one. */
 function plateButton(sheet, sheetWidth, act, band, label, off) {
-  return '<button class="wplate" data-act="' + act + '"' + (off ? " disabled" : "") +
-    ' style="aspect-ratio:' + sheetWidth + '/' + band[1] + '"><img src="' + sheet +
-    '" alt="' + esc(label) + '" draggable="false" style="top:' +
-    (-100 * band[0] / band[1]).toFixed(2) + '%"></button>';
+  return plateBox(sheet, sheetWidth, [0, band[0], sheetWidth, band[1]], act, label, off, "");
+}
+/*
+ * Any rectangle of a sheet, seen through a window of that rectangle's shape:
+ * the sheet is scaled until the box fills the window's width, then slid up and
+ * left until the box is what shows. Percentages resolve against the window, so
+ * the whole thing rescales with the screen and nothing needs pixel sizes.
+ */
+function plateBox(sheet, sheetWidth, box, act, label, off, extra) {
+  var x = box[0], y = box[1], w = box[2], h = box[3];
+  return '<button class="wplate" data-act="' + act + '"' + (extra || "") +
+    (off ? " disabled" : "") + ' style="aspect-ratio:' + w + '/' + h + '">' +
+    '<img src="' + sheet + '" alt="' + esc(label) + '" draggable="false" style="width:' +
+    (100 * sheetWidth / w).toFixed(3) + '%;left:' + (-100 * x / w).toFixed(3) +
+    '%;top:' + (-100 * y / h).toFixed(3) + '%"></button>';
+}
+// The card face's three, measured off their sheet (1536x1024).
+var FACE_BUTTONS = "__FACE_BUTTONS__";
+var BOX_PLAY = [6, 162, 1525, 339];
+var BOX_DISCARD = [8, 537, 760, 313], BOX_CLOSE = [773, 537, 756, 313];
+function facePlate(act, box, label, extra) {
+  return plateBox(FACE_BUTTONS, 1536, box, act, label, false, extra);
 }
 var CARD_SUITS = ["♠", "♥", "♦", "♣"];
 var CARD_RANKS = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"];
