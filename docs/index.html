@@ -253,6 +253,10 @@
   .faceslide.fromleft { animation: facein-left 200ms ease-out; }
   @keyframes facein-right { from { transform: translateX(60%) rotate(6deg); opacity: 0; } }
   @keyframes facein-left { from { transform: translateX(-60%) rotate(-6deg); opacity: 0; } }
+  /* Discard and Close share a line: two ways out of the card, neither of them
+     the thing you came to do, so they split the width Play does not need. */
+  .facepair { display: flex; gap: 10px; margin-top: 12px; }
+  .facepair button { flex: 1; margin: 0; }
   .facenav { display: flex; align-items: center; justify-content: center; gap: 26px;
              margin-top: 10px; color: #5E6C88; font-weight: 700; font-size: 14px; }
   .facenav span[data-act] { font-size: 30px; line-height: 1; padding: 0 14px;
@@ -833,7 +837,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.10 · 30 Aug 21:03";
+var APP_VERSION = "v1.10 · 30 Aug 21:09";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. Opening the app fetches fresh anyway.
@@ -3605,6 +3609,8 @@ function renderFaceModal() {
     : cardFaceSvg(c);
 
   var acts = "";
+  var closeBtn = '<button class="big quiet" data-act="closeView">Close</button>';
+  var closeUsed = false;
   if (inHand) {
     if (playTarget === c.id) {
       // Who it landed on. Only asked for cards aimed at somebody — self and group
@@ -3642,11 +3648,16 @@ function renderFaceModal() {
         '<button class="big primary" data-act="discardCard" data-i="' + c.id + '">Discard</button></div>';
     } else {
       var heldAt = heldCardIds(state)[c.id];
+      // Close joins Discard on one line here rather than standing alone below
+      // it — so it is claimed, and the standalone copy is left off.
+      closeUsed = true;
       acts = '<div class="acts" style="margin-top:14px">' +
         (heldAt != null
           ? '<button class="big primary" disabled>Held</button>'
           : '<button class="big primary" data-act="playCard" data-i="' + c.id + '">Play</button>') +
-        '<button class="big raised" data-act="askDiscard" data-i="' + c.id + '">Discard</button></div>' +
+        '</div><div class="facepair">' +
+        '<button class="big raised" data-act="askDiscard" data-i="' + c.id + '">Discard</button>' +
+        closeBtn + '</div>' +
         (heldAt != null
           ? '<p class="hint" style="text-align:center;margin-top:10px">Fresh from hole ' +
             (heldAt + 1) + ' &mdash; playable once the whole table locks it in agreement.</p>'
@@ -3670,7 +3681,7 @@ function renderFaceModal() {
   faceEnterDir = 0;
   return '<div class="modal facemodal"><div class="faceinner">' +
     '<div class="faceslide' + enter + '">' + face + '</div>' + nav + acts +
-    '<button class="big quiet" data-act="closeView" style="margin-top:12px">Close</button></div></div>';
+    (closeUsed ? "" : '<div class="facepair">' + closeBtn + '</div>') + '</div></div>';
 }
 
 /* Step the enlarged view to a neighbouring hand card. Clamped at the ends. */
