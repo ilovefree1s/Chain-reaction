@@ -433,10 +433,11 @@
                touch-action: none; }
   .dicefield .die { position: absolute; transform: translate(-50%, -50%); }
   /* Thrown, they cross the felt in the time between two tumbles. */
-  /* Mid-throw the simulation writes each die's transform every frame, so its
-     corner is pinned and nothing eases: an easing would be the browser arguing
-     with the physics about where the die is. */
-  .dicefield.rolling .die { left: 0; top: 0; transition: none; }
+  /* Mid-throw the simulation writes each die's transform every frame, so nothing
+     eases: an easing would be the browser arguing with the physics about where
+     the die is. Its corner is pinned to the felt in the markup, not here — an
+     inline left/top cannot be overridden from a stylesheet. */
+  .dicefield.rolling .die { transition: none; }
   /* Picked up: brighter and out from under the others. The lift and the carrying
      are done on the element's transform by the drag itself, so this rule stays
      off transform entirely — it would fight the finger for it. */
@@ -4418,15 +4419,15 @@ function tossTarget() {
  * the die turns over to its next face.
  */
 var dieDrag = null;
-/* Everything close enough to the die at [i] to be part of the same pile. */
+/* Everything close enough to the die at [i] to be part of the same pile, each
+   remembered by where it starts in the field's own pixels. */
 function dicePile(at, i, fb) {
   var out = [];
   for (var k = 0; k < at.length; k++) {
-    var dx = (at[k].x - at[i].x) / 100 * fb.width;
-    var dy = (at[k].y - at[i].y) / 100 * fb.height;
-    if (Math.sqrt(dx * dx + dy * dy) <= 46) {
-      out.push({ i: k, ox: at[k].x - at[i].x, oy: at[k].y - at[i].y });
-    }
+    var sx = at[k].x / 100 * fb.width, sy = at[k].y / 100 * fb.height;
+    var dx = sx - at[i].x / 100 * fb.width;
+    var dy = sy - at[i].y / 100 * fb.height;
+    if (Math.sqrt(dx * dx + dy * dy) <= 46) out.push({ i: k, sx: sx, sy: sy });
   }
   return out;
 }
@@ -4440,7 +4441,10 @@ app.addEventListener("pointerdown", function (e) {
     if (!fieldEl) return;
     var field = fieldEl.getBoundingClientRect();
     var i = +die.getAttribute("data-die");
-    dieDrag = { i: i, el: die, field: field,
+    var dieW = die.getBoundingClientRect().width || 74;
+    // Half of the die AS HELD: it is scaled up while carried, and clamping to
+    // its resting size let a corner of it hang over the edge of the felt.
+    dieDrag = { i: i, el: die, field: field, reach: dieW * 0.55,
                 pile: dicePile(dicePlaces(secret.dice), i, field),
                 x0: e.clientX, y0: e.clientY, moved: false,
                 lastX: e.clientX, lastY: e.clientY, lastT: Date.now(), speed: 0 };
@@ -4467,13 +4471,16 @@ window.addEventListener("pointermove", function (e) {
     var dx = t.clientX - dieDrag.x0, dy = t.clientY - dieDrag.y0;
     if (Math.abs(dx) > 6 || Math.abs(dy) > 6) dieDrag.moved = true;
     // Carried on transform rather than left/top: the finger gets a compositor
-    // move per frame instead of a layout of the whole felt. Where they have
-    // actually landed is worked out once, on release.
+    // move per frame instead of a layout of the whole felt. Held inside the walls
+    // as it goes — a die should not be able to leave the screen in your hand any
+    // more than it can be thrown off it.
+    var edge = dieDrag.reach;
     dieDrag.pile.forEach(function (g) {
-      if (g.el) {
-        g.el.style.transform = "translate(-50%, -50%) translate(" +
-          dx.toFixed(1) + "px, " + dy.toFixed(1) + "px) scale(1.1)";
-      }
+      if (!g.el) return;
+      g.nx = Math.max(edge, Math.min(f.width - edge, g.sx + dx));
+      g.ny = Math.max(edge, Math.min(f.height - edge, g.sy + dy));
+      g.el.style.transform = "translate(-50%, -50%) translate(" +
+        (g.nx - g.sx).toFixed(1) + "px, " + (g.ny - g.sy).toFixed(1) + "px) scale(1.1)";
     });
     return;
   }
@@ -4518,15 +4525,12 @@ function dieDragEnd() {
     render();
     return;
   }
-  // Where the drag actually left them, written once now rather than eighty times
-  // on the way.
+  // Where the drag left them, which it has already kept inside the walls.
   var f = g.field, at = dicePlaces(d);
-  var px = ((g.lastX - f.left) / f.width) * 100;
-  var py = ((g.lastY - f.top) / f.height) * 100;
   g.pile.forEach(function (m) {
-    if (!at[m.i]) return;
-    at[m.i].x = Math.max(6, Math.min(94, px + m.ox));
-    at[m.i].y = Math.max(4, Math.min(96, py + m.oy));
+    if (!at[m.i] || m.nx == null) return;
+    at[m.i].x = m.nx / f.width * 100;
+    at[m.i].y = m.ny / f.height * 100;
     if (m.el) {
       m.el.style.left = at[m.i].x.toFixed(2) + "%";
       m.el.style.top = at[m.i].y.toFixed(2) + "%";
@@ -4645,8 +4649,13 @@ function diceFieldHtml(d) {
     for (var p = 0; p < 9; p++) {
       pips += '<span class="pip' + (DIE_PIPS[v].indexOf(p) !== -1 ? " on" : "") + '"></span>';
     }
-    return '<div class="die" data-die="' + i + '" style="left:' + at[i].x.toFixed(2) +
-      '%;top:' + at[i].y.toFixed(2) + '%">' + pips + '</div>';
+    // Mid-throw the simulation owns where each die is, and writes it as a
+    // transform. The resting left/top has to go, not be overridden: it is inline,
+    // and no stylesheet rule can outrank that — the transform was landing on top
+    // of it, so every throw was offset by wherever the die had been sitting.
+    var place = d.rolling ? 'left:0;top:0'
+      : 'left:' + at[i].x.toFixed(2) + '%;top:' + at[i].y.toFixed(2) + '%';
+    return '<div class="die" data-die="' + i + '" style="' + place + '">' + pips + '</div>';
   }).join("");
 }
 function renderDiceGame() {
@@ -4697,6 +4706,10 @@ function rollDice(strength) {
   var fb = fieldEl.getBoundingClientRect();
   var first = fieldEl.querySelector(".die");
   var size = first ? first.getBoundingClientRect().width : 74;
+  // A tumbling die is a square, and a square on its corner is wider than its
+  // side: half its diagonal is what has to clear the wall, or it visibly cuts
+  // through the edge of the screen on the way past.
+  var reach = size * 0.708;
   var at = dicePlaces(d);
   // Away from you and slightly outward, harder the harder it was flicked, and
   // never all exactly alike — dice thrown from one hand do not leave it in
@@ -4714,7 +4727,7 @@ function rollDice(strength) {
     });
   }
   diceSim = { bodies: bodies, field: fieldEl, w: fb.width, h: fb.height,
-              r: size / 2, last: 0, still: 0, raf: 0, d: d };
+              r: size / 2, reach: reach, last: 0, still: 0, raf: 0, d: d };
   diceSim.raf = requestAnimationFrame(diceStep);
 }
 
@@ -4725,7 +4738,13 @@ function diceStep(now) {
   // the background hands back a gap of seconds — either would teleport them.
   var dt = sim.last ? Math.min(0.032, (now - sim.last) / 1000) : 0.016;
   sim.last = now;
-  var b, i, j, bodies = sim.bodies, r = sim.r, moving = 0;
+  // The walls are re-measured every frame, before anything is written. Measuring
+  // once at the throw left the simulation playing in a world 15px wider than the
+  // felt actually was — the layout settles a moment after the render that starts
+  // it — and dice were bouncing off walls that were not where the screen was.
+  var fr = sim.field.getBoundingClientRect();
+  if (fr.width > 0) { sim.w = fr.width; sim.h = fr.height; }
+  var b, i, j, bodies = sim.bodies, r = sim.r, w = sim.reach, moving = 0;
 
   for (i = 0; i < bodies.length; i++) {
     b = bodies[i];
@@ -4734,10 +4753,10 @@ function diceStep(now) {
     b.x += b.vx * dt; b.y += b.vy * dt;
     b.rot += b.spin * dt; b.spin *= 0.988;
     // Walls. A die hitting one loses most of what it had and is turned around.
-    if (b.x < r) { b.x = r; b.vx = Math.abs(b.vx) * DIE_BOUNCE; b.spin = -b.spin * 0.7; }
-    if (b.x > sim.w - r) { b.x = sim.w - r; b.vx = -Math.abs(b.vx) * DIE_BOUNCE; b.spin = -b.spin * 0.7; }
-    if (b.y < r) {
-      b.y = r;
+    if (b.x < w) { b.x = w; b.vx = Math.abs(b.vx) * DIE_BOUNCE; b.spin = -b.spin * 0.7; }
+    if (b.x > sim.w - w) { b.x = sim.w - w; b.vx = -Math.abs(b.vx) * DIE_BOUNCE; b.spin = -b.spin * 0.7; }
+    if (b.y < w) {
+      b.y = w;
       b.vy = Math.abs(b.vy) * DIE_BOUNCE;
       // The table drags: sliding and spinning both die out on it, which is what
       // eventually brings the whole throw to a stop.
@@ -4746,7 +4765,7 @@ function diceStep(now) {
     }
     // The near edge is only a rail — a die that comes back this far bounces off
     // it rather than dropping out of the game.
-    if (b.y > sim.h - r) { b.y = sim.h - r; b.vy = -Math.abs(b.vy) * DIE_BOUNCE; }
+    if (b.y > sim.h - w) { b.y = sim.h - w; b.vy = -Math.abs(b.vy) * DIE_BOUNCE; }
   }
 
   // Dice against dice, treated as discs: push them apart, then swap what they
