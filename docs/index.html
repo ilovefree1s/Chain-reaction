@@ -430,9 +430,18 @@
   .dicerow { display: flex; justify-content: center; gap: 14px; margin: 20px 0 4px; flex-wrap: wrap; }
   /* The coin is the artwork — struck edge and all — so nothing is drawn under
      it. A window its own shape, with the sheet slid to the landed face. */
-  /* The coin sits in equal air: 32px above is the label's own 12 plus this 20,
-     so 32 below it puts the Flip button the same distance away. */
-  .coinbox { display: flex; justify-content: center; margin: 20px 0 32px; }
+  /* The coin lives at the foot of the screen, under the thumb that throws it.
+     touch-action none so the browser never reads the toss as a scroll. */
+  .modal.sgcoin {
+    display: flex; flex-direction: column; justify-content: flex-end;
+    padding-bottom: calc(30px + env(safe-area-inset-bottom));
+  }
+  .sgcoin .label { margin: 44px 0 auto; }
+  .coinbox { display: flex; justify-content: center; margin: 0;
+             touch-action: none; cursor: grab; }
+  /* Thrown, it arcs up and comes back down while the faces tumble. */
+  .coinbox.tossing { animation: cointoss 1200ms ease-out; }
+  @keyframes cointoss { 45% { transform: translateY(-34vh); } }
   .coin {
     position: relative; overflow: hidden;
     width: min(56%, 200px); aspect-ratio: 869 / 859;
@@ -905,7 +914,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.10 · 31 Aug 00:07";
+var APP_VERSION = "v1.10 · 31 Aug 14:37";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. Opening the app fetches fresh anyway.
@@ -4316,19 +4325,58 @@ function renderSecret() {
 /* ---- coin: one coin, two sides, nothing to configure ---- */
 function renderCoinGame() {
   var c = secret.coin;
-  return '<div class="modal sgscreen sgdice sgcoin">' +
+  return '<div class="modal sgscreen sgcoin">' +
     '<button class="sgback" data-act="secretBack">&lsaquo;&nbsp;&nbsp;Back</button>' +
     // The call itself rides the Back button's line, where nothing else on this
-    // screen is, and the coin keeps the middle to itself.
+    // screen is.
     '<div class="sgtop">' + (c.flipping ? "&hellip;" : esc(c.face)) + '</div>' +
     '<div class="label">Coin flip</div>' +
+    // Nothing on this screen says what to do, so it says it — a gesture with no
+    // button left behind has to announce itself.
+    '<p class="hint" style="text-align:center;margin:0 0 10px">' +
+    (c.flipping ? "&nbsp;" : "Swipe the coin up to flip it") + '</p>' +
     // Mid-flip the face swaps every tick like the dice faces do, so the spin is
     // the coin actually turning rather than a placeholder standing in for it.
-    '<div class="coinbox"><div class="coin' + (c.flipping ? " spinning" : "") + '">' +
-    coinFaceImg(c.face === "TAILS" ? COIN_TAILS : COIN_HEADS) + '</div></div>' +
-    '<button class="big wheel" data-act="flipCoin"' + (c.flipping ? " disabled" : "") +
-    '>Flip</button></div>';
+    '<div class="coinbox' + (c.flipping ? " tossing" : "") + '">' +
+    '<div class="coin' + (c.flipping ? " spinning" : "") + '">' +
+    coinFaceImg(c.face === "TAILS" ? COIN_TAILS : COIN_HEADS) + '</div></div></div>';
 }
+
+/*
+ * The toss: your thumb pushes the coin up and lets go. Under the throw it drops
+ * back unspent, which is what makes it a gesture rather than a tap you perform
+ * with extra steps — a coin you nudged should not have flipped.
+ */
+var COIN_THROW = 42;
+var coinTouchY = null, coinDragEl = null;
+app.addEventListener("touchstart", function (e) {
+  if (!secret || secret.mode !== "coin" || secret.coin.flipping) return;
+  if (!e.target.closest) return;
+  var el = e.target.closest(".coinbox");
+  if (!el) return;
+  coinTouchY = e.touches[0].clientY;
+  coinDragEl = el;
+}, { passive: true });
+app.addEventListener("touchmove", function (e) {
+  if (coinTouchY == null || !coinDragEl) return;
+  var dy = e.touches[0].clientY - coinTouchY;
+  // Downward gives a little and refuses: there is nowhere to throw a coin but up.
+  if (dy > 0) dy /= 4;
+  coinDragEl.style.transform = "translateY(" + Math.max(dy, -150) + "px)";
+}, { passive: true });
+function coinDragEnd(dy) {
+  var el = coinDragEl;
+  coinTouchY = null; coinDragEl = null;
+  if (!el) return;
+  el.style.transform = "";
+  if (dy <= -COIN_THROW) flipCoin();
+}
+app.addEventListener("touchend", function (e) {
+  if (coinTouchY == null) return;
+  coinDragEnd(e.changedTouches[0].clientY - coinTouchY);
+}, { passive: true });
+// Android cancels the stream when it claims the drag; the coin just settles.
+app.addEventListener("touchcancel", function () { coinDragEnd(0); }, { passive: true });
 
 /* One face of the sheet, seen through a window of that face's shape: the sheet
    is scaled until the face fills the window, then slid until it is what shows. */
@@ -4340,12 +4388,16 @@ function coinFaceImg(box) {
 
 /* Tumbles for as long as the rattle plays, and lands when it stops — the same
    deal the dice get, so the two games feel like they came from one box. */
+/* A tossed coin is in the air about a second, so the flip keeps its own clock
+   rather than the dice rattle's — the arc and the tumbling have to end together,
+   and the clip is faded to match. */
+var COIN_FLIP_MS = 1200;
 function flipCoin() {
   var c = secret && secret.coin;
   if (!c || c.flipping) return;
   c.flipping = true;
-  playClip(diceAudio, sfxVolume());
-  var ms = diceAudio && diceAudio.duration > 0 ? diceAudio.duration * 1000 : 900;
+  playClip(diceAudio, sfxVolume(), COIN_FLIP_MS / 1000);
+  var ms = COIN_FLIP_MS;
   var ticks = 0, need = Math.max(3, Math.round(ms / 90));
   var iv = setInterval(function () {
     if (!secret || secret.mode !== "coin") { clearInterval(iv); return; }
