@@ -434,10 +434,14 @@
   .dicefield .die { position: absolute; transform: translate(-50%, -50%); }
   /* Thrown, they cross the felt in the time between two tumbles. */
   .dicefield.rolling .die { transition: left 90ms linear, top 90ms linear; }
-  /* Picked up: bigger, brighter, and out from under the others. */
-  .dicefield .die.held { transform: translate(-50%, -50%) scale(1.12); z-index: 2;
+  /* Picked up: brighter and out from under the others. The lift and the carrying
+     are done on the element's transform by the drag itself, so this rule stays
+     off transform entirely — it would fight the finger for it. */
+  .dicefield .die.held { z-index: 2; will-change: transform;
                          box-shadow: 0 8px 20px rgba(0, 0, 0, 0.6),
                                      0 0 18px rgba(77, 195, 255, 0.5); }
+  /* A carried die answers the finger directly; only a thrown one is eased. */
+  .dicefield .die.held, .dicefield.rolling .die.held { transition: none; }
   /* The coin is the artwork — struck edge and all — so nothing is drawn under
      it. A window its own shape, with the sheet slid to the landed face. */
   /* The coin lives at the foot of the screen, under the thumb that throws it.
@@ -948,7 +952,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.10 · 31 Aug 15:05";
+var APP_VERSION = "v1.10 · 31 Aug 15:11";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. Opening the app fetches fresh anyway.
@@ -4387,6 +4391,10 @@ var COIN_THROW = 42;
    about the slowest movement that still reads as a throw; the ceiling is a hard
    flick, past which it cannot go any higher anyway. */
 var COIN_SLOW = 0.25, COIN_FAST = 2.2;
+/* A die has to be moving this fast to count as thrown rather than carried. Well
+   clear of a brisk drag: the felt would be unusable if setting a die down at the
+   top of it re-rolled the table. */
+var DIE_FLICK = 0.9;
 var coinTouchY = null, coinDragEl = null;
 var coinLastY = 0, coinLastT = 0, coinSpeed = 0;
 /* Whether there is anything to throw right now, and what throwing it does. */
@@ -4427,7 +4435,7 @@ app.addEventListener("touchstart", function (e) {
     dieDrag = { i: i, el: die, field: field,
                 pile: dicePile(dicePlaces(secret.dice), i, field),
                 x0: t0.clientX, y0: t0.clientY, moved: false,
-                lastY: t0.clientY, lastT: Date.now(), speed: 0 };
+                lastX: t0.clientX, lastY: t0.clientY, lastT: Date.now(), speed: 0 };
     dieDrag.pile.forEach(function (g) {
       var el = fieldEl.querySelector('[data-die="' + g.i + '"]');
       g.el = el;
@@ -4446,20 +4454,17 @@ app.addEventListener("touchmove", function (e) {
     var t = e.touches[0], f = dieDrag.field, now = Date.now();
     var dt = now - dieDrag.lastT;
     if (dt > 0) dieDrag.speed = (dieDrag.lastY - t.clientY) / dt; // upward is positive
-    dieDrag.lastY = t.clientY; dieDrag.lastT = now;
-    if (Math.abs(t.clientX - dieDrag.x0) > 6 || Math.abs(t.clientY - dieDrag.y0) > 6) {
-      dieDrag.moved = true;
-    }
-    // Kept inside its own walls, and moved by style rather than by render so the
-    // dice do not blink out from under the finger holding them.
-    var px = ((t.clientX - f.left) / f.width) * 100;
-    var py = ((t.clientY - f.top) / f.height) * 100;
-    var at = dicePlaces(secret.dice);
+    dieDrag.lastX = t.clientX; dieDrag.lastY = t.clientY; dieDrag.lastT = now;
+    var dx = t.clientX - dieDrag.x0, dy = t.clientY - dieDrag.y0;
+    if (Math.abs(dx) > 6 || Math.abs(dy) > 6) dieDrag.moved = true;
+    // Carried on transform rather than left/top: the finger gets a compositor
+    // move per frame instead of a layout of the whole felt. Where they have
+    // actually landed is worked out once, on release.
     dieDrag.pile.forEach(function (g) {
-      var x = Math.max(6, Math.min(94, px + g.ox));
-      var y = Math.max(4, Math.min(96, py + g.oy));
-      if (at[g.i]) { at[g.i].x = x; at[g.i].y = y; }
-      if (g.el) { g.el.style.left = x.toFixed(2) + "%"; g.el.style.top = y.toFixed(2) + "%"; }
+      if (g.el) {
+        g.el.style.transform = "translate(-50%, -50%) translate(" +
+          dx.toFixed(1) + "px, " + dy.toFixed(1) + "px) scale(1.1)";
+      }
     });
     return;
   }
@@ -4492,7 +4497,9 @@ function coinDragEnd(dy) {
 function dieDragEnd() {
   if (!dieDrag) return;
   var d = secret && secret.dice, g = dieDrag;
-  g.pile.forEach(function (m) { if (m.el) m.el.classList.remove("held"); });
+  g.pile.forEach(function (m) {
+    if (m.el) { m.el.classList.remove("held"); m.el.style.transform = ""; }
+  });
   dieDrag = null;
   if (!d || d.rolling) { render(); return; }
   // Let go without having gone anywhere: that was a tap, and a tapped die turns
@@ -4502,15 +4509,30 @@ function dieDragEnd() {
     render();
     return;
   }
-  // Flicked upward and released while still moving: that is a throw, and it
-  // throws the lot. Speed alone decides — a die carried slowly up the field is
-  // being put somewhere, not launched.
+  // Where the drag actually left them, written once now rather than eighty times
+  // on the way.
+  var f = g.field, at = dicePlaces(d);
+  var px = ((g.lastX - f.left) / f.width) * 100;
+  var py = ((g.lastY - f.top) / f.height) * 100;
+  g.pile.forEach(function (m) {
+    if (!at[m.i]) return;
+    at[m.i].x = Math.max(6, Math.min(94, px + m.ox));
+    at[m.i].y = Math.max(4, Math.min(96, py + m.oy));
+    if (m.el) {
+      m.el.style.left = at[m.i].x.toFixed(2) + "%";
+      m.el.style.top = at[m.i].y.toFixed(2) + "%";
+    }
+  });
+  // A flick: fast, upward, and still moving as it was let go. The bar is well
+  // above a brisk drag, because carrying a die up the felt and setting it down
+  // must not throw the table.
   var speed = Date.now() - g.lastT > 90 ? 0 : g.speed;
-  if (g.lastY - g.y0 <= -COIN_THROW && speed > COIN_SLOW) {
-    rollDice((speed - COIN_SLOW) / (COIN_FAST - COIN_SLOW));
+  var dy = g.lastY - g.y0, dx = Math.abs(g.lastX - g.x0);
+  if (dy <= -COIN_THROW && speed >= DIE_FLICK && dx < Math.abs(dy)) {
+    rollDice((speed - DIE_FLICK) / (COIN_FAST - DIE_FLICK));
     return;
   }
-  render();
+  // Nothing to redraw: the dice are already where this left them.
 }
 app.addEventListener("touchend", function (e) {
   if (dieDrag) { dieDragEnd(); return; }
@@ -4673,7 +4695,10 @@ function rollDice(strength) {
     d.vals = [];
     for (var i = 0; i < d.count; i++) d.vals.push(1 + Math.floor(Math.random() * 6));
     scatter();
-    if (field) field.innerHTML = diceFieldHtml(d);
+    // Moved, never rebuilt. Replacing the field's markup threw away the very
+    // elements the transition was carrying, so the dice teleported from spot to
+    // spot instead of travelling between them.
+    if (field) placeDice(field, d);
   }, 90);
   setTimeout(function () {
     clearInterval(iv);
@@ -4686,6 +4711,23 @@ function rollDice(strength) {
     d.rolling = false;
     render();
   }, ms);
+}
+
+/* Moves the dice already on the felt to where the state says they are, and
+   re-pips them, without disturbing the elements themselves. */
+function placeDice(field, d) {
+  var at = dicePlaces(d);
+  for (var i = 0; i < d.count; i++) {
+    var el = field.querySelector('[data-die="' + i + '"]');
+    if (!el) continue;
+    el.style.left = at[i].x.toFixed(2) + "%";
+    el.style.top = at[i].y.toFixed(2) + "%";
+    var pips = "", v = d.vals[i];
+    for (var p = 0; p < 9; p++) {
+      pips += '<span class="pip' + (DIE_PIPS[v].indexOf(p) !== -1 ? " on" : "") + '"></span>';
+    }
+    el.innerHTML = pips;
+  }
 }
 
 /* Shoves overlapping dice apart, a little at a time, and keeps them on the felt. */
