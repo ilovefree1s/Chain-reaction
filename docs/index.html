@@ -873,7 +873,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.10 · 30 Aug 23:07";
+var APP_VERSION = "v1.10 · 30 Aug 23:09";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. Opening the app fetches fresh anyway.
@@ -2940,7 +2940,12 @@ function renderScore() {
       '<div class="dtitle">Scorecards disagree &middot; hole ' + (g.hole + 1) + '</div>' +
       '<div class="dline">There&rsquo;s an error for ' + possessiveList(who) +
       '. Everyone talk it out and fix it.</div>' +
-      '<div class="dhint">Tap to open hole ' + (g.hole + 1) + '.</div></div>';
+      // The freeze is real and worth saying: dealHeld keeps this hole's cards
+      // in hand but unplayable while the flag stands, and a held card can't buy
+      // a wheel spin either. It is the hole's own cards, not the whole hand.
+      '<div class="dhint">Nobody&rsquo;s card gets overwritten &mdash; settle it out loud. ' +
+      'Until it&rsquo;s fixed, the cards this hole dealt can&rsquo;t be played, or spent ' +
+      'on a wheel spin. Tap to open hole ' + (g.hole + 1) + '.</div></div>';
   }).join("");
 
   // UDisc-style hole strip riding above the tab bar: every hole as a chip,
