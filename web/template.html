@@ -396,10 +396,11 @@
   /* The button sheet is transparent, so it just sits on the photo. */
   .menu-buttons {
     position: absolute; left: 0; right: 0; z-index: 1;
-    /* Lifted off the floor, so the stack breathes above the version line. */
+    /* Lifted off the floor, but only just: the version line sits off to the
+       right of the stack rather than under it, so it needs no clearance. */
     /* One number sizes the whole stack: the sheet keeps its aspect ratio and
        every hit box is placed in percentages of it, so they scale together. */
-    bottom: calc(env(safe-area-inset-bottom) + 48px); height: 46%;
+    bottom: calc(env(safe-area-inset-bottom) + 30px); height: 46%;
     display: flex; justify-content: center;
   }
   .menu-buttons .sheet { position: relative; height: 100%; aspect-ratio: 941 / 1672; }
