@@ -487,6 +487,17 @@
   /* Any title that follows the corner Back drops out of its lane. */
   .sgback + .label { margin-top: 44px; }
   /* The whole dice tray floats at the middle of the screen. */
+  /* A title riding the Back button's line, centred between the corners. Out of
+     flow, so the game below stays centred on the screen rather than on what is
+     left under a header. No flanking rules: they would run in under Back. */
+  .sgtitle {
+    position: absolute; left: 0; right: 0;
+    top: calc(env(safe-area-inset-top) + 10px); height: var(--tap);
+    display: flex; align-items: center; justify-content: center;
+    text-transform: uppercase; color: #4DC3FF;
+    font-size: 13px; font-weight: 900; letter-spacing: 3px;
+    pointer-events: none;
+  }
   .modal.sgdice { display: flex; flex-direction: column; justify-content: center; }
   .sgdice .sgback + .label { margin-top: 0; }
   /* The painted plates, restacked with tight gaps so the splash stays seen. */
@@ -885,7 +896,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.10 · 30 Aug 23:46";
+var APP_VERSION = "v1.10 · 30 Aug 23:50";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. Opening the app fetches fresh anyway.
@@ -4294,7 +4305,7 @@ function renderCoinGame() {
   var c = secret.coin;
   return '<div class="modal sgscreen sgdice">' +
     '<button class="sgback" data-act="secretBack">&lsaquo;&nbsp;&nbsp;Back</button>' +
-    '<div class="label">Coin flip</div>' +
+    '<div class="sgtitle">Coin flip</div>' +
     // Mid-flip the face swaps every tick like the dice faces do, so the spin is
     // the coin actually turning rather than a placeholder standing in for it.
     '<div class="coinbox"><div class="coin' + (c.flipping ? " spinning" : "") + '">' +
