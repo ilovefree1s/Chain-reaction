@@ -427,16 +427,30 @@
   }
   .secretbox:focus { outline: none; border-color: var(--self); }
   /* The dice tray: white dice, pips laid on a 3x3 grid. */
-  .dicerow { display: flex; justify-content: center; gap: 14px; margin: 0; flex-wrap: wrap; }
+  /* The felt: the dice lie wherever they were thrown or put, placed in percentages
+     of it so a spot means the same thing on any phone. */
+  .dicefield { position: relative; flex: 1 1 auto; min-height: 300px;
+               touch-action: none; }
+  .dicefield .die { position: absolute; transform: translate(-50%, -50%); }
+  /* Thrown, they cross the felt in the time between two tumbles. */
+  .dicefield.rolling .die { transition: left 90ms linear, top 90ms linear; }
+  /* Picked up: bigger, brighter, and out from under the others. */
+  .dicefield .die.held { transform: translate(-50%, -50%) scale(1.12); z-index: 2;
+                         box-shadow: 0 8px 20px rgba(0, 0, 0, 0.6),
+                                     0 0 18px rgba(77, 195, 255, 0.5); }
   /* The coin is the artwork — struck edge and all — so nothing is drawn under
      it. A window its own shape, with the sheet slid to the landed face. */
   /* The coin lives at the foot of the screen, under the thumb that throws it.
      touch-action none so the browser never reads the toss as a scroll. */
   .modal.sgcoin, .modal.sgdice {
-    display: flex; flex-direction: column; justify-content: flex-end;
+    display: flex; flex-direction: column;
     padding-bottom: calc(30px + env(safe-area-inset-bottom));
   }
-  .sgcoin .label, .sgdice .label { margin: 44px 0 auto; }
+  /* The coin hangs off the bottom; the dice field takes everything under the
+     count, because the dice have to be able to land anywhere in it. */
+  .modal.sgcoin { justify-content: flex-end; }
+  .sgcoin .label { margin: 44px 0 auto; }
+  .sgdice .label { margin: 44px 0 12px; }
   .coinbox { display: flex; justify-content: center; margin: 0; }
   .tossable { touch-action: none; cursor: grab; }
   /* Thrown, it arcs up and comes back down while the faces tumble. Ease-out on
@@ -921,7 +935,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.10 · 31 Aug 14:48";
+var APP_VERSION = "v1.10 · 31 Aug 14:57";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. Opening the app fetches fresh anyway.
@@ -4261,7 +4275,7 @@ function openSecretWheel() {
     // The name wheel's slate.
     text: saved, rot: 0, name: null, spinning: false,
     // The dice tray and the card table ride along, fresh each visit.
-    dice: { count: 2, vals: [3, 4], rolling: false },
+    dice: { count: 2, vals: [3, 4], rolling: false, pos: null },
     coin: { face: "HEADS", flipping: false },
     cards: { deck: [], board: [], slots: [null, null, null, null, null] }
   };
@@ -4369,8 +4383,22 @@ function tossTarget() {
   if (secret.mode === "dice" && !secret.dice.rolling) return rollDice;
   return null;
 }
+/*
+ * A die under the finger is picked up, not thrown: dragging slides it around the
+ * field and letting go without having moved sets it to the next face. Everywhere
+ * else on the field is the throw.
+ */
+var dieDrag = null;
 app.addEventListener("touchstart", function (e) {
   if (!tossTarget() || !e.target.closest) return;
+  var die = e.target.closest(".die");
+  if (die && secret.mode === "dice") {
+    var field = app.querySelector(".dicefield").getBoundingClientRect();
+    dieDrag = { i: +die.getAttribute("data-die"), el: die, field: field,
+                x0: e.touches[0].clientX, y0: e.touches[0].clientY, moved: false };
+    die.classList.add("held");
+    return;
+  }
   var el = e.target.closest(".tossable");
   if (!el) return;
   coinTouchY = e.touches[0].clientY;
@@ -4378,6 +4406,21 @@ app.addEventListener("touchstart", function (e) {
   coinDragEl = el;
 }, { passive: true });
 app.addEventListener("touchmove", function (e) {
+  if (dieDrag) {
+    var t = e.touches[0], f = dieDrag.field;
+    if (Math.abs(t.clientX - dieDrag.x0) > 6 || Math.abs(t.clientY - dieDrag.y0) > 6) {
+      dieDrag.moved = true;
+    }
+    // Kept inside its own walls, and moved by style rather than by render so the
+    // die does not blink out from under the finger holding it.
+    var x = Math.max(6, Math.min(94, ((t.clientX - f.left) / f.width) * 100));
+    var y = Math.max(4, Math.min(96, ((t.clientY - f.top) / f.height) * 100));
+    var at = dicePlaces(secret.dice)[dieDrag.i];
+    if (at) { at.x = x; at.y = y; }
+    dieDrag.el.style.left = x.toFixed(2) + "%";
+    dieDrag.el.style.top = y.toFixed(2) + "%";
+    return;
+  }
   if (coinTouchY == null || !coinDragEl) return;
   var y = e.touches[0].clientY, now = Date.now();
   var dt = now - coinLastT;
@@ -4404,12 +4447,28 @@ function coinDragEnd(dy) {
   var throwIt = tossTarget();
   if (throwIt) throwIt(Math.max(bySpeed, byPull));
 }
+function dieDragEnd() {
+  if (!dieDrag) return;
+  var d = secret && secret.dice;
+  dieDrag.el.classList.remove("held");
+  // Let go without having gone anywhere: that was a tap, and a tapped die turns
+  // over to the next face. Six wraps back to one.
+  if (!dieDrag.moved && d && !d.rolling) {
+    d.vals[dieDrag.i] = (d.vals[dieDrag.i] % 6) + 1;
+  }
+  dieDrag = null;
+  render();
+}
 app.addEventListener("touchend", function (e) {
+  if (dieDrag) { dieDragEnd(); return; }
   if (coinTouchY == null) return;
   coinDragEnd(e.changedTouches[0].clientY - coinTouchY);
 }, { passive: true });
-// Android cancels the stream when it claims the drag; the coin just settles.
-app.addEventListener("touchcancel", function () { coinDragEnd(0); }, { passive: true });
+// Android cancels the stream when it claims the drag; whatever was held settles.
+app.addEventListener("touchcancel", function () {
+  if (dieDrag) { dieDrag.moved = true; dieDragEnd(); return; }
+  coinDragEnd(0);
+}, { passive: true });
 
 /* Sizes a thrown thing's arc: the ceiling is where it sits now, less the header
    it would otherwise fly through, so it clears the screen without leaving it.
@@ -4480,15 +4539,26 @@ var DIE_PIPS = {
   1: [4], 2: [0, 8], 3: [0, 4, 8], 4: [0, 2, 6, 8],
   5: [0, 2, 4, 6, 8], 6: [0, 2, 3, 5, 6, 8]
 };
-/* The faces alone: rebuilt in place on every tick of a roll, inside a tray that
-   is not, so the throw's arc runs uninterrupted above them. */
-function diceFacesHtml(vals) {
-  return vals.map(function (v) {
+/* Where the dice are lying, as percentages of the field so they keep their
+   places on any screen. Unthrown, they wait in a row along the bottom. */
+function dicePlaces(d) {
+  if (!d.pos || d.pos.length !== d.count) {
+    d.pos = [];
+    for (var i = 0; i < d.count; i++) {
+      d.pos.push({ x: (100 / (d.count + 1)) * (i + 1), y: 84 });
+    }
+  }
+  return d.pos;
+}
+function diceFieldHtml(d) {
+  var at = dicePlaces(d);
+  return d.vals.map(function (v, i) {
     var pips = "";
     for (var p = 0; p < 9; p++) {
       pips += '<span class="pip' + (DIE_PIPS[v].indexOf(p) !== -1 ? " on" : "") + '"></span>';
     }
-    return '<div class="die">' + pips + '</div>';
+    return '<div class="die" data-die="' + i + '" style="left:' + at[i].x.toFixed(2) +
+      '%;top:' + at[i].y.toFixed(2) + '%">' + pips + '</div>';
   }).join("");
 }
 function renderDiceGame() {
@@ -4503,37 +4573,84 @@ function renderDiceGame() {
     '<button class="step" data-act="diceLess"' + (d.count <= 1 || d.rolling ? " disabled" : "") + '>&minus;</button>' +
     '<div class="dicecount">' + d.count + (d.count === 1 ? " die" : " dice") + '</div>' +
     '<button class="step" data-act="diceMore"' + (d.count >= 6 || d.rolling ? " disabled" : "") + '>+</button></div>' +
-    '<p class="hint" style="text-align:center;margin:0 0 10px">' +
-    (d.rolling ? "&nbsp;" : "Swipe the dice up to roll them") + '</p>' +
-    '<div class="dicerow tossable' + (d.rolling ? " tossing" : "") + '">' +
-    diceFacesHtml(d.vals) + '</div></div>';
+    '<p class="hint" style="text-align:center;margin:0 0 8px">' +
+    (d.rolling ? "&nbsp;" : "Swipe up to throw &middot; drag a die to move it &middot; tap to set it") +
+    '</p>' +
+    '<div class="dicefield tossable' + (d.rolling ? " rolling" : "") + '">' +
+    diceFieldHtml(d) + '</div></div>';
 }
-/* Thrown the same way the coin is, and sized the same way: [strength] 0 to 1. */
+/*
+ * Thrown dice go up and stay up: they bang around the top of the field and come
+ * to rest there, rather than falling back into the hand that threw them. A harder
+ * flick scatters them wider and keeps them moving longer.
+ */
 function rollDice(strength) {
   var d = secret && secret.dice;
   if (!d || d.rolling) return;
   if (typeof strength !== "number") strength = 0.4;
   strength = Math.max(0, Math.min(1, strength));
   var ms = Math.round(850 + 750 * strength);
+  var spread = 30 + 55 * strength;
   d.rolling = true;
   playClip(diceAudio, sfxVolume(), ms / 1000);
-  render(); // once, to start the throw and blank the total
-  var tray = app.querySelector(".dicerow");
-  tossArc(tray, strength, ms);
+  function scatter() {
+    d.pos = [];
+    for (var i = 0; i < d.count; i++) {
+      // Off the walls rather than through them.
+      var x = 50 + (Math.random() - 0.5) * spread;
+      d.pos.push({ x: Math.max(13, Math.min(87, x)), y: 16 + Math.random() * 30 });
+    }
+  }
+  // How wide a die is in the field's own units, so the two axes can be compared
+  // despite the field being far taller than it is wide.
+  var fb = app.querySelector(".dicefield");
+  fb = fb && fb.getBoundingClientRect();
+  var ratio = fb && fb.height ? fb.width / fb.height : 0.66;
+  var gap = fb && fb.width ? (88 / fb.width) * 100 : 24;
+  scatter();
+  render(); // once, into the rolling state — the rest is moved in place
+  var field = app.querySelector(".dicefield");
   var iv = setInterval(function () {
     if (!secret || secret.mode !== "dice") { clearInterval(iv); return; }
     d.vals = [];
     for (var i = 0; i < d.count; i++) d.vals.push(1 + Math.floor(Math.random() * 6));
-    // Only the faces are rebuilt. A full render would replace the tray and
-    // restart its arc from the floor ninety times a second.
-    if (tray) tray.innerHTML = diceFacesHtml(d.vals);
+    scatter();
+    if (field) field.innerHTML = diceFieldHtml(d);
   }, 90);
   setTimeout(function () {
     clearInterval(iv);
     if (!secret || secret.mode !== "dice") return;
+    // Mid-air they pile up freely — that is what banging around looks like. They
+    // come to rest apart, because a die under another die is a face nobody can
+    // read and a total nobody can check.
+    scatter();
+    spaceOut(d.pos, gap, ratio);
     d.rolling = false;
     render();
   }, ms);
+}
+
+/* Shoves overlapping dice apart, a little at a time, and keeps them on the felt. */
+function spaceOut(pos, gap, ratio) {
+  for (var pass = 0; pass < 8; pass++) {
+    for (var i = 0; i < pos.length; i++) {
+      for (var j = i + 1; j < pos.length; j++) {
+        var dx = pos[j].x - pos[i].x;
+        var dy = (pos[j].y - pos[i].y) * ratio;
+        var dist = Math.sqrt(dx * dx + dy * dy);
+        // Dead centre on each other: nudge them off the same spot first.
+        if (dist < 0.01) { pos[j].x += 0.5; dx = 0.5; dist = 0.5; }
+        if (dist >= gap) continue;
+        var push = (gap - dist) / 2, ux = dx / dist, uy = dy / dist;
+        pos[i].x -= ux * push; pos[j].x += ux * push;
+        pos[i].y -= (uy * push) / ratio; pos[j].y += (uy * push) / ratio;
+      }
+    }
+    for (var k = 0; k < pos.length; k++) {
+      pos[k].x = Math.max(13, Math.min(87, pos[k].x));
+      pos[k].y = Math.max(10, Math.min(56, pos[k].y));
+    }
+  }
 }
 
 /* ---- cards: one standard 52-card deck, drawn down and reshuffled on demand ---- */
