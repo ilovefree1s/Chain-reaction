@@ -428,16 +428,15 @@
   .secretbox:focus { outline: none; border-color: var(--self); }
   /* The dice tray: white dice, pips laid on a 3x3 grid. */
   .dicerow { display: flex; justify-content: center; gap: 14px; margin: 20px 0 4px; flex-wrap: wrap; }
-  /* The coin: a struck disc, the landed side's initial on its face. */
+  /* The coin is the artwork — struck edge and all — so nothing is drawn under
+     it. A window its own shape, with the sheet slid to the landed face. */
   .coinbox { display: flex; justify-content: center; margin: 20px 0 4px; }
   .coin {
-    width: 120px; height: 120px; border-radius: 50%;
-    background: radial-gradient(circle at 34% 30%, #FFD98A, #FF9A2E 52%, #C9660C);
-    border: 4px solid #FFC14D; box-sizing: border-box;
-    display: flex; align-items: center; justify-content: center;
-    color: #4A2400; font-size: 52px; font-weight: 900; font-style: italic;
-    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.5), 0 0 22px rgba(255, 154, 46, 0.45);
+    position: relative; overflow: hidden;
+    width: min(56%, 200px); aspect-ratio: 869 / 859;
+    filter: drop-shadow(0 6px 16px rgba(0, 0, 0, 0.55));
   }
+  .coin img { position: absolute; display: block; }
   /* Edge-on and back, as fast as the faces are being redrawn. */
   .coin.spinning { animation: coinspin 180ms linear infinite; }
   @keyframes coinspin { 50% { transform: scaleX(0.06); } }
@@ -4296,11 +4295,21 @@ function renderCoinGame() {
   return '<div class="modal sgscreen sgdice">' +
     '<button class="sgback" data-act="secretBack">&lsaquo;&nbsp;&nbsp;Back</button>' +
     '<div class="label">Coin flip</div>' +
+    // Mid-flip the face swaps every tick like the dice faces do, so the spin is
+    // the coin actually turning rather than a placeholder standing in for it.
     '<div class="coinbox"><div class="coin' + (c.flipping ? " spinning" : "") + '">' +
-    (c.flipping ? "" : esc(c.face.charAt(0))) + '</div></div>' +
+    coinFaceImg(c.face === "TAILS" ? COIN_TAILS : COIN_HEADS) + '</div></div>' +
     '<div class="exempt">' + (c.flipping ? "&hellip;" : esc(c.face)) + '</div>' +
     '<button class="big wheel" data-act="flipCoin"' + (c.flipping ? " disabled" : "") +
     '>Flip</button></div>';
+}
+
+/* One face of the sheet, seen through a window of that face's shape: the sheet
+   is scaled until the face fills the window, then slid until it is what shows. */
+function coinFaceImg(box) {
+  return '<img src="' + COIN_FACES + '" alt="" draggable="false" style="width:' +
+    (100 * 1774 / box[2]).toFixed(3) + '%;left:' + (-100 * box[0] / box[2]).toFixed(3) +
+    '%;top:' + (-100 * box[1] / box[3]).toFixed(3) + '%">';
 }
 
 /* Tumbles for as long as the rattle plays, and lands when it stops — the same
@@ -4370,6 +4379,11 @@ function rollDice() {
 var CARD_BACK = "__CARD_BACK__";
 var SG_BUTTONS = "__SG_BUTTONS__";
 var COIN_BUTTON = "__COIN_BUTTON__";
+// The struck coin (1774x887): heads at x10, tails at x897, both 859 tall. Both
+// windows are cut the same width and the narrower face centred in its own, so
+// the coin does not change size as it turns over.
+var COIN_FACES = "__COIN_FACES__";
+var COIN_HEADS = [10, 4, 869, 859], COIN_TAILS = [893, 4, 869, 859];
 var CARD_SUITS = ["♠", "♥", "♦", "♣"];
 var CARD_RANKS = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"];
 function freshDeck52() {

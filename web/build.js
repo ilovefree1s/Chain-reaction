@@ -168,6 +168,8 @@ const sgButtons = copyArt("secretbuttons.png", "sgbuttons.png");
 // COIN FLIP's own sheet. It carries the other three too, redrawn, but they are
 // already cut from the sheet above — only the fourth band is read from here.
 const coinButton = copyArt("coinflip.png", "coinflip.png");
+// The coin itself, both faces struck on one sheet.
+const coinFaces = copyArt("coinfaces.png", "coinfaces.png");
 // The painted SPIN THE GAMBLE WHEEL!! banner. Its price is painted in, so it
 // only tells the truth while wheelCost is 2, which the checks above enforce.
 const wheelPlate = copyArt("gamblewheel.png", "gamblewheel.png");
@@ -254,6 +256,7 @@ const template = fs.readFileSync(path.join(__dirname, "template.html"), "utf8");
   "__SG_BACKGROUND__",
   "__SG_BUTTONS__",
   "__COIN_BUTTON__",
+  "__COIN_FACES__",
   "__WHEEL_PLATE__",
   "__MENU_SOUND__",
   "__WHEEL_SOUND__",
@@ -286,6 +289,7 @@ const html = template
   .replace("__SG_BACKGROUND__", sgBackground)
   .replace("__SG_BUTTONS__", sgButtons)
   .replace("__COIN_BUTTON__", coinButton)
+  .replace("__COIN_FACES__", coinFaces)
   .replace("__WHEEL_PLATE__", wheelPlate)
   .replace("__MENU_SOUND__", menuSound)
   .replace("__WHEEL_SOUND__", wheelSound)
