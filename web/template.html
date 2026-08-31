@@ -484,6 +484,19 @@
   .pip.on { background: #10182A; }
   .dicecount { flex: 0 0 auto; min-width: 84px; text-align: center;
                font-size: 18px; font-weight: 900; color: var(--sage); }
+  /* The count sits opposite the Back button, on the same line, sized down to
+     clear the total between them. Its own row would have cost the dice a band
+     of felt they can land in. */
+  .dicesteps {
+    position: absolute; right: 6px; top: calc(env(safe-area-inset-top) + 10px);
+    z-index: 2; height: var(--tap);
+    display: flex; align-items: center; gap: 5px;
+  }
+  .dicesteps .step {
+    width: 36px; height: 36px; min-height: 36px; flex: 0 0 36px;
+    font-size: 20px; border-radius: 10px;
+  }
+  .dicesteps .dicecount { min-width: 44px; font-size: 13px; }
   /* Every secret screen wears the 4 THE BOYS splash, dimmed so the buttons,
      wheel, dice and cards stay the loudest thing on it. */
   .modal.sgscreen {
@@ -4544,8 +4557,12 @@ var DIE_PIPS = {
 function dicePlaces(d) {
   if (!d.pos || d.pos.length !== d.count) {
     d.pos = [];
+    // Three to a row, stacked upward. Six dice will not fit across a phone in
+    // one line — they would sit on top of each other before a throw.
+    var cols = Math.min(3, d.count);
     for (var i = 0; i < d.count; i++) {
-      d.pos.push({ x: (100 / (d.count + 1)) * (i + 1), y: 84 });
+      d.pos.push({ x: 50 + ((i % cols) - (cols - 1) / 2) * 26,
+                   y: 86 - Math.floor(i / cols) * 17 });
     }
   }
   return d.pos;
@@ -4569,7 +4586,8 @@ function renderDiceGame() {
     // The total rides the Back button's line, the way the coin's call does.
     '<div class="sgtop">' + (d.rolling ? "&hellip;" : total) + '</div>' +
     '<div class="label">Dice</div>' +
-    '<div class="row" style="justify-content:center;margin-bottom:10px">' +
+    // Opposite Back, on its own line, out of the felt the dice need.
+    '<div class="dicesteps">' +
     '<button class="step" data-act="diceLess"' + (d.count <= 1 || d.rolling ? " disabled" : "") + '>&minus;</button>' +
     '<div class="dicecount">' + d.count + (d.count === 1 ? " die" : " dice") + '</div>' +
     '<button class="step" data-act="diceMore"' + (d.count >= 6 || d.rolling ? " disabled" : "") + '>+</button></div>' +
