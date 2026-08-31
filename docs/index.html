@@ -159,7 +159,16 @@
                box-shadow: 0 0 14px rgba(247, 148, 30, 0.35); }
   .player .name { font-size: 22px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .player.me .name { color: var(--self); }
+  /* Name and figure share a line: the name gives way first, so a long one
+     ellipsizes rather than pushing the score out of the row. */
+  .nameline { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
+  .nameline .name { min-width: 0; flex: 0 1 auto; }
+  .nameline .rel { flex: 0 0 auto; }
   .rel { font-size: 15px; font-weight: 900; }
+  /* A size down from the score above it: it is the quieter half of the row,
+     and at 15px the lead flag and the skins together outgrew the column and
+     wrapped onto a third line. */
+  .subline { font-size: 13px; font-weight: 900; color: var(--sage); margin-top: 2px; }
   /* Live rounds only: what each player is holding, self-reported by their phone. */
   .handct { font-size: 13px; font-weight: 900; color: #4DC3FF; background: #061022;
             border: 1px solid var(--edge); border-radius: 6px; padding: 2px 7px;
@@ -188,7 +197,7 @@
   .total .v { font-size: 22px; font-weight: 700; text-align: right; width: 52px; }
   .lead { background: var(--group); color: var(--pine); font-size: 11px; font-weight: 900;
           border-radius: 4px; padding: 2px 6px; }
-  .rel .lead { margin-right: 7px; }
+  .rel .lead, .subline .lead { margin-right: 7px; }
 
   .counters { display: flex; gap: 8px; margin-bottom: 12px; }
   /* A pinned height, not padding: inherited line boxes were quietly inflating
@@ -861,7 +870,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.10 · 30 Aug 22:37";
+var APP_VERSION = "v1.10 · 30 Aug 22:41";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. Opening the app fetches fresh anyway.
@@ -2866,16 +2875,21 @@ function renderScore() {
       // width at all. Without a badge there is no corner, so it falls back to
       // the line under the name.
       (ch ? '<div class="pbadge">' + badgeHtml(ch, 40) + chip + '</div>' : "") +
-      '<div class="grow"><div class="name">' + esc(name) + '</div>' +
-        '<div class="rel ' + relClass(rel) + '">' +
-        (lead ? '<span class="lead">LEAD</span>' : "") +
-        // Over/under and (in skins) the skins — no running stroke total. The
-        // par tells the story mid-round; totals wait for the results screen.
-        (isSkins(s)
-          ? plural(skinsFor(s, i), "skin") + '  &middot;  ' + fmtRel(rel)
-          : fmtRel(rel)) +
-        (ch ? "" : (chip ? " " + chip : "")) +
-        '</div></div>' +
+      // Over/under sits beside the name, where the eye already is. No running
+      // stroke total: the par tells the story mid-round, and totals wait for
+      // the results screen.
+      '<div class="grow"><div class="nameline"><div class="name">' + esc(name) + '</div>' +
+        '<div class="rel ' + relClass(rel) + '">' + fmtRel(rel) + '</div></div>' +
+        // What is left below: the lead flag, the skins, and — for a player with
+        // no badge to carry it — the hand count. Dropped entirely when empty,
+        // so a plain stroke round keeps its rows tight.
+        (function () {
+          var below = (lead ? '<span class="lead">LEAD</span>' : "") +
+            (isSkins(s) ? plural(skinsFor(s, i), "skin") : "") +
+            (ch ? "" : (chip ? " " + chip : ""));
+          return below ? '<div class="subline">' + below + '</div>' : "";
+        }()) +
+        '</div>' +
       '<div class="steps">' +
       '<button class="step" data-act="score" data-i="' + i + '" data-n="-1"' +
         (locked || (score != null && score <= 1) ? " disabled" : "") + '>&minus;</button>' +
