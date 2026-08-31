@@ -429,8 +429,11 @@
   /* The dice tray: white dice, pips laid on a 3x3 grid. */
   /* The felt: the dice lie wherever they were thrown or put, placed in percentages
      of it so a spot means the same thing on any phone. */
+  /* Perspective, so a die turning over is seen from the side rather than merely
+     squashing: without it rotateX is a flat scale and the die reads as a picture
+     being pinched, not a cube going over. */
   .dicefield { position: relative; flex: 1 1 auto; min-height: 300px;
-               touch-action: none; }
+               touch-action: none; perspective: 900px; }
   .dicefield .die { position: absolute; transform: translate(-50%, -50%); }
   /* Thrown, they cross the felt in the time between two tumbles. */
   /* Mid-throw the simulation writes each die's transform every frame, so nothing
@@ -4723,6 +4726,9 @@ function rollDice(strength) {
       vx: (Math.random() - 0.5) * (260 + 420 * strength),
       vy: -lift * (0.8 + Math.random() * 0.4),
       rot: 0, spin: (Math.random() - 0.5) * (700 + 900 * strength),
+      // The turn through its own faces, kept apart from the flat spin: one is
+      // the die rotating on the felt, the other is it going over and over.
+      tumble: Math.random() * 360, quarter: 0,
       face: 0
     });
   }
@@ -4797,9 +4803,19 @@ function diceStep(now) {
     if (speed > 26) moving++;
     var el = sim.field.querySelector('[data-die="' + i + '"]');
     if (!el) continue;
-    if (speed > 200 && now - b.face > 70) {
-      b.face = now;
-      sim.d.vals[i] = 1 + Math.floor(Math.random() * 6);
+    // It turns through its faces at a rate set by how fast it is travelling, so
+    // a die that has nearly stopped is barely turning over.
+    b.tumble += speed * 0.8 * dt;
+    // A quarter turn is edge-on, where the face is a line and there is nothing to
+    // see: the new face is put on there, so it comes round as a different side of
+    // the die rather than the same side with its dots rearranged.
+    var quarter = Math.floor(b.tumble / 90);
+    if (quarter !== b.quarter) {
+      b.quarter = quarter;
+      var was = sim.d.vals[i];
+      // Never the same face twice running — a die that lands on what it already
+      // showed looks like it did not turn at all.
+      do { sim.d.vals[i] = 1 + Math.floor(Math.random() * 6); } while (sim.d.vals[i] === was);
       var pips = "", v = sim.d.vals[i];
       for (var p = 0; p < 9; p++) {
         pips += '<span class="pip' + (DIE_PIPS[v].indexOf(p) !== -1 ? " on" : "") + '"></span>';
@@ -4807,7 +4823,8 @@ function diceStep(now) {
       el.innerHTML = pips;
     }
     el.style.transform = "translate(" + b.x.toFixed(1) + "px, " + b.y.toFixed(1) +
-      "px) translate(-50%, -50%) rotate(" + b.rot.toFixed(1) + "deg)";
+      "px) translate(-50%, -50%) rotate(" + b.rot.toFixed(1) + "deg) rotateX(" +
+      b.tumble.toFixed(1) + "deg)";
   }
 
   // Still for a few frames running: they have settled, wherever that turned out
