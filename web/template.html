@@ -4436,7 +4436,10 @@ var COIN_SLOW = 0.25, COIN_FAST = 2.2;
 /* A die has to be moving this fast to count as thrown rather than carried. Well
    clear of a brisk drag: the felt would be unusable if setting a die down at the
    top of it re-rolled the table. */
-var DIE_FLICK = 0.9;
+var DIE_FLICK = 0.55;
+/* What it takes down in the throwing band, where a die is in hand to be thrown
+   rather than arranged: barely more than a lift. */
+var DIE_LOB = 0.12;
 var coinTouchY = null, coinDragEl = null;
 var coinLastY = 0, coinLastT = 0, coinSpeed = 0;
 /* Whether there is anything to throw right now, and what throwing it does. */
@@ -4482,9 +4485,10 @@ function inThrowZone(y) {
 app.addEventListener("pointerdown", function (e) {
   if (!e.isPrimary || !tossTarget() || !e.target.closest) return;
   var die = e.target.closest(".die");
-  // A die lying in the throwing band is there to be thrown. Above it, it is
-  // there to be arranged.
-  if (die && secret.mode === "dice" && !inThrowZone(e.clientY)) {
+  // Every die is picked up, wherever it lies — how you let go is what decides
+  // whether it was a throw. Sending band-dice down the felt path instead left
+  // them unpickupable once the felt itself stopped being throwable.
+  if (die && secret.mode === "dice") {
     var fieldEl = app.querySelector(".dicefield");
     if (!fieldEl) return;
     var field = fieldEl.getBoundingClientRect();
@@ -4551,12 +4555,7 @@ function coinDragEnd(dy) {
   coinTouchY = null; coinDragEl = null;
   if (!el) return;
   el.style.transform = "";
-  // A flick counts if either end of it was in the throwing band — through it,
-  // out of the top of it, or entirely inside it. What matters is that you flicked
-  // near the line, not that you crossed some boundary in the right direction.
-  var nearLine = el.classList.contains("dicefield") &&
-    (inThrowZone(coinLastY) || inThrowZone(coinLastY - dy));
-  if (dy > (nearLine ? -14 : -COIN_THROW)) return;
+  if (dy > -COIN_THROW) return;
   // A thumb that stopped before letting go threw nothing, however fast it was
   // travelling a moment earlier.
   var speed = Date.now() - coinLastT > 90 ? 0 : coinSpeed;
@@ -4593,13 +4592,16 @@ function dieDragEnd() {
       m.el.style.top = at[m.i].y.toFixed(2) + "%";
     }
   });
-  // A flick: fast, upward, and still moving as it was let go. The bar is well
-  // above a brisk drag, because carrying a die up the felt and setting it down
-  // must not throw the table.
+  // A flick: upward, and still moving as it was let go. Out in the open felt it
+  // has to be a real one, because carrying a die across the table and setting it
+  // down must not throw the lot. Down in the throwing band the dice are there to
+  // be thrown, so a gentle lift is enough.
   var speed = Date.now() - g.lastT > 90 ? 0 : g.speed;
   var dy = g.lastY - g.y0, dx = Math.abs(g.lastX - g.x0);
-  if (dy <= -COIN_THROW && speed >= DIE_FLICK && dx < Math.abs(dy)) {
-    rollDice((speed - DIE_FLICK) / (COIN_FAST - DIE_FLICK));
+  var nearLine = inThrowZone(g.y0) || inThrowZone(g.lastY);
+  var needs = nearLine ? DIE_LOB : DIE_FLICK;
+  if (dy <= (nearLine ? -16 : -COIN_THROW) && speed >= needs && dx < Math.abs(dy) * 1.6) {
+    rollDice(Math.max(0, (speed - needs) / (COIN_FAST - needs)));
     return;
   }
   // Nothing to redraw: the dice are already where this left them.
@@ -4746,13 +4748,15 @@ function renderDiceGame() {
     '<div class="dicecount">' + d.count + (d.count === 1 ? " die" : " dice") + '</div>' +
     '<button class="step" data-act="diceMore"' + (d.count >= 6 || d.rolling ? " disabled" : "") + '>+</button></div>' +
     '<p class="hint" style="text-align:center;margin:0 0 8px">' +
-    (d.rolling ? "&nbsp;" : "Flick up to throw &middot; drag to move &middot; tap to set&nbsp;a&nbsp;die") +
+    (d.rolling ? "&nbsp;" : "Grab the dice and flick to throw &middot; drag to move &middot; tap to set") +
     '</p>' +
-    '<div class="dicefield tossable' + (d.rolling ? " rolling" : "") + '">' +
+    // Not tossable: swiping the felt itself does nothing. You throw dice by
+    // having hold of them, the way you would off a table.
+    '<div class="dicefield' + (d.rolling ? " rolling" : "") + '">' +
     // Everything under the line is a throwing area, so a flick never has to find
     // a die to land on. Hidden while they are in the air; there is nothing to
     // throw mid-throw.
-    (d.rolling ? "" : '<div class="throwline"><span>Flick up from here</span></div>') +
+    (d.rolling ? "" : '<div class="throwline"><span>Easy throw below here</span></div>') +
     diceFieldHtml(d) + '</div></div>';
 }
 /*
