@@ -426,6 +426,9 @@
   }
   /* Any title that follows the corner Back drops out of its lane. */
   .sgback + .label { margin-top: 44px; }
+  /* The whole dice tray floats at the middle of the screen. */
+  .modal.sgdice { display: flex; flex-direction: column; justify-content: center; }
+  .sgdice .sgback + .label { margin-top: 0; }
   /* The painted plates, restacked with tight gaps so the splash stays seen. */
   .sgstack { width: min(80%, 310px); margin: 0 auto; display: flex;
              flex-direction: column; gap: 7px; }
@@ -819,7 +822,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.10 · 30 Aug 20:36";
+var APP_VERSION = "v1.10 · 30 Aug 20:39";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. Opening the app fetches fresh anyway.
@@ -4126,7 +4129,7 @@ function renderDiceGame() {
     return '<div class="die">' + pips + '</div>';
   }).join("");
   var total = d.vals.reduce(function (a, b) { return a + b; }, 0);
-  return '<div class="modal sgscreen">' +
+  return '<div class="modal sgscreen sgdice">' +
     '<button class="sgback" data-act="secretBack">&lsaquo;&nbsp;&nbsp;Back</button>' +
     '<div class="label">Dice</div>' +
     '<div class="dicerow">' + dice + '</div>' +
