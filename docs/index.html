@@ -905,7 +905,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.10 · 31 Aug 00:05";
+var APP_VERSION = "v1.10 · 31 Aug 00:07";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. Opening the app fetches fresh anyway.
@@ -3433,7 +3433,11 @@ function renderRoundRules() {
   // Live first: joining mid-round shouldn't mean scrolling past the whole deck.
   // Courses are made and saved in Setup's course sheet — mid-round the Rules
   // tab is for rules, cards and ending the round, nothing else.
-  return renderLiveSection() + renderHouseRules() + renderCardLibrary() +
+  // The shortcut is announced where you would otherwise start the long scroll
+  // looking for the button it saves you.
+  return '<p class="hint" style="text-align:center;margin:0 0 14px">' +
+    'Tap RULES 3&times; to end the round early.</p>' +
+    renderLiveSection() + renderHouseRules() + renderCardLibrary() +
     '<div style="height:16px"></div>' + danger;
 }
 
