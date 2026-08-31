@@ -430,7 +430,9 @@
   .dicerow { display: flex; justify-content: center; gap: 14px; margin: 20px 0 4px; flex-wrap: wrap; }
   /* The coin is the artwork — struck edge and all — so nothing is drawn under
      it. A window its own shape, with the sheet slid to the landed face. */
-  .coinbox { display: flex; justify-content: center; margin: 20px 0 4px; }
+  /* The coin sits in equal air: 32px above is the label's own 12 plus this 20,
+     so 32 below it puts the Flip button the same distance away. */
+  .coinbox { display: flex; justify-content: center; margin: 20px 0 32px; }
   .coin {
     position: relative; overflow: hidden;
     width: min(56%, 200px); aspect-ratio: 869 / 859;
@@ -903,7 +905,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.10 · 30 Aug 23:56";
+var APP_VERSION = "v1.10 · 30 Aug 23:58";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. Opening the app fetches fresh anyway.

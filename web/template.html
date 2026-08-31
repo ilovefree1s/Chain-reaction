@@ -430,7 +430,9 @@
   .dicerow { display: flex; justify-content: center; gap: 14px; margin: 20px 0 4px; flex-wrap: wrap; }
   /* The coin is the artwork — struck edge and all — so nothing is drawn under
      it. A window its own shape, with the sheet slid to the landed face. */
-  .coinbox { display: flex; justify-content: center; margin: 20px 0 4px; }
+  /* The coin sits in equal air: 32px above is the label's own 12 plus this 20,
+     so 32 below it puts the Flip button the same distance away. */
+  .coinbox { display: flex; justify-content: center; margin: 20px 0 32px; }
   .coin {
     position: relative; overflow: hidden;
     width: min(56%, 200px); aspect-ratio: 869 / 859;
