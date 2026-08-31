@@ -66,7 +66,7 @@ if (!Number.isInteger(data.wheelCost) || data.wheelCost < 0) {
 // The spin button is a painted banner reading "(2 CARDS)". Change the price and
 // the picture starts lying, so this fails the build instead of shipping it.
 if (data.wheelCost !== 2) {
-  problems.push(`wheelCost is ${data.wheelCost} but gamblewheel.png says 2 cards — repaint it or fix the price`);
+  problems.push(`wheelCost is ${data.wheelCost} but gamblewheel.png and discardnevermind.png both say 2 — repaint them or fix the price`);
 }
 // The free spin has to be a real card, and one you could actually be dealt.
 if (!ids.includes(data.freeSpinCard)) {
@@ -168,6 +168,11 @@ const sgButtons = copyArt("secretbuttons.png", "sgbuttons.png");
 // The painted SPIN THE GAMBLE WHEEL!! banner. Its price is painted in, so it
 // only tells the truth while wheelCost is 2, which the checks above enforce.
 const wheelPlate = copyArt("gamblewheel.png", "gamblewheel.png");
+// One sheet carrying the wheel screen's two buttons, sliced apart in the page.
+const spinButtons = copyArt("spintheeffectandclose.png", "spinbuttons.png");
+// And the paywall's pair. Its price is painted in too, so the wheelCost check
+// above covers this sheet as well.
+const payButtons = copyArt("discardnevermind.png", "paybuttons.png");
 const menuSound = copyAudio("chains.mp3");
 const wheelSound = copyAudio("gamble.mp3");
 const wolfSound = copyAudio("lonewolf.mp3");
@@ -251,6 +256,8 @@ const template = fs.readFileSync(path.join(__dirname, "template.html"), "utf8");
   "__SG_BACKGROUND__",
   "__SG_BUTTONS__",
   "__WHEEL_PLATE__",
+  "__SPIN_BUTTONS__",
+  "__PAY_BUTTONS__",
   "__MENU_SOUND__",
   "__WHEEL_SOUND__",
   "__WOLF_SOUND__",
@@ -282,6 +289,8 @@ const html = template
   .replace("__SG_BACKGROUND__", sgBackground)
   .replace("__SG_BUTTONS__", sgButtons)
   .replace("__WHEEL_PLATE__", wheelPlate)
+  .replace("__SPIN_BUTTONS__", spinButtons)
+  .replace("__PAY_BUTTONS__", payButtons)
   .replace("__MENU_SOUND__", menuSound)
   .replace("__WHEEL_SOUND__", wheelSound)
   .replace("__WOLF_SOUND__", wolfSound)

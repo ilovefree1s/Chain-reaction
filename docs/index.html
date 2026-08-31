@@ -96,6 +96,15 @@
   .wheelplate img { display: block; width: 100%; height: auto; }
   .wheelplate[disabled] { cursor: default; }
   .wheelplate[disabled] img { filter: brightness(0.45) saturate(0.6); }
+  /* Buttons painted together on one sheet. Each is a window the height of its
+     own band, with the whole sheet slid up behind it — the same slice the
+     secret games' plates use, so every button keeps its drawn scale. */
+  .wplate { position: relative; overflow: hidden; display: block; width: 100%;
+            padding: 0; border: 0; background: none; margin-bottom: 10px;
+            cursor: pointer; }
+  .wplate img { position: absolute; left: 0; width: 100%; display: block; }
+  .wplate[disabled] { cursor: default; }
+  .wplate[disabled] img { filter: brightness(0.45) saturate(0.6); }
   /* For use *on* a panel, where .quiet would vanish into the background. */
   .big.raised { background: #0B1526; color: var(--sage); border: 2px solid var(--edge); }
   .big.danger { background: var(--panel); color: var(--attack); border: 2px solid var(--edge); }
@@ -845,7 +854,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.10 · 30 Aug 21:26";
+var APP_VERSION = "v1.10 · 30 Aug 21:41";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. Opening the app fetches fresh anyway.
@@ -3113,9 +3122,9 @@ function renderWheelCost() {
     '<div class="handgrid">' + tiles + "</div>" +
     '<p class="hint"' + (ready ? ' style="color:#FF8A1E"' : "") + ">" +
     wheelPay.length + " of " + DATA.wheelCost + " chosen</p>" +
-    '<button class="big primary" data-act="payConfirm"' + (ready ? "" : " disabled") +
-    ">Discard " + DATA.wheelCost + " &amp; spin</button>" +
-    '<button class="big quiet" data-act="payCancel">Never mind</button></div>';
+    payPlate("payConfirm", PLATE_DISCARD_SPIN,
+      "Discard " + DATA.wheelCost + " and spin", !ready) +
+    payPlate("payCancel", PLATE_NEVER_MIND, "Never mind") + '</div>';
 }
 
 /*
@@ -3763,7 +3772,7 @@ function renderWheel() {
         wheelSvg("wheel-card", wheel.cardLabels, wheel.cardRot, null, 7.5) +
         '</div>';
       if (stage === "nameDone") {
-        html += '<button class="big wheel" data-act="spinCard">Spin the effect</button>';
+        html += spinPlate("spinCard", PLATE_SPIN_EFFECT, "Spin the effect");
       }
     }
   }
@@ -3809,8 +3818,10 @@ function renderWheel() {
       '<button class="big raised" data-act="wheelKeep">Keep spinning</button>' +
       '<button class="big primary" data-act="wheelCloseYes">Close anyway</button></div></div>';
   } else {
-    html += '<button class="big quiet" data-act="closeWheel">' +
-      (stage === "done" ? "Done" : "Close") + "</button></div>";
+    // The plate is painted CLOSE, so the finished state keeps its own word.
+    html += (stage === "done"
+      ? '<button class="big quiet" data-act="closeWheel">Done</button>'
+      : spinPlate("closeWheel", PLATE_CLOSE, "Close")) + "</div>";
   }
   return html;
 }
@@ -4211,6 +4222,28 @@ function rollDice() {
 /* ---- cards: one standard 52-card deck, drawn down and reshuffled on demand ---- */
 var CARD_BACK = "assets/cardback.png";
 var SG_BUTTONS = "assets/sgbuttons.png";
+// The wheel screen's pair, painted on one sheet (1536x1024): SPIN THE EFFECT at
+// rows 105-498, CLOSE at 531-904, measured off its alpha. A band shows through a
+// window its own height, the sheet slid up by -start/height of that window.
+var SPIN_BUTTONS = "assets/spinbuttons.png";
+var PLATE_SPIN_EFFECT = [105, 394], PLATE_CLOSE = [531, 374];
+// The paywall's pair, on their own sheet (2172x724): DISCARD 2 & SPIN at rows
+// 11-350, NEVER MIND at 369-713.
+var PAY_BUTTONS = "assets/paybuttons.png";
+var PLATE_DISCARD_SPIN = [11, 340], PLATE_NEVER_MIND = [369, 345];
+function payPlate(act, band, label, off) {
+  return plateButton(PAY_BUTTONS, 2172, act, band, label, off);
+}
+function spinPlate(act, band, label) {
+  return plateButton(SPIN_BUTTONS, 1536, act, band, label, false);
+}
+/* One band of a sheet, shown through a window its own height. */
+function plateButton(sheet, sheetWidth, act, band, label, off) {
+  return '<button class="wplate" data-act="' + act + '"' + (off ? " disabled" : "") +
+    ' style="aspect-ratio:' + sheetWidth + '/' + band[1] + '"><img src="' + sheet +
+    '" alt="' + esc(label) + '" draggable="false" style="top:' +
+    (-100 * band[0] / band[1]).toFixed(2) + '%"></button>';
+}
 var CARD_SUITS = ["♠", "♥", "♦", "♣"];
 var CARD_RANKS = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"];
 function freshDeck52() {
