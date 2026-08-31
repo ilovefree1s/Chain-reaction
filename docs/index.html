@@ -457,6 +457,10 @@
   .sgdice .label { margin: 44px 0 12px; }
   .coinbox { display: flex; justify-content: center; margin: 0; }
   .tossable { touch-action: none; cursor: grab; }
+  /* A mouse drags these too, so nothing under it should turn into selected text. */
+  .dicefield, .coinbox { user-select: none; -webkit-user-select: none; }
+  .dicefield .die { cursor: grab; }
+  .dicefield .die.held { cursor: grabbing; }
   /* Thrown, it arcs up and comes back down while the faces tumble. Ease-out on
      the way up and ease-in on the way down: one easing across the whole arc
      floats at the bottom and snaps through the top, which is backwards. */
@@ -952,7 +956,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.10 · 31 Aug 15:11";
+var APP_VERSION = "v1.10 · 31 Aug 15:37";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. Opening the app fetches fresh anyway.
@@ -4423,19 +4427,20 @@ function dicePile(at, i, fb) {
   }
   return out;
 }
-app.addEventListener("touchstart", function (e) {
-  if (!tossTarget() || !e.target.closest) return;
+/* Pointer events, not touch: the same handful of listeners then serve a thumb on
+   a phone and a mouse on a laptop, and the page is installable on both. */
+app.addEventListener("pointerdown", function (e) {
+  if (!e.isPrimary || !tossTarget() || !e.target.closest) return;
   var die = e.target.closest(".die");
   if (die && secret.mode === "dice") {
     var fieldEl = app.querySelector(".dicefield");
     if (!fieldEl) return;
     var field = fieldEl.getBoundingClientRect();
     var i = +die.getAttribute("data-die");
-    var t0 = e.touches[0];
     dieDrag = { i: i, el: die, field: field,
                 pile: dicePile(dicePlaces(secret.dice), i, field),
-                x0: t0.clientX, y0: t0.clientY, moved: false,
-                lastX: t0.clientX, lastY: t0.clientY, lastT: Date.now(), speed: 0 };
+                x0: e.clientX, y0: e.clientY, moved: false,
+                lastX: e.clientX, lastY: e.clientY, lastT: Date.now(), speed: 0 };
     dieDrag.pile.forEach(function (g) {
       var el = fieldEl.querySelector('[data-die="' + g.i + '"]');
       g.el = el;
@@ -4445,13 +4450,14 @@ app.addEventListener("touchstart", function (e) {
   }
   var el = e.target.closest(".tossable");
   if (!el) return;
-  coinTouchY = e.touches[0].clientY;
+  coinTouchY = e.clientY;
   coinLastY = coinTouchY; coinLastT = Date.now(); coinSpeed = 0;
   coinDragEl = el;
-}, { passive: true });
-app.addEventListener("touchmove", function (e) {
+});
+// On window, so a drag that leaves the felt — or the screen — still tracks.
+window.addEventListener("pointermove", function (e) {
   if (dieDrag) {
-    var t = e.touches[0], f = dieDrag.field, now = Date.now();
+    var t = e, f = dieDrag.field, now = Date.now();
     var dt = now - dieDrag.lastT;
     if (dt > 0) dieDrag.speed = (dieDrag.lastY - t.clientY) / dt; // upward is positive
     dieDrag.lastX = t.clientX; dieDrag.lastY = t.clientY; dieDrag.lastT = now;
@@ -4469,7 +4475,7 @@ app.addEventListener("touchmove", function (e) {
     return;
   }
   if (coinTouchY == null || !coinDragEl) return;
-  var y = e.touches[0].clientY, now = Date.now();
+  var y = e.clientY, now = Date.now();
   var dt = now - coinLastT;
   if (dt > 0) coinSpeed = (coinLastY - y) / dt; // upward is positive
   coinLastY = y; coinLastT = now;
@@ -4477,7 +4483,7 @@ app.addEventListener("touchmove", function (e) {
   // Downward gives a little and refuses: there is nowhere to throw a coin but up.
   if (dy > 0) dy /= 4;
   coinDragEl.style.transform = "translateY(" + Math.max(dy, -150) + "px)";
-}, { passive: true });
+});
 function coinDragEnd(dy) {
   var el = coinDragEl;
   coinTouchY = null; coinDragEl = null;
@@ -4534,16 +4540,16 @@ function dieDragEnd() {
   }
   // Nothing to redraw: the dice are already where this left them.
 }
-app.addEventListener("touchend", function (e) {
+window.addEventListener("pointerup", function (e) {
   if (dieDrag) { dieDragEnd(); return; }
   if (coinTouchY == null) return;
-  coinDragEnd(e.changedTouches[0].clientY - coinTouchY);
-}, { passive: true });
+  coinDragEnd(e.clientY - coinTouchY);
+});
 // Android cancels the stream when it claims the drag; whatever was held settles.
-app.addEventListener("touchcancel", function () {
+window.addEventListener("pointercancel", function () {
   if (dieDrag) { dieDrag.moved = true; dieDragEnd(); return; }
   coinDragEnd(0);
-}, { passive: true });
+});
 
 /* Sizes a thrown thing's arc: the ceiling is where it sits now, less the header
    it would otherwise fly through, so it clears the screen without leaving it.
