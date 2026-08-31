@@ -437,7 +437,7 @@
   .dicefield .die { position: absolute; transform: translate(-50%, -50%); }
   /* The throwing area's near edge. Quiet enough to ignore, there enough to find. */
   .throwline {
-    position: absolute; left: 7%; right: 7%; bottom: 30%; height: 0; z-index: 1;
+    position: absolute; left: 7%; right: 7%; bottom: 50%; height: 0; z-index: 1;
     border-top: 2px dashed rgba(77, 195, 255, 0.3); pointer-events: none;
   }
   .throwline span {
@@ -994,7 +994,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.10 · 31 Aug 16:18";
+var APP_VERSION = "v1.10 · 31 Aug 16:20";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. Opening the app fetches fresh anyway.
@@ -4480,7 +4480,7 @@ function inThrowZone(y) {
   // A band rather than a hard edge, with the dashed line through the middle of
   // it: a flick aimed at the line lands somewhere either side of it, and having
   // to start below an invisible boundary is exactly what made this fiddly.
-  return y >= r.top + r.height * 0.62;
+  return y >= r.top + r.height * 0.42;
 }
 app.addEventListener("pointerdown", function (e) {
   if (!e.isPrimary || !tossTarget() || !e.target.closest) return;
