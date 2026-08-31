@@ -617,16 +617,19 @@
   .slabel { font-size: 11px; font-weight: 900; letter-spacing: 1px; color: #A9B8D4;
             text-transform: uppercase; }
   /* Volume: a plain range input in the app's own colours, chunky enough for a thumb. */
-  .vol { -webkit-appearance: none; appearance: none; width: 100%; height: 28px;
+  .vol, .rng { -webkit-appearance: none; appearance: none; width: 100%; height: 28px;
          background: transparent; margin: 0 0 8px; }
-  .vol::-webkit-slider-runnable-track { height: 8px; border-radius: 4px; background: #061022; }
-  .vol::-moz-range-track { height: 8px; border-radius: 4px; background: #061022; }
-  .vol::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 26px;
+  .vol::-webkit-slider-runnable-track, .rng::-webkit-slider-runnable-track { height: 8px; border-radius: 4px; background: #061022; }
+  .vol::-moz-range-track, .rng::-moz-range-track { height: 8px; border-radius: 4px; background: #061022; }
+  .vol::-webkit-slider-thumb, .rng::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 26px;
          height: 26px; margin-top: -9px; border-radius: 50%; background: #FF8A1E;
          border: none; cursor: pointer; }
-  .vol::-moz-range-thumb { width: 26px; height: 26px; border-radius: 50%;
+  .vol::-moz-range-thumb, .rng::-moz-range-thumb { width: 26px; height: 26px; border-radius: 50%;
          background: #FF8A1E; border: none; cursor: pointer; }
-  .vol::-moz-range-progress { height: 8px; border-radius: 4px; background: #FF8A1E; }
+  .vol::-moz-range-progress, .rng::-moz-range-progress { height: 8px; border-radius: 4px; background: #FF8A1E; }
+  /* The length the slider is sitting on, read at a glance while dragging. */
+  .holecount { text-align: center; color: #FF8A1E; font-weight: 900;
+               font-size: 20px; margin: 0 0 6px; }
   .nsavedtag { text-align: center; color: #FF8A1E; font-weight: 900; letter-spacing: 2px;
                font-size: 14px; margin-top: 8px; }
   .nchev { margin-left: auto; color: #4DC3FF; font-size: 28px; font-weight: 900; }
@@ -1226,6 +1229,8 @@ function putCourse(name, holeCount, pars) {
   putSavedCourses(next);
 }
 function sum(a) { return a.reduce(function (x, y) { return x + y; }, 0); }
+/* Where the length slider starts a brand-new course: the commonest round. */
+var NEW_COURSE_HOLES = 18;
 function parList(n) { var a = []; for (var i = 0; i < n; i++) a.push(DEFAULT_PAR); return a; }
 
 /* ---------- settings ---------- */
@@ -3933,12 +3938,14 @@ function renderParGrid() {
   // once somebody actually means to build one.
   var lengths;
   if (parsUI.creating) {
+    // A course is whatever length it is — nine and eighteen were only ever the
+    // common two, and Pioneer Park is nineteen.
+    var holes = setup.holes || NEW_COURSE_HOLES;
     lengths = '<button class="big quiet" data-act="backToCourses">&lsaquo;&nbsp; Back to saved courses</button>' +
-      '<div class="label">' + (setup.holes > 0 ? "New course" : "How many holes?") + '</div>' +
-      '<div class="row">' + [9, 18].map(function (n) {
-        return '<button class="big ' + (setup.holes === n ? "primary" : "quiet") +
-          '" data-act="holes" data-n="' + n + '" style="margin:0">' + n + ' holes</button>';
-      }).join("") + '</div>';
+      '<div class="label">How many holes?</div>' +
+      '<p class="holecount" data-holes-label>' + holes + ' holes</p>' +
+      '<input class="rng" type="range" min="9" max="27" step="1" data-holes value="' +
+      holes + '">';
   } else {
     lengths = '<div class="label">' +
       (list.length ? "Or set up a new one" : "Set up a course") + '</div>' +
@@ -4539,6 +4546,13 @@ app.addEventListener("input", function (e) {
     syncButton('[data-act="saveCourse"]', parsUI.name.trim() !== "");
     return;
   }
+  if (e.target.hasAttribute("data-holes")) {
+    // Track the drag in place — re-rendering mid-drag would drop the thumb.
+    // Resizing the pars waits for release, in the change handler below.
+    var hl = app.querySelector("[data-holes-label]");
+    if (hl) hl.textContent = e.target.value + " holes";
+    return;
+  }
   if (e.target.hasAttribute("data-vol")) {
     // Track the drag in place — re-rendering mid-drag would drop the thumb. Saving
     // and the preview sound wait for release, in the change handler below.
@@ -4583,6 +4597,11 @@ var faceTouchX = null, faceTouchY = null, faceDragEl = null;
 var faceDragging = false, faceEnterDir = 0;
 /* Release, not drag: one write and one preview per adjustment. */
 app.addEventListener("change", function (e) {
+  if (e.target.hasAttribute("data-holes")) {
+    var hn = Math.min(27, Math.max(9, Math.round(+e.target.value) || NEW_COURSE_HOLES));
+    setup.holes = hn; resizePars(hn); setup.courseName = null; render();
+    return;
+  }
   if (!e.target.hasAttribute("data-vol")) return;
   var v = Math.min(1, Math.max(0, +e.target.value / 100));
   if (e.target.getAttribute("data-vol") === "music") {
@@ -4753,8 +4772,6 @@ app.addEventListener("click", function (e) {
 
   switch (act) {
 
-    case "holes":
-      setup.holes = n; resizePars(n); setup.courseName = null; render(); break;
 
     case "openPars":
       resizePars(setup.holes);
@@ -4768,6 +4785,9 @@ app.addEventListener("click", function (e) {
       // A saved course was on deck: start the builder blank. An unsaved draft
       // (backed out of mid-build) resumes instead of being wiped.
       if (setup.courseName) { setup.courseName = null; setup.holes = 0; setup.pars = []; }
+      // The slider always shows a length, so the builder must already be on one:
+      // the two buttons demanded a tap before there were any pars to edit.
+      if (!setup.holes) { setup.holes = NEW_COURSE_HOLES; resizePars(setup.holes); }
       render(); break;
     case "backToCourses": parsUI.creating = false; render(); break;
     // The saved course's own name pre-fills the save box, so fixing a par and
