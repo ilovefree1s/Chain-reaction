@@ -173,6 +173,8 @@ const spinButtons = copyArt("spintheeffectandclose.png", "spinbuttons.png");
 // And the paywall's pair. Its price is painted in too, so the wheelCost check
 // above covers this sheet as well.
 const payButtons = copyArt("discardnevermind.png", "paybuttons.png");
+// The pair guarding a paid-for wheel you are about to walk away from.
+const confirmButtons = copyArt("spinscloseanyway.png", "confirmbuttons.png");
 const menuSound = copyAudio("chains.mp3");
 const wheelSound = copyAudio("gamble.mp3");
 const wolfSound = copyAudio("lonewolf.mp3");
@@ -258,6 +260,7 @@ const template = fs.readFileSync(path.join(__dirname, "template.html"), "utf8");
   "__WHEEL_PLATE__",
   "__SPIN_BUTTONS__",
   "__PAY_BUTTONS__",
+  "__CONFIRM_BUTTONS__",
   "__MENU_SOUND__",
   "__WHEEL_SOUND__",
   "__WOLF_SOUND__",
@@ -291,6 +294,7 @@ const html = template
   .replace("__WHEEL_PLATE__", wheelPlate)
   .replace("__SPIN_BUTTONS__", spinButtons)
   .replace("__PAY_BUTTONS__", payButtons)
+  .replace("__CONFIRM_BUTTONS__", confirmButtons)
   .replace("__MENU_SOUND__", menuSound)
   .replace("__WHEEL_SOUND__", wheelSound)
   .replace("__WOLF_SOUND__", wolfSound)

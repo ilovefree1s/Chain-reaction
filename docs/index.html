@@ -854,7 +854,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.10 · 30 Aug 21:44";
+var APP_VERSION = "v1.10 · 30 Aug 21:46";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. Opening the app fetches fresh anyway.
@@ -3815,8 +3815,8 @@ function renderWheel() {
     html += '<p class="confirmq" style="text-align:center">If you close this wheel without spinning, ' +
       'you lose your 2 cards that were discarded.</p>' +
       '<div class="acts" style="margin-top:10px">' +
-      '<button class="big raised" data-act="wheelKeep">Keep spinning</button>' +
-      '<button class="big primary" data-act="wheelCloseYes">Close anyway</button></div></div>';
+      confirmPlate("wheelKeep", PLATE_KEEP_SPINNING, "Keep spinning") +
+      confirmPlate("wheelCloseYes", PLATE_CLOSE_ANYWAY, "Close anyway") + '</div></div>';
   } else {
     // The same plate whether the wheel is mid-spin or spent: "Done" only ever
     // named the moment, and closing is what the button does either way.
@@ -4232,6 +4232,14 @@ var PAY_BUTTONS = "assets/paybuttons.png";
 var PLATE_DISCARD_SPIN = [11, 340], PLATE_NEVER_MIND = [369, 345];
 function payPlate(act, band, label, off) {
   return plateButton(PAY_BUTTONS, 2172, act, band, label, off);
+}
+// The close-confirmation pair (1448x1086): KEEP SPINNING at row 397, CLOSE
+// ANYWAY at 708. The sheet's third band is another SPIN THE EFFECT, already
+// painted on the wheel sheet, so it goes unused.
+var CONFIRM_BUTTONS = "assets/confirmbuttons.png";
+var PLATE_KEEP_SPINNING = [397, 253], PLATE_CLOSE_ANYWAY = [708, 255];
+function confirmPlate(act, band, label) {
+  return plateButton(CONFIRM_BUTTONS, 1448, act, band, label, false);
 }
 function spinPlate(act, band, label) {
   return plateButton(SPIN_BUTTONS, 1536, act, band, label, false);
