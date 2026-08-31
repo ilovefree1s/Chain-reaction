@@ -822,7 +822,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.10 · 30 Aug 20:39";
+var APP_VERSION = "v1.10 · 30 Aug 20:46";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. Opening the app fetches fresh anyway.
@@ -854,7 +854,7 @@ var menuAudio = MENU_SOUND ? new Audio(MENU_SOUND) : null;
  * cards reference. Leaving those screens pauses it in place; coming back picks
  * the song up where it left off.
  */
-var MUSIC_TRACKS = ["assets/dischoarderblues.mp3","assets/chainsofglory.mp3","assets/discgolferbeeotch.mp3"];
+var MUSIC_TRACKS = ["assets/discgolferbeeotch.mp3","assets/dischoarderblues.mp3","assets/chainsofglory.mp3"];
 var MUSIC_SCREENS = ["menu", "settings", "cards"];
 var musicEl = null, musicIdx = 0;
 

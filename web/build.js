@@ -168,9 +168,9 @@ const diceSound = copyAudio("dice.mp3");
 const shuffleSound = copyAudio("shuffle.wav");
 // The soundtrack, played back to back on the menu-side screens only.
 const musicTracks = [
+  copyAudio("discgolferbeeotch.mp3"),
   copyAudio("dischoarderblues.mp3"),
   copyAudio("chainsofglory.mp3"),
-  copyAudio("discgolferbeeotch.mp3"),
 ].filter(Boolean);
 
 // ---- card faces: card_01 .. one per card, dropped into the Android drawables ----
