@@ -4499,7 +4499,8 @@ app.addEventListener("pointerdown", function (e) {
     dieDrag = { i: i, el: die, field: field, reach: dieW * 0.55,
                 pile: dicePile(dicePlaces(secret.dice), i, field),
                 x0: e.clientX, y0: e.clientY, moved: false,
-                lastX: e.clientX, lastY: e.clientY, lastT: Date.now(), speed: 0 };
+                lastX: e.clientX, lastY: e.clientY, lastT: Date.now(), speed: 0,
+                shakeX: e.clientX, shakeDir: 0, turns: [], shaking: false };
     dieDrag.pile.forEach(function (g) {
       var el = fieldEl.querySelector('[data-die="' + g.i + '"]');
       g.el = el;
@@ -4522,6 +4523,7 @@ window.addEventListener("pointermove", function (e) {
     dieDrag.lastX = t.clientX; dieDrag.lastY = t.clientY; dieDrag.lastT = now;
     var dx = t.clientX - dieDrag.x0, dy = t.clientY - dieDrag.y0;
     if (Math.abs(dx) > 6 || Math.abs(dy) > 6) dieDrag.moved = true;
+    dieShake(dieDrag, t.clientX, now);
     // Carried on transform rather than left/top: the finger gets a compositor
     // move per frame instead of a layout of the whole felt. Held inside the walls
     // as it goes — a die should not be able to leave the screen in your hand any
@@ -4566,6 +4568,43 @@ function coinDragEnd(dy) {
   var throwIt = tossTarget();
   if (throwIt) throwIt(Math.max(bySpeed, byPull));
 }
+/*
+ * Rattling the dice in your hand. Back and forth counts as a shake — three
+ * changes of direction inside a second — and while it is going the dice in hand
+ * keep turning up new numbers, the way they would in a fist. It stops when you
+ * stop; whatever they are showing when you put them down is what they are.
+ */
+function dieShake(g, x, now) {
+  if (Math.abs(x - (g.shakeX == null ? x : g.shakeX)) < 9) return;
+  var dir = x > g.shakeX ? 1 : -1;
+  g.shakeX = x;
+  if (g.shakeDir && dir !== g.shakeDir) {
+    g.turns = (g.turns || []).filter(function (t) { return now - t < 900; });
+    g.turns.push(now);
+    if (g.turns.length >= 3) g.shaking = true;
+  }
+  g.shakeDir = dir;
+  if (!g.shaking || now - (g.rattled || 0) < 80) return;
+  g.rattled = now;
+  var d = secret && secret.dice;
+  if (!d) return;
+  g.pile.forEach(function (m) {
+    var was = d.vals[m.i];
+    do { d.vals[m.i] = 1 + Math.floor(Math.random() * 6); } while (d.vals[m.i] === was);
+    var face = DIE_FACING[d.vals[m.i]] || DIE_FACING[1];
+    var cube = m.el && m.el.firstChild;
+    if (cube) {
+      // A knock of a few degrees off square, so a shaken die looks rattled rather
+      // than neatly presented.
+      cube.style.transition = "none";
+      cube.style.transform = "rotateX(" + (face[0] + (Math.random() - 0.5) * 26) +
+        "deg) rotateY(" + (face[1] + (Math.random() - 0.5) * 26) + "deg)";
+    }
+  });
+  var top = app.querySelector(".sgtop");
+  if (top) top.textContent = d.vals.reduce(function (a, b) { return a + b; }, 0);
+}
+
 function dieDragEnd() {
   if (!dieDrag) return;
   var d = secret && secret.dice, g = dieDrag;
@@ -4574,13 +4613,12 @@ function dieDragEnd() {
   });
   dieDrag = null;
   if (!d || d.rolling) { render(); return; }
-  // Let go without having gone anywhere: that was a tap, and a tapped die turns
-  // over to the next face. Six wraps back to one.
-  if (!g.moved) {
-    d.vals[g.i] = (d.vals[g.i] % 6) + 1;
-    render();
-    return;
-  }
+  // A die that was shaken keeps whatever it was shaken onto, and is not thrown:
+  // rattling something in your fist is not letting go of it.
+  if (g.shaking) { render(); return; }
+  // Put down without having gone anywhere. Nothing happens — a die is changed by
+  // shaking it, not by being touched.
+  if (!g.moved) { render(); return; }
   // Where the drag left them, which it has already kept inside the walls.
   var f = g.field, at = dicePlaces(d);
   g.pile.forEach(function (m) {
@@ -4701,6 +4739,34 @@ function dicePlaces(d) {
   }
   return d.pos;
 }
+/*
+ * Which number a die is showing, given how far it has been turned about each
+ * axis. The faces sit at the six directions in the cube's own space; turning the
+ * cube turns them with it, and whichever ends up pointing at the screen is the
+ * one being read. Same order as the transform: rotateZ, then rotateX, then
+ * rotateY.
+ */
+var DIE_NORMALS = [
+  [1, 0, 0, 1], [6, 0, 0, -1], [3, 1, 0, 0], [4, -1, 0, 0], [5, 0, -1, 0], [2, 0, 1, 0]
+];
+function faceToward(z, x, y) {
+  var rz = z * Math.PI / 180, rx = x * Math.PI / 180, ry = y * Math.PI / 180;
+  var cz = Math.cos(rz), sz = Math.sin(rz);
+  var cx = Math.cos(rx), sx = Math.sin(rx);
+  var cy = Math.cos(ry), sy = Math.sin(ry);
+  var best = 1, bestZ = -2;
+  for (var i = 0; i < DIE_NORMALS.length; i++) {
+    var n = DIE_NORMALS[i];
+    var vx = n[1], vy = n[2], vz = n[3];
+    // rotateY, then rotateX, then rotateZ — innermost first.
+    var ax = cy * vx + sy * vz, ay = vy, az = -sy * vx + cy * vz;
+    var bx = ax, by = cx * ay - sx * az, bz = sx * ay + cx * az;
+    var fz = bz; // rotateZ leaves z alone
+    if (fz > bestZ) { bestZ = fz; best = n[0]; }
+  }
+  return best;
+}
+
 /* Which way up a die has to be for a given number to face you. Opposite sides of
    a real die sum to seven, so naming three of them fixes the other three. */
 var DIE_FACING = { 1: [0, 0], 6: [0, 180], 3: [0, -90], 4: [0, 90], 5: [-90, 0], 2: [90, 0] };
@@ -4748,7 +4814,7 @@ function renderDiceGame() {
     '<div class="dicecount">' + d.count + (d.count === 1 ? " die" : " dice") + '</div>' +
     '<button class="step" data-act="diceMore"' + (d.count >= 6 || d.rolling ? " disabled" : "") + '>+</button></div>' +
     '<p class="hint" style="text-align:center;margin:0 0 8px">' +
-    (d.rolling ? "&nbsp;" : "Grab the dice and flick to throw &middot; drag to move &middot; tap to set") +
+    (d.rolling ? "&nbsp;" : "Grab the dice to flick or shake them &middot; drag to move") +
     '</p>' +
     // Not tossable: swiping the felt itself does nothing. You throw dice by
     // having hold of them, the way you would off a table.
@@ -4908,17 +4974,22 @@ function diceStep(now) {
     return { x: Math.max(6, Math.min(94, x.x / sim.w * 100)),
              y: Math.max(4, Math.min(96, x.y / sim.h * 100)) };
   });
-  for (i = 0; i < d.count; i++) d.vals[i] = 1 + Math.floor(Math.random() * 6);
-  // Turned, not cut: the cube rocks the last few degrees onto the side it came
-  // to rest on, and only then does the screen redraw around it.
+  // The number is whatever it stopped on. Nothing is drawn for it afterwards:
+  // the die rocks onto the nearest flat side and that side is read off it, so it
+  // never lands showing one face and then changes to another.
   var field = sim.field;
   field.classList.remove("rolling");
   for (i = 0; i < d.count; i++) {
+    var b2 = bodies[i];
+    var sx = Math.round(b2.rot / 90) * 90;
+    var sy = Math.round(b2.tumble / 90) * 90;
+    var sz = Math.round(b2.roll / 90) * 90;
+    d.vals[i] = faceToward(sx, sy, sz);
     var settled = field.querySelector('[data-die="' + i + '"]');
     var box = settled && settled.firstChild;
-    if (!box) continue;
-    var lands = DIE_FACING[d.vals[i]] || DIE_FACING[1];
-    box.style.transform = "rotateX(" + lands[0] + "deg) rotateY(" + lands[1] + "deg)";
+    if (box) {
+      box.style.transform = "rotateZ(" + sx + "deg) rotateX(" + sy + "deg) rotateY(" + sz + "deg)";
+    }
   }
   diceSim = null;
   d.rolling = false;
