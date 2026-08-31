@@ -439,18 +439,26 @@
   .sgcoin .label { margin: 44px 0 auto; }
   .coinbox { display: flex; justify-content: center; margin: 0;
              touch-action: none; cursor: grab; }
-  /* Thrown, it arcs up and comes back down while the faces tumble. */
-  .coinbox.tossing { animation: cointoss 1200ms ease-out; }
-  @keyframes cointoss { 45% { transform: translateY(-34vh); } }
+  /* Thrown, it arcs up and comes back down while the faces tumble. Ease-out on
+     the way up and ease-in on the way down: one easing across the whole arc
+     floats at the bottom and snaps through the top, which is backwards. */
+  .coinbox.tossing { animation: cointoss 1200ms; }
+  @keyframes cointoss {
+    0% { transform: translateY(0); animation-timing-function: ease-out; }
+    50% { transform: translateY(-34vh); animation-timing-function: ease-in; }
+    100% { transform: translateY(0); }
+  }
   .coin {
     position: relative; overflow: hidden;
     width: min(56%, 200px); aspect-ratio: 869 / 859;
     filter: drop-shadow(0 6px 16px rgba(0, 0, 0, 0.55));
   }
   .coin img { position: absolute; display: block; }
-  /* Edge-on and back, as fast as the faces are being redrawn. */
+  /* Edge-on and back, as fast as the faces are being redrawn. Squashed top to
+     bottom, not side to side: a tossed coin turns end over end, and scaleX had
+     it spinning like a wheel on a vertical axis. */
   .coin.spinning { animation: coinspin 180ms linear infinite; }
-  @keyframes coinspin { 50% { transform: scaleX(0.06); } }
+  @keyframes coinspin { 50% { transform: scaleY(0.06); } }
   .die {
     width: 74px; height: 74px; background: #F4F6FA; border-radius: 12px;
     display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr);
@@ -4381,10 +4389,16 @@ app.addEventListener("touchcancel", function () { coinDragEnd(0); }, { passive: 
 /* One face of the sheet, seen through a window of that face's shape: the sheet
    is scaled until the face fills the window, then slid until it is what shows. */
 function coinFaceImg(box) {
-  return '<img src="' + COIN_FACES + '" alt="" draggable="false" style="width:' +
-    (100 * 1774 / box[2]).toFixed(3) + '%;left:' + (-100 * box[0] / box[2]).toFixed(3) +
-    '%;top:' + (-100 * box[1] / box[3]).toFixed(3) + '%">';
+  return '<img src="' + COIN_FACES + '" alt="" draggable="false" style="' +
+    coinFaceCss(box) + '">';
 }
+function coinFaceCss(box) {
+  return 'width:' + (100 * 1774 / box[2]).toFixed(3) +
+    '%;left:' + (-100 * box[0] / box[2]).toFixed(3) +
+    '%;top:' + (-100 * box[1] / box[3]).toFixed(3) + '%';
+}
+/* The same move, applied to a coin already on screen. */
+function coinFaceStyle(img, box) { img.style.cssText = coinFaceCss(box); }
 
 /* Tumbles for as long as the rattle plays, and lands when it stops — the same
    deal the dice get, so the two games feel like they came from one box. */
@@ -4397,15 +4411,23 @@ function flipCoin() {
   if (!c || c.flipping) return;
   c.flipping = true;
   playClip(diceAudio, sfxVolume(), COIN_FLIP_MS / 1000);
-  var ms = COIN_FLIP_MS;
-  var ticks = 0, need = Math.max(3, Math.round(ms / 90));
+  render(); // once, to start the arc and the tumble and blank the call
+  var img = app.querySelector(".coinbox .coin img");
   var iv = setInterval(function () {
     if (!secret || secret.mode !== "coin") { clearInterval(iv); return; }
     c.face = Math.random() < 0.5 ? "HEADS" : "TAILS";
-    ticks++;
-    if (ticks >= need) { clearInterval(iv); c.flipping = false; }
-    render();
+    // The face is swapped in place. Re-rendering here would build a new coin
+    // every 90ms and restart its arc from the floor each time — the coin
+    // juddered on the spot instead of being thrown.
+    if (img) coinFaceStyle(img, c.face === "TAILS" ? COIN_TAILS : COIN_HEADS);
   }, 90);
+  // Settles on the animation's own clock, not on a count of ticks.
+  setTimeout(function () {
+    clearInterval(iv);
+    if (!secret || secret.mode !== "coin") return;
+    c.flipping = false;
+    render();
+  }, COIN_FLIP_MS);
 }
 
 /* ---- dice: a tray of 1-6 dice, rolled together ---- */
