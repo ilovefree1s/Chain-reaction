@@ -463,12 +463,15 @@
     box-shadow: 0 6px 12px rgba(0, 0, 0, 0.5); }
   .tface {
     width: 100%; height: 100%; background: #F4F6FA; border-radius: 8px; color: #10182A;
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    display: flex; flex-direction: column; align-items: center; justify-content: space-between;
+    padding: 7px 0; box-sizing: border-box;
     box-shadow: 0 6px 12px rgba(0, 0, 0, 0.5);
   }
   .tface.red { color: #C42430; }
-  .tface .tr { font-size: 30px; font-weight: 900; line-height: 1; }
-  .tface .ts { font-size: 24px; line-height: 1.1; }
+  .thalf { display: flex; flex-direction: column; align-items: center; }
+  .thalf.flip { transform: rotate(180deg); }
+  .tface .tr { font-size: 22px; font-weight: 900; line-height: 1; }
+  .tface .ts { font-size: 17px; line-height: 1.1; }
   /* Five card-sized cut-outs across the middle of the felt. */
   .slotrow { position: absolute; left: 0; right: 0; top: 50%; transform: translateY(-50%);
              display: flex; justify-content: center; gap: 8px; }
@@ -476,8 +479,9 @@
           border: 2px dashed rgba(77, 195, 255, 0.45); flex: 0 0 auto; }
   .slot .slotcard { width: 100%; height: 100%; cursor: pointer; }
   .slotcard img { width: 100%; height: 100%; display: block; border-radius: 6px; }
-  .slotcard .tface .tr { font-size: 24px; }
-  .slotcard .tface .ts { font-size: 19px; }
+  .slotcard .tface { padding: 5px 0; }
+  .slotcard .tface .tr { font-size: 18px; }
+  .slotcard .tface .ts { font-size: 14px; }
   .menu-buttons-plain { position: absolute; left: 0; right: 0; z-index: 1;
                         /* The fallback has no empty band, so it lifts clear of the line. */
                         bottom: calc(env(safe-area-inset-bottom) + 34px); padding: 0 20px; }
@@ -4171,9 +4175,13 @@ function tcardBackHtml() {
 function tcardFace(id) {
   var suit = CARD_SUITS[Math.floor(id / 13)];
   var red = suit === "♥" || suit === "♦";
+  // The same rank and suit twice, the lower pair turned over — a card facing
+  // the player across the table reads just as well.
+  var half = '<span class="tr">' + CARD_RANKS[id % 13] + '</span>' +
+    '<span class="ts">' + suit + '</span>';
   return '<div class="tface' + (red ? " red" : "") + '">' +
-    '<span class="tr">' + CARD_RANKS[id % 13] + '</span>' +
-    '<span class="ts">' + suit + '</span></div>';
+    '<span class="thalf">' + half + '</span>' +
+    '<span class="thalf flip">' + half + '</span></div>';
 }
 function renderCardsGame() {
   var c = secret.cards;
