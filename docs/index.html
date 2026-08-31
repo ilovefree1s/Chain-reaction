@@ -397,10 +397,14 @@
   .menu-buttons {
     position: absolute; left: 0; right: 0; z-index: 1;
     /* Lifted off the floor, but only just: the version line sits off to the
-       right of the stack rather than under it, so it needs no clearance. */
+       right of the stack rather than under it, so it needs no clearance.
+       The art carries empty floor below SETTINGS — BUTTON_BANDS has the last
+       band ending at 90.8%, so 9.2% of the sheet is padding. That is 4.2% of
+       the screen at this height, subtracted here so the number left over is
+       the gap you actually see under the bottom button. */
     /* One number sizes the whole stack: the sheet keeps its aspect ratio and
        every hit box is placed in percentages of it, so they scale together. */
-    bottom: calc(env(safe-area-inset-bottom) + 30px); height: 46%;
+    bottom: calc(env(safe-area-inset-bottom) + 24px - 4.2%); height: 46%;
     display: flex; justify-content: center;
   }
   .menu-buttons .sheet { position: relative; height: 100%; aspect-ratio: 941 / 1672; }
@@ -861,7 +865,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.10 · 30 Aug 22:02";
+var APP_VERSION = "v1.10 · 30 Aug 22:10";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. Opening the app fetches fresh anyway.
