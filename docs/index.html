@@ -854,7 +854,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.10 · 30 Aug 21:41";
+var APP_VERSION = "v1.10 · 30 Aug 21:44";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. Opening the app fetches fresh anyway.
@@ -3818,10 +3818,9 @@ function renderWheel() {
       '<button class="big raised" data-act="wheelKeep">Keep spinning</button>' +
       '<button class="big primary" data-act="wheelCloseYes">Close anyway</button></div></div>';
   } else {
-    // The plate is painted CLOSE, so the finished state keeps its own word.
-    html += (stage === "done"
-      ? '<button class="big quiet" data-act="closeWheel">Done</button>'
-      : spinPlate("closeWheel", PLATE_CLOSE, "Close")) + "</div>";
+    // The same plate whether the wheel is mid-spin or spent: "Done" only ever
+    // named the moment, and closing is what the button does either way.
+    html += spinPlate("closeWheel", PLATE_CLOSE, "Close") + "</div>";
   }
   return html;
 }
