@@ -873,7 +873,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.10 · 30 Aug 22:56";
+var APP_VERSION = "v1.10 · 30 Aug 23:07";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. Opening the app fetches fresh anyway.
@@ -1644,6 +1644,17 @@ function handCountFor(s, p) {
 /* Where my card and another phone's card disagree on a hole both have locked.
    Compared at render time from the latest hellos — nothing is stored beyond
    them, and nothing is ever merged: the flag is the entire feature. */
+/* "Zac's score", "Zac's and Chris' scores" — names in dispute, read aloud the
+   way somebody at the table would say them. */
+function possessiveList(names) {
+  var owned = names.map(function (n) {
+    return esc(n) + (/s$/i.test(n) ? "&rsquo;" : "&rsquo;s");
+  });
+  var joined = owned.length < 2 ? owned[0]
+    : owned.slice(0, -1).join(", ") + " and " + owned[owned.length - 1];
+  return joined + (owned.length > 1 ? " scores" : " score");
+}
+
 function scoreDisputes(s, h) {
   var out = [];
   if (!live || !s.locked[h]) return out;
@@ -2920,14 +2931,16 @@ function renderScore() {
   // advances, so a flag pinned to its own hole would talk to an empty room.
   // Tapping a flag jumps to the hole it is arguing about.
   var disputeBlock = allDisputes(s).map(function (g) {
+    // Who is in dispute, not every pairing of them. Two players argued over by
+    // two phones made four lines that named the same two people twice, with a
+    // pile of numbers nobody was going to reconcile off a screen anyway.
+    var who = [];
+    g.items.forEach(function (d) { if (who.indexOf(d.player) === -1) who.push(d.player); });
     return '<div class="dispute" data-act="hole" data-n="' + g.hole + '" style="cursor:pointer">' +
       '<div class="dtitle">Scorecards disagree &middot; hole ' + (g.hole + 1) + '</div>' +
-      g.items.map(function (d) {
-        return '<div class="dline">' + esc(d.player) + ': you have ' + d.mine +
-          ', ' + esc(d.phone) + '&rsquo;s phone has ' + d.theirs + '</div>';
-      }).join("") +
-      '<div class="dhint">Nobody&rsquo;s card gets overwritten &mdash; settle it out ' +
-      'loud. Tap to open hole ' + (g.hole + 1) + ' and fix whichever card is wrong.</div></div>';
+      '<div class="dline">There&rsquo;s an error for ' + possessiveList(who) +
+      '. Everyone talk it out and fix it.</div>' +
+      '<div class="dhint">Tap to open hole ' + (g.hole + 1) + '.</div></div>';
   }).join("");
 
   // UDisc-style hole strip riding above the tab bar: every hole as a chip,
