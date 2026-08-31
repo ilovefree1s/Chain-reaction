@@ -164,6 +164,12 @@
   .handct { font-size: 13px; font-weight: 900; color: #4DC3FF; background: #061022;
             border: 1px solid var(--edge); border-radius: 6px; padding: 2px 7px;
             margin-left: 6px; vertical-align: 2px; white-space: nowrap; }
+  /* On a badge the chip sits over the top-left corner, clear of the face and
+     costing the name no width. Off a badge it stays inline under the name. */
+  .pbadge { position: relative; flex: 0 0 auto; line-height: 0; }
+  .pbadge .handct { position: absolute; top: -5px; left: -7px; z-index: 1;
+                    margin: 0; padding: 1px 5px; font-size: 11px;
+                    vertical-align: baseline; line-height: 1.3; }
   /* Under par cool blue, even quiet, over par hot orange — the palette does the talking. */
   .rel.under { color: var(--react); }
   .rel.even { color: var(--sage); }
@@ -852,7 +858,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.10 · 30 Aug 22:24";
+var APP_VERSION = "v1.10 · 30 Aug 22:35";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. Opening the app fetches fresh anyway.
@@ -1604,11 +1610,12 @@ function liveSeat(peer, id) {
   if (id && live) live.seated[id] = name;
 }
 
-/* What [p] is holding: yours from the round in front of you, everyone else's
-   self-reported. Matching is by name — the only key both sides share. */
-function liveHandFor(s, p) {
-  if (!live) return null;
+/* What [p] is holding: yours from the round in front of you — known whether or
+   not the phones are linked — and everyone else's self-reported, which needs
+   the lobby. Matching is by name, the only key both sides share. */
+function handCountFor(s, p) {
   if (p === s.meIndex) return s.hand.length;
+  if (!live) return null;
   var name = s.players[p].trim().toLowerCase();
   var peers = livePeers();
   for (var i = 0; i < peers.length; i++) {
@@ -2846,11 +2853,16 @@ function renderScore() {
     var lead = lockedCount(s) > 0 &&
       (isSkins(s) ? mostSkins > 0 && skinsFor(s, i) === mostSkins : total === best);
     var ch = characterFor(s, i);
-    var held = liveHandFor(s, i);
+    var held = handCountFor(s, i);
+    var chip = held != null
+      ? '<span class="handct">' + held + "/" + DATA.handCap + "</span>" : "";
     return '<div class="player' + (me ? " me" : "") + '"><div class="row">' +
       // Only takes up room once somebody has actually picked a character.
       // The row's own gap is the whole spacing — names were getting cut off.
-      (ch ? badgeHtml(ch, 40) : "") +
+      // The hand count rides the badge's corner, where it costs the row no
+      // width at all. Without a badge there is no corner, so it falls back to
+      // the line under the name.
+      (ch ? '<div class="pbadge">' + badgeHtml(ch, 40) + chip + '</div>' : "") +
       '<div class="grow"><div class="name">' + esc(name) + '</div>' +
         '<div class="rel ' + relClass(rel) + '">' +
         (lead ? '<span class="lead">LEAD</span>' : "") +
@@ -2859,9 +2871,7 @@ function renderScore() {
         (isSkins(s)
           ? plural(skinsFor(s, i), "skin") + '  &middot;  ' + fmtRel(rel)
           : fmtRel(rel)) +
-        // The hand chip rides this line, not the name: a long name ellipsizes,
-        // and it was swallowing the chip on the row you look at most — your own.
-        (held != null ? ' <span class="handct">' + held + "/" + DATA.handCap + "</span>" : "") +
+        (ch ? "" : (chip ? " " + chip : "")) +
         '</div></div>' +
       '<div class="steps">' +
       '<button class="step" data-act="score" data-i="' + i + '" data-n="-1"' +
