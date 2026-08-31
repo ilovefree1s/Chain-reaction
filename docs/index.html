@@ -873,7 +873,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.10 · 30 Aug 23:09";
+var APP_VERSION = "v1.10 · 30 Aug 23:15";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. Opening the app fetches fresh anyway.
@@ -1644,15 +1644,48 @@ function handCountFor(s, p) {
 /* Where my card and another phone's card disagree on a hole both have locked.
    Compared at render time from the latest hellos — nothing is stored beyond
    them, and nothing is ever merged: the flag is the entire feature. */
-/* "Zac's score", "Zac's and Chris' scores" — names in dispute, read aloud the
-   way somebody at the table would say them. */
+/* "Zac", "Zac and Chris", "Zac, Chris and Justin" — a list read aloud the way
+   somebody at the table would say it. */
+function joinNames(parts) {
+  return parts.length < 2 ? (parts[0] || "")
+    : parts.slice(0, -1).join(", ") + " and " + parts[parts.length - 1];
+}
+
+/* "Zac's score", "Zac's and Chris' scores" — names in dispute. */
 function possessiveList(names) {
   var owned = names.map(function (n) {
     return esc(n) + (/s$/i.test(n) ? "&rsquo;" : "&rsquo;s");
   });
-  var joined = owned.length < 2 ? owned[0]
-    : owned.slice(0, -1).join(", ") + " and " + owned[owned.length - 1];
-  return joined + (owned.length > 1 ? " scores" : " score");
+  return joinNames(owned) + (owned.length > 1 ? " scores" : " score");
+}
+
+/*
+ * Why the round cannot be signed off yet, or null when it can. Locking your own
+ * last hole ends YOUR card, not the round: everybody else is still filling one
+ * in, and a card nobody has checked is exactly the card that turns out wrong.
+ *
+ * Only phones actually in the lobby count, the same rule dealHeld plays by — a
+ * typed-in name with no phone can't hold the table, and neither can a phone that
+ * has gone quiet. Offline there is nobody to wait for at all.
+ */
+function unsettledReason(s) {
+  if (!live) return null;
+  if (allDisputes(s).length) {
+    return "The scorecards still disagree. Sort that out first &mdash; it is on the scorecard.";
+  }
+  var waiting = [];
+  livePeers().forEach(function (peer) {
+    var seated = s.players.some(function (n) {
+      return n.trim().toLowerCase() === peer.name.trim().toLowerCase();
+    });
+    if (!seated || !peer.name.trim()) return;
+    for (var h = 0; h < s.holeCount; h++) {
+      if (!peer.locks || !peer.locks[h]) { waiting.push(peer.name); return; }
+    }
+  });
+  if (!waiting.length) return null;
+  return "Waiting on " + esc(joinNames(waiting)) +
+    (waiting.length > 1 ? " to finish their cards." : " to finish their card.");
 }
 
 function scoreDisputes(s, h) {
@@ -3011,6 +3044,7 @@ function renderResults() {
       '</div></div>';
   }).join("");
 
+  var why = unsettledReason(s);
   return '<div class="label">' +
     esc(s.courseName || (s.holeCount + " holes")) + ' &middot; round complete</div>' +
     '<h1 style="color:var(--self)">' + esc(winnerLine(won.map(function (i) { return s.players[i]; }))) + '</h1>' +
@@ -3018,7 +3052,11 @@ function renderResults() {
       : winningTotal + '  &middot;  ' + fmtRel(relFor(s, won[0])) + ' to a par of ' + sum(s.pars)) + '</p>' +
     '<div class="label">' + (isSkins(s) ? "Skins" : "Final scores") + '</div>' + rows +
     '<div style="height:14px"></div>' +
-    '<button class="big primary" data-act="finishRound">Finish round</button>' +
+    // Signing off ends the room for everybody, so it waits until every phone
+    // agrees the round is over. End round on the Rules tab still walks away.
+    '<button class="big primary" data-act="finishRound"' + (why ? " disabled" : "") +
+    '>Finish round</button>' +
+    (why ? '<p class="hint" style="text-align:center">' + why + '</p>' : "") +
     // Escape hatch: a mis-scored final hole is still fixable from the scorecard.
     '<button class="big quiet" data-act="viewScorecard">Back to scorecard</button>';
 }
@@ -5026,6 +5064,8 @@ app.addEventListener("click", function (e) {
     case "viewScorecard": showScorecard = true; render(); break;
     // Clears the round and returns to the menu, so Play means play again.
     case "finishRound":
+      // The disabled button is the signpost; this is the lock.
+      if (unsettledReason(s)) break;
       liveDisconnect(); // the room dies with the round
       clearSaved();
       state = null;
