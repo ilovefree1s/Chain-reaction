@@ -4673,6 +4673,11 @@ function renderDiceGame() {
  * your flick gave them, fall under gravity, bounce off the walls and off each
  * other, and stop when they have nothing left. Nothing decides where they land.
  *
+ * Gravity pulls toward the top of the screen, because that is where the table
+ * is: you throw the dice away from you and they settle against the far rail,
+ * in sight and clear of the hand that threw them. Everything else about the
+ * simulation is ordinary — the dice simply fall the other way.
+ *
  * The numbers are in pixels and seconds, so gravity reads as gravity: 2600px/s²
  * is about right for a die a centimetre across on a phone.
  */
@@ -4693,9 +4698,11 @@ function rollDice(strength) {
   var first = fieldEl.querySelector(".die");
   var size = first ? first.getBoundingClientRect().width : 74;
   var at = dicePlaces(d);
-  // Up and slightly outward, harder the harder it was flicked, and never all
-  // exactly alike — dice thrown from one hand do not leave it in formation.
-  var lift = 900 + 1500 * strength;
+  // Away from you and slightly outward, harder the harder it was flicked, and
+  // never all exactly alike — dice thrown from one hand do not leave it in
+  // formation. Gravity is already pulling them up the felt, so this only has to
+  // start them off.
+  var lift = 260 + 900 * strength;
   var bodies = [];
   for (var i = 0; i < d.count; i++) {
     bodies.push({
@@ -4722,22 +4729,24 @@ function diceStep(now) {
 
   for (i = 0; i < bodies.length; i++) {
     b = bodies[i];
-    b.vy += DIE_GRAVITY * dt;
+    b.vy -= DIE_GRAVITY * dt; // toward the top, where the table is
     b.vx *= DIE_AIR; b.vy *= DIE_AIR;
     b.x += b.vx * dt; b.y += b.vy * dt;
     b.rot += b.spin * dt; b.spin *= 0.988;
     // Walls. A die hitting one loses most of what it had and is turned around.
     if (b.x < r) { b.x = r; b.vx = Math.abs(b.vx) * DIE_BOUNCE; b.spin = -b.spin * 0.7; }
     if (b.x > sim.w - r) { b.x = sim.w - r; b.vx = -Math.abs(b.vx) * DIE_BOUNCE; b.spin = -b.spin * 0.7; }
-    if (b.y < r) { b.y = r; b.vy = Math.abs(b.vy) * DIE_BOUNCE; }
-    if (b.y > sim.h - r) {
-      b.y = sim.h - r;
-      b.vy = -Math.abs(b.vy) * DIE_BOUNCE;
-      // The floor drags: sliding and spinning both die out on it, which is what
+    if (b.y < r) {
+      b.y = r;
+      b.vy = Math.abs(b.vy) * DIE_BOUNCE;
+      // The table drags: sliding and spinning both die out on it, which is what
       // eventually brings the whole throw to a stop.
       b.vx *= DIE_FLOOR_DRAG; b.spin *= 0.8;
       if (Math.abs(b.vy) < 60) b.vy = 0;
     }
+    // The near edge is only a rail — a die that comes back this far bounces off
+    // it rather than dropping out of the game.
+    if (b.y > sim.h - r) { b.y = sim.h - r; b.vy = -Math.abs(b.vy) * DIE_BOUNCE; }
   }
 
   // Dice against dice, treated as discs: push them apart, then swap what they
