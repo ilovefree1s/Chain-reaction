@@ -4397,19 +4397,42 @@ function tossTarget() {
   return null;
 }
 /*
- * A die under the finger is picked up, not thrown: dragging slides it around the
- * field and letting go without having moved sets it to the next face. Everywhere
- * else on the field is the throw.
+ * A die under the finger comes up with everything piled on it, and what happens
+ * next depends on how you let go: slid somewhere and released, it stays there;
+ * flicked upward, the whole set is thrown; released without having moved at all,
+ * the die turns over to its next face.
  */
 var dieDrag = null;
+/* Everything close enough to the die at [i] to be part of the same pile. */
+function dicePile(at, i, fb) {
+  var out = [];
+  for (var k = 0; k < at.length; k++) {
+    var dx = (at[k].x - at[i].x) / 100 * fb.width;
+    var dy = (at[k].y - at[i].y) / 100 * fb.height;
+    if (Math.sqrt(dx * dx + dy * dy) <= 46) {
+      out.push({ i: k, ox: at[k].x - at[i].x, oy: at[k].y - at[i].y });
+    }
+  }
+  return out;
+}
 app.addEventListener("touchstart", function (e) {
   if (!tossTarget() || !e.target.closest) return;
   var die = e.target.closest(".die");
   if (die && secret.mode === "dice") {
-    var field = app.querySelector(".dicefield").getBoundingClientRect();
-    dieDrag = { i: +die.getAttribute("data-die"), el: die, field: field,
-                x0: e.touches[0].clientX, y0: e.touches[0].clientY, moved: false };
-    die.classList.add("held");
+    var fieldEl = app.querySelector(".dicefield");
+    if (!fieldEl) return;
+    var field = fieldEl.getBoundingClientRect();
+    var i = +die.getAttribute("data-die");
+    var t0 = e.touches[0];
+    dieDrag = { i: i, el: die, field: field,
+                pile: dicePile(dicePlaces(secret.dice), i, field),
+                x0: t0.clientX, y0: t0.clientY, moved: false,
+                lastY: t0.clientY, lastT: Date.now(), speed: 0 };
+    dieDrag.pile.forEach(function (g) {
+      var el = fieldEl.querySelector('[data-die="' + g.i + '"]');
+      g.el = el;
+      if (el) el.classList.add("held");
+    });
     return;
   }
   var el = e.target.closest(".tossable");
@@ -4420,18 +4443,24 @@ app.addEventListener("touchstart", function (e) {
 }, { passive: true });
 app.addEventListener("touchmove", function (e) {
   if (dieDrag) {
-    var t = e.touches[0], f = dieDrag.field;
+    var t = e.touches[0], f = dieDrag.field, now = Date.now();
+    var dt = now - dieDrag.lastT;
+    if (dt > 0) dieDrag.speed = (dieDrag.lastY - t.clientY) / dt; // upward is positive
+    dieDrag.lastY = t.clientY; dieDrag.lastT = now;
     if (Math.abs(t.clientX - dieDrag.x0) > 6 || Math.abs(t.clientY - dieDrag.y0) > 6) {
       dieDrag.moved = true;
     }
     // Kept inside its own walls, and moved by style rather than by render so the
-    // die does not blink out from under the finger holding it.
-    var x = Math.max(6, Math.min(94, ((t.clientX - f.left) / f.width) * 100));
-    var y = Math.max(4, Math.min(96, ((t.clientY - f.top) / f.height) * 100));
-    var at = dicePlaces(secret.dice)[dieDrag.i];
-    if (at) { at.x = x; at.y = y; }
-    dieDrag.el.style.left = x.toFixed(2) + "%";
-    dieDrag.el.style.top = y.toFixed(2) + "%";
+    // dice do not blink out from under the finger holding them.
+    var px = ((t.clientX - f.left) / f.width) * 100;
+    var py = ((t.clientY - f.top) / f.height) * 100;
+    var at = dicePlaces(secret.dice);
+    dieDrag.pile.forEach(function (g) {
+      var x = Math.max(6, Math.min(94, px + g.ox));
+      var y = Math.max(4, Math.min(96, py + g.oy));
+      if (at[g.i]) { at[g.i].x = x; at[g.i].y = y; }
+      if (g.el) { g.el.style.left = x.toFixed(2) + "%"; g.el.style.top = y.toFixed(2) + "%"; }
+    });
     return;
   }
   if (coinTouchY == null || !coinDragEl) return;
@@ -4462,14 +4491,25 @@ function coinDragEnd(dy) {
 }
 function dieDragEnd() {
   if (!dieDrag) return;
-  var d = secret && secret.dice;
-  dieDrag.el.classList.remove("held");
+  var d = secret && secret.dice, g = dieDrag;
+  g.pile.forEach(function (m) { if (m.el) m.el.classList.remove("held"); });
+  dieDrag = null;
+  if (!d || d.rolling) { render(); return; }
   // Let go without having gone anywhere: that was a tap, and a tapped die turns
   // over to the next face. Six wraps back to one.
-  if (!dieDrag.moved && d && !d.rolling) {
-    d.vals[dieDrag.i] = (d.vals[dieDrag.i] % 6) + 1;
+  if (!g.moved) {
+    d.vals[g.i] = (d.vals[g.i] % 6) + 1;
+    render();
+    return;
   }
-  dieDrag = null;
+  // Flicked upward and released while still moving: that is a throw, and it
+  // throws the lot. Speed alone decides — a die carried slowly up the field is
+  // being put somewhere, not launched.
+  var speed = Date.now() - g.lastT > 90 ? 0 : g.speed;
+  if (g.lastY - g.y0 <= -COIN_THROW && speed > COIN_SLOW) {
+    rollDice((speed - COIN_SLOW) / (COIN_FAST - COIN_SLOW));
+    return;
+  }
   render();
 }
 app.addEventListener("touchend", function (e) {
@@ -4592,7 +4632,7 @@ function renderDiceGame() {
     '<div class="dicecount">' + d.count + (d.count === 1 ? " die" : " dice") + '</div>' +
     '<button class="step" data-act="diceMore"' + (d.count >= 6 || d.rolling ? " disabled" : "") + '>+</button></div>' +
     '<p class="hint" style="text-align:center;margin:0 0 8px">' +
-    (d.rolling ? "&nbsp;" : "Swipe up to throw &middot; drag a die to move it &middot; tap to set it") +
+    (d.rolling ? "&nbsp;" : "Flick up to throw &middot; drag to move &middot; tap to set&nbsp;a&nbsp;die") +
     '</p>' +
     '<div class="dicefield tossable' + (d.rolling ? " rolling" : "") + '">' +
     diceFieldHtml(d) + '</div></div>';
