@@ -88,6 +88,14 @@
   .big.wheel { background: linear-gradient(180deg, #3FA9FF, #1E6FFF); color: #fff;
                box-shadow: 0 0 16px rgba(30, 111, 255, 0.35); }
   .big.quiet { background: var(--panel); color: var(--sage); border: 2px solid var(--edge); }
+  /* The painted banner IS the button — it already carries its own name and
+     price, so nothing is drawn over it. Dimmed the way an inactive tab plate
+     is, when the hand can't cover the spin. */
+  .wheelplate { display: block; width: 100%; padding: 0; border: 0; background: none;
+                margin-bottom: 10px; cursor: pointer; }
+  .wheelplate img { display: block; width: 100%; height: auto; }
+  .wheelplate[disabled] { cursor: default; }
+  .wheelplate[disabled] img { filter: brightness(0.45) saturate(0.6); }
   /* For use *on* a panel, where .quiet would vanish into the background. */
   .big.raised { background: #0B1526; color: var(--sage); border: 2px solid var(--edge); }
   .big.danger { background: var(--panel); color: var(--attack); border: 2px solid var(--edge); }
@@ -3069,10 +3077,13 @@ function canAffordWheel(s) { return s.hand.length >= DATA.wheelCost; }
 function wheelButton() {
   var s = state;
   var label = "Spin the GAMBLE WHEEL!! (" + DATA.wheelCost + " cards)";
+  // The banner says all of that in paint. The alt carries the same words for
+  // anyone the picture doesn't reach.
+  var plate = '<img src="__WHEEL_PLATE__" alt="' + esc(label) + '">';
   if (canAffordWheel(s)) {
-    return '<button class="big wheel" data-act="openWheel">' + label + "</button>";
+    return '<button class="wheelplate" data-act="openWheel">' + plate + "</button>";
   }
-  return '<button class="big wheel" disabled>' + label + "</button>" +
+  return '<button class="wheelplate" disabled>' + plate + "</button>" +
     '<p class="hint">Spinning costs ' + DATA.wheelCost + ' cards and you\'re holding ' +
     s.hand.length + '. Playing GAMBLE WHEEL!! spins for free.</p>';
 }
