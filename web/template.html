@@ -3579,8 +3579,13 @@ function cardFaceSvg(c) {
     title + oct + body +
     // Plain text, not a filled chip: a block down here reads as something sitting
     // on top of the explanation rather than part of the card. Matches Android.
-    // The card's number used to sit opposite — nobody ever needed it to play.
-    '<text x="270" y="929" fill="#4DC3FF" font-size="21" font-weight="900" letter-spacing="2">' +
+    // It sat left because the card's number used to face it across the line;
+    // with the number gone it was simply off-centre, so it centres like every
+    // other line on the card. The wheel-only badge still gets a partner, and
+    // holds it left where it can face one.
+    '<text x="' + (wheelOnlyCard(c.id) ? 270 : 360) + '" y="929"' +
+    (wheelOnlyCard(c.id) ? '' : ' text-anchor="middle"') +
+    ' fill="#4DC3FF" font-size="21" font-weight="900" letter-spacing="2">' +
     esc(c.kind.toUpperCase()) + '</text>' +
     // Wheel-only cards say so where the card number used to live — the one
     // fact about them a browsing player needs: you can't draw this. The little
