@@ -1935,6 +1935,9 @@ function liveRefresh() {
   // spin. The room's chatter can wait; settle() renders when the wheel lands.
   if (wheel && wheel.spinning) return;
   if (orderWheel && orderWheel.spinning) return;
+  // Missed the wheel — joined late, or backgrounded through it. The hello that
+  // says the host is playing is enough to take them in.
+  if (!orderWheel && startIfHostHas()) return;
   render();
 }
 
@@ -2603,6 +2606,41 @@ function shuffled(arr) {
  * A function rather than a switch arm because the wheel finishes here too — the
  * draw is a step inside Start, not something done before it.
  */
+/*
+ * A joiner's round begins when the host's does. Their Start is where the seats
+ * get dealt and the tee draw resolves against them, so a phone that starts first
+ * builds a differently ordered card — the bug this whole ordering exists to stop.
+ *
+ * Answers true when it took them in, so callers know whether to keep waiting.
+ */
+function startIfHostHas() {
+  if (!live || live.hosting || state || screen !== "setup") return false;
+  var h = liveHostTable();
+  if (!h || !h.cfg || !h.cfg.started) return false;
+  if (!(h.cfg.order && h.cfg.order.length)) return false;
+  // Take the host's table one last time on the way in. Not every hello arrives
+  // through the path that adopts it — the heartbeat one does not — and starting
+  // without the draw quietly tees the hole off in seat order instead.
+  adoptHostTable();
+  orderWheel = null;
+  startRound();
+  return true;
+}
+/* The host's Start is a hello away from the wheel landing — usually already in
+   flight, since commit() announces immediately. Watched for rather than waited
+   on, so nobody is dropped back onto the setup page for a second in between. */
+function awaitHostStart(mine) {
+  var tries = 0;
+  (function again() {
+    if (orderWheel !== mine || state) return;
+    if (startIfHostHas()) return;
+    // Eighteen seconds, then give the page back: the host has thought better
+    // of it, and a phone stuck on a dead wheel can do nothing at all.
+    if (++tries > 45) { orderWheel = null; render(); return; }
+    setTimeout(again, 400);
+  })();
+}
+
 function startRound() {
   var rNames = setup.names.slice(0, activeSeats()).map(function (x) { return x.trim(); });
   var rChars = setup.chars.slice(0, activeSeats());
@@ -3241,12 +3279,16 @@ function renderSetup() {
     '<div class="label">Course</div>' + courseBlock +
     '<div class="label">Format</div>' + formatBlock +
     '<div style="height:18px"></div>' +
-    '<button class="big primary" data-act="start"' + (ready ? "" : " disabled") + '>Start round</button>' +
-    '<p class="hint" data-start-hint' + (ready ? ' style="display:none"' : "") + '>' +
-      (!namesReady ? "Every player needs a name."
-        : host && !hostPicked ? "The host is picking the course."
-        : host && !hostStarted ? "Waiting for " + esc(host.name || "the host") + " to start the round."
-        : "Choose a course first.") + '</p>';
+    // A joiner has no Start of their own. The host's deals the seats and the
+    // wheel carries the table in behind it; a button here would only be a way
+    // to build a card in a different order to everybody else's.
+    (host
+      ? '<p class="hint">' +
+        (!hostPicked ? "The host is picking the course."
+          : "The round starts on " + esc(host.name || "the host") + "'s spin.") + '</p>'
+      : '<button class="big primary" data-act="start"' + (ready ? "" : " disabled") + '>Start round</button>' +
+        '<p class="hint" data-start-hint' + (ready ? ' style="display:none"' : "") + '>' +
+          (!namesReady ? "Every player needs a name." : "Choose a course first.") + '</p>');
 }
 
 /* Typing deliberately does not re-render (that would drop focus mid-name),
@@ -5691,9 +5733,12 @@ function runOrderSpin(pick, rot) {
     // order stays on the setup screen underneath it either way.
     setTimeout(function () {
       if (orderWheel !== mine) return;
-      orderWheel = null;
       // Whoever pressed Start was waiting on this.
-      if (orderThenStart) { orderThenStart = false; startRound(); return; }
+      if (orderThenStart) { orderThenStart = false; orderWheel = null; startRound(); return; }
+      // A joiner pressed nothing and has nothing to press: they go in when the
+      // host's round exists, and keep looking at the order until it does.
+      if (live && !live.hosting) { awaitHostStart(mine); return; }
+      orderWheel = null;
       render();
     }, 2600);
   }
