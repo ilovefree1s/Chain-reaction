@@ -998,7 +998,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.10 · 1 Sep 12:20";
+var APP_VERSION = "v1.10 · 1 Sep 12:27";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. Opening the app fetches fresh anyway.
@@ -4727,7 +4727,7 @@ function flipCoin(strength) {
   strength = Math.max(0, Math.min(1, strength));
   var ms = Math.round(850 + 750 * strength);
   c.flipping = true;
-  playClip(diceAudio, sfxVolume(), ms / 1000);
+  // No sound. It was borrowing the dice rattle, which is not what a coin does.
   render(); // once, to start the arc and the tumble and blank the call
   var box = app.querySelector(".coinbox");
   tossArc(box, strength, ms);

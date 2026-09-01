@@ -4727,7 +4727,7 @@ function flipCoin(strength) {
   strength = Math.max(0, Math.min(1, strength));
   var ms = Math.round(850 + 750 * strength);
   c.flipping = true;
-  playClip(diceAudio, sfxVolume(), ms / 1000);
+  // No sound. It was borrowing the dice rattle, which is not what a coin does.
   render(); // once, to start the arc and the tumble and blank the call
   var box = app.querySelector(".coinbox");
   tossArc(box, strength, ms);
