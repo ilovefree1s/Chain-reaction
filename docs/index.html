@@ -1006,7 +1006,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.10 · 1 Sep 12:46";
+var APP_VERSION = "v1.10 · 1 Sep 12:50";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. Opening the app fetches fresh anyway.
@@ -1987,6 +1987,29 @@ function dropSpinStart(who) {
   });
 }
 
+/*
+ * The wheel is one thing and the table shares it, so only one phone may be on
+ * it at a time. Whoever announces a spin holds it until they land a result or
+ * close it; a phone that walks off mid-spin lets go after ninety seconds, the
+ * same stretch the heads-up banner gives up after.
+ */
+var wheelHeldBy = null;
+function holdWheel(who) {
+  wheelHeldBy = who ? { name: who, at: Date.now() } : null;
+}
+function wheelHolder() {
+  if (!wheelHeldBy) return null;
+  if (Date.now() - wheelHeldBy.at > 90000) { wheelHeldBy = null; return null; }
+  return wheelHeldBy.name;
+}
+/* Somebody else, that is — your own spin does not lock you out of it. */
+function wheelHeldByOther() {
+  var who = wheelHolder();
+  if (!who || !state) return null;
+  var me = (state.players[state.meIndex] || "").trim().toLowerCase();
+  return who.trim().toLowerCase() === me ? null : who;
+}
+
 function liveWheel(p) {
   var who = typeof p.name === "string" ? p.name : "";
   // The moment the spin is bought, before anything lands: heads up, banner up.
@@ -2002,15 +2025,17 @@ function liveWheel(p) {
       playMenuSound(sfxVolume());
       try { if (navigator.vibrate) navigator.vibrate([80, 40, 80]); } catch (e) { /* banner only */ }
     }
+    holdWheel(who);
     // Safety net: a spinner who walks away mid-wheel shouldn't pin a banner forever.
     setTimeout(function () { dropAlert(eid); }, 90000);
     liveRefresh();
     return;
   }
   // The spinner closed the wheel without a result — take the banner down.
-  if (p.cancel) { dropSpinStart(who); liveRefresh(); return; }
+  if (p.cancel) { holdWheel(null); dropSpinStart(who); liveRefresh(); return; }
   var c = BY_ID[p.card];
   if (!c) return; // an id this build doesn't know
+  holdWheel(null); // landed: the wheel is free again
   dropSpinStart(who); // the result replaces the heads-up
   liveAlerts.push({
     eid: p.eid, wheel: true, who: who,
@@ -3382,6 +3407,13 @@ function wheelButton() {
   // The banner says all of that in paint. The alt carries the same words for
   // anyone the picture doesn't reach.
   var plate = '<img src="assets/gamblewheel.png" alt="' + esc(label) + '">';
+  // Somebody else has it. Dimmed and named, rather than a button that looks
+  // ready and then does nothing when it is pressed.
+  var busy = wheelHeldByOther();
+  if (busy) {
+    return '<button class="wheelplate" disabled>' + plate + "</button>" +
+      '<p class="hint">' + esc(busy) + ' is on the wheel. It comes free when they finish.</p>';
+  }
   if (canAffordWheel(s)) {
     return '<button class="wheelplate" data-act="openWheel">' + plate + "</button>";
   }
@@ -3428,7 +3460,10 @@ function renderWheelCost() {
 function openWheelNow(free) {
   // The table hears the wheel the second it's bought — the cards are already
   // discarded (or GAMBLE WHEEL!! already played), so this moment is committed.
-  if (live) liveCast("wheel", { name: state.players[state.meIndex], spinning: true });
+  if (live) {
+    liveCast("wheel", { name: state.players[state.meIndex], spinning: true });
+    holdWheel(state.players[state.meIndex]);
+  }
   // What rides the wheel is the pool MINUS everything that already landed
   // this round — a settled result retires its card on every phone, so the
   // wheel shrinks identically for the whole table as the round goes on.
@@ -4290,7 +4325,13 @@ function resolveCard(s, id, played, target) {
   }
   // The GAMBLE WHEEL!! card IS the spin — playing it opens the wheel with no further
   // cost, which is exactly what its text promises.
-  if (played && id === DATA.freeSpinCard) openWheelNow(true);
+  // A free spin still waits for the wheel to be free. The card is spent either
+  // way — it is played out loud like any other — so the spin is owed, not lost.
+  if (played && id === DATA.freeSpinCard) {
+    var busy = wheelHeldByOther();
+    if (busy) localNote(busy + " is on the wheel — spin yours when they are done.", "Wheel busy");
+    else openWheelNow(true);
+  }
 }
 
 function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
@@ -5949,6 +5990,9 @@ app.addEventListener("click", function (e) {
 
     // Paying for a spin: choose the cards first, then the wheel opens.
     case "openWheel":
+      // One wheel, one spinner. Buying in while somebody else is mid-spin is how
+      // two results end up arguing about which of them the table just saw.
+      if (wheelHeldByOther()) break;
       if (!canAffordWheel(s)) break;
       wheelPay = [];
       render(); break;
@@ -6059,6 +6103,7 @@ app.addEventListener("click", function (e) {
       if (wheel.stage !== "done" && live && s) {
         liveCast("wheel", { name: s.players[s.meIndex], cancel: true });
       }
+      holdWheel(null);
       wheel = null; render(); break;
     case "wheelKeep":
       if (wheel) wheel.confirmClose = false;
