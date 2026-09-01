@@ -1625,7 +1625,11 @@ function liveHello() {
       ? { holes: state.holeCount, pars: state.pars, courseName: state.courseName, mode: state.mode,
           // The tee order the host's Start dealt — joiners build their round
           // in exactly this order, so every card reads the same.
-          order: state.players, started: true }
+          order: state.players,
+          // And the tee draw, so a phone starting late tees off in the order
+          // the wheel gave rather than quietly falling back to seat order.
+          tee: state.teeBase ? state.teeBase.map(function (i) { return state.players[i]; }) : null,
+          started: true }
       : { holes: setup.holes, pars: setupPars(), courseName: setup.courseName, mode: setup.mode,
           // The tee draw rides along too, so a phone that joined after the
           // wheel stopped still knows what it landed on.
@@ -2591,6 +2595,59 @@ function shuffled(arr) {
   return a;
 }
 
+/*
+ * Everything between pressing Start and the card appearing: the seats get dealt
+ * (once, by the host, so four phones build one identical round), the tee draw is
+ * read back onto them, and the round is committed.
+ *
+ * A function rather than a switch arm because the wheel finishes here too — the
+ * draw is a step inside Start, not something done before it.
+ */
+function startRound() {
+  var rNames = setup.names.slice(0, activeSeats()).map(function (x) { return x.trim(); });
+  var rChars = setup.chars.slice(0, activeSeats());
+  var rMe = setup.meIndex;
+  if (live && live.hosting) {
+    // The host's Start deals the tee order: one shuffle, and the hello
+    // that announces the round carries it, so every phone builds the same
+    // card top to bottom — no more "I'm always row 1 on my own phone".
+    var ord = shuffled(rNames.map(function (_, i) { return i; }));
+    rNames = ord.map(function (i) { return rNames[i]; });
+    rChars = ord.map(function (i) { return rChars[i]; });
+    rMe = ord.indexOf(setup.meIndex);
+  } else if (live && !live.hosting) {
+    // A joiner adopts the host's dealt order wholesale, finding their own
+    // seat by name. Falls back to the local roster if the order doesn't
+    // cover this phone (mid-swap weirdness) rather than mis-seating.
+    var h = liveHostTable();
+    var order = h && h.cfg && h.cfg.order;
+    if (order && order.length) {
+      var adoptedN = [], adoptedC = [], meAt = -1;
+      var myName = (settings.myName || "").trim().toLowerCase();
+      order.forEach(function (n) {
+        var at = -1;
+        for (var i = 0; i < rNames.length; i++) {
+          if (rNames[i].toLowerCase() === n.trim().toLowerCase()) { at = i; break; }
+        }
+        adoptedN.push(at !== -1 ? rNames[at] : n.trim());
+        adoptedC.push(at !== -1 ? rChars[at] : null);
+      });
+      for (var j = 0; j < adoptedN.length; j++) {
+        if (adoptedN[j].trim().toLowerCase() === myName) meAt = j;
+      }
+      if (meAt !== -1) { rNames = adoptedN; rChars = adoptedC; rMe = meAt; }
+    }
+  }
+  // Resolved against the seats as they finally sit, which for a lobby is
+  // after the host's Start has re-dealt them.
+  commit(newRound(rNames, rMe, setup.holes, setupPars(), setup.courseName, rChars,
+    setup.mode, teeBaseFor(rNames)));
+  // The room rides with the round: a reload rejoins it without asking.
+  if (live) { state.liveCode = live.code; save(state); }
+  screen = "round";
+  render();
+}
+
 function newRound(players, meIndex, holeCount, coursePars, courseName, characters, mode, teeBase) {
   var deck = shuffled(CARDS.filter(function (c) { return !wheelOnlyCard(c.id); })
     .map(function (c) { return c.id; }));
@@ -3027,28 +3084,19 @@ function renderOrderDraw() {
   var names = setup.names.slice(0, activeSeats()).filter(function (n) { return n.trim(); });
   if (names.length < 2) return "";
   var theirs = live && !live.hosting;
-  var drawn = setup.teeBase && setup.teeBase.length === names.length
-    ? setup.teeBase.map(function (i) { return names[i]; }) : null;
+  if (!orderWheel) return "";
 
-  // Not opened yet: a line saying what it is, and the way in.
-  if (!orderWheel) {
-    return '<div class="label">First tee</div>' +
-      (drawn
-        ? '<div class="panel course sel">' +
-          '<div class="cname picked">' + drawn.map(esc).join(' &rsaquo; ') + '</div>' +
-          '<div class="dim">Drawn on the wheel</div></div>'
-        : theirs
-        ? '<p class="hint">The host draws the order for the first tee.</p>'
-        : '<button class="big quiet" data-act="drawOrder">Spin for the order</button>');
-  }
-
-  // Open: the wheel itself.
   var labels = orderWheel.orders.map(function (o) {
     return o.map(function (i) { return names[i].trim().slice(0, 3); }).join("\u00b7");
   });
   var landed = orderWheel.at != null && !orderWheel.spinning
     ? orderWheel.orders[orderWheel.at].map(function (i) { return names[i]; }) : null;
   return '<div class="label">First tee &middot; ' + labels.length + ' orders</div>' +
+    '<p class="hint" style="text-align:center">' +
+    (theirs ? 'The host is drawing the order.'
+      : landed ? 'That is the order. Starting the round&hellip;'
+      : orderWheel.spinning ? '&nbsp;'
+      : 'Every order the group could tee in, once each.') + '</p>' +
     '<div class="wheelbox"><div class="wheelptr"></div>' +
     wheelSvg("wheel-order", labels, orderWheel.rot, null, labels.length > 12 ? 7 : 12) +
     '</div>' +
@@ -3066,6 +3114,9 @@ function renderOrderDraw() {
 }
 
 function renderSetup() {
+  // A drawing wheel gets the screen to itself. It is the last beat before the
+  // round starts, and a page of course pickers behind it is just clutter.
+  if (orderWheel) return renderOrderDraw();
   // Same framed-slot + octagonal ME markup as Settings, so the two read as one app.
   // In a live lobby every phone IS a person: one row for you, one per phone that
   // joins — nothing typable, nothing addable. Names and faces are each phone's
@@ -3187,7 +3238,6 @@ function renderSetup() {
 
   // No title block — the back bar already says NEW ROUND.
   return meBlock + renderLiveSection() + playersBlock +
-    renderOrderDraw() +
     '<div class="label">Course</div>' + courseBlock +
     '<div class="label">Format</div>' + formatBlock +
     '<div style="height:18px"></div>' +
@@ -5606,6 +5656,9 @@ function teeBaseFor(names) {
 }
 
 var orderWheel = null;
+/* Set when the wheel was opened by pressing Start, which is every time it opens
+   on the host's phone — the round is mid-launch and resumes when it lands. */
+var orderThenStart = false;
 function openOrderWheel() {
   var names = setup.names.slice(0, activeSeats()).filter(function (n) { return n.trim(); });
   if (names.length < 2) return;
@@ -5639,6 +5692,8 @@ function runOrderSpin(pick, rot) {
     setTimeout(function () {
       if (orderWheel !== mine) return;
       orderWheel = null;
+      // Whoever pressed Start was waiting on this.
+      if (orderThenStart) { orderThenStart = false; startRound(); return; }
       render();
     }, 2600);
   }
@@ -6127,13 +6182,9 @@ app.addEventListener("click", function (e) {
       }
       render(); break;
     case "goOffline": setup.offline = true; render(); break;
-    case "drawOrder":
-      // In a lobby the host draws for the table; nobody else gets a wheel.
-      if (live && !live.hosting) break;
-      if (setup.teeBase) break;
-      openOrderWheel(); break;
     case "spinOrder": spinOrder(); break;
-    case "closeOrder": orderWheel = null; render(); break;
+    // Backing out of the draw backs out of starting the round with it.
+    case "closeOrder": orderWheel = null; orderThenStart = false; render(); break;
     case "passPrio":
       if (!iHavePrio(s)) break;
       passPrio(s); render(); break;
@@ -6165,51 +6216,16 @@ app.addEventListener("click", function (e) {
         charPick = null;
       }
       render(); break;
-    case "start": {
-      var rNames = setup.names.slice(0, activeSeats()).map(function (x) { return x.trim(); });
-      var rChars = setup.chars.slice(0, activeSeats());
-      var rMe = setup.meIndex;
-      if (live && live.hosting) {
-        // The host's Start deals the tee order: one shuffle, and the hello
-        // that announces the round carries it, so every phone builds the same
-        // card top to bottom — no more "I'm always row 1 on my own phone".
-        var ord = shuffled(rNames.map(function (_, i) { return i; }));
-        rNames = ord.map(function (i) { return rNames[i]; });
-        rChars = ord.map(function (i) { return rChars[i]; });
-        rMe = ord.indexOf(setup.meIndex);
-      } else if (live && !live.hosting) {
-        // A joiner adopts the host's dealt order wholesale, finding their own
-        // seat by name. Falls back to the local roster if the order doesn't
-        // cover this phone (mid-swap weirdness) rather than mis-seating.
-        var h = liveHostTable();
-        var order = h && h.cfg && h.cfg.order;
-        if (order && order.length) {
-          var adoptedN = [], adoptedC = [], meAt = -1;
-          var myName = (settings.myName || "").trim().toLowerCase();
-          order.forEach(function (n) {
-            var at = -1;
-            for (var i = 0; i < rNames.length; i++) {
-              if (rNames[i].toLowerCase() === n.trim().toLowerCase()) { at = i; break; }
-            }
-            adoptedN.push(at !== -1 ? rNames[at] : n.trim());
-            adoptedC.push(at !== -1 ? rChars[at] : null);
-          });
-          for (var j = 0; j < adoptedN.length; j++) {
-            if (adoptedN[j].trim().toLowerCase() === myName) meAt = j;
-          }
-          if (meAt !== -1) { rNames = adoptedN; rChars = adoptedC; rMe = meAt; }
-        }
+    case "start":
+      // The draw for the first tee is the last thing before the round rather
+      // than a block sitting on the setup page waiting to be noticed. A joiner
+      // never draws: they have the host's already, and they watched it land.
+      if (!setup.teeBase && activeSeats() >= 2 && (!live || live.hosting)) {
+        orderThenStart = true;
+        openOrderWheel();
+        break;
       }
-      // Resolved against the seats as they finally sit, which for a lobby is
-      // after the host's Start has re-dealt them.
-      commit(newRound(rNames, rMe, setup.holes, setupPars(), setup.courseName, rChars,
-        setup.mode, teeBaseFor(rNames)));
-    }
-      // The room rides with the round: a reload rejoins it without asking.
-      if (live) { state.liveCode = live.code; save(state); }
-      screen = "round";
-      render();
-      break;
+      startRound(); break;
 
     case "mode": setup.mode = el.getAttribute("data-t"); render(); break;
     case "rulesMode": rulesMode = el.getAttribute("data-t"); render(); break;
