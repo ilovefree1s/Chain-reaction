@@ -235,6 +235,18 @@
   .artacts { padding: 12px; }
   .artacts .acts { margin-top: 0; }
   .confirmq { margin: 14px 0 0; font-weight: 700; }
+  /* The running order, read left to right. Whoever is up is loud; you are
+     underlined wherever you happen to sit in it. */
+  .turnrow { display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
+             margin-bottom: 12px; }
+  .turn { font-size: 15px; font-weight: 900; color: var(--sage); }
+  .turn.first { color: var(--self); }
+  .turn.final { color: #4DC3FF; }
+  .turntag { font-size: 10px; font-weight: 900; letter-spacing: 1px;
+             text-transform: uppercase; color: #4DC3FF; opacity: .7;
+             margin-left: 5px; }
+  .turn.me { text-decoration: underline; text-underline-offset: 3px; }
+  .turnsep { color: #3A4A66; }
   .handgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   .minicard { border: 2px solid transparent; border-radius: 14px; padding: 12px;
               cursor: pointer;
@@ -1006,7 +1018,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.10 · 1 Sep 12:50";
+var APP_VERSION = "v1.10 · 1 Sep 12:55";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. Opening the app fetches fresh anyway.
@@ -3094,20 +3106,17 @@ function skinLine(s, h) {
   return s.players[taker].toUpperCase() + " TAKES " + (stake === 1 ? "THE SKIN" : plural(stake, "skin").toUpperCase());
 }
 
-/* UDisc-style honors: who tees first on hole [h], which is the order the rows
-   sit in. Walk every locked hole before it, best score bubbling up each time;
-   ties keep the order they already had, which is how honors carry — win a hole
-   and you stay on top until somebody beats you. */
-function teeOrder(s, h) {
-  var order = s.players.map(function (_, i) { return i; });
-  for (var g = 0; g < h; g++) {
-    if (!s.locked[g]) continue;
-    var prev = order.slice();
-    order.sort(function (a, b) {
-      return (s.scores[g][a] - s.scores[g][b]) || (prev.indexOf(a) - prev.indexOf(b));
-    });
-  }
-  return order;
+/*
+ * House order: the leader plays first and whoever is furthest behind gets the
+ * last word — on the tee, and in what order cards get played. It is the
+ * standings straight down, so it moves as the round does.
+ */
+function playOrder(s) {
+  return standings(s);
+}
+/* Kept for the rows, which have always sat in the order people act in. */
+function teeOrder(s) {
+  return playOrder(s);
 }
 
 /* ---------- score ---------- */
@@ -3136,7 +3145,7 @@ function renderScore() {
     ? Math.max.apply(null, s.players.map(function (_, i) { return skinsFor(s, i); })) : 0;
   // Rows sit in tee order, honors carrying hole to hole — birdie a hole and
   // your name climbs on everyone's card, exactly like the walk to the tee.
-  var players = teeOrder(s, h).map(function (i) {
+  var players = playOrder(s).map(function (i) {
     var name = s.players[i];
     var score = s.scores[h][i], me = i === s.meIndex;
     var total = totalFor(s, i), rel = relFor(s, i);
@@ -3391,7 +3400,7 @@ function renderHand() {
       }).join("") + '</div>'
     : '<p class="hint">Nothing in hand. Cards arrive when you lock a hole.</p>';
 
-  return counters + drawBlock + wheelButton() +
+  return counters + drawBlock + playOrderStrip(s) + wheelButton() +
     '<div class="label">Your hand</div>' + cards;
 }
 
@@ -3400,6 +3409,27 @@ function renderHand() {
  * Playing the GAMBLE WHEEL!! card is the way round that — its whole text is a free spin.
  */
 function canAffordWheel(s) { return s.hand.length >= DATA.wheelCost; }
+
+/*
+ * Whose card goes in first. Everyone can see the same list on their own phone,
+ * which is the whole fix: the table stopped having an order because nothing was
+ * ever showing one.
+ */
+function playOrderStrip(s) {
+  if (!s || s.players.length < 2) return "";
+  var order = playOrder(s);
+  var names = order.map(function (i, at) {
+    var me = i === s.meIndex;
+    var last = at === order.length - 1;
+    // Cards played later override the ones before them, so whoever goes last
+    // settles it — which is the player having the worst round.
+    return '<span class="turn' + (at === 0 ? " first" : "") + (last ? " final" : "") +
+      (me ? " me" : "") + '">' + esc(s.players[i]) +
+      (last ? '<span class="turntag">last word</span>' : "") + '</span>';
+  }).join('<span class="turnsep">&rsaquo;</span>');
+  return '<div class="label">Card order &middot; leader first</div>' +
+    '<div class="turnrow">' + names + '</div>';
+}
 
 function wheelButton() {
   var s = state;
