@@ -1930,6 +1930,7 @@ function liveRefresh() {
   // play arrives, which in a busy lobby is within a second or two of every
   // spin. The room's chatter can wait; settle() renders when the wheel lands.
   if (wheel && wheel.spinning) return;
+  if (orderWheel && orderWheel.spinning) return;
   render();
 }
 
@@ -5621,11 +5622,10 @@ function runOrderSpin(pick, rot) {
   if (!orderWheel || orderWheel.spinning) return;
   var el = document.getElementById("wheel-order");
   if (!el) return;
+  var from = orderWheel.rot;
   orderWheel.spinning = true;
   orderWheel.at = pick;
   orderWheel.rot = rot;
-  el.style.transform = "rotate(" + rot + "deg)";
-  playMenuSound(sfxVolume());
   var mine = orderWheel, settled = false;
   function settle() {
     if (settled || orderWheel !== mine) return;
@@ -5636,7 +5636,15 @@ function runOrderSpin(pick, rot) {
     render();
   }
   el.addEventListener("transitionend", settle, { once: true });
-  setTimeout(settle, 4200);
+  setTimeout(settle, SPIN_MS + 300);
+  startWheelSound(sfxVolume(), segmentCrossings(from, rot, orderWheel.orders.length));
+  // The class carries the transition, and the two frames give the browser a
+  // chance to draw the wheel where it was before being told where to go —
+  // without them the transform is just the wheel's new resting place.
+  el.classList.add("go");
+  requestAnimationFrame(function () {
+    requestAnimationFrame(function () { el.style.transform = "rotate(" + rot + "deg)"; });
+  });
 }
 function spinOrder() {
   if (!orderWheel || orderWheel.spinning || orderWheel.at != null) return;
