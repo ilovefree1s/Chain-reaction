@@ -240,7 +240,8 @@
   .turnrow { display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
              margin-bottom: 12px; }
   .turn { font-size: 15px; font-weight: 900; color: var(--sage); }
-  .turn.first { color: var(--self); }
+  .turn.up { color: var(--self); }
+  .turntag.up { color: var(--self); opacity: 1; }
   .turn.final { color: #4DC3FF; }
   .turntag { font-size: 10px; font-weight: 900; letter-spacing: 1px;
              text-transform: uppercase; color: #4DC3FF; opacity: .7;
@@ -1562,6 +1563,7 @@ function liveOpen() {
     }
     if (m.payload.event === "play") livePlayed(p);
     if (m.payload.event === "spent") liveSpent(p);
+    if (m.payload.event === "prio") livePrio(p);
     if (m.payload.event === "unspent") liveUnspent(p);
     if (m.payload.event === "wheel") liveWheel(p);
     if (m.payload.event === "bye") liveBye(p);
@@ -2127,6 +2129,16 @@ function liveUnspent(p) {
     return !(e.spent && e.n.trim().toLowerCase() === who && ids.indexOf(e.c) !== -1);
   });
   if (state.tableLog.length !== before) { save(state); liveRefresh(); }
+}
+
+/* Priority moved on somebody else's phone. Whoever passed it is the authority on
+   where it went — there is only ever one holder, and only they can pass. */
+function livePrio(p) {
+  if (!state || typeof p.name !== "string" || !p.name) return;
+  if (state.prio === p.name) return;
+  state.prio = p.name;
+  save(state);
+  liveRefresh();
 }
 
 function liveSpent(p) {
@@ -3458,6 +3470,46 @@ function renderHand() {
 function canAffordWheel(s) { return s.hand.length >= DATA.wheelCost; }
 
 /*
+ * Priority: the right to act before anybody else. It starts each hole with the
+ * leader and is handed down the order — leader, second, third, last — by whoever
+ * holds it pressing Pass. After the last player it comes back round to the
+ * leader, so a hole can take a second lap of cards if it needs one.
+ *
+ * Held by NAME rather than by seat, because that is what travels between phones
+ * and what survives the order moving under it when somebody wins a hole.
+ */
+function prioHolder(s) {
+  if (!s || s.players.length < 2) return null;
+  var order = playOrder(s);
+  var want = (s.prio || "").trim().toLowerCase();
+  for (var i = 0; i < order.length; i++) {
+    if (s.players[order[i]].trim().toLowerCase() === want) return s.players[order[i]];
+  }
+  // Unset, or naming somebody no longer at the table: the leader has it.
+  return s.players[order[0]];
+}
+function iHavePrio(s) {
+  var who = prioHolder(s);
+  return !who || who.trim().toLowerCase() === (s.players[s.meIndex] || "").trim().toLowerCase();
+}
+/* Reactions answer a card that was just played, so they were never going to wait
+   their turn — a reversal you have to hold until your priority is not a
+   reversal. Kind rather than a list of ids, so a new one behaves on arrival. */
+function bypassesPrio(c) { return !!c && c.kind === "react"; }
+/* Hands it to the next player in the order, wrapping past last back to first. */
+function passPrio(s) {
+  var order = playOrder(s);
+  var who = prioHolder(s);
+  var at = 0;
+  for (var i = 0; i < order.length; i++) {
+    if (s.players[order[i]] === who) { at = i; break; }
+  }
+  s.prio = s.players[order[(at + 1) % order.length]];
+  save(s);
+  if (live) liveCast("prio", { name: s.prio });
+}
+
+/*
  * Whose card goes in first. Everyone can see the same list on their own phone,
  * which is the whole fix: the table stopped having an order because nothing was
  * ever showing one.
@@ -3465,17 +3517,25 @@ function canAffordWheel(s) { return s.hand.length >= DATA.wheelCost; }
 function playOrderStrip(s) {
   if (!s || s.players.length < 2) return "";
   var order = playOrder(s);
+  var up = prioHolder(s);
   var names = order.map(function (i, at) {
     var me = i === s.meIndex;
     var last = at === order.length - 1;
+    var holds = s.players[i] === up;
     // Cards played later override the ones before them, so whoever goes last
     // settles it — which is the player having the worst round.
-    return '<span class="turn' + (at === 0 ? " first" : "") + (last ? " final" : "") +
+    return '<span class="turn' + (holds ? " up" : "") + (last ? " final" : "") +
       (me ? " me" : "") + '">' + esc(s.players[i]) +
-      (last ? '<span class="turntag">last word</span>' : "") + '</span>';
+      (holds ? '<span class="turntag up">up</span>'
+        : last ? '<span class="turntag">last word</span>' : "") + '</span>';
   }).join('<span class="turnsep">&rsaquo;</span>');
+  // Only the holder can hand it on, because only they have it to hand.
+  var pass = iHavePrio(s)
+    ? '<button class="big quiet" data-act="passPrio" style="margin:0 0 12px">' +
+      'Pass priority &rsaquo;</button>'
+    : '<p class="hint">' + esc(up) + ' has priority. Yours when they pass.</p>';
   return '<div class="label">Card order &middot; leader first</div>' +
-    '<div class="turnrow">' + names + '</div>';
+    '<div class="turnrow">' + names + '</div>' + pass;
 }
 
 function wheelButton() {
@@ -3490,6 +3550,10 @@ function wheelButton() {
   if (busy) {
     return '<button class="wheelplate" disabled>' + plate + "</button>" +
       '<p class="hint">' + esc(busy) + ' is on the wheel. It comes free when they finish.</p>';
+  }
+  if (live && !iHavePrio(s)) {
+    return '<button class="wheelplate" disabled>' + plate + "</button>" +
+      '<p class="hint">' + esc(prioHolder(s)) + ' has priority. The wheel is theirs until they pass.</p>';
   }
   if (canAffordWheel(s)) {
     return '<button class="wheelplate" data-act="openWheel">' + plate + "</button>";
@@ -4094,7 +4158,14 @@ function renderFaceModal() {
         (heldAt != null
           ? '<button class="big primary" disabled>Held</button>'
           : '<button class="big primary" data-act="playCard" data-i="' + c.id + '">Play</button>') +
-        '</div><div class="facepair">' +
+        '</div>' +
+        // Not a block: the app never referees a card. But it says whose turn
+        // it is, because playing over somebody is what made the round a scrum.
+        ((!iHavePrio(state) && !bypassesPrio(c))
+          ? '<p class="hint" style="text-align:center;margin:2px 0 10px">' +
+            esc(prioHolder(state)) + ' has priority &mdash; this plays out of turn</p>'
+          : "") +
+        '<div class="facepair">' +
         '<button class="big raised" data-act="askDiscard" data-i="' + c.id + '">Discard</button>' +
         closeBtn + '</div>' +
         (heldAt != null
@@ -5856,6 +5927,9 @@ app.addEventListener("click", function (e) {
       }
       render(); break;
     case "goOffline": setup.offline = true; render(); break;
+    case "passPrio":
+      if (!iHavePrio(s)) break;
+      passPrio(s); render(); break;
     case "addPlayer":
       if (setup.names.length < MAX_PLAYERS) { setup.names.push(""); setup.chars.push(null); }
       render(); break;
@@ -6010,6 +6084,9 @@ app.addEventListener("click", function (e) {
         s.lastDeal = lockedHole;
       }
       s.locked[lockedHole] = true;
+      // A fresh hole, a fresh order: whoever leads now acts first on it.
+      s.prio = s.players[playOrder(s)[0]];
+      if (live) liveCast("prio", { name: s.prio });
       settleDeals(s);
       s.currentHole = Math.min(s.holeCount - 1, s.currentHole + 1);
       // Draws land immediately — nothing banks between holes. Only what the
@@ -6075,6 +6152,10 @@ app.addEventListener("click", function (e) {
       // One wheel, one spinner. Buying in while somebody else is mid-spin is how
       // two results end up arguing about which of them the table just saw.
       if (wheelHeldByOther()) break;
+      // And one at a time in the order, when the phones are linked. Offline the
+      // pointer cannot travel, so gating on it would lock everyone but the leader
+      // out of the wheel for the whole round.
+      if (live && !iHavePrio(s)) break;
       if (!canAffordWheel(s)) break;
       wheelPay = [];
       render(); break;
