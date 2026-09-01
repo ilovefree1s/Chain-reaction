@@ -42,7 +42,7 @@ object Rules {
     const val HAND_CAP = 7
     const val MAX_CARDS_ON_ONE_PLAYER_PER_HOLE = 2
     const val MIN_PLAYERS = 3
-    const val MAX_PLAYERS = 5
+    const val MAX_PLAYERS = 4
     const val DEFAULT_PAR = 3
 
     /** Cards you pay to spin the GAMBLE WHEEL!! off your own bat. */

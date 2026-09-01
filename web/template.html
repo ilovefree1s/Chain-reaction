@@ -930,7 +930,7 @@ var WHEEL_POOL = CARDS.filter(function (c) { return DATA.wheelExcludes.indexOf(c
 /* Cards that live on the wheel alone — they can land on a spin but are never
    shuffled into anyone's deck. */
 function wheelOnlyCard(id) { return (DATA.wheelOnly || []).indexOf(id) !== -1; }
-var MIN_PLAYERS = 3, MAX_PLAYERS = 5, DEFAULT_PAR = 3;
+var MIN_PLAYERS = 3, MAX_PLAYERS = 4, DEFAULT_PAR = 3;
 var PAR_CYCLE = [3, 4, 5];
 
 /* Courses that ship with the app, from shared/courses.json — the same file the
