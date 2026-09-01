@@ -124,6 +124,12 @@ private val sharedRules = listOf(
         "A dual card can be played on you. Nothing says a favour has to go to another player.",
     ),
     HouseRule(
+        NeonIcon.RECYCLE,
+        "Mulligans",
+        "Throwing a mulligan is a free extra throw, not a shot you have to play. " +
+            "Take it or leave it — if you would rather play the one you already threw, do.",
+    ),
+    HouseRule(
         NeonIcon.SCALES,
         "The app doesn't referee",
         "It deals cards and keeps score. It never applies card effects or stroke penalties. " +

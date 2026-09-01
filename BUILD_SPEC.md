@@ -14,6 +14,7 @@ If a PWA is easier to sideload, that's acceptable — but it must work offline, 
 
 - **Stroke play.** Lowest total wins.
 - **Starting hand:** 4 cards, dealt at round start.
+- **Mulligans:** a mulligan is a free extra throw, not a shot you are forced to play. Cards hand them out; taking one is always the thrower's choice, and they can keep the throw they already made.
 - **Hand cap:** 7. Cannot draw past it — must discard first.
 - **Each player has their own 61-card deck**, shuffled independently. Duplicate cards across players are expected and fine.
 - **Played and discarded cards** go to that player's own discard pile. Reshuffle the discard back into the deck if the deck ever empties.
