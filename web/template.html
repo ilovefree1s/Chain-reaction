@@ -3054,15 +3054,15 @@ function renderOrderDraw() {
     '</div>' +
     '<div class="exempt">' + (orderWheel.spinning ? '&hellip;'
       : landed ? esc(landed.join(" \u203a ")) : '&nbsp;') + '</div>' +
-    // One spin, and only the host's. Once it has landed the only way out is
-    // forward, because a wheel you can re-spin until you like it is a shuffle.
-    (landed || theirs
-      ? ''
+    // Nothing to press once it has landed, on any phone. Confirming a draw is
+    // most of the way to being allowed to reject one, and the spin was the
+    // whole decision — the wheel shows what it did and lets itself out.
+    // A joiner has no spin of their own either; they are watching.
+    ((landed || theirs) ? ''
       : '<button class="big wheel" data-act="spinOrder"' +
-        (orderWheel.spinning ? ' disabled' : '') + '>Spin</button>') +
-    '<button class="big quiet" data-act="closeOrder"' +
-    (orderWheel.spinning ? ' disabled' : '') + '>' +
-    (landed ? 'Use this order' : 'Never mind') + '</button>';
+        (orderWheel.spinning ? ' disabled' : '') + '>Spin</button>' +
+        '<button class="big quiet" data-act="closeOrder"' +
+        (orderWheel.spinning ? ' disabled' : '') + '>Never mind</button>');
 }
 
 function renderSetup() {
@@ -5634,6 +5634,13 @@ function runOrderSpin(pick, rot) {
     // Where it stops is the order. There is no spinning it again.
     setup.teeBase = orderWheel.orders[pick].slice();
     render();
+    // Long enough to read what it landed on, then out of the way — the drawn
+    // order stays on the setup screen underneath it either way.
+    setTimeout(function () {
+      if (orderWheel !== mine) return;
+      orderWheel = null;
+      render();
+    }, 2600);
   }
   el.addEventListener("transitionend", settle, { once: true });
   setTimeout(settle, SPIN_MS + 300);
