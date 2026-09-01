@@ -1019,7 +1019,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.10 · 1 Sep 18:31";
+var APP_VERSION = "v1.10 · 1 Sep 18:55";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. Opening the app fetches fresh anyway.
@@ -2292,18 +2292,14 @@ function renderLiveSection() {
   // different lobby behaviour — name them, so "reload your app" has a target.
   var stale = peers.filter(function (p) { return p.v !== APP_VERSION; })
     .map(function (p) { return p.name.trim(); });
-  return head +
-    '<div class="panel sel" style="text-align:center">' +
-    '<div style="font-size:24px;font-weight:900;letter-spacing:8px;color:#FF8A1E">LIVE</div>' +
-    '<div class="dim">' + (names.length
-      ? 'You + ' + names.map(esc).join(", ")
-      : live.hosting ? 'Lobby&rsquo;s open &mdash; tell the boys to join.'
-                     : 'Looking for the group&hellip;') + '</div>' +
-    (stale.length
-      ? '<div class="dim" style="color:#FF8A1E;margin-top:6px">' +
-        stale.map(esc).join(", ") + (stale.length === 1 ? " isn&rsquo;t" : " aren&rsquo;t") +
-        ' on this version &mdash; have them reload the app.</div>'
-      : "") + '</div>' +
+  // Connected, so there is nothing to announce: the roster below already names
+  // everyone in the lobby, and a second copy of it under a LIVE banner was the
+  // same list twice. Just the way out, under your own name.
+  return (stale.length
+    ? '<p class="hint" style="color:#FF8A1E">' +
+      stale.map(esc).join(", ") + (stale.length === 1 ? " isn&rsquo;t" : " aren&rsquo;t") +
+      ' on this version &mdash; have them reload the app.</p>'
+    : "") +
     '<button class="big quiet" data-act="liveLeave">Leave the lobby</button>';
 }
 
