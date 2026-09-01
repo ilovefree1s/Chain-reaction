@@ -178,6 +178,7 @@ const wheelSound = copyAudio("gamble.mp3");
 const wolfSound = copyAudio("lonewolf.mp3");
 const drawSound = copyAudio("draw.wav");
 const diceSound = copyAudio("dice.mp3");
+const coinSound = copyAudio("coin.mp3");
 const shuffleSound = copyAudio("shuffle.wav");
 // The soundtrack, played back to back on the menu-side screens only.
 const musicTracks = [
@@ -263,6 +264,7 @@ const template = fs.readFileSync(path.join(__dirname, "template.html"), "utf8");
   "__WOLF_SOUND__",
   "__DRAW_SOUND__",
   "__DICE_SOUND__",
+  "__COIN_SOUND__",
   "__SHUFFLE_SOUND__",
 ].forEach((token) => {
   if (!template.includes(token)) {
@@ -296,6 +298,7 @@ const html = template
   .replace("__WOLF_SOUND__", wolfSound)
   .replace("__DRAW_SOUND__", drawSound)
   .replace("__DICE_SOUND__", diceSound)
+  .replace("__COIN_SOUND__", coinSound)
   .replace("__SHUFFLE_SOUND__", shuffleSound)
   .replace("/*__MUSIC_TRACKS__*/", JSON.stringify(musicTracks))
   .replace("__APP_VERSION__", versionLabel)

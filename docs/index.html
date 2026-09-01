@@ -998,7 +998,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.10 · 1 Sep 12:27";
+var APP_VERSION = "v1.10 · 1 Sep 12:43";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. Opening the app fetches fresh anyway.
@@ -1076,7 +1076,9 @@ var wolfAudio = WOLF_SOUND ? new Audio(WOLF_SOUND) : null;
 var DRAW_SOUND = "assets/draw.wav";
 var drawAudio = DRAW_SOUND ? new Audio(DRAW_SOUND) : null;
 var DICE_SOUND = "assets/dice.mp3";
+var COIN_SOUND = "assets/coin.mp3";
 var diceAudio = DICE_SOUND ? new Audio(DICE_SOUND) : null;
+var coinAudio = COIN_SOUND ? new Audio(COIN_SOUND) : null;
 var SHUFFLE_SOUND = "assets/shuffle.wav";
 var shuffleAudio = SHUFFLE_SOUND ? new Audio(SHUFFLE_SOUND) : null;
 function playClip(base, volume, maxSeconds) {
@@ -1539,6 +1541,8 @@ function liveOpen() {
       liveSeen[p.eid] = true;
     }
     if (m.payload.event === "play") livePlayed(p);
+    if (m.payload.event === "spent") liveSpent(p);
+    if (m.payload.event === "unspent") liveUnspent(p);
     if (m.payload.event === "wheel") liveWheel(p);
     if (m.payload.event === "bye") liveBye(p);
   };
@@ -2060,6 +2064,36 @@ function liveBye(p) {
     }
   }
   liveRefresh();
+}
+
+/*
+ * What somebody paid for a spin. It goes into the round's table log like a play
+ * does, so it turns up when their pile is flipped through, but it raises no
+ * alert: everybody watched them buy the spin, and the wheel announces itself
+ * loudly enough without two more banners about the cost.
+ */
+/* The same cost taken back off their pile, when the wheel was closed unspun. */
+function liveUnspent(p) {
+  if (!state || typeof p.name !== "string" || !p.name) return;
+  var ids = Array.isArray(p.cards) ? p.cards : [];
+  var who = p.name.trim().toLowerCase();
+  var before = (state.tableLog || []).length;
+  state.tableLog = (state.tableLog || []).filter(function (e) {
+    return !(e.spent && e.n.trim().toLowerCase() === who && ids.indexOf(e.c) !== -1);
+  });
+  if (state.tableLog.length !== before) { save(state); liveRefresh(); }
+}
+
+function liveSpent(p) {
+  if (!state || typeof p.name !== "string" || !p.name) return;
+  var ids = Array.isArray(p.cards) ? p.cards : [];
+  var added = false;
+  ids.forEach(function (id) {
+    if (!BY_ID[id]) return; // an id this build does not know
+    state.tableLog = (state.tableLog || []).concat([{ n: p.name, c: id, spent: true }]);
+    added = true;
+  });
+  if (added) { save(state); liveRefresh(); }
 }
 
 function livePlayed(p) {
@@ -3270,13 +3304,17 @@ function renderPile() {
       '<button class="big quiet" data-act="closePile">Close</button></div>';
   }
   var theirRows = seen.map(function (e) {
+    if (e.spent) {
+      return '<div class="pilerow">SPENT ON A SPIN</div>' + cardHtml(BY_ID[e.c], false);
+    }
     return '<div class="pilerow played">PLAYED' +
       (e.t ? " &middot; on " + (e.t === ALL_TARGET ? "EVERYONE" : esc(e.t)) : "") +
       "</div>" + cardHtml(BY_ID[e.c], false);
   }).join("");
   return head + picker +
-    '<p class="nbody">' + plural(seen.length, "play") + ' seen from ' + esc(s.players[at]) +
-    ' this round. Their quiet discards stay theirs.</p>' +
+    '<p class="nbody">' + plural(seen.length, "card") + ' seen from ' + esc(s.players[at]) +
+    ' this round &mdash; what they played, and what they paid the wheel. Their quiet' +
+    ' discards stay theirs.</p>' +
     '<div style="height:14px"></div>' + theirRows +
     '<div style="height:16px"></div>' +
     '<button class="big quiet" data-act="closePile">Close</button></div>';
@@ -4727,7 +4765,8 @@ function flipCoin(strength) {
   strength = Math.max(0, Math.min(1, strength));
   var ms = Math.round(850 + 750 * strength);
   c.flipping = true;
-  // No sound. It was borrowing the dice rattle, which is not what a coin does.
+  // Its own clip now, faded to the length of the throw.
+  playClip(coinAudio, sfxVolume(), ms / 1000);
   render(); // once, to start the arc and the tumble and blank the call
   var box = app.querySelector(".coinbox");
   tossArc(box, strength, ms);
@@ -5918,6 +5957,9 @@ app.addEventListener("click", function (e) {
       });
       wheelPay = null;
       save(s);
+      // Buying a spin is a public act — the table watched it happen and the price
+      // is fixed — so the two cards travel. Quiet discards still do not.
+      if (live) liveCast("spent", { name: s.players[s.meIndex], cards: paidIds });
       openWheelNow(false);
       // What the spin cost, remembered until it's actually spun — closing
       // before the name wheel turns refunds these.
@@ -5978,8 +6020,15 @@ app.addEventListener("click", function (e) {
             }
           }
         });
+        // The refund unsays it on the other phones too, or the cost stays on
+        // their copy of the pile for a spin that never happened.
+        var me = s.players[s.meIndex].trim().toLowerCase();
+        s.tableLog = (s.tableLog || []).filter(function (e) {
+          return !(e.spent && e.n.trim().toLowerCase() === me && wheel.paid.indexOf(e.c) !== -1);
+        });
         save(s);
         localNote("No spin, no charge — your 2 cards are back in your hand.", "Wheel closed");
+        if (live) liveCast("unspent", { name: s.players[s.meIndex], cards: wheel.paid.slice() });
         if (live) liveCast("wheel", { name: s.players[s.meIndex], cancel: true });
         wheel = null; render(); break;
       }
