@@ -50,6 +50,11 @@ edit("BUILD_SPEC.md", (s) => {
   s = s.replace(/"wheelExcludes": \[([^\]]*)\]/, (m, body) =>
     `"wheelExcludes": [${shift(body.split(",").map(Number)).join(", ")}]`);
   s = s.replace(/"freeSpinCard": (\d+)/, (m, n) => `"freeSpinCard": ${map(Number(n))}`);
+  // Wheel-only ids move with everything else. This was missed once, which
+  // quietly made the wrong card undealtable and dealt the wheel-only one into
+  // hands — nothing errors, the deck is just subtly wrong.
+  s = s.replace(/"wheelOnly": \[([^\]]*)\]/, (m, body) =>
+    `"wheelOnly": [${shift(body.split(",").map(Number)).join(", ")}]`);
   // Deck size in prose.
   s = s.replace(/\b\d+-card deck\b/g, `${count}-card deck`);
   return s;
@@ -64,6 +69,8 @@ edit("app/src/main/java/com/chainreaction/data/GameCard.kt", (s) => {
   s = s.replace(/WHEEL_EXCLUDES = setOf\(([^)]*)\)/, (m, body) =>
     `WHEEL_EXCLUDES = setOf(${shift(body.split(",").map(Number)).join(", ")})`);
   s = s.replace(/FREE_SPIN_CARD = (\d+)/, (m, n) => `FREE_SPIN_CARD = ${map(Number(n))}`);
+  s = s.replace(/WHEEL_ONLY = setOf\(([^)]*)\)/, (m, body) =>
+    `WHEEL_ONLY = setOf(${shift(body.split(",").map(Number)).join(", ")})`);
   return s;
 });
 

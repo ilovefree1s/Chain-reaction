@@ -15,7 +15,7 @@ If a PWA is easier to sideload, that's acceptable — but it must work offline, 
 - **Stroke play.** Lowest total wins.
 - **Starting hand:** 4 cards, dealt at round start.
 - **Hand cap:** 7. Cannot draw past it — must discard first.
-- **Each player has their own 59-card deck**, shuffled independently. Duplicate cards across players are expected and fine.
+- **Each player has their own 61-card deck**, shuffled independently. Duplicate cards across players are expected and fine.
 - **Played and discarded cards** go to that player's own discard pile. Reshuffle the discard back into the deck if the deck ever empties.
 - **Max 2 cards may be played on any one player per hole.** The app does not enforce this — players track it themselves — but show it in an in-app rules screen.
 
@@ -108,8 +108,8 @@ Suggested palette: deep pine ground (`#0C1A14`), panels (`#132A21`), muted sage 
   "maxCardsOnOnePlayerPerHole": 2,
   "wheelCost": 2,
   "freeSpinCard": 23,
-  "wheelExcludes": [1, 4, 6, 7, 13, 14, 20, 21, 22, 23, 24, 25, 32, 35, 37, 39, 43, 44, 46, 49, 55, 58, 59],
-  "wheelOnly": [60],
+  "wheelExcludes": [1, 4, 6, 7, 13, 14, 20, 21, 22, 23, 24, 25, 32, 35, 37, 39, 43, 44, 48, 54, 57, 58],
+  "wheelOnly": [59],
   "timings": [
     "Before shot",
     "Before tee shot",
@@ -170,23 +170,22 @@ Suggested palette: deep pine ground (`#0C1A14`), panels (`#132A21`), muted sage 
     { "id": 43, "timing": "Any time", "kind": "dual", "name": "Player 2's Turn!", "text": "On yourself: retake any shot for free. On another player: force them to re-throw a shot that was too good." },
     { "id": 44, "timing": "After throw", "kind": "attack", "name": "Prove It", "text": "Cancel a shot an opponent just took. They throw again with a different disc of their choice from any bag. (No extra stroke, just a forced mulligan.)" },
     { "id": 45, "timing": "Before shot", "kind": "attack", "name": "Roll It!", "text": "Force an opponent to throw a roller on the upcoming drive or approach." },
-    { "id": 46, "timing": "After card", "kind": "react", "name": "Rubber and Glue", "text": "If a card targeting only you was just played, that opponent carries out the instructions instead of you." },
-    { "id": 47, "timing": "Before shot", "kind": "dual", "name": "Shoe Golf", "text": "On yourself: putt with your own shoe at no stroke cost. On another player: they putt with a shoe and it still counts as a stroke. If they refuse to take their shoe off, they take +1 stroke after the hole." },
-    { "id": 48, "timing": "Before shot", "kind": "attack", "name": "Forehand only!", "text": "Force an opponent to throw a forehand on the upcoming drive or approach." },
-    { "id": 49, "timing": "On draw", "kind": "sabotage", "name": "Everybody But Me", "text": "You must play this card immediately after drawing, you can't discard it. Everyone gets a free mulligan on the next hole but me =(" },
-    { "id": 50, "timing": "Before shot", "kind": "dual", "name": "That's Definitely a Gimme", "text": "Pick up a putt as a gimme, as long as it's inside C1 — you definitely woulda made it. The player in last place gets one too. If 2 players are tied for last, they rock paper scissors for it." },
-    { "id": 51, "timing": "Before tee shot", "kind": "attack", "name": "Too Many Choices", "text": "Pick 2 discs out of 1 person's bag. They choose 1 to tee off with." },
-    { "id": 52, "timing": "Before tee shot", "kind": "self", "name": "Tree Insurance", "text": "Play before your tee shot. If you hit a tree, take a free mulligan." },
-    { "id": 53, "timing": "Before shot", "kind": "attack", "name": "Trust Me Bro", "text": "Give another player advice for their tee shot. They have to follow it as best they can. (Somewhat reasonable advice — don't tell them something like throw it backwards.)" },
-    { "id": 54, "timing": "Before shot", "kind": "attack", "name": "Turbo Time", "text": "All opponents in C1 must turbo putt their next shot." },
-    { "id": 55, "timing": "Before tee shot", "kind": "group", "name": "WALK IT DOWN!!", "text": "No other cards can be played once this hits the table. Everyone tees immediately from anywhere near the tee pad — no throw order. First and second to finish get birdie, third gets par, last gets bogey. No running, and no calling foot faults." },
-    { "id": 56, "timing": "After throw", "kind": "attack", "name": "Walk of Shame", "text": "After a missed putt inside C1, that player carries their putter in either hand until they finish the next hole. (They can putt with it.) If they drop it or put it in the bag, +1 stroke." },
-    { "id": 57, "timing": "Before tee shot", "kind": "attack", "name": "Your Tee Pad Is Over There!", "text": "Use 2 of your discs to mark a new tee for everyone else, up to 10 paces (30 ft) from the original. They all tee from it." },
-    { "id": 58, "timing": "After throw", "kind": "attack", "name": "I Think It's Broke", "text": "Play on another player that just hit a tree. They lose that disc — they can't throw it again for the rest of the round. If they forget and throw it again, it's +1 stroke." },
-    { "id": 59, "timing": "After card", "kind": "react", "name": "UNO REVERSO", "text": "Reverse any cards that effect you back to the person that used the card. (Doesn't work on wheel spins.)" },
-    { "id": 60, "timing": "Before all tee", "kind": "group", "name": "LONE WOLF!", "text": "Whoever it lands on is the LONE WOLF! Cards played by the wolf effect everyone else! A lone wolf win gives him the right to go through everyone's cards and play 1 card from everyone's hand that effects that player. If the 3 players win then nobody cares, cuz 3 people should beat 1 every time — but they can flip fight for 1 free mulligan. Wolf calls heads or tails." },
-    { "id": 61, "timing": "Before tee shot", "kind": "attack", "name": "PUT EM ON TILT", "text": "Force an opponent to play the entire hole with the TILT!" },
-    { "id": 62, "timing": "Before tee shot", "kind": "attack", "name": "DESTINATION FUCKED!", "text": "Force an opponent to play the entire hole with the... slightly used Anax... Whoever played the card gets 30 seconds to abuse the disc before they tee off." }
+    { "id": 46, "timing": "Before shot", "kind": "dual", "name": "Shoe Golf", "text": "On yourself: putt with your own shoe at no stroke cost. On another player: they putt with a shoe and it still counts as a stroke. If they refuse to take their shoe off, they take +1 stroke after the hole." },
+    { "id": 47, "timing": "Before shot", "kind": "attack", "name": "Forehand only!", "text": "Force an opponent to throw a forehand on the upcoming drive or approach." },
+    { "id": 48, "timing": "On draw", "kind": "sabotage", "name": "Everybody But Me", "text": "You must play this card immediately after drawing, you can't discard it. Everyone gets a free mulligan on the next hole but me =(" },
+    { "id": 49, "timing": "Before shot", "kind": "dual", "name": "That's Definitely a Gimme", "text": "Pick up a putt as a gimme, as long as it's inside C1 — you definitely woulda made it. The player in last place gets one too. If 2 players are tied for last, they rock paper scissors for it." },
+    { "id": 50, "timing": "Before tee shot", "kind": "attack", "name": "Too Many Choices", "text": "Pick 2 discs out of 1 person's bag. They choose 1 to tee off with." },
+    { "id": 51, "timing": "Before tee shot", "kind": "self", "name": "Tree Insurance", "text": "Play before your tee shot. If you hit a tree, take a free mulligan." },
+    { "id": 52, "timing": "Before shot", "kind": "attack", "name": "Trust Me Bro", "text": "Give another player advice for their tee shot. They have to follow it as best they can. (Somewhat reasonable advice — don't tell them something like throw it backwards.)" },
+    { "id": 53, "timing": "Before shot", "kind": "attack", "name": "Turbo Time", "text": "All opponents in C1 must turbo putt their next shot." },
+    { "id": 54, "timing": "Before tee shot", "kind": "group", "name": "WALK IT DOWN!!", "text": "No other cards can be played once this hits the table. Everyone tees immediately from anywhere near the tee pad — no throw order. First and second to finish get birdie, third gets par, last gets bogey. No running, and no calling foot faults." },
+    { "id": 55, "timing": "After throw", "kind": "attack", "name": "Walk of Shame", "text": "After a missed putt inside C1, that player carries their putter in either hand until they finish the next hole. (They can putt with it.) If they drop it or put it in the bag, +1 stroke." },
+    { "id": 56, "timing": "Before tee shot", "kind": "attack", "name": "Your Tee Pad Is Over There!", "text": "Use 2 of your discs to mark a new tee for everyone else, up to 10 paces (30 ft) from the original. They all tee from it." },
+    { "id": 57, "timing": "After throw", "kind": "attack", "name": "I Think It's Broke", "text": "Play on another player that just hit a tree. They lose that disc — they can't throw it again for the rest of the round. If they forget and throw it again, it's +1 stroke." },
+    { "id": 58, "timing": "After card", "kind": "react", "name": "UNO REVERSO", "text": "Reverse any cards that effect you back to the person that used the card. (Doesn't work on wheel spins.)" },
+    { "id": 59, "timing": "Before all tee", "kind": "group", "name": "LONE WOLF!", "text": "Whoever it lands on is the LONE WOLF! Cards played by the wolf effect everyone else! A lone wolf win gives him the right to go through everyone's cards and play 1 card from everyone's hand that effects that player. If the 3 players win then nobody cares, cuz 3 people should beat 1 every time — but they can flip fight for 1 free mulligan. Wolf calls heads or tails." },
+    { "id": 60, "timing": "Before tee shot", "kind": "attack", "name": "PUT EM ON TILT", "text": "Force an opponent to play the entire hole with the TILT!" },
+    { "id": 61, "timing": "Before tee shot", "kind": "attack", "name": "DESTINATION FUCKED!", "text": "Force an opponent to play the entire hole with the... slightly used Anax... Whoever played the card gets 30 seconds to abuse the disc before they tee off." }
   ]
 }
 ```

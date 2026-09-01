@@ -57,10 +57,10 @@ object Rules {
     // The house blacklist: reaction cards plus everything too situational,
     // too group-shaped or too slow to land as a wheel result — and the Double
     // Wheel itself, so the wheel can never demand another wheel.
-    val WHEEL_EXCLUDES = setOf(1, 4, 6, 7, 13, 14, 20, 21, 22, 23, 24, 25, 32, 35, 37, 39, 43, 44, 46, 49, 55, 58, 59)
+    val WHEEL_EXCLUDES = setOf(1, 4, 6, 7, 13, 14, 20, 21, 22, 23, 24, 25, 32, 35, 37, 39, 43, 44, 48, 54, 57, 58)
 
     /** Cards that live on the wheel alone — never shuffled into a deck. */
-    val WHEEL_ONLY = setOf(60)
+    val WHEEL_ONLY = setOf(59)
 
     /** Display order for the rules reference. */
     val TIMINGS = listOf(
@@ -126,23 +126,22 @@ object CardDeck {
         GameCard(43, "Any time", CardKind.DUAL, "Player 2's Turn!", "On yourself: retake any shot for free. On another player: force them to re-throw a shot that was too good."),
         GameCard(44, "After throw", CardKind.ATTACK, "Prove It", "Cancel a shot an opponent just took. They throw again with a different disc of their choice from any bag. (No extra stroke, just a forced mulligan.)"),
         GameCard(45, "Before shot", CardKind.ATTACK, "Roll It!", "Force an opponent to throw a roller on the upcoming drive or approach."),
-        GameCard(46, "After card", CardKind.REACT, "Rubber and Glue", "If a card targeting only you was just played, that opponent carries out the instructions instead of you."),
-        GameCard(47, "Before shot", CardKind.DUAL, "Shoe Golf", "On yourself: putt with your own shoe at no stroke cost. On another player: they putt with a shoe and it still counts as a stroke. If they refuse to take their shoe off, they take +1 stroke after the hole."),
-        GameCard(48, "Before shot", CardKind.ATTACK, "Forehand only!", "Force an opponent to throw a forehand on the upcoming drive or approach."),
-        GameCard(49, "On draw", CardKind.SABOTAGE, "Everybody But Me", "You must play this card immediately after drawing, you can't discard it. Everyone gets a free mulligan on the next hole but me =("),
-        GameCard(50, "Before shot", CardKind.DUAL, "That's Definitely a Gimme", "Pick up a putt as a gimme, as long as it's inside C1 — you definitely woulda made it. The player in last place gets one too. If 2 players are tied for last, they rock paper scissors for it."),
-        GameCard(51, "Before tee shot", CardKind.ATTACK, "Too Many Choices", "Pick 2 discs out of 1 person's bag. They choose 1 to tee off with."),
-        GameCard(52, "Before tee shot", CardKind.SELF, "Tree Insurance", "Play before your tee shot. If you hit a tree, take a free mulligan."),
-        GameCard(53, "Before shot", CardKind.ATTACK, "Trust Me Bro", "Give another player advice for their tee shot. They have to follow it as best they can. (Somewhat reasonable advice — don't tell them something like throw it backwards.)"),
-        GameCard(54, "Before shot", CardKind.ATTACK, "Turbo Time", "All opponents in C1 must turbo putt their next shot."),
-        GameCard(55, "Before tee shot", CardKind.GROUP, "WALK IT DOWN!!", "No other cards can be played once this hits the table. Everyone tees immediately from anywhere near the tee pad — no throw order. First and second to finish get birdie, third gets par, last gets bogey. No running, and no calling foot faults."),
-        GameCard(56, "After throw", CardKind.ATTACK, "Walk of Shame", "After a missed putt inside C1, that player carries their putter in either hand until they finish the next hole. (They can putt with it.) If they drop it or put it in the bag, +1 stroke."),
-        GameCard(57, "Before tee shot", CardKind.ATTACK, "Your Tee Pad Is Over There!", "Use 2 of your discs to mark a new tee for everyone else, up to 10 paces (30 ft) from the original. They all tee from it."),
-        GameCard(58, "After throw", CardKind.ATTACK, "I Think It's Broke", "Play on another player that just hit a tree. They lose that disc — they can't throw it again for the rest of the round. If they forget and throw it again, it's +1 stroke."),
-        GameCard(59, "After card", CardKind.REACT, "UNO REVERSO", "Reverse any cards that effect you back to the person that used the card. (Doesn't work on wheel spins.)"),
-        GameCard(60, "Before all tee", CardKind.GROUP, "LONE WOLF!", "Whoever it lands on is the LONE WOLF! Cards played by the wolf effect everyone else! A lone wolf win gives him the right to go through everyone's cards and play 1 card from everyone's hand that effects that player. If the 3 players win then nobody cares, cuz 3 people should beat 1 every time — but they can flip fight for 1 free mulligan. Wolf calls heads or tails."),
-        GameCard(61, "Before tee shot", CardKind.ATTACK, "PUT EM ON TILT", "Force an opponent to play the entire hole with the TILT!"),
-        GameCard(62, "Before tee shot", CardKind.ATTACK, "DESTINATION FUCKED!", "Force an opponent to play the entire hole with the... slightly used Anax... Whoever played the card gets 30 seconds to abuse the disc before they tee off."),
+        GameCard(46, "Before shot", CardKind.DUAL, "Shoe Golf", "On yourself: putt with your own shoe at no stroke cost. On another player: they putt with a shoe and it still counts as a stroke. If they refuse to take their shoe off, they take +1 stroke after the hole."),
+        GameCard(47, "Before shot", CardKind.ATTACK, "Forehand only!", "Force an opponent to throw a forehand on the upcoming drive or approach."),
+        GameCard(48, "On draw", CardKind.SABOTAGE, "Everybody But Me", "You must play this card immediately after drawing, you can't discard it. Everyone gets a free mulligan on the next hole but me =("),
+        GameCard(49, "Before shot", CardKind.DUAL, "That's Definitely a Gimme", "Pick up a putt as a gimme, as long as it's inside C1 — you definitely woulda made it. The player in last place gets one too. If 2 players are tied for last, they rock paper scissors for it."),
+        GameCard(50, "Before tee shot", CardKind.ATTACK, "Too Many Choices", "Pick 2 discs out of 1 person's bag. They choose 1 to tee off with."),
+        GameCard(51, "Before tee shot", CardKind.SELF, "Tree Insurance", "Play before your tee shot. If you hit a tree, take a free mulligan."),
+        GameCard(52, "Before shot", CardKind.ATTACK, "Trust Me Bro", "Give another player advice for their tee shot. They have to follow it as best they can. (Somewhat reasonable advice — don't tell them something like throw it backwards.)"),
+        GameCard(53, "Before shot", CardKind.ATTACK, "Turbo Time", "All opponents in C1 must turbo putt their next shot."),
+        GameCard(54, "Before tee shot", CardKind.GROUP, "WALK IT DOWN!!", "No other cards can be played once this hits the table. Everyone tees immediately from anywhere near the tee pad — no throw order. First and second to finish get birdie, third gets par, last gets bogey. No running, and no calling foot faults."),
+        GameCard(55, "After throw", CardKind.ATTACK, "Walk of Shame", "After a missed putt inside C1, that player carries their putter in either hand until they finish the next hole. (They can putt with it.) If they drop it or put it in the bag, +1 stroke."),
+        GameCard(56, "Before tee shot", CardKind.ATTACK, "Your Tee Pad Is Over There!", "Use 2 of your discs to mark a new tee for everyone else, up to 10 paces (30 ft) from the original. They all tee from it."),
+        GameCard(57, "After throw", CardKind.ATTACK, "I Think It's Broke", "Play on another player that just hit a tree. They lose that disc — they can't throw it again for the rest of the round. If they forget and throw it again, it's +1 stroke."),
+        GameCard(58, "After card", CardKind.REACT, "UNO REVERSO", "Reverse any cards that effect you back to the person that used the card. (Doesn't work on wheel spins.)"),
+        GameCard(59, "Before all tee", CardKind.GROUP, "LONE WOLF!", "Whoever it lands on is the LONE WOLF! Cards played by the wolf effect everyone else! A lone wolf win gives him the right to go through everyone's cards and play 1 card from everyone's hand that effects that player. If the 3 players win then nobody cares, cuz 3 people should beat 1 every time — but they can flip fight for 1 free mulligan. Wolf calls heads or tails."),
+        GameCard(60, "Before tee shot", CardKind.ATTACK, "PUT EM ON TILT", "Force an opponent to play the entire hole with the TILT!"),
+        GameCard(61, "Before tee shot", CardKind.ATTACK, "DESTINATION FUCKED!", "Force an opponent to play the entire hole with the... slightly used Anax... Whoever played the card gets 30 seconds to abuse the disc before they tee off."),
     )
 
     private val byId: Map<Int, GameCard> = ALL.associateBy { it.id }
