@@ -225,11 +225,20 @@ if (problems.length) {
 }
 
 /*
- * The version everyone reads off the bottom of the menu. VERSION is yours to
- * bump; the build stamp is added automatically, so two phones can be compared
- * even when the version hasn't changed between deploys.
+ * The version everyone reads off the bottom of the menu, and the whole point of
+ * it is telling phones apart: every build counts one higher, so "are you on 1.104
+ * yet?" has an answer you can read off a screen across a tee pad.
+ *
+ * Counted here rather than by hand, because a number you have to remember to
+ * bump is a number that silently stops moving. The last part goes up; 1.109 rolls
+ * to 1.110, not 1.11 — these are build counts, not decimals.
  */
-const version = fs.readFileSync(path.join(__dirname, "VERSION"), "utf8").trim();
+const versionPath = path.join(__dirname, "VERSION");
+const wasVersion = fs.readFileSync(versionPath, "utf8").trim();
+const bits = wasVersion.split(".");
+bits[bits.length - 1] = String(Number(bits[bits.length - 1]) + 1);
+const version = bits.join(".");
+fs.writeFileSync(versionPath, version + "\n", "utf8");
 const now = new Date();
 const MONTHS = "Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec".split(" ");
 const two = (n) => String(n).padStart(2, "0");
@@ -437,6 +446,7 @@ const htmlBytes = Buffer.byteLength(html, "utf8");
 const faces = Object.keys(cardArt).length;
 const charFaces = Object.keys(characterArt).length;
 console.log(`Wrote ${path.relative(root, dist)}/ — installable, offline-capable.`);
+console.log(`  v${version}   (was v${wasVersion})`);
 console.log(`  index.html   ${kb(htmlBytes)}  (${data.cards.length} cards, ${faces} with art, ${courses.length} courses)`);
 console.log(`               ${characters.length} characters, ${charFaces} with art`);
 console.log(`  assets/      ${kb(assetBytes)}  (${copied.length} file${copied.length === 1 ? "" : "s"})`);
