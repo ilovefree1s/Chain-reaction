@@ -31,6 +31,7 @@ At the end of each hole, based on that player's finish position for the hole:
 | Tied for last (2+ players) | 2 each |
 | All players tied | 1 each — overrides "best draws nothing" |
 | Double bogey or worse | +1 bonus card, on top of the above |
+| Last in the round, or tied for last | +1 bonus card, every hole, on top of the above |
 
 Implementation: let `lo = min(scores)`, `hi = max(scores)`.
 - if `lo === hi` → 1
@@ -194,6 +195,7 @@ Suggested palette: deep pine ground (`#0C1A14`), panels (`#132A21`), muted sage 
 
 - Start a round, score 3 holes, force-quit the app, reopen — round state, hand, deck and discard all restored.
 - Come last on a hole → 2 cards owed. Tie for last → still 2. Everyone ties → 1. Win the hole → 0. Double bogey → +1 on top of any of these.
+- Whoever is last on the card overall, or tied for last, draws +1 every hole on top of all of that. Everybody level counts as nobody last.
 - Sit on a full hand for several holes without drawing → the owed count never banks up; each hole's deal replaces the last one's leftovers.
 - Tap "Spin the GAMBLE WHEEL!!" → asked to pick 2 cards to discard first. Holding fewer than 2 → the button is disabled. Playing GAMBLE WHEEL!! → the wheel opens with nothing else discarded, straight onto the effect wheel with no name spin.
 - Hold 7 cards, come last, try to draw → blocked with a clear message until a card is discarded.

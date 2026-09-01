@@ -2607,8 +2607,26 @@ function lockedCount(s) {
 /* What the local player would draw for [h] given the scores entered. The format decides
    where cards come from: finishing position in stroke play, and in skins the skins
    somebody else just took. They don't stack — in skins the draw table doesn't apply. */
+/*
+ * A card for being last, on top of whatever the hole itself paid. Cards are hard
+ * to come by and the player having the worst round is the one who needs them —
+ * they also play last, so the extra card is the thing they answer with.
+ *
+ * Counted with [h] in the books even though the lock has not happened yet: the
+ * deal is worked out on the way to locking, and a card earned for being last has
+ * to count the hole that just put you there.
+ */
+function lastPlaceBonus(s, h) {
+  if (!s || s.players.length < 2) return 0;
+  var was = s.locked[h];
+  s.locked[h] = true;
+  var last = lastPlace(s);
+  s.locked[h] = was;
+  return last.indexOf(s.meIndex) !== -1 ? 1 : 0;
+}
 function drawForHole(s, h) {
-  return isSkins(s) ? skinsPayout(s, h) : drawCount(s.scores[h], s.meIndex, s.pars[h]);
+  var base = isSkins(s) ? skinsPayout(s, h) : drawCount(s.scores[h], s.meIndex, s.pars[h]);
+  return base + lastPlaceBonus(s, h);
 }
 function roundComplete(s) { return s.locked.every(function (v) { return v; }); }
 
@@ -2671,13 +2689,26 @@ function skinsFor(s, p) {
 function skinsCarried(s) { return skinsAtStake(s, s.holeCount) - 1; }
 
 /* Player indices, best first — fewest strokes, or most skins. */
-function standings(s) {
-  var idx = s.players.map(function (_, i) { return i; });
-  if (!isSkins(s)) return idx.sort(function (a, b) { return totalFor(s, a) - totalFor(s, b); });
-  // Strokes break a tie on skins: it is the only other thing we know.
-  return idx.sort(function (a, b) {
+/* How two players compare on the card right now. Strokes break a tie on skins:
+   it is the only other thing we know. */
+function standingCmp(s) {
+  if (!isSkins(s)) return function (a, b) { return totalFor(s, a) - totalFor(s, b); };
+  return function (a, b) {
     return skinsFor(s, b) - skinsFor(s, a) || totalFor(s, a) - totalFor(s, b);
-  });
+  };
+}
+function standings(s) {
+  return s.players.map(function (_, i) { return i; }).sort(standingCmp(s));
+}
+
+/* Who is propping up the table, ties included. Everybody level is nobody last —
+   a tied table has no one to feel sorry for. */
+function lastPlace(s) {
+  var cmp = standingCmp(s);
+  var order = standings(s);
+  var worst = order[order.length - 1];
+  var tied = order.filter(function (i) { return cmp(i, worst) === 0; });
+  return tied.length === s.players.length ? [] : tied;
 }
 
 /* Everyone tied at the top — ties are left standing. */
@@ -3667,14 +3698,17 @@ function formatPicker() {
 var SKINS_DRAW_TABLE = [
   ["Won the hole outright", "0"],
   ["Everyone else", "1 per skin"],
-  ["Tied hole — no skin won", "1 each"]
+  ["Tied hole — no skin won", "1 each"],
+  ["Last on the card, or tied for it", "+1 every hole"]
 ];
 var DRAW_TABLE = [
   ["Best score, or tied for best", "0"],
   ["Middle of the pack", "1"],
-  ["Last, or tied for last", "2"],
+  ["Last on the hole, or tied for it", "2"],
   ["Everyone tied", "1 each"],
-  ["Double bogey or worse", "+1 bonus"]
+  ["Double bogey or worse", "+1 bonus"],
+  // Not the hole — the card. It is the one that keeps a bad round in the game.
+  ["Last on the card, or tied for it", "+1 every hole"]
 ];
 
 /* The in-round Rules tab carries everything plus the round-specific actions;
