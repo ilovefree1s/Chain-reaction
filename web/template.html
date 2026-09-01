@@ -1564,6 +1564,7 @@ function liveOpen() {
     if (m.payload.event === "play") livePlayed(p);
     if (m.payload.event === "spent") liveSpent(p);
     if (m.payload.event === "prio") livePrio(p);
+    if (m.payload.event === "order") liveOrder(p);
     if (m.payload.event === "unspent") liveUnspent(p);
     if (m.payload.event === "wheel") liveWheel(p);
     if (m.payload.event === "bye") liveBye(p);
@@ -1625,7 +1626,10 @@ function liveHello() {
           // The tee order the host's Start dealt — joiners build their round
           // in exactly this order, so every card reads the same.
           order: state.players, started: true }
-      : { holes: setup.holes, pars: setupPars(), courseName: setup.courseName, mode: setup.mode, started: false })
+      : { holes: setup.holes, pars: setupPars(), courseName: setup.courseName, mode: setup.mode,
+          // The tee draw rides along too, so a phone that joined after the
+          // wheel stopped still knows what it landed on.
+          tee: teeDrawNames(), started: false })
       : null
   });
 }
@@ -1708,6 +1712,17 @@ function adoptHostTable() {
   resizePars(setup.holes);
   setup.courseName = h.cfg.courseName || null;
   setup.mode = h.cfg.mode === "skins" ? "skins" : "stroke";
+  // The host's draw, read back onto this phone's own seat numbers.
+  if (Array.isArray(h.cfg.tee) && h.cfg.tee.length) {
+    var mine = setup.names.slice(0, activeSeats());
+    var seats = h.cfg.tee.map(function (n) {
+      for (var i = 0; i < mine.length; i++) {
+        if (mine[i].trim().toLowerCase() === String(n).trim().toLowerCase()) return i;
+      }
+      return -1;
+    });
+    if (seats.length === mine.length && seats.indexOf(-1) === -1) setup.teeBase = seats;
+  }
 }
 
 /* Everyone heard from lately. Quiet phones are filtered, never removed — the
@@ -2133,6 +2148,23 @@ function liveUnspent(p) {
 
 /* Priority moved on somebody else's phone. Whoever passed it is the authority on
    where it went — there is only ever one holder, and only they can pass. */
+/* The host drew the tee order. Everyone takes it, so all four cards read the
+   same on hole one. */
+function liveOrder(p) {
+  if (!setup) return;
+  // A plain order with no spin attached is somebody being caught up.
+  if (Array.isArray(p.order)) { setup.teeBase = p.order.slice(); render(); return; }
+  if (typeof p.pick !== "number" || typeof p.rot !== "number") return;
+  if (!orderWheel) openOrderWheel();
+  if (!orderWheel || !orderWheel.orders[p.pick]) return;
+  // Only sane if this phone has the same players, and so the same 24 orders.
+  if (p.n !== orderWheel.orders.length) return;
+  if (orderWheel.spinning || orderWheel.at != null) return;
+  // The wheel has to be sitting still on screen before it can be seen to turn,
+  // so let the render it was just given actually land first.
+  requestAnimationFrame(function () { runOrderSpin(p.pick, p.rot); });
+}
+
 function livePrio(p) {
   if (!state || typeof p.name !== "string" || !p.name) return;
   if (state.prio === p.name) return;
@@ -2558,7 +2590,7 @@ function shuffled(arr) {
   return a;
 }
 
-function newRound(players, meIndex, holeCount, coursePars, courseName, characters, mode) {
+function newRound(players, meIndex, holeCount, coursePars, courseName, characters, mode, teeBase) {
   var deck = shuffled(CARDS.filter(function (c) { return !wheelOnlyCard(c.id); })
     .map(function (c) { return c.id; }));
   var source = (coursePars && coursePars.length === holeCount) ? coursePars : parList(holeCount);
@@ -2574,6 +2606,8 @@ function newRound(players, meIndex, holeCount, coursePars, courseName, character
   }
   return {
     players: players, meIndex: meIndex, holeCount: holeCount, currentHole: 0,
+    // The order the wheel drew for the first tee, if it was spun for.
+    teeBase: teeBase ? teeBase.slice() : null,
     pars: pars, scores: scores, locked: locked,
     hand: deck.slice(0, DATA.handSize), deck: deck.slice(DATA.handSize), discard: [], owed: 0,
     dealt: [],
@@ -2980,6 +3014,56 @@ function renderMenu() {
 }
 
 /* ---------- setup ---------- */
+/*
+ * The draw for the first tee, on the setup screen. Every order the table could
+ * play in sits on the wheel once — 24 of them for four players — so it is
+ * visibly a fair draw rather than a shuffle nobody watched.
+ *
+ * In a lobby only the host spins and the result travels, or four phones would
+ * draw four different orders. Offline whoever is holding the phone spins.
+ */
+function renderOrderDraw() {
+  var names = setup.names.slice(0, activeSeats()).filter(function (n) { return n.trim(); });
+  if (names.length < 2) return "";
+  var theirs = live && !live.hosting;
+  var drawn = setup.teeBase && setup.teeBase.length === names.length
+    ? setup.teeBase.map(function (i) { return names[i]; }) : null;
+
+  // Not opened yet: a line saying what it is, and the way in.
+  if (!orderWheel) {
+    return '<div class="label">First tee</div>' +
+      (drawn
+        ? '<div class="panel course sel">' +
+          '<div class="cname picked">' + drawn.map(esc).join(' &rsaquo; ') + '</div>' +
+          '<div class="dim">Drawn on the wheel</div></div>'
+        : theirs
+        ? '<p class="hint">The host draws the order for the first tee.</p>'
+        : '<button class="big quiet" data-act="drawOrder">Spin for the order</button>');
+  }
+
+  // Open: the wheel itself.
+  var labels = orderWheel.orders.map(function (o) {
+    return o.map(function (i) { return names[i].trim().slice(0, 3); }).join("\u00b7");
+  });
+  var landed = orderWheel.at != null && !orderWheel.spinning
+    ? orderWheel.orders[orderWheel.at].map(function (i) { return names[i]; }) : null;
+  return '<div class="label">First tee &middot; ' + labels.length + ' orders</div>' +
+    '<div class="wheelbox"><div class="wheelptr"></div>' +
+    wheelSvg("wheel-order", labels, orderWheel.rot, null, labels.length > 12 ? 7 : 12) +
+    '</div>' +
+    '<div class="exempt">' + (orderWheel.spinning ? '&hellip;'
+      : landed ? esc(landed.join(" \u203a ")) : '&nbsp;') + '</div>' +
+    // One spin, and only the host's. Once it has landed the only way out is
+    // forward, because a wheel you can re-spin until you like it is a shuffle.
+    (landed || theirs
+      ? ''
+      : '<button class="big wheel" data-act="spinOrder"' +
+        (orderWheel.spinning ? ' disabled' : '') + '>Spin</button>') +
+    '<button class="big quiet" data-act="closeOrder"' +
+    (orderWheel.spinning ? ' disabled' : '') + '>' +
+    (landed ? 'Use this order' : 'Never mind') + '</button>';
+}
+
 function renderSetup() {
   // Same framed-slot + octagonal ME markup as Settings, so the two read as one app.
   // In a live lobby every phone IS a person: one row for you, one per phone that
@@ -3102,6 +3186,7 @@ function renderSetup() {
 
   // No title block — the back bar already says NEW ROUND.
   return meBlock + renderLiveSection() + playersBlock +
+    renderOrderDraw() +
     '<div class="label">Course</div>' + courseBlock +
     '<div class="label">Format</div>' + formatBlock +
     '<div style="height:18px"></div>' +
@@ -3153,6 +3238,29 @@ function skinLine(s, h) {
 function playOrder(s) {
   return standings(s);
 }
+/*
+ * Every order four players could tee in — 24 of them, or 6 for three, 2 for two.
+ * The whole point is that the wheel carries all of them exactly once, so the draw
+ * is visibly fair rather than a shuffle nobody saw happen.
+ */
+function allOrders(n) {
+  if (n <= 1) return [[0]];
+  var out = [];
+  allOrders(n - 1).forEach(function (rest) {
+    for (var at = 0; at <= rest.length; at++) {
+      out.push(rest.slice(0, at).concat([n - 1], rest.slice(at)));
+    }
+  });
+  return out;
+}
+/* Short enough for 24 segments to be readable at a glance; the full order is
+   spelled out under the wheel, which is the part anybody actually reads. */
+function orderLabel(s, order) {
+  return order.map(function (i) {
+    return (s.players || s.names)[i].trim().slice(0, 4);
+  }).join("\u00b7");
+}
+
 /* UDisc-style honors, untouched: who tees first on hole [h], which is the order
    the rows sit in. Walk every locked hole before it, best score bubbling up each
    time; ties keep the order they already had, which is how honors carry — win a
@@ -3163,7 +3271,10 @@ function playOrder(s) {
    that is correct — one is who walks to the tee first, the other is who answers
    whom. */
 function teeOrder(s, h) {
-  var order = s.players.map(function (_, i) { return i; });
+  // Hole one is whatever the wheel drew, or seat order if nobody spun for it.
+  var order = (s.teeBase && s.teeBase.length === s.players.length)
+    ? s.teeBase.slice()
+    : s.players.map(function (_, i) { return i; });
   for (var g = 0; g < h; g++) {
     if (!s.locked[g]) continue;
     var prev = order.slice();
@@ -5464,6 +5575,84 @@ function tableDrop(cancelled) {
 window.addEventListener("pointerup", function () { tableDrop(false); });
 window.addEventListener("pointercancel", function () { tableDrop(true); });
 
+/*
+ * The draw for the first tee. Every possible order sits on the wheel once, it
+ * turns, and whatever it lands on is the order — that is the whole ceremony.
+ * Only the host spins, and the result travels, so the table draws once between
+ * them rather than four times separately.
+ */
+/* The wheel deals in seat numbers because that is what fits on a segment, but
+   seats are the one thing that moves: a live Start re-deals them, and every
+   phone numbers its own roster differently. Names are what everybody agrees
+   on, so names are what travels and what the round is built from. */
+function teeDrawNames() {
+  if (!setup || !setup.teeBase) return null;
+  var out = setup.teeBase.map(function (i) { return (setup.names[i] || "").trim(); });
+  return out.every(function (n) { return n; }) ? out : null;
+}
+/* Those names as seats at a table that has already been dealt. Null unless the
+   draw covers exactly that table — half a tee order is worse than none. */
+function teeBaseFor(names) {
+  var drawn = teeDrawNames();
+  if (!drawn || drawn.length !== names.length) return null;
+  var seats = drawn.map(function (n) {
+    for (var i = 0; i < names.length; i++) {
+      if (names[i].trim().toLowerCase() === n.toLowerCase()) return i;
+    }
+    return -1;
+  });
+  return seats.indexOf(-1) === -1 ? seats : null;
+}
+
+var orderWheel = null;
+function openOrderWheel() {
+  var names = setup.names.slice(0, activeSeats()).filter(function (n) { return n.trim(); });
+  if (names.length < 2) return;
+  orderWheel = { orders: allOrders(names.length), rot: 0, spinning: false, at: null };
+  render();
+}
+/*
+ * Turning the wheel. Split out from the press because the host is not the only
+ * phone that runs it — the same landing and the same rotation go out to the
+ * table, so four screens watch one spin instead of trusting a number that
+ * arrived after the fact.
+ */
+function runOrderSpin(pick, rot) {
+  if (!orderWheel || orderWheel.spinning) return;
+  var el = document.getElementById("wheel-order");
+  if (!el) return;
+  orderWheel.spinning = true;
+  orderWheel.at = pick;
+  orderWheel.rot = rot;
+  el.style.transform = "rotate(" + rot + "deg)";
+  playMenuSound(sfxVolume());
+  var mine = orderWheel, settled = false;
+  function settle() {
+    if (settled || orderWheel !== mine) return;
+    settled = true;
+    orderWheel.spinning = false;
+    // Where it stops is the order. There is no spinning it again.
+    setup.teeBase = orderWheel.orders[pick].slice();
+    render();
+  }
+  el.addEventListener("transitionend", settle, { once: true });
+  setTimeout(settle, 4200);
+}
+function spinOrder() {
+  if (!orderWheel || orderWheel.spinning || orderWheel.at != null) return;
+  if (live && !live.hosting) return;
+  var n = orderWheel.orders.length;
+  var pick = Math.floor(Math.random() * n);
+  var seg = 360 / n;
+  var from = orderWheel.rot;
+  var rot = from - (from % 360) + 5 * 360 +
+    (360 - (pick * seg + seg / 2)) + (Math.random() - 0.5) * 0.6 * seg;
+  // Sent before it turns rather than after it lands, which is the difference
+  // between the table watching the draw and being told about it.
+  if (live) liveCast("order", { pick: pick, rot: rot, n: n });
+  runOrderSpin(pick, rot);
+}
+
 function spinSecret() {
   if (!secret || secret.spinning) return;
   var entries = secretEntries(), labels = secretLabels();
@@ -5923,6 +6112,13 @@ app.addEventListener("click", function (e) {
       }
       render(); break;
     case "goOffline": setup.offline = true; render(); break;
+    case "drawOrder":
+      // In a lobby the host draws for the table; nobody else gets a wheel.
+      if (live && !live.hosting) break;
+      if (setup.teeBase) break;
+      openOrderWheel(); break;
+    case "spinOrder": spinOrder(); break;
+    case "closeOrder": orderWheel = null; render(); break;
     case "passPrio":
       if (!iHavePrio(s)) break;
       passPrio(s); render(); break;
@@ -5989,7 +6185,10 @@ app.addEventListener("click", function (e) {
           if (meAt !== -1) { rNames = adoptedN; rChars = adoptedC; rMe = meAt; }
         }
       }
-      commit(newRound(rNames, rMe, setup.holes, setupPars(), setup.courseName, rChars, setup.mode));
+      // Resolved against the seats as they finally sit, which for a lobby is
+      // after the host's Start has re-dealt them.
+      commit(newRound(rNames, rMe, setup.holes, setupPars(), setup.courseName, rChars,
+        setup.mode, teeBaseFor(rNames)));
     }
       // The room rides with the round: a reload rejoins it without asking.
       if (live) { state.liveCode = live.code; save(state); }
