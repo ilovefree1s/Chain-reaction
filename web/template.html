@@ -476,6 +476,12 @@
      the die is. Its corner is pinned to the felt in the markup, not here — an
      inline left/top cannot be overridden from a stylesheet. */
   .dicefield.rolling .die { transition: none; }
+  /* Settled, they walk themselves back down to the throwing band. Left and top
+     only — the transform is the die's own centring and must not be eased. */
+  .dicefield:not(.rolling) .die {
+    transition: left 420ms cubic-bezier(0.3, 0.9, 0.3, 1),
+                top 420ms cubic-bezier(0.3, 0.9, 0.3, 1);
+  }
   /* Picked up: brighter and out from under the others. The lift and the carrying
      are done on the element's transform by the drag itself, so this rule stays
      off transform entirely — it would fight the finger for it. */
@@ -4996,7 +5002,8 @@ app.addEventListener("pointerdown", function (e) {
                 // roll every grab starts above the line and a rule about the
                 // starting side would never let you throw again.
                 wasBelow: !pastThrowLine(e.clientY),
-                shakeX: e.clientX, shakeDir: 0, turns: [], shaking: false };
+                shakeX: e.clientX, shakeY: e.clientY,
+                shakeDir: 0, turns: [], shaking: false };
     dieDrag.pile.forEach(function (g) {
       var el = fieldEl.querySelector('[data-die="' + g.i + '"]');
       g.el = el;
@@ -5019,7 +5026,7 @@ window.addEventListener("pointermove", function (e) {
     dieDrag.lastX = t.clientX; dieDrag.lastY = t.clientY; dieDrag.lastT = now;
     var dx = t.clientX - dieDrag.x0, dy = t.clientY - dieDrag.y0;
     if (Math.abs(dx) > 6 || Math.abs(dy) > 6) dieDrag.moved = true;
-    dieShake(dieDrag, t.clientX, now);
+    dieShake(dieDrag, t.clientX, t.clientY, now);
     // Carried on transform rather than left/top: the finger gets a compositor
     // move per frame instead of a layout of the whole felt. Held inside the walls
     // as it goes — a die should not be able to leave the screen in your hand any
@@ -5083,13 +5090,24 @@ function coinDragEnd(dy) {
  * keep turning up new numbers, the way they would in a fist. It stops when you
  * stop; whatever they are showing when you put them down is what they are.
  */
-function dieShake(g, x, now) {
+function dieShake(g, x, y, now) {
+  // A rattle is side to side and stays on one level. Gathering dice into a pile
+  // is side to side too, but it travels — and a throw travels furthest of all.
+  // Without telling those apart, the nudges that stack the dice latched the drag
+  // as a shake for the rest of its life, and every flick after them went
+  // nowhere until you let go and took hold again.
+  if (g.shaking && g.shakeY != null && g.shakeY - y > 44) {
+    g.shaking = false; g.turns = []; g.shakeDir = 0;
+  }
   if (Math.abs(x - (g.shakeX == null ? x : g.shakeX)) < 9) return;
   var dir = x > g.shakeX ? 1 : -1;
   g.shakeX = x;
   if (g.shakeDir && dir !== g.shakeDir) {
+    // A change of direction that also changed height is aim, not a rattle.
+    if (g.shakeY != null && Math.abs(y - g.shakeY) > 30) g.turns = [];
     g.turns = (g.turns || []).filter(function (t) { return now - t < 900; });
     g.turns.push(now);
+    g.shakeY = y;
     if (g.turns.length >= 3) g.shaking = true;
   }
   g.shakeDir = dir;
@@ -5238,17 +5256,19 @@ var DIE_PIPS = {
 };
 /* Where the dice are lying, as percentages of the field so they keep their
    places on any screen. Unthrown, they wait in a row along the bottom. */
-function dicePlaces(d) {
-  if (!d.pos || d.pos.length !== d.count) {
-    d.pos = [];
-    // Three to a row, stacked upward. Six dice will not fit across a phone in
-    // one line — they would sit on top of each other before a throw.
-    var cols = Math.min(3, d.count);
-    for (var i = 0; i < d.count; i++) {
-      d.pos.push({ x: 50 + ((i % cols) - (cols - 1) / 2) * 26,
-                   y: 86 - Math.floor(i / cols) * 17 });
-    }
+function diceHome(d) {
+  var out = [];
+  // Three to a row, stacked upward. Six dice will not fit across a phone in
+  // one line — they would sit on top of each other before a throw.
+  var cols = Math.min(3, d.count);
+  for (var i = 0; i < d.count; i++) {
+    out.push({ x: 50 + ((i % cols) - (cols - 1) / 2) * 26,
+               y: 86 - Math.floor(i / cols) * 17 });
   }
+  return out;
+}
+function dicePlaces(d) {
+  if (!d.pos || d.pos.length !== d.count) d.pos = diceHome(d);
   return d.pos;
 }
 /*
@@ -5529,6 +5549,19 @@ function diceStep(now) {
   diceSim = null;
   d.rolling = false;
   setTimeout(function () { if (secret && secret.mode === "dice") render(); }, 300);
+  // Read where they landed, then they walk back down to the band they are
+  // thrown from. Dice that settle at the top of the felt have to be dragged the
+  // length of it before every throw; bringing them home is the difference
+  // between rolling again and setting up to roll again. The numbers do not
+  // change — this is the same dice, moved.
+  setTimeout(function () {
+    if (!secret || secret.mode !== "dice" || secret.dice !== d) return;
+    if (d.rolling || dieDrag) return;
+    var f = app.querySelector(".dicefield");
+    if (!f) return;
+    d.pos = diceHome(d);
+    placeDice(f, d);
+  }, 1000);
 }
 
 /* Moves the dice already on the felt to where the state says they are, and
