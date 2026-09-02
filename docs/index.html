@@ -1019,7 +1019,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.117 · 1 Sep 22:04";
+var APP_VERSION = "v1.118 · 1 Sep 22:53";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. Opening the app fetches fresh anyway.
@@ -4962,6 +4962,16 @@ function inThrowZone(y) {
   // to start below an invisible boundary is exactly what made this fiddly.
   return y >= r.top + r.height * 0.42;
 }
+/* The dashed marker itself, not the band around it. Carrying a die up over this
+   is the throw — waiting for the finger to lift as well meant a flick that ran
+   off the top of the felt did nothing at all, which is most of what made these
+   hard to roll. */
+function pastThrowLine(y) {
+  var f = app.querySelector(".dicefield");
+  if (!f) return false;
+  var r = f.getBoundingClientRect();
+  return y < r.top + r.height * 0.5;
+}
 app.addEventListener("pointerdown", function (e) {
   if (!e.isPrimary || !tossTarget() || !e.target.closest) return;
   var die = e.target.closest(".die");
@@ -4980,6 +4990,10 @@ app.addEventListener("pointerdown", function (e) {
                 pile: dicePile(dicePlaces(secret.dice), i, field),
                 x0: e.clientX, y0: e.clientY, moved: false,
                 lastX: e.clientX, lastY: e.clientY, lastT: Date.now(), speed: 0,
+                // Only a die picked up below the line can be carried over it.
+                // Otherwise bringing one back down the felt and lifting it again
+                // would throw the lot.
+                belowLine: !pastThrowLine(e.clientY),
                 shakeX: e.clientX, shakeDir: 0, turns: [], shaking: false };
     dieDrag.pile.forEach(function (g) {
       var el = fieldEl.querySelector('[data-die="' + g.i + '"]');
@@ -5016,6 +5030,15 @@ window.addEventListener("pointermove", function (e) {
       g.el.style.transform = "translate(-50%, -50%) translate(" +
         (g.nx - g.sx).toFixed(1) + "px, " + (g.ny - g.sy).toFixed(1) + "px) scale(1.1)";
     });
+    // Over the line and still going up: that is the throw, finger or no finger.
+    // Shaking is the one thing it is not — a rattle that wanders past the line
+    // is still a rattle.
+    if (dieDrag.belowLine && !dieDrag.shaking && dieDrag.speed > 0 &&
+        pastThrowLine(t.clientY)) {
+      dieDrag.launch = Math.max(0.15,
+        Math.min(1, (dieDrag.speed - DIE_LOB) / (COIN_FAST - DIE_LOB)));
+      dieDragEnd();
+    }
     return;
   }
   if (coinTouchY == null || !coinDragEl) return;
@@ -5110,6 +5133,8 @@ function dieDragEnd() {
       m.el.style.top = at[m.i].y.toFixed(2) + "%";
     }
   });
+  // Already thrown, by crossing the line rather than by letting go.
+  if (g.launch != null) { rollDice(g.launch); return; }
   // A flick: upward, and still moving as it was let go. Out in the open felt it
   // has to be a real one, because carrying a die across the table and setting it
   // down must not throw the lot. Down in the throwing band the dice are there to
@@ -5422,6 +5447,18 @@ function diceStep(now) {
     }
   }
 
+  // Pushing two dice apart can push one of them through a wall, and the wall
+  // pass has already been and gone this frame. Without this the die is drawn
+  // outside the felt for a frame and shoved back the next, which at six dice in
+  // a corner is a die visibly out past the edge of the screen.
+  for (i = 0; i < bodies.length; i++) {
+    b = bodies[i];
+    if (b.x < w) { b.x = w; if (b.vx < 0) b.vx = -b.vx * DIE_BOUNCE; }
+    if (b.x > sim.w - w) { b.x = sim.w - w; if (b.vx > 0) b.vx = -b.vx * DIE_BOUNCE; }
+    if (b.y < w) { b.y = w; if (b.vy < 0) b.vy = -b.vy * DIE_BOUNCE; }
+    if (b.y > sim.h - w) { b.y = sim.h - w; if (b.vy > 0) b.vy = -b.vy * DIE_BOUNCE; }
+  }
+
   // Draw, and re-pip anything still travelling fast enough to be tumbling.
   for (i = 0; i < bodies.length; i++) {
     b = bodies[i];
@@ -5451,10 +5488,21 @@ function diceStep(now) {
     return;
   }
   var d = sim.d;
+  // At rest a die is square to the felt, so half its width is what has to stay
+  // inside — worked out from the die and the field rather than assumed. The old
+  // fixed 6% left a 74px die hanging five percent off the edge of a narrow
+  // phone, which is most of the reason they looked like they fell off.
+  var padX = sim.r / sim.w * 100, padY = sim.r / sim.h * 100;
+  var clampX = function (v) { return Math.max(padX, Math.min(100 - padX, v)); };
+  var clampY = function (v) { return Math.max(padY, Math.min(100 - padY, v)); };
   d.pos = bodies.map(function (x) {
-    return { x: Math.max(6, Math.min(94, x.x / sim.w * 100)),
-             y: Math.max(4, Math.min(96, x.y / sim.h * 100)) };
+    return { x: clampX(x.x / sim.w * 100), y: clampY(x.y / sim.h * 100) };
   });
+  // Two dice clamped to the same corner land on the same spot and read as a
+  // stack of one. Shove them apart in the field's own proportions — a percent
+  // across a narrow felt is a much longer way than a percent up it — then put
+  // them back inside the walls the shoving pushed them out of.
+  spaceOut(d.pos, padX * 2.1, sim.h / sim.w, { x: padX, y: padY });
   // The number is whatever it stopped on. Nothing is drawn for it afterwards:
   // the die rocks onto the nearest flat side and that side is read off it, so it
   // never lands showing one face and then changes to another.
@@ -5493,7 +5541,11 @@ function placeDice(field, d) {
 }
 
 /* Shoves overlapping dice apart, a little at a time, and keeps them on the felt. */
-function spaceOut(pos, gap, ratio) {
+function spaceOut(pos, gap, ratio, pad) {
+  // The walls come from the caller: they depend on how big a die is against the
+  // felt it is lying on, and the numbers that used to be written in here kept
+  // the dice in the top half of a layout that has since changed.
+  var padX = pad ? pad.x : 0, padY = pad ? pad.y : 0;
   for (var pass = 0; pass < 8; pass++) {
     for (var i = 0; i < pos.length; i++) {
       for (var j = i + 1; j < pos.length; j++) {
@@ -5509,8 +5561,8 @@ function spaceOut(pos, gap, ratio) {
       }
     }
     for (var k = 0; k < pos.length; k++) {
-      pos[k].x = Math.max(13, Math.min(87, pos[k].x));
-      pos[k].y = Math.max(10, Math.min(56, pos[k].y));
+      pos[k].x = Math.max(padX, Math.min(100 - padX, pos[k].x));
+      pos[k].y = Math.max(padY, Math.min(100 - padY, pos[k].y));
     }
   }
 }
