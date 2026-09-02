@@ -19,7 +19,7 @@ If a PWA is easier to sideload, that's acceptable — but it must work offline, 
 - **Each player has their own 61-card deck**, shuffled independently. Duplicate cards across players are expected and fine.
 - **Played and discarded cards** go to that player's own discard pile. Reshuffle the discard back into the deck if the deck ever empties.
 - **The GAMBLE WHEEL!! outranks everything.** A wheel result is top priority and cannot be overridden by a played card.
-- **Max 2 cards may be played on any one player per hole.** The app does not enforce this — players track it themselves — but show it in an in-app rules screen.
+- **Max 2 attack cards may be played on any one player per hole.** Cancels, reverses and anything else that doesn't change how a player actually throws are free of the count. The app does not enforce this — players track it themselves — but show it in an in-app rules screen.
 
 ### Draw rule (this is the one piece of real logic)
 
