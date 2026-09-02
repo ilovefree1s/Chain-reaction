@@ -630,8 +630,12 @@
     pointer-events: none;
   }
   /* The painted plates, restacked with tight gaps so the splash stays seen. */
-  .sgstack { width: min(80%, 310px); margin: 0 auto; display: flex;
-             flex-direction: column; gap: 7px; }
+  /* Two by two, the way the sheet itself is drawn. Stacked in one column these
+     buttons are half as wide again as the old bands and would run past the foot
+     of a phone; side by side they fit with room over, and each one is a bigger
+     thing to hit. */
+  .sgstack { width: min(100%, 420px); margin: 0 auto; display: grid;
+             grid-template-columns: 1fr 1fr; gap: 12px; }
   .sgplate { position: relative; overflow: hidden; cursor: pointer; }
   .sgplate img { position: absolute; left: 0; width: 100%; }
   /* The card table: two buttons up top, felt everywhere else. */
@@ -1025,7 +1029,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.122 · 2 Sep 15:41";
+var APP_VERSION = "v1.125 · 2 Sep 15:59";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. Opening the app fetches fresh anyway.
@@ -4865,22 +4869,19 @@ function renderSecret() {
       '<textarea id="secretnames" class="secretbox" rows="6" spellcheck="false" ' +
       'placeholder="One name per line">' + esc(secret.text || "") + '</textarea></div>';
   }
-  // The landing: three side games, one door out — the whole cluster rides the
+  // The landing: four side games, one door out — the whole cluster rides the
   // bottom of the screen, where a thumb already is after five quick taps.
-  // The painted sheet's own gaps are generous, so each plate is sliced out of
-  // it (alpha scan of secretbuttons.png, 941x1672: plates at rows 134-452,
-  // 482-804, 834-1156, 1190-1518) and restacked tighter than it was drawn.
-  var plates = [
-    ["secretWheel", 318, -42.14, SG_BUTTONS],
-    ["secretDice", 322, -149.69, SG_BUTTONS],
-    ["secretCards", 322, -259.01, SG_BUTTONS],
-    // Drawn on solid black rather than on nothing, so it takes the foot of the
-    // stack, where this menu's own ground is black and the square never shows.
-    ["secretCoin", 329, -362.01, COIN_BUTTON]
-  ];
-  var stack = plates.map(function (p) {
-    return '<div class="sgplate" data-act="' + p[0] + '" style="aspect-ratio:941/' + p[1] + '">' +
-      '<img src="' + p[3] + '" alt="" draggable="false" style="top:' + p[2] + '%"></div>';
+  // All four are painted on one sheet with generous gaps between them, so each
+  // plate is a window onto its own box, measured off an alpha scan of
+  // secretbuttons.png rather than guessed at.
+  var stack = SG_PLATES.map(function (p) {
+    var b = p[1];
+    return '<div class="sgplate" data-act="' + p[0] + '" style="aspect-ratio:' +
+      b[2] + '/' + b[3] + '">' +
+      '<img src="' + SG_BUTTONS + '" alt="" draggable="false" style="' +
+      'width:' + (100 * SG_SHEET / b[2]).toFixed(3) + '%;' +
+      'left:' + (-100 * b[0] / b[2]).toFixed(3) + '%;' +
+      'top:' + (-100 * b[1] / b[3]).toFixed(3) + '%"></div>';
   }).join("");
   return '<div class="modal sgmenu sgscreen">' +
     '<button class="sgback" data-act="closeSecret">&lsaquo;&nbsp;&nbsp;Back</button>' +
@@ -5609,7 +5610,18 @@ function spaceOut(pos, gap, ratio, pad) {
 /* ---- cards: one standard 52-card deck, drawn down and reshuffled on demand ---- */
 var CARD_BACK = "assets/cardback.png";
 var SG_BUTTONS = "assets/sgbuttons.png";
-var COIN_BUTTON = "assets/coinflip.png";
+/* The four games, painted two by two on one 1254px square, each with its own box
+   inside it: left, top, width, height in the sheet's own pixels. Measured by
+   scanning the alpha channel for where each button actually starts and stops —
+   the drawn gaps are wide and eyeballing them puts a sliver of the neighbour in
+   the corner of every plate. Re-measure if the sheet is ever redrawn. */
+var SG_SHEET = 1254;
+var SG_PLATES = [
+  ["secretWheel", [18, 164, 601, 383]],
+  ["secretDice", [635, 165, 598, 381]],
+  ["secretCards", [17, 674, 604, 383]],
+  ["secretCoin", [635, 676, 602, 381]]
+];
 // The struck coin (1774x887): heads at x10, tails at x897, both 859 tall. Both
 // windows are cut the same width and the narrower face centred in its own, so
 // the coin does not change size as it turns over.

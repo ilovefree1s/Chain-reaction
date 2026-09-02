@@ -165,9 +165,6 @@ const ftbImage = copyArt("fortheboys.png", "fortheboys.png");
 const cardBack = copyArt("cardbacks.png", "cardback.png");
 const sgBackground = copyArt("sgbackground.png", "sgbg.png");
 const sgButtons = copyArt("secretbuttons.png", "sgbuttons.png");
-// COIN FLIP's own sheet. It carries the other three too, redrawn, but they are
-// already cut from the sheet above — only the fourth band is read from here.
-const coinButton = copyArt("coinflip.png", "coinflip.png");
 // The coin itself, both faces struck on one sheet.
 const coinFaces = copyArt("coinfaces.png", "coinfaces.png");
 // The painted SPIN THE GAMBLE WHEEL!! banner. Its price is painted in, so it
@@ -265,7 +262,6 @@ const template = fs.readFileSync(path.join(__dirname, "template.html"), "utf8");
   "__CARD_BACK__",
   "__SG_BACKGROUND__",
   "__SG_BUTTONS__",
-  "__COIN_BUTTON__",
   "__COIN_FACES__",
   "__WHEEL_PLATE__",
   "__MENU_SOUND__",
@@ -299,7 +295,6 @@ const html = template
   .replace("__CARD_BACK__", cardBack)
   .replace("__SG_BACKGROUND__", sgBackground)
   .replace("__SG_BUTTONS__", sgButtons)
-  .replace("__COIN_BUTTON__", coinButton)
   .replace("__COIN_FACES__", coinFaces)
   .replace("__WHEEL_PLATE__", wheelPlate)
   .replace("__MENU_SOUND__", menuSound)
