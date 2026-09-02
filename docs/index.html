@@ -1019,7 +1019,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.111 · 1 Sep 19:51";
+var APP_VERSION = "v1.112 · 1 Sep 19:59";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. Opening the app fetches fresh anyway.
@@ -3927,7 +3927,6 @@ var SHARED_RULES = [
   ["deck", "Your own deck", "Every player shuffles their own " +
     (CARDS.length - (DATA.wheelOnly || []).length) +
     "-card deck. Duplicates across players are expected and fine. This phone only tracks your deck."],
-  ["recycle", "Discard", "Played and discarded cards go to your own discard pile. If your deck runs out, the discard is reshuffled back in."],
   ["wheel", "Buy a spin", "Discard " + DATA.wheelCost + " cards to buy a spin on the GAMBLE WHEEL!! Spin it from the Hand tab. Playing GAMBLE WHEEL!! spins for free instead."],
   ["people", "Two per player, per hole", "At most 2 cards may be played on any one player per hole. The app does not enforce this — track it yourselves."],
   ["gift", "Yourself or somebody else", "A dual card can be played on you. Nothing says a favour has to go to another player."],
