@@ -603,7 +603,9 @@
      top, and Close keeps a little distance from the three games. */
   .modal.sgmenu {
     display: flex; flex-direction: column; justify-content: flex-end;
-    padding-bottom: calc(14px + env(safe-area-inset-bottom));
+    /* Up off the very bottom edge: proportional rather than a fixed inset, so
+       the cluster sits at the same height on the screen whatever size it is. */
+    padding-bottom: calc(12vh + env(safe-area-inset-bottom));
   }
   /* Down out of the Back button's lane, then everything else sinks. */
   .sgmenu .label { margin: 44px 0 auto; }
