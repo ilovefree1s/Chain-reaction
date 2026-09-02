@@ -4990,10 +4990,12 @@ app.addEventListener("pointerdown", function (e) {
                 pile: dicePile(dicePlaces(secret.dice), i, field),
                 x0: e.clientX, y0: e.clientY, moved: false,
                 lastX: e.clientX, lastY: e.clientY, lastT: Date.now(), speed: 0,
-                // Only a die picked up below the line can be carried over it.
-                // Otherwise bringing one back down the felt and lifting it again
-                // would throw the lot.
-                belowLine: !pastThrowLine(e.clientY),
+                // Which side of the line the finger was on last, so a throw can
+                // be spotted as the crossing itself. Not where the grab began:
+                // the dice settle at the top of the felt, so after the first
+                // roll every grab starts above the line and a rule about the
+                // starting side would never let you throw again.
+                wasBelow: !pastThrowLine(e.clientY),
                 shakeX: e.clientX, shakeDir: 0, turns: [], shaking: false };
     dieDrag.pile.forEach(function (g) {
       var el = fieldEl.querySelector('[data-die="' + g.i + '"]');
@@ -5030,15 +5032,19 @@ window.addEventListener("pointermove", function (e) {
       g.el.style.transform = "translate(-50%, -50%) translate(" +
         (g.nx - g.sx).toFixed(1) + "px, " + (g.ny - g.sy).toFixed(1) + "px) scale(1.1)";
     });
-    // Over the line and still going up: that is the throw, finger or no finger.
-    // Shaking is the one thing it is not — a rattle that wanders past the line
+    // Carrying a die up over the line is the throw, finger or no finger. The
+    // crossing is what counts, so a die resting up top can be nudged around all
+    // day without one — it only goes when it comes up from under the line.
+    // Shaking is the one thing this is not: a rattle that wanders past the line
     // is still a rattle.
-    if (dieDrag.belowLine && !dieDrag.shaking && dieDrag.speed > 0 &&
-        pastThrowLine(t.clientY)) {
+    var below = !pastThrowLine(t.clientY);
+    if (dieDrag.wasBelow && !below && !dieDrag.shaking && dieDrag.speed > 0) {
       dieDrag.launch = Math.max(0.15,
         Math.min(1, (dieDrag.speed - DIE_LOB) / (COIN_FAST - DIE_LOB)));
       dieDragEnd();
+      return;
     }
+    dieDrag.wasBelow = below;
     return;
   }
   if (coinTouchY == null || !coinDragEl) return;
