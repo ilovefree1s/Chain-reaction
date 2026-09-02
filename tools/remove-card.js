@@ -75,8 +75,19 @@ edit("app/src/main/java/com/chainreaction/data/GameCard.kt", (s) => {
 });
 
 // ---- the web build's id-keyed sets ----
+/*
+ * Every id-keyed set in the web build. A new card behaviour means a new set here
+ * too — one that is left out does not error, it quietly starts describing the
+ * wrong card, and the deck plays wrong in a way nobody can see from the screen.
+ * SAYS_IT_ALL and WHEEL_TEXT were missed once and spent a removal pointing one
+ * card too high.
+ */
+const ID_LISTS = ["NO_SELF_CARDS", "PLAY_ON_ALL", "INVITE_CARDS", "AIMED_CARDS",
+  "SAYS_IT_ALL", "ONLY_EXEMPT", "TEAM_CARDS"];
+const ID_MAPS = ["ALERT_TAUNTS", "ALERT_LINES", "WHEEL_TEXT"];
+
 edit("web/template.html", (s) => {
-  ["NO_SELF_CARDS", "PLAY_ON_ALL", "INVITE_CARDS", "AIMED_CARDS"].forEach((name) => {
+  ID_LISTS.forEach((name) => {
     s = s.replace(new RegExp(`(var ${name}\\s*=\\s*\\[)([\\s\\S]*?)(\\];)`), (m, a, body, c) => {
       const kept = body.replace(/^ *(\d+),?(.*)$/gm, (line, n, rest) => {
         const to = map(Number(n));
@@ -85,7 +96,7 @@ edit("web/template.html", (s) => {
       return a + kept + c;
     });
   });
-  ["ALERT_TAUNTS", "ALERT_LINES"].forEach((name) => {
+  ID_MAPS.forEach((name) => {
     s = s.replace(new RegExp(`(var ${name}\\s*=\\s*\\{)([\\s\\S]*?)(\\n\\};)`), (m, a, body, c) => {
       const kept = body.replace(/^( *)(\d+):/gm, (line, indent, n) => {
         const to = map(Number(n));
@@ -101,15 +112,46 @@ edit("web/template.html", (s) => {
 });
 
 // ---- prose that counts the deck ----
+/*
+ * Prose that counts the deck — and only prose that counts the deck. A blanket
+ * swap of every `N cards` in the file rewrote "discard 2 cards to buy a spin"
+ * and the two-card limit into nonsense on an earlier removal, so each sentence
+ * is named rather than pattern-matched.
+ */
 ["README.md"].forEach((f) => edit(f, (s) =>
-  s.replace(/\b\d+ cards\b/g, `${count} cards`)
-   .replace(/deck is \d+ cards with unique ids one through [a-z-]+/g,
+  s.replace(/source of truth for the \d+ cards/g, `source of truth for the ${count} cards`)
+   .replace(/deck is \d+ cards with unique ids one through (?:\d+|[a-z-]+)/g,
             `deck is ${count} cards with unique ids one through ${count}`)));
 
 edit("app/src/test/java/com/chainreaction/DrawRuleTest.kt", (s) =>
-  s.replace(/deck is \d+ cards with unique ids one through [a-z-]+/g,
+  s.replace(/deck is \d+ cards with unique ids one through (?:\d+|[a-z-]+)/g,
             `deck is ${count} cards with unique ids one through ${count}`)
    .replace(/assertEquals\(\d+, CardDeck\.ALL\.size\)/, `assertEquals(${count}, CardDeck.ALL.size)`)
    .replace(/assertEquals\(\(1\.\.\d+\)\.toSet\(\)/, `assertEquals((1..${count}).toSet()`));
+
+/*
+ * The check that would have caught the miss. An id past the end of the deck can
+ * only mean a set did not move with everything else — nothing else produces one,
+ * and nothing at runtime ever complains about it.
+ */
+const web = fs.readFileSync(path.join(REPO, "web/template.html"), "utf8");
+const strays = [];
+ID_LISTS.forEach((name) => {
+  const m = web.match(new RegExp(String.raw`var ${name}\s*=\s*\[([\s\S]*?)\];`));
+  if (m) [...m[1].matchAll(/^\s*(\d+),/gm)].forEach((x) => {
+    if (Number(x[1]) > count) strays.push(`${name}: ${x[1]}`);
+  });
+});
+ID_MAPS.forEach((name) => {
+  const m = web.match(new RegExp(String.raw`var ${name} = \{([\s\S]*?)\n\};`));
+  if (m) [...m[1].matchAll(/^\s*(\d+):/gm)].forEach((x) => {
+    if (Number(x[1]) > count) strays.push(`${name}: ${x[1]}`);
+  });
+});
+if (strays.length) {
+  console.error(`Ids past the end of a ${count}-card deck — a set did not shift:`);
+  strays.forEach((t) => console.error("  " + t));
+  process.exit(1);
+}
 
 console.log(`\nRemoved #${GONE} "${removedName}" — deck is now ${count} cards.`);

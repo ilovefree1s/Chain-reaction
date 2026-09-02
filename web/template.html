@@ -1310,7 +1310,7 @@ var memoryStore = null;
  * version 1 holds ids that now mean different cards. A mismatch drops the round
  * rather than dealing somebody the wrong hand mid-round.
  */
-var SCHEMA_VERSION = 7;
+var SCHEMA_VERSION = 8;
 
 function save(s) {
   s.v = SCHEMA_VERSION;
@@ -2348,7 +2348,7 @@ function renderLiveSection() {
    The exception is the reaction that hijacks a card: the whole point of it is naming
    somebody new, so it asks like an attack does. By id, since its kind says otherwise. */
 var AIMED_CARDS = [
-  14, // Change Is Good — you steal the card and pick who wears it
+  13, // Change Is Good — you steal the card and pick who wears it
 ];
 function aimedAtSomeone(c) {
   return c.kind === "attack" || c.kind === "dual" || AIMED_CARDS.indexOf(c.id) !== -1;
@@ -2374,7 +2374,7 @@ function hasTwoHalves(c) {
 /* Gifts that make no sense aimed at yourself — a team-up needs a second person.
    These lose the "Myself" button; everything else about their kind stands. */
 var NO_SELF_CARDS = [
-  30, // GOOD GUYS VS. BAD GUYS! — you can't be your own teammate
+  29, // GOOD GUYS VS. BAD GUYS! — you can't be your own teammate
 ];
 function selfMakesSense(c) {
   return playableOnSelf(c.kind) && NO_SELF_CARDS.indexOf(c.id) === -1;
@@ -2389,17 +2389,17 @@ function selfMakesSense(c) {
  * By id, so a card keeps its behaviour no matter how the deck is reordered.
  */
 var PLAY_ON_ALL = [
-  10, // Big Putted! — everyone still putting goes lefty; already holed out, ignore it
-  12, // Call Your Shot
-  19, // Dealer's Choice!
-  20, // Do Not Pass Go — everyone is in the running until the drives land
+  9, // Big Putted! — everyone still putting goes lefty; already holed out, ignore it
+  11, // Call Your Shot
+  18, // Dealer's Choice!
+  19, // Do Not Pass Go — everyone is in the running until the drives land
 
-  25, // FIVE FOR YOU, YOU, AND YOU! — everyone else pays the ace pot
-  32, // I'm In Control
-  41, // Over Sharer
-  42, // Plant Your Feet! — nobody else gets a run-up
-  53, // Turbo Time — every opponent inside C1
-  56, // Your Tee Pad Is Over There! — the whole table tees from the new spot
+  24, // FIVE FOR YOU, YOU, AND YOU! — everyone else pays the ace pot
+  31, // I'm In Control
+  40, // Over Sharer
+  41, // Plant Your Feet! — nobody else gets a run-up
+  52, // Turbo Time — every opponent inside C1
+  55, // Your Tee Pad Is Over There! — the whole table tees from the new spot
 ];
 function playableOnAll(id) { return PLAY_ON_ALL.indexOf(id) !== -1; }
 /* Sent as the target when a card is played on the whole table, and understood
@@ -2414,7 +2414,7 @@ var ALL_TARGET = "*all*";
  * notice while the moment is live, and it stays until tapped.
  */
 var INVITE_CARDS = [
-  24,  // Easily Distracted? — everyone may help distract the putter
+  23,  // Easily Distracted? — everyone may help distract the putter
 ];
 function invitesTable(id) { return INVITE_CARDS.indexOf(id) !== -1; }
 
@@ -2422,14 +2422,14 @@ function invitesTable(id) { return INVITE_CARDS.indexOf(id) !== -1; }
    whole-table alert with an entry here says this instead of "on EVERYONE".
    The words are the table's own voice — keep them in it. */
 var ALERT_TAUNTS = {
-  10: "You just got Big Putted, nerd. Now you putt this as a lefty. If you already made it, never mind — but you're still a nerd.",
-  25: "Everyone else owes 5 dollars to the ace pot!"
+  9: "You just got Big Putted, nerd. Now you putt this as a lefty. If you already made it, never mind — but you're still a nerd.",
+  24: "Everyone else owes 5 dollars to the ace pot!"
 };
 
 /* Wording for a card played on ONE person, when "on YOU" undersells it. [you]
    is what the target reads; [others] is what the rest of the table reads. */
 var ALERT_LINES = {
-  30: { you: "You're teammates next hole — good guys, bad guys, same score.",
+  29: { you: "You're teammates next hole — good guys, bad guys, same score.",
         others: "teamed up next hole" }
 };
 
@@ -2468,10 +2468,10 @@ function ignoresExempt(id) { return IGNORES_EXEMPT.indexOf(id) !== -1; }
 /* Cards that say the whole thing themselves — who was spun, who is in it, what
    each side does. No banner over them, no summing-up under them: just the card. */
 var SAYS_IT_ALL = [
-  29,  // Globetrotter Shit
-  60,  // LONE WOLF! — the wolf isn't sitting anything out, so no exempt banner
-  61,  // PUT EM ON TILT — off the wheel it lands on the spinner alone, so no exempt banner
-  62,  // DESTINATION FUCKED! — same shape: the spinner alone plays the beat-up Anax
+  28,  // Globetrotter Shit
+  58,  // LONE WOLF! — the wolf isn't sitting anything out, so no exempt banner
+  59,  // PUT EM ON TILT — off the wheel it lands on the spinner alone, so no exempt banner
+  60,  // DESTINATION FUCKED! — same shape: the spinner alone plays the beat-up Anax
 ];
 function saysItAll(id) { return SAYS_IT_ALL.indexOf(id) !== -1; }
 
@@ -2479,15 +2479,15 @@ function saysItAll(id) { return SAYS_IT_ALL.indexOf(id) !== -1; }
    and the rest of the table watches — which can be the prize or the price, so
    the wording around them stays neutral about which. */
 var ONLY_EXEMPT = [
-  3,   // Aerobie — not so exempt: they tee off lefty with it
-  28,  // I'll Have What He's Having — the exempt player takes somebody's drive
+
+  27,  // I'll Have What He's Having — the exempt player takes somebody's drive
 ];
 function onlyExempt(id) { return ONLY_EXEMPT.indexOf(id) !== -1; }
 
 /* Cards that need a second name off the wheel — the spun player picks up a
    partner rather than an exemption, so the wheel spins again to find them. */
 var TEAM_CARDS = [
-  30,  // GOOD GUYS VS. BAD GUYS! — the two names play the hole against the table
+  29,  // GOOD GUYS VS. BAD GUYS! — the two names play the hole against the table
 ];
 function needsMate(id) { return TEAM_CARDS.indexOf(id) !== -1; }
 
@@ -2499,44 +2499,44 @@ function mateLabels() {
 
 var WHEEL_TEXT = {
   2:  "Once you're inside Circle 2, every putt you take is a straddle putt.",
-  3:  "[exempt] is not so exempt — they must tee off left handed with the aerobie. Counts as a normal stroke.",
-  5:  "Throw a mini for your next drive or putt — it applies until you do one or the other. Minis that fall through the basket still count as in.",
-  8:  "[chooser] picks a disc out of any bag for each other player. That's what you tee off with on the next hole.",
-  9:  "[chooser] moves everyone's next lie up to 10 paces (30 ft) in any direction, as long as it isn't out of bounds.",
-  10: "The first player to make a PUTT Big Putts everyone — everyone else has to use their left hand on their next putt! Must putt in correct distance order.",
-  11: "Everyone but [exempt] must drive with a putter and putt with a driver this hole.",
-  12: "Everyone is in for CTP on this hole. Whoever wins it takes the immunity — no cards and no bad wheel effects touch them next hole — and their next attack card hits every opponent.",
-  15: "Everyone but [exempt] throws a tomahawk on their drive or approach.",
-  16: "Everyone but [exempt] takes their next putt with their eyes closed.",
-  17: "Nobody can say the words YES or NO this hole! Any variation of the words counts (yea, yep, nah, etc.) — +1 stroke for every time they say one. Doesn't apply to [exempt], obviously.",
-  18: "Everyone must announce every shot [exempt] takes this hole. Anyone who forgets a throw takes +1 stroke after the hole.",
-  19: "[chooser] picks the disc everyone else tees off with this hole.",
-  26: "Everyone but [exempt] gets to move their lie up to 10 paces (30 ft) in any direction, one time this hole.",
-  27: "Everyone but [exempt] must GAMBLE if they miss their first putt — putt again. Make it and that was a free mulligan. Miss and that stroke counts too — play whichever disc landed farthest away, then +1 stroke after the hole.",
-  28: "[exempt] gets to join whatever player they want, as if they drove on top of that player's disc, after everyone tees off.",
-  29: "[exempt] gets a free putt behind the back for no stroke. Everyone else still has to do it but it does count as a regular stroke for them. Must be inside Circle 1 to take effect.",
-  30: "It's 2 teams this hole: [exempt] and [mate] are one team, and everyone else is the other. Same rules for both teams: a birdie counts as an eagle, no birdie or better is +1 stroke after the hole, and a card played on either teammate counts against both. The team that wins the hole banks a mulligan each — the duo's score vs. the other side's best, and a tie means no prize.",
-  31: "If anyone but [exempt] hits metal at any point on this hole, it counts as in.",
-  33: "Everyone but [exempt] takes their next drive with their offhand.",
-  34: "[exempt] throws offhand off the box for free — that's throw 0. Everyone else throws lefty too, and theirs counts as throw 1.",
-  36: "Everyone but [exempt] gets to make their own tee pad, up to 10 paces (30 ft) from the original.",
-  38: "[chooser] chooses a somewhat reasonable mando for this hole. Everyone else has to play it.",
-  40: "[chooser] forces all opponents to play the hole with only 1 DISC this hole! (If someone gives or already gave them an Aerobie or mini, that counts as their 1 disc.)",
-  41: "[chooser] gives everyone a disc from his own bag to tee off with on this hole.",
-  42: "Everyone but [exempt] has to plant their feet! No run up for this next tee shot!",
-  45: "Everyone but [exempt] has to throw a roller this drive or approach shot.",
-  47: "Everyone but [exempt] can take a free putt with their shoe at no stroke cost, if they want, when inside Circle 2.",
-  48: "Everyone but [exempt] has to throw forehand on the next drive or approach.",
-  50: "Everyone but [exempt] can pick up a C1 putt this hole. It was definitely going in anyway, right?",
-  51: "[chooser] picks 2 discs out of each person's bag, then everyone picks 1 of the 2 to tee off with.",
-  52: "Everyone but [exempt] gets free tree insurance this hole — hit a tree and take a free mulligan.",
-  53: "[chooser] gives everyone advice for their tee shot — can be different advice for each of them — and they have to follow it as best they can. (Somewhat reasonable advice — nothing like throw it backwards.)",
-  54: "Everyone but [exempt] turbo putts their next putt.",
-  56: "If anyone but [exempt] misses a putt inside C1, they have to carry their putter in either hand until they finish the next hole. (They can putt with it.) Drop it or bag it and it's +1 stroke.",
-  57: "[chooser] marks a new tee pad up to 10 paces (30 ft) from the original tee pad. Everyone else tees from there.",
-  60: "[exempt] is the LONE WOLF! Cards played by [exempt] effect everyone else! A lone wolf win gives him the right to go through everyone's cards and play 1 card from everyone's hand that effects that player. If the 3 players win then nobody cares, cuz 3 people should beat 1 every time — but they can flip fight for 1 free mulligan. Wolf calls heads or tails.",
-  61: "[spinner] spun the wheel and has to play the entire hole with the TILT!",
-  62: "[spinner] spun the wheel and has to play the entire hole with the... slightly used Anax..."
+
+  4:  "Throw a mini for your next drive or putt — it applies until you do one or the other. Minis that fall through the basket still count as in.",
+  7:  "[chooser] picks a disc out of any bag for each other player. That's what you tee off with on the next hole.",
+  8:  "[chooser] moves everyone's next lie up to 10 paces (30 ft) in any direction, as long as it isn't out of bounds.",
+  9: "The first player to make a PUTT Big Putts everyone — everyone else has to use their left hand on their next putt! Must putt in correct distance order.",
+  10: "Everyone but [exempt] must drive with a putter and putt with a driver this hole.",
+  11: "Everyone is in for CTP on this hole. Whoever wins it takes the immunity — no cards and no bad wheel effects touch them next hole — and their next attack card hits every opponent.",
+  14: "Everyone but [exempt] throws a tomahawk on their drive or approach.",
+  15: "Everyone but [exempt] takes their next putt with their eyes closed.",
+  16: "Nobody can say the words YES or NO this hole! Any variation of the words counts (yea, yep, nah, etc.) — +1 stroke for every time they say one. Doesn't apply to [exempt], obviously.",
+  17: "Everyone must announce every shot [exempt] takes this hole. Anyone who forgets a throw takes +1 stroke after the hole.",
+  18: "[chooser] picks the disc everyone else tees off with this hole.",
+  25: "Everyone but [exempt] gets to move their lie up to 10 paces (30 ft) in any direction, one time this hole.",
+  26: "Everyone but [exempt] must GAMBLE if they miss their first putt — putt again. Make it and that was a free mulligan. Miss and that stroke counts too — play whichever disc landed farthest away, then +1 stroke after the hole.",
+  27: "[exempt] gets to join whatever player they want, as if they drove on top of that player's disc, after everyone tees off.",
+  28: "[exempt] gets a free putt behind the back for no stroke. Everyone else still has to do it but it does count as a regular stroke for them. Must be inside Circle 1 to take effect.",
+  29: "It's 2 teams this hole: [exempt] and [mate] are one team, and everyone else is the other. Same rules for both teams: a birdie counts as an eagle, no birdie or better is +1 stroke after the hole, and a card played on either teammate counts against both. The team that wins the hole banks a mulligan each — the duo's score vs. the other side's best, and a tie means no prize.",
+  30: "If anyone but [exempt] hits metal at any point on this hole, it counts as in.",
+  32: "Everyone but [exempt] takes their next drive with their offhand.",
+  33: "[exempt] throws offhand off the box for free — that's throw 0. Everyone else throws lefty too, and theirs counts as throw 1.",
+  35: "Everyone but [exempt] gets to make their own tee pad, up to 10 paces (30 ft) from the original.",
+  37: "[chooser] chooses a somewhat reasonable mando for this hole. Everyone else has to play it.",
+  39: "[chooser] forces all opponents to play the hole with only 1 DISC this hole! (If someone gives or already gave them a mini, that counts as their 1 disc.)",
+  40: "[chooser] gives everyone a disc from his own bag to tee off with on this hole.",
+  41: "Everyone but [exempt] has to plant their feet! No run up for this next tee shot!",
+  44: "Everyone but [exempt] has to throw a roller this drive or approach shot.",
+  45: "Everyone but [exempt] can take a free putt with their shoe at no stroke cost, if they want, when inside Circle 2.",
+  46: "Everyone but [exempt] has to throw forehand on the next drive or approach.",
+  48: "Everyone but [exempt] can pick up a C1 putt this hole. It was definitely going in anyway, right?",
+  49: "[chooser] picks 2 discs out of each person's bag, then everyone picks 1 of the 2 to tee off with.",
+  50: "Everyone but [exempt] gets free tree insurance this hole — hit a tree and take a free mulligan.",
+  51: "[chooser] gives everyone advice for their tee shot — can be different advice for each of them — and they have to follow it as best they can. (Somewhat reasonable advice — nothing like throw it backwards.)",
+  52: "Everyone but [exempt] turbo putts their next putt.",
+  54: "If anyone but [exempt] misses a putt inside C1, they have to carry their putter in either hand until they finish the next hole. (They can putt with it.) Drop it or bag it and it's +1 stroke.",
+  55: "[chooser] marks a new tee pad up to 10 paces (30 ft) from the original tee pad. Everyone else tees from there.",
+  58: "[exempt] is the LONE WOLF! Cards played by [exempt] effect everyone else! A lone wolf win gives him the right to go through everyone's cards and play 1 card from everyone's hand that effects that player. If the 3 players win then nobody cares, cuz 3 people should beat 1 every time — but they can flip fight for 1 free mulligan. Wolf calls heads or tails.",
+  59: "[spinner] spun the wheel and has to play the entire hole with the TILT!",
+  60: "[spinner] spun the wheel and has to play the entire hole with the... slightly used Anax..."
 };
 /*
  * Whether the fate spin has anything to decide. It reads the wheel wording
