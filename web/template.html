@@ -5672,6 +5672,18 @@ app.addEventListener("pointermove", function (e) {
     tDrag.el.style.top = tclampY(e.clientY - tDrag.dy) + "px";
   }
 });
+/* Is the card being carried sitting over the deck? Measured from the middle of
+   the card against the deck's own box, grown a little: the deck is a small
+   target on a phone, and the gesture people make is "put it back", not an
+   attempt to hit a square. */
+function overDeck(el) {
+  var deck = document.getElementById("tdeck");
+  if (!deck || !el) return false;
+  var d = deck.getBoundingClientRect(), r = el.getBoundingClientRect();
+  var cx = r.left + r.width / 2, cy = r.top + r.height / 2, pad = 24;
+  return cx >= d.left - pad && cx <= d.right + pad &&
+         cy >= d.top - pad && cy <= d.bottom + pad;
+}
 function tableDrop(cancelled) {
   if (!tDrag) return;
   var d = tDrag; tDrag = null;
@@ -5693,6 +5705,9 @@ function tableDrop(cancelled) {
     }
     // Never left the deck mid-drag (the gesture died): the card stays on top.
     else if (!d.el || cancelled) { if (d.el) d.el.remove(); }
+    // Peeled off and put straight back down again. Nothing was dealt, so
+    // nothing needs undoing — the card was never off the deck.
+    else if (overDeck(d.el)) { d.el.remove(); }
     else {
       c.board.push({
         id: c.deck[0],
@@ -5708,7 +5723,15 @@ function tableDrop(cancelled) {
     for (var i = 0; i < c.board.length; i++) if (c.board[i].id === d.id) item = c.board[i];
     if (item) {
       if (!d.moved && !cancelled) item.up = !item.up;
-      else if (d.el) {
+      // Carried back to the deck: it goes in, underneath, face down like the
+      // rest of it. The bottom rather than the top because putting a card back
+      // and having the next tap deal you the same card again reads as the table
+      // having ignored you.
+      else if (!cancelled && overDeck(d.el)) {
+        c.board = c.board.filter(function (x) { return x !== item; });
+        c.deck = c.deck.concat([item.id]);
+        playClip(drawAudio, sfxVolume());
+      } else if (d.el) {
         item.x = parseInt(d.el.style.left, 10) || item.x;
         item.y = parseInt(d.el.style.top, 10) || item.y;
       }
