@@ -217,16 +217,22 @@
   .counter span { font-size: 11px; font-weight: 900; letter-spacing: 1px; color: var(--sage);
                   text-transform: uppercase; line-height: 1.15; }
 
+  /* The outline is the card's rarity — the one thing about a card you can read
+     without reading it. Defaults kept for anything drawn before a tier is known,
+     so a card is never left with no edge at all. */
   .card { display: flex; border: 2px solid transparent; border-radius: 18px; overflow: hidden;
           margin-bottom: 12px;
           background: linear-gradient(var(--panel), var(--panel)) padding-box,
-                      linear-gradient(100deg, #1E6FFF, #3FA9FF 45%, #FF8A1E) border-box;
-          box-shadow: 0 0 14px rgba(30, 111, 255, 0.25); }
+                      linear-gradient(100deg, var(--rare, #3FA9FF), var(--rare, #3FA9FF)) border-box;
+          box-shadow: 0 0 14px var(--rareglow, rgba(30, 111, 255, 0.25)); }
   .card .body { padding: 16px; flex: 1 1 auto; min-width: 0; }
   .tags { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
   .tag { font-size: 13px; font-weight: 900; letter-spacing: 1px; border-radius: 6px;
          padding: 4px 8px; text-transform: uppercase; }
   .tag.timing { background: #061022; color: #4DC3FF; }
+  /* The tier in words as well as in the outline: a colour tells you a card is
+     special, the word tells you how special. */
+  .tag.rarity { background: #061022; }
   .card h3 { margin: 0 0 6px; font-size: 26px; font-weight: 900; letter-spacing: -.3px; }
   .card p { margin: 0; color: var(--sage); }
   .card .acts { display: flex; gap: 10px; margin-top: 14px; }
@@ -1031,7 +1037,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.132 · 2 Sep 21:37";
+var APP_VERSION = "v1.133 · 2 Sep 21:39";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. Opening the app fetches fresh anyway.
@@ -3905,15 +3911,20 @@ function cardHtml(c, withActions, altText) {
   // Art, when it exists, IS the card face; any card without art keeps the
   // interim text tile, so faces can land one at a time.
   // In hand, tapping the tile (buttons aside) opens the full face.
-  var tap = withActions ? ' data-act="viewCard" data-i="' + c.id + '" style="cursor:pointer"' : "";
+  // The rarity rides on the element as its own two properties, so the outline
+  // and its glow come off the tier without the stylesheet knowing the tiers.
+  var rare = rarityOf(c);
+  var edge = ' style="' + rarityVars(rare) +
+    (withActions ? ';cursor:pointer' : "") + '"';
+  var tap = withActions ? ' data-act="viewCard" data-i="' + c.id + '"' : "";
   var art = CARD_ART[c.id];
   if (art) {
-    return '<div class="card artcard"' + tap + '><img class="cardart" src="' + art + '" alt="' +
+    return '<div class="card artcard"' + tap + edge + '><img class="cardart" src="' + art + '" alt="' +
       esc(c.name) + '. ' + esc(words) + '">' +
       (altText ? '<div class="body"><p>' + esc(altText) + '</p></div>' : "") +
       (acts ? '<div class="artacts">' + acts + '</div>' : "") + '</div>';
   }
-  return '<div class="card"' + tap + '><div class="body">' +
+  return '<div class="card"' + tap + edge + '><div class="body">' +
     // The little GAMBLE WHEEL!! in the top corner — this card lives there.
     (wheelOnlyCard(c.id)
       ? '<svg width="30" height="38" viewBox="-18 -27 36 45" style="float:right;margin:-4px 0 4px 10px">' +
@@ -3922,7 +3933,9 @@ function cardHtml(c, withActions, altText) {
         '<path d="M0 0L15 0M0 0L7.5 13M0 0L-7.5 13M0 0L-15 0M0 0L-7.5 -13M0 0L7.5 -13" stroke="#4DC3FF" stroke-width="2"/>' +
         '<circle r="3.5" fill="#4DC3FF"/></svg>'
       : "") +
-    '<div class="tags"><span class="tag timing">' + c.kind + '</span>' +
+    '<div class="tags"><span class="tag rarity" style="color:' + rare.color + '">' +
+    esc(rare.id) + '</span>' +
+    '<span class="tag timing">' + c.kind + '</span>' +
     '<span class="tag timing">' + esc(c.timing) + '</span>' +
     (wheelOnlyCard(c.id)
       ? '<span class="tag timing" style="color:#FF8A1E;border-color:rgba(255,138,30,.55)">wheel only</span>'
@@ -5946,6 +5959,16 @@ function rarityOf(c) {
   var want = (c && c.rarity) || "common";
   for (var i = 0; i < RARITIES.length; i++) if (RARITIES[i].id === want) return RARITIES[i];
   return RARITIES[0] || { id: "common", color: "#E6ECF5", weight: 100 };
+}
+/* A tier's colour as the two custom properties a card's outline is drawn from.
+   The glow is the same colour thinned out, mixed here rather than in CSS: these
+   phones are precached and go a long time between reloads, and color-mix() is
+   not a thing to discover is missing on a tee pad with no signal. */
+function rarityVars(rare) {
+  var h = (rare.color || "#3FA9FF").replace("#", "");
+  var n = parseInt(h, 16);
+  var rgb = [(n >> 16) & 255, (n >> 8) & 255, n & 255].join(",");
+  return "--rare:" + rare.color + ";--rareglow:rgba(" + rgb + ",.28)";
 }
 function rarityRank(c) {
   var r = rarityOf(c);
