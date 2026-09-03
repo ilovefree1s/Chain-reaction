@@ -235,6 +235,9 @@
   .tag.rarity { background: #061022; }
   .card h3 { margin: 0 0 6px; font-size: 26px; font-weight: 900; letter-spacing: -.3px; }
   .card p { margin: 0; color: var(--sage); }
+  /* A dual card's two halves are separate instructions, and only one of them is
+     ever yours. The gap is what says so. */
+  .card p + p { margin-top: 10px; }
   .card .acts { display: flex; gap: 10px; margin-top: 14px; }
   .card.artcard { display: block; }
   .cardart { width: 100%; display: block; }
@@ -1037,7 +1040,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.163 · 2 Sep 23:03";
+var APP_VERSION = "v1.165 · 2 Sep 23:08";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. Opening the app fetches fresh anyway.
@@ -3894,6 +3897,12 @@ function counter(label, value, sublabel, act) {
 /* [altText] rewrites the card's words for where it is being shown — the wheel
    passes the wheel wording. Art is painted with the card's own text, so when a
    face exists the replacement words go underneath it rather than nowhere. */
+/* A dual card carries two cards' worth of instructions, and you only ever read
+   one of them. Split before either half so each gets its own block instead of
+   the pair running together as one paragraph. */
+function cardHalves(words) {
+  return String(words).split(/\s+(?=On (?:yourself|another player):)/);
+}
 function cardHtml(c, withActions, altText, browse) {
   var words = altText || c.text;
   var acts = "";
@@ -3944,7 +3953,8 @@ function cardHtml(c, withActions, altText, browse) {
     (wheelOnlyCard(c.id)
       ? '<span class="tag timing" style="color:#FF8A1E;border-color:rgba(255,138,30,.55)">wheel only</span>'
       : "") + '</div>' +
-    '<h3>' + esc(c.name) + '</h3><p>' + esc(words) + '</p>' + acts +
+    '<h3>' + esc(c.name) + '</h3><p>' +
+    cardHalves(words).map(esc).join('</p><p>') + '</p>' + acts +
     '</div></div>';
 }
 
@@ -4356,13 +4366,19 @@ function cardFaceSvg(c) {
     ' 260,' + (octTop + 54) + '" fill="#061022" stroke="url(#facechip)" stroke-width="5"/>' +
     kindGlyph(c.kind, 360, octTop + 100, c.id);
 
-  var textLines = wrapWords(c.text, 40);
+  // Each half wrapped on its own, with a blank line between them: an empty line
+  // still takes its turn down the card, which is the gap.
+  var textLines = [];
+  cardHalves(c.text).forEach(function (part, i) {
+    if (i) textLines.push("");
+    textLines = textLines.concat(wrapWords(part, 40));
+  });
   var bf = textLines.length > 7 ? 27 : 30;
   var ty = octTop + 250;
   var body = textLines.map(function (l) {
-    var s = '<text x="360" y="' + ty + '" text-anchor="middle" fill="#A9B8D4" font-size="' + bf + '">' +
-      esc(l) + '</text>';
-    ty += bf + 10;
+    var s = l ? '<text x="360" y="' + ty + '" text-anchor="middle" fill="#A9B8D4" font-size="' +
+      bf + '">' + esc(l) + '</text>' : "";
+    ty += l ? bf + 10 : Math.round(bf * 0.6);
     return s;
   }).join("");
 
