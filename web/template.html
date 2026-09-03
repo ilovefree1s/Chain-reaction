@@ -4260,12 +4260,6 @@ function kindGlyph(kind, cx, cy, id) {
   return g + "</g>";
 }
 
-/* The lights that run a legendary's or an epic's rim, following the rounded
-   rectangle of the border itself rather than cutting its corners. Two for a
-   legendary, one smaller and slower for an epic, half a lap apart so there is
-   always one of them in sight. */
-var FACE_RIM_PATH = "M39 13H681A26 26 0 0 1 707 39V961A26 26 0 0 1 681 987H39" +
-  "A26 26 0 0 1 13 961V39A26 26 0 0 1 39 13Z";
 /* A four-pointed twinkle, drawn rather than blurred: the sides pinch in toward
    the middle, which is what makes it read as a sparkle instead of a diamond. */
 function sparkStar(R) {
@@ -4273,20 +4267,25 @@ function sparkStar(R) {
   return "M0 -" + R + "Q" + k + " -" + k + " " + R + " 0Q" + k + " " + k + " 0 " + R +
     "Q-" + k + " " + k + " -" + R + " 0Q-" + k + " -" + k + " 0 -" + R + "Z";
 }
+/* The two top corners, sitting on the rim where its curve turns. */
+var SPARK_CORNERS = [[21, 21], [699, 21]];
 function faceSparks(tier) {
-  var runs = tier === "legendary" ? [[17, 0], [17, -4]]
-    : tier === "epic" ? [[12, 0]] : [];
-  return runs.map(function (r) {
-    // The motion goes on the group and the turn on the star inside it: both are
-    // transforms, and on one element the second would simply replace the first.
-    // A soft disc of the rim's own colour sits under it so the sharp white has
-    // something to sit in, rather than hanging over the border on its own.
-    return '<g><animateMotion dur="8s" repeatCount="indefinite" begin="' + r[1] + 's" path="' +
-      FACE_RIM_PATH + '"/>' +
-      '<circle r="' + Math.round(r[0] * 1.5) + '" fill="url(#sparkfade)" filter="url(#sparkblur)"/>' +
-      '<path d="' + sparkStar(r[0]) + '" fill="#FFFFFF">' +
+  var R = tier === "legendary" ? 17 : tier === "epic" ? 12 : 0;
+  if (!R) return "";
+  return SPARK_CORNERS.map(function (at, i) {
+    // Out of step with each other, so the pair breathes rather than blinks.
+    var off = i ? "-3.5s" : "0s";
+    // Turning and swelling are both transforms; on one element the second would
+    // replace the first, so they are summed rather than set.
+    return '<g transform="translate(' + at[0] + ' ' + at[1] + ')">' +
+      '<circle r="' + Math.round(R * 1.5) + '" fill="url(#sparkfade)" filter="url(#sparkblur)">' +
+      '<animate attributeName="opacity" values="0.55;1;0.55" dur="7s" begin="' + off +
+      '" repeatCount="indefinite"/></circle>' +
+      '<path d="' + sparkStar(R) + '" fill="#FFFFFF">' +
       '<animateTransform attributeName="transform" type="rotate" from="0" to="360"' +
-      ' dur="4s" repeatCount="indefinite"/></path></g>';
+      ' dur="24s" repeatCount="indefinite"/>' +
+      '<animateTransform attributeName="transform" type="scale" values="0.82;1.15;0.82"' +
+      ' dur="7s" begin="' + off + '" repeatCount="indefinite" additive="sum"/></path></g>';
   }).join("");
 }
 function cardFaceSvg(c) {
