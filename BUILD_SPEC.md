@@ -121,7 +121,7 @@ Suggested palette: deep pine ground (`#0C1A14`), panels (`#132A21`), muted sage 
     { "id": "epic",      "color": "#B96BFF", "weight": 18 },
     { "id": "legendary", "color": "#FFC72E", "weight": 9 }
   ],
-  "drawLuck": { "last": 1.28, "nextToLast": 1.15 },
+  "drawLuck": { "last": 1.67, "nextToLast": 1.52 },
   "timings": [
     "Before shot",
     "Before tee shot",
