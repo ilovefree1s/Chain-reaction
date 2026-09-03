@@ -19,6 +19,8 @@ If a PWA is easier to sideload, that's acceptable — but it must work offline, 
 - **Each player has their own 60-card deck**, shuffled independently. Duplicate cards across players are expected and fine.
 - **Played and discarded cards** go to that player's own discard pile. Reshuffle the discard back into the deck if the deck ever empties.
 - **The GAMBLE WHEEL!! outranks everything.** A wheel result is top priority and cannot be overridden by a played card.
+- **Card rarity.** Five tiers — common, uncommon, rare, epic, legendary — each rarer than the last and each with its own colour on the face. A card carries a `rarity` field only when it is not common; anything without one is common. Rarity is not a restriction: every card is in every deck exactly once. It sets how likely that card is to be the one a draw hands you.
+- **Bad rounds draw better cards.** The further down the card a player is, the more the draw favours the rare end: last place most, second-to-last a little less, everyone above them not at all. It multiplies through the tiers, so it barely touches commons and is felt most on legendaries. Alongside last place's extra card every hole, this is the game's whole answer to a round getting away from somebody.
 - **Max 2 attack cards may be played on any one player per hole.** Cancels, reverses and anything else that doesn't change how a player actually throws are free of the count. The app does not enforce this — players track it themselves — but show it in an in-app rules screen.
 
 ### Draw rule (this is the one piece of real logic)
@@ -112,6 +114,14 @@ Suggested palette: deep pine ground (`#0C1A14`), panels (`#132A21`), muted sage 
   "freeSpinCard": 22,
   "wheelExcludes": [1, 3, 5, 6, 12, 13, 19, 20, 21, 22, 23, 24, 31, 34, 36, 38, 42, 43, 47, 53, 56, 57],
   "wheelOnly": [58],
+  "rarities": [
+    { "id": "common",    "color": "#E6ECF5", "weight": 100 },
+    { "id": "uncommon",  "color": "#47D97F", "weight": 58 },
+    { "id": "rare",      "color": "#4D8BFF", "weight": 30 },
+    { "id": "epic",      "color": "#B96BFF", "weight": 13 },
+    { "id": "legendary", "color": "#FFC72E", "weight": 5 }
+  ],
+  "drawLuck": { "last": 1.28, "nextToLast": 1.15 },
   "timings": [
     "Before shot",
     "Before tee shot",

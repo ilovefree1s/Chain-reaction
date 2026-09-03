@@ -5935,6 +5935,59 @@ function spinSecret() {
    fast as the wire allows, with no separate bookkeeping about what changed. */
 function commit(next) { state = next; save(state); render(); if (live) liveHello(); }
 
+/*
+ * The five tiers, rarest last, each with the colour it wears on the face and the
+ * weight that decides how often it is the card a draw lands on. A card says
+ * which tier it is only when it is not common, so the deck's data stays quiet
+ * about the sixty-odd cards that have nothing to say.
+ */
+var RARITIES = DATA.rarities || [];
+function rarityOf(c) {
+  var want = (c && c.rarity) || "common";
+  for (var i = 0; i < RARITIES.length; i++) if (RARITIES[i].id === want) return RARITIES[i];
+  return RARITIES[0] || { id: "common", color: "#E6ECF5", weight: 100 };
+}
+function rarityRank(c) {
+  var r = rarityOf(c);
+  for (var i = 0; i < RARITIES.length; i++) if (RARITIES[i] === r) return i;
+  return 0;
+}
+/*
+ * How much the draw leans toward the rare end for the player doing it. One
+ * number per player, raised to the power of the tier — so it does nothing at all
+ * to commons and is felt hardest on legendaries, which is the shape you want: a
+ * bad round should mean better cards, not simply more of them.
+ *
+ * Measured from the bottom of the card rather than by seat, so it means the same
+ * thing at a table of three as at a table of four. With only two players there is
+ * no next-to-last worth the name — that would be the leader.
+ */
+function drawLuck(s, who) {
+  var luck = DATA.drawLuck || {};
+  var order = standings(s), n = order.length;
+  if (order[n - 1] === who) return luck.last || 1;
+  if (n >= 3 && order[n - 2] === who) return luck.nextToLast || 1;
+  return 1;
+}
+/* One card out of what is left, by weight. The deck is a bag, not a stack: which
+   card comes next is decided at the moment of drawing, because it depends on
+   where the player standing there has got to. */
+function pickWeighted(ids, luck) {
+  var total = 0, i, w = [];
+  for (i = 0; i < ids.length; i++) {
+    var c = BY_ID[ids[i]];
+    var weight = rarityOf(c).weight * Math.pow(luck, rarityRank(c));
+    w.push(weight);
+    total += weight;
+  }
+  if (total <= 0) return 0;
+  var roll = Math.random() * total;
+  for (i = 0; i < ids.length; i++) {
+    roll -= w[i];
+    if (roll <= 0) return i;
+  }
+  return ids.length - 1;
+}
 function drawOne(s) {
   var deck = s.deck, discard = s.discard;
   if (!deck.length) {
@@ -5942,12 +5995,19 @@ function drawOne(s) {
     deck = shuffled(discard);
     discard = [];
   }
-  s.hand = s.hand.concat([deck[0]]);
+  // Cards handed back by a score correction go out again before anything else,
+  // so the deal that follows a fixed mistake returns exactly what the mistake
+  // took. A bag has no top to put them back on, so they wait in their own queue.
+  var at = (s.pending && s.pending.length) ? deck.indexOf(s.pending[0]) : -1;
+  if (at !== -1) s.pending = s.pending.slice(1);
+  else at = pickWeighted(deck, drawLuck(s, s.meIndex));
+  var got = deck[at];
+  s.hand = s.hand.concat([got]);
   // Remember which hole's deal this card belongs to, so a score correction
   // can send back exactly what the mistake dealt — never a card you chose.
   var rec = s.dealt && s.dealt[s.lastDeal];
-  if (rec && rec.cards) rec.cards.push(deck[0]);
-  s.deck = deck.slice(1);
+  if (rec && rec.cards) rec.cards.push(got);
+  s.deck = deck.slice(0, at).concat(deck.slice(at + 1));
   s.discard = discard;
   s.owed -= 1;
 }
@@ -6000,6 +6060,9 @@ function settleDeals(s) {
         if (at === -1) continue; // spent is spent
         s.hand.splice(at, 1);
         s.deck.unshift(rec.cards[i]);
+        // Queued, not just returned: the deck is drawn from by weight now, so
+        // being at the front of it means nothing on its own.
+        s.pending = (s.pending || []).concat([rec.cards[i]]);
         rec.cards.splice(i, 1);
         give--; back++;
       }
