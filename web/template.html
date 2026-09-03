@@ -1331,7 +1331,7 @@ var memoryStore = null;
  * version 1 holds ids that now mean different cards. A mismatch drops the round
  * rather than dealing somebody the wrong hand mid-round.
  */
-var SCHEMA_VERSION = 8;
+var SCHEMA_VERSION = 9;
 
 function save(s) {
   s.v = SCHEMA_VERSION;
@@ -2419,8 +2419,8 @@ var PLAY_ON_ALL = [
   31, // I'm In Control
   40, // Over Sharer
   41, // Plant Your Feet! — nobody else gets a run-up
-  52, // Turbo Time — every opponent inside C1
-  55, // Your Tee Pad Is Over There! — the whole table tees from the new spot
+  51, // Turbo Time — every opponent inside C1
+  54, // Your Tee Pad Is Over There! — the whole table tees from the new spot
 ];
 function playableOnAll(id) { return PLAY_ON_ALL.indexOf(id) !== -1; }
 /* Sent as the target when a card is played on the whole table, and understood
@@ -2490,9 +2490,9 @@ function ignoresExempt(id) { return IGNORES_EXEMPT.indexOf(id) !== -1; }
    each side does. No banner over them, no summing-up under them: just the card. */
 var SAYS_IT_ALL = [
   28,  // Globetrotter Shit
-  58,  // LONE WOLF! — the wolf isn't sitting anything out, so no exempt banner
-  59,  // PUT EM ON TILT — off the wheel it lands on the spinner alone, so no exempt banner
-  60,  // DESTINATION FUCKED! — same shape: the spinner alone plays the beater
+  57,  // LONE WOLF! — the wolf isn't sitting anything out, so no exempt banner
+  58,  // PUT EM ON TILT — off the wheel it lands on the spinner alone, so no exempt banner
+  59,  // DESTINATION FUCKED! — same shape: the spinner alone plays the beater
 ];
 function saysItAll(id) { return SAYS_IT_ALL.indexOf(id) !== -1; }
 
@@ -2548,16 +2548,16 @@ var WHEEL_TEXT = {
   44: "Everyone but [exempt] has to throw a roller this drive or approach shot.",
   45: "Everyone but [exempt] can take a free putt with their shoe at no stroke cost, if they want, when inside Circle 2.",
   46: "Everyone but [exempt] has to throw forehand on the next drive or approach.",
-  48: "Everyone but [exempt] can pick up a C1 putt this hole. It was definitely going in anyway, right?",
-  49: "[chooser] picks 2 discs out of each person's bag, then everyone picks 1 of the 2 to tee off with.",
-  50: "Everyone but [exempt] gets free tree insurance this hole — hit a tree and take a free mulligan.",
-  51: "[chooser] gives everyone advice for their tee shot — can be different advice for each of them — and they have to follow it as best they can. (Somewhat reasonable advice — nothing like throw it backwards.)",
-  52: "Everyone but [exempt] turbo putts their next putt.",
-  54: "If anyone but [exempt] misses a putt inside C1, they have to carry their putter in either hand until they finish the next hole. (They can putt with it.) Drop it or bag it and it's +1 stroke.",
-  55: "[chooser] marks a new tee pad up to 10 paces (30 ft) from the original tee pad. Everyone else tees from there.",
-  58: "[exempt] is the LONE WOLF! Cards played by [exempt] effect everyone else! A lone wolf win gives him the right to go through everyone's cards and play 1 card from everyone's hand that effects that player. If the 3 players win then nobody cares, cuz 3 people should beat 1 every time — but they can flip fight for 1 free mulligan. Wolf calls heads or tails.",
-  59: "[spinner] spun the wheel and has to play the entire hole with the TILT!",
-  60: "[spinner] spun the wheel and has to play the entire hole with the \"beater\"."
+  47: "Everyone but [exempt] can pick up a C1 putt this hole. It was definitely going in anyway, right?",
+  48: "[chooser] picks 2 discs out of each person's bag, then everyone picks 1 of the 2 to tee off with.",
+  49: "Everyone but [exempt] gets free tree insurance this hole — hit a tree and take a free mulligan.",
+  50: "[chooser] gives everyone advice for their tee shot — can be different advice for each of them — and they have to follow it as best they can. (Somewhat reasonable advice — nothing like throw it backwards.)",
+  51: "Everyone but [exempt] turbo putts their next putt.",
+  53: "If anyone but [exempt] misses a putt inside C1, they have to carry their putter in either hand until they finish the next hole. (They can putt with it.) Drop it or bag it and it's +1 stroke.",
+  54: "[chooser] marks a new tee pad up to 10 paces (30 ft) from the original tee pad. Everyone else tees from there.",
+  57: "[exempt] is the LONE WOLF! Cards played by [exempt] effect everyone else! A lone wolf win gives him the right to go through everyone's cards and play 1 card from everyone's hand that effects that player. If the 3 players win then nobody cares, cuz 3 people should beat 1 every time — but they can flip fight for 1 free mulligan. Wolf calls heads or tails.",
+  58: "[spinner] spun the wheel and has to play the entire hole with the TILT!",
+  59: "[spinner] spun the wheel and has to play the entire hole with the \"beater\"."
 };
 /*
  * Whether the fate spin has anything to decide. It reads the wheel wording

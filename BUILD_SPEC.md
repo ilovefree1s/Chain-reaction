@@ -16,7 +16,7 @@ If a PWA is easier to sideload, that's acceptable — but it must work offline, 
 - **Starting hand:** 4 cards, dealt at round start.
 - **Mulligans:** a mulligan is a free extra throw, not a shot you are forced to play. Cards hand them out; taking one is always the thrower's choice, and they can keep the throw they already made.
 - **Hand cap:** 7. Cannot draw past it — must discard first.
-- **Each player has their own 60-card deck**, shuffled independently. Duplicate cards across players are expected and fine.
+- **Each player has their own 59-card deck**, shuffled independently. Duplicate cards across players are expected and fine.
 - **Played and discarded cards** go to that player's own discard pile. Reshuffle the discard back into the deck if the deck ever empties.
 - **The GAMBLE WHEEL!! outranks everything.** A wheel result is top priority and cannot be overridden by a played card.
 - **Card rarity.** Five tiers — common, uncommon, rare, epic, legendary — each rarer than the last and each with its own colour on the face. A card carries a `rarity` field only when it is not common; anything without one is common. Rarity is not a restriction: every card is in every deck exactly once. It sets how likely that card is to be the one a draw hands you.
@@ -112,8 +112,8 @@ Suggested palette: deep pine ground (`#0C1A14`), panels (`#132A21`), muted sage 
   "maxCardsOnOnePlayerPerHole": 2,
   "wheelCost": 2,
   "freeSpinCard": 22,
-  "wheelExcludes": [1, 3, 5, 6, 12, 13, 19, 20, 21, 22, 23, 24, 31, 34, 36, 38, 42, 43, 47, 53, 56, 57],
-  "wheelOnly": [58],
+  "wheelExcludes": [1, 3, 5, 6, 12, 13, 19, 20, 21, 22, 23, 24, 31, 34, 36, 38, 42, 43, 52, 55, 56],
+  "wheelOnly": [57],
   "rarities": [
     { "id": "common",    "color": "#E6ECF5", "weight": 86 },
     { "id": "uncommon",  "color": "#47D97F", "weight": 58 },
@@ -144,7 +144,7 @@ Suggested palette: deep pine ground (`#0C1A14`), panels (`#132A21`), muted sage 
     { "id": 5, "timing": "For the next hole", "kind": "attack", "name": "Bag Boy!", "text": "Force an opponent to carry your bag for 3 holes! If they beat you before those 3 holes are up (1st or 2nd hole), they can play one of your cards and you take your bag back." },
     { "id": 6, "timing": "Before tee shot", "kind": "attack", "name": "Bag Exchange!", "text": "Pick a player to swap bags with. Play until the first bogey by a single player (both bogey is nothing). That player must volunteer as tribute to exchange lies with the other player the next time they go OB/hazard or miss a mando." },
     { "id": 7, "timing": "Before shot", "kind": "attack", "rarity": "rare", "name": "Bag Raid!", "text": "Choose ANY disc that belongs to anyone. The target player must use that disc for their next shot." },
-    { "id": 8, "timing": "After throw", "kind": "attack", "name": "Big Ooof, Bud.", "text": "Move an opponent's lie up to 10 paces (30 ft) in any direction, as long as it isn't out of bounds." },
+    { "id": 8, "timing": "After throw", "kind": "attack", "rarity": "epic", "name": "Big Ooof, Bud.", "text": "Move an opponent's lie up to 10 paces (30 ft) in any direction, as long as it isn't out of bounds." },
     { "id": 9, "timing": "After throw", "kind": "self", "name": "Big Putted!", "text": "If you make a putt from outside C1 while any other players are inside C1, they all must use their left hand to putt this hole." },
     { "id": 10, "timing": "Before tee shot", "kind": "attack", "name": "Bizarro Golf!", "text": "Force an opponent to drive with a putter and putt with a driver this hole." },
     { "id": 11, "timing": "Before all tee", "kind": "self", "name": "Call Your Shot", "text": "Call CTP. If you win it, you're immune to cards and bad wheel effects next hole, and your next attack card hits every opponent — not you." },
@@ -183,20 +183,19 @@ Suggested palette: deep pine ground (`#0C1A14`), panels (`#132A21`), muted sage 
     { "id": 44, "timing": "Before shot", "kind": "attack", "rarity": "rare", "name": "Roll It!", "text": "Force an opponent to throw a roller on the upcoming drive or approach." },
     { "id": 45, "timing": "Before shot", "kind": "dual", "rarity": "epic", "name": "Shoe Golf", "text": "On yourself: putt with your own shoe at no stroke cost. On another player: they putt with a shoe and it still counts as a stroke. If they refuse to take their shoe off, they take +1 stroke after the hole." },
     { "id": 46, "timing": "Before shot", "kind": "attack", "name": "Forehand only!", "text": "Force an opponent to throw a forehand on the upcoming drive or approach." },
-    { "id": 47, "timing": "On draw", "kind": "sabotage", "name": "Everybody But Me", "text": "You must play this card immediately after drawing, you can't discard it. Everyone gets a free mulligan on the next hole but me =(" },
-    { "id": 48, "timing": "Before shot", "kind": "dual", "rarity": "uncommon", "name": "That's Definitely a Gimme", "text": "Pick up a putt as a gimme, as long as it's inside C1 — you definitely woulda made it. The player in last place gets one too. If 2 players are tied for last, they can flip a coin or roll dice to see who gets it." },
-    { "id": 49, "timing": "Before tee shot", "kind": "attack", "rarity": "rare", "name": "Too Many Choices", "text": "Pick 2 discs out of 1 person's bag. They choose 1 to tee off with." },
-    { "id": 50, "timing": "Before tee shot", "kind": "self", "name": "Tree Insurance", "text": "Play before your tee shot. If you hit a tree, take a free mulligan." },
-    { "id": 51, "timing": "Before shot", "kind": "attack", "rarity": "epic", "name": "Trust Me Bro", "text": "Give another player advice for their tee shot. They have to follow it as best they can. (Somewhat reasonable advice — don't tell them something like throw it backwards.)" },
-    { "id": 52, "timing": "Before shot", "kind": "attack", "rarity": "epic", "name": "Turbo Time", "text": "All opponents in C1 must turbo putt their next shot." },
-    { "id": 53, "timing": "Before tee shot", "kind": "group", "rarity": "uncommon", "name": "WALK IT DOWN!!", "text": "No other cards can be played once this hits the table. Everyone tees immediately from anywhere near the tee pad — no throw order. First and second to finish get birdie, third gets par, last gets bogey. No running, and no calling foot faults." },
-    { "id": 54, "timing": "After throw", "kind": "attack", "name": "Walk of Shame", "text": "After a missed putt inside C1, that player carries their putter in either hand until they finish the next hole. (They can putt with it.) If they drop it or put it in the bag, +1 stroke." },
-    { "id": 55, "timing": "Before tee shot", "kind": "attack", "rarity": "legendary", "name": "Your Tee Pad Is Over There!", "text": "Use 2 of your discs to mark a new tee for everyone else, up to 10 paces (30 ft) from the original. They all tee from it." },
-    { "id": 56, "timing": "After throw", "kind": "attack", "name": "I Think It's Broke", "text": "Play on another player that just hit a tree. They lose that disc — they can't throw it again for the rest of the round. If they forget and throw it again, it's +1 stroke." },
-    { "id": 57, "timing": "After card", "kind": "react", "name": "UNO REVERSO", "text": "Reverse any cards that effect you back to the person that used the card. (Doesn't work on wheel spins.)" },
-    { "id": 58, "timing": "Before all tee", "kind": "group", "name": "LONE WOLF!", "text": "Whoever it lands on is the LONE WOLF! Cards played by the wolf effect everyone else! A lone wolf win gives him the right to go through everyone's cards and play 1 card from everyone's hand that effects that player. If the 3 players win then nobody cares, cuz 3 people should beat 1 every time — but they can flip fight for 1 free mulligan. Wolf calls heads or tails." },
-    { "id": 59, "timing": "Before tee shot", "kind": "attack", "rarity": "epic", "name": "PUT EM ON TILT", "text": "Force an opponent to play the entire hole with the TILT!" },
-    { "id": 60, "timing": "Before tee shot", "kind": "attack", "rarity": "legendary", "name": "DESTINATION FUCKED!", "text": "Force an opponent to play the entire hole with the \"beater\". Whoever played the card gets 30 seconds to abuse the disc before they tee off." }
+    { "id": 47, "timing": "Before shot", "kind": "dual", "rarity": "uncommon", "name": "That's Definitely a Gimme", "text": "Pick up a putt as a gimme, as long as it's inside C1 — you definitely woulda made it. The player in last place gets one too. If 2 players are tied for last, they can flip a coin or roll dice to see who gets it." },
+    { "id": 48, "timing": "Before tee shot", "kind": "attack", "rarity": "rare", "name": "Too Many Choices", "text": "Pick 2 discs out of 1 person's bag. They choose 1 to tee off with." },
+    { "id": 49, "timing": "Before tee shot", "kind": "self", "name": "Tree Insurance", "text": "Play before your tee shot. If you hit a tree, take a free mulligan." },
+    { "id": 50, "timing": "Before shot", "kind": "attack", "rarity": "epic", "name": "Trust Me Bro", "text": "Give another player advice for their tee shot. They have to follow it as best they can. (Somewhat reasonable advice — don't tell them something like throw it backwards.)" },
+    { "id": 51, "timing": "Before shot", "kind": "attack", "rarity": "epic", "name": "Turbo Time", "text": "All opponents in C1 must turbo putt their next shot." },
+    { "id": 52, "timing": "Before tee shot", "kind": "group", "rarity": "uncommon", "name": "WALK IT DOWN!!", "text": "No other cards can be played once this hits the table. Everyone tees immediately from anywhere near the tee pad — no throw order. First and second to finish get birdie, third gets par, last gets bogey. No running, and no calling foot faults." },
+    { "id": 53, "timing": "After throw", "kind": "attack", "name": "Walk of Shame", "text": "After a missed putt inside C1, that player carries their putter in either hand until they finish the next hole. (They can putt with it.) If they drop it or put it in the bag, +1 stroke." },
+    { "id": 54, "timing": "Before tee shot", "kind": "attack", "rarity": "legendary", "name": "Your Tee Pad Is Over There!", "text": "Use 2 of your discs to mark a new tee for everyone else, up to 10 paces (30 ft) from the original. They all tee from it." },
+    { "id": 55, "timing": "After throw", "kind": "attack", "name": "I Think It's Broke", "text": "Play on another player that just hit a tree. They lose that disc — they can't throw it again for the rest of the round. If they forget and throw it again, it's +1 stroke." },
+    { "id": 56, "timing": "After card", "kind": "react", "name": "UNO REVERSO", "text": "Reverse any cards that effect you back to the person that used the card. (Doesn't work on wheel spins.)" },
+    { "id": 57, "timing": "Before all tee", "kind": "group", "name": "LONE WOLF!", "text": "Whoever it lands on is the LONE WOLF! Cards played by the wolf effect everyone else! A lone wolf win gives him the right to go through everyone's cards and play 1 card from everyone's hand that effects that player. If the 3 players win then nobody cares, cuz 3 people should beat 1 every time — but they can flip fight for 1 free mulligan. Wolf calls heads or tails." },
+    { "id": 58, "timing": "Before tee shot", "kind": "attack", "rarity": "epic", "name": "PUT EM ON TILT", "text": "Force an opponent to play the entire hole with the TILT!" },
+    { "id": 59, "timing": "Before tee shot", "kind": "attack", "rarity": "legendary", "name": "DESTINATION FUCKED!", "text": "Force an opponent to play the entire hole with the \"beater\". Whoever played the card gets 30 seconds to abuse the disc before they tee off." }
   ]
 }
 ```
