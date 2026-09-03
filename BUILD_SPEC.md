@@ -138,7 +138,7 @@ Suggested palette: deep pine ground (`#0C1A14`), panels (`#132A21`), muted sage 
   ],
   "cards": [
     { "id": 1, "timing": "Before tee shot", "kind": "attack", "name": "1v1 Challenge", "text": "Challenge someone. It runs until one of you beats the other's score on a hole — a tie settles nothing. The winner gets immunity from all attack cards next hole and banks a mulligan to use on any hole, whenever they need it." },
-    { "id": 2, "timing": "Before shot", "kind": "attack", "name": "39% OF THE SPLITS", "text": "Force an opponent to straddle putt. Playable any time someone is about to throw a putter." },
+    { "id": 2, "timing": "Before shot", "kind": "attack", "name": "69% OF THE SPLITS", "text": "Force an opponent to straddle putt. Playable any time someone is about to throw a putter." },
     { "id": 3, "timing": "After throw", "kind": "attack", "name": "AIR HORN!", "text": "Heckle an opponent during one of their shots. Reveal and discard this card after." },
     { "id": 4, "timing": "Before shot", "kind": "attack", "name": "Baby Discs", "text": "Force an opponent to throw a mini for their upcoming drive or putt. Through the basket floor still counts as in." },
     { "id": 5, "timing": "For the next hole", "kind": "attack", "name": "Bag Boy!", "text": "Force an opponent to carry your bag for 3 holes! If they beat you before those 3 holes are up (1st or 2nd hole), they can play one of your cards and you take your bag back." },
