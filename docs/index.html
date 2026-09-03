@@ -1040,7 +1040,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.199 · 2 Sep 23:54";
+var APP_VERSION = "v1.200 · 2 Sep 23:57";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. Opening the app fetches fresh anyway.
@@ -1123,19 +1123,59 @@ var diceAudio = DICE_SOUND ? new Audio(DICE_SOUND) : null;
 var coinAudio = COIN_SOUND ? new Audio(COIN_SOUND) : null;
 var SHUFFLE_SOUND = "assets/shuffle.wav";
 var shuffleAudio = SHUFFLE_SOUND ? new Audio(SHUFFLE_SOUND) : null;
+/*
+ * Copies of a clip, made and loaded up front, played by rewinding one rather
+ * than by cloning the element at the moment the sound is wanted. A fresh clone
+ * carries the src but none of the audio: it has to fetch and decode before it
+ * makes a noise, and that put the coin's ting about a third of a second behind
+ * the thumb that flicked it. Three of them, so two plays close together don't
+ * cut each other off.
+ */
+var clipRings = [];
+function clipFrom(base) {
+  var ring;
+  for (var i = 0; i < clipRings.length; i++) {
+    if (clipRings[i].base === base) { ring = clipRings[i]; break; }
+  }
+  if (!ring) {
+    ring = { base: base, at: 0, list: [] };
+    for (var k = 0; k < 3; k++) {
+      var c = base.cloneNode();
+      c.preload = "auto";
+      try { c.load(); } catch (e) { /* nothing to do */ }
+      ring.list.push(c);
+    }
+    clipRings.push(ring);
+  }
+  var el = ring.list[ring.at];
+  ring.at = (ring.at + 1) % ring.list.length;
+  // A copy coming round again may still be fading out from its last outing.
+  if (el.crFade) { clearInterval(el.crFade); el.crFade = null; }
+  try { el.pause(); el.currentTime = 0; } catch (e) { /* nothing to do */ }
+  return el;
+}
+/* Loaded before anybody asks for them, so the first play of a sound is as
+   prompt as the fiftieth. */
+function warmClips() {
+  [menuAudio, drawAudio, diceAudio, coinAudio, shuffleAudio]
+    .forEach(function (a) { if (a) clipFrom(a); });
+}
 function playClip(base, volume, maxSeconds) {
   if (!base || !(volume > 0)) return;
   try {
-    var a = base.cloneNode();
+    var a = clipFrom(base);
     a.volume = Math.min(1, Math.max(0, volume));
     var p = a.play();
     if (p && p.catch) p.catch(function () { /* nothing to do */ });
     // A clip longer than its moment gets faded out early.
     if (maxSeconds) {
       setTimeout(function () {
-        var fade = setInterval(function () {
+        a.crFade = setInterval(function () {
           a.volume = Math.max(0, a.volume - 0.15);
-          if (a.volume <= 0) { clearInterval(fade); try { a.pause(); } catch (e) { /* done */ } }
+          if (a.volume <= 0) {
+            clearInterval(a.crFade); a.crFade = null;
+            try { a.pause(); } catch (e) { /* done */ }
+          }
         }, 40);
       }, maxSeconds * 1000);
     }
@@ -6981,6 +7021,9 @@ window.addEventListener("resize", fitViewport);
 fitViewport();
 
 render();
+// The clips fetch and decode now, in the quiet after the first paint, so the
+// first sound of the round is as prompt as the fiftieth.
+warmClips();
 
 /* Caches the app on first visit so it works with no signal afterwards. Needs https
    (or localhost) — opened as a bare file this quietly does nothing, which is fine. */
