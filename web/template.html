@@ -5967,6 +5967,11 @@ function drawLuck(s, who) {
   var order = standings(s), n = order.length;
   if (order[n - 1] === who) return luck.last || 1;
   if (n >= 3 && order[n - 2] === who) return luck.nextToLast || 1;
+  // Third from the bottom is second place at a full table, and only there: with
+  // three players that is the leader, who is not owed anything. Barely a boost,
+  // deliberately — second is still winning, and the whole point of this is that
+  // it belongs to whoever is having the bad round.
+  if (n >= 4 && order[n - 3] === who) return luck.midTable || 1;
   return 1;
 }
 /* One card out of what is left, by weight. The deck is a bag, not a stack: which
