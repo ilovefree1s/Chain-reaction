@@ -149,7 +149,7 @@ Suggested palette: deep pine ground (`#0C1A14`), panels (`#132A21`), muted sage 
     { "id": 10, "timing": "Before tee shot", "kind": "attack", "name": "Bizarro Golf!", "text": "Force an opponent to drive with a putter and putt with a driver this hole." },
     { "id": 11, "timing": "Before all tee", "kind": "self", "name": "Call Your Shot", "text": "Call CTP. If you win it, you're immune to cards and bad wheel effects next hole, and your next attack card hits every opponent — not you." },
     { "id": 12, "timing": "Any time", "kind": "attack", "rarity": "uncommon", "name": "Can I Borrow This Card?", "text": "Pick anyone you want. Look through their cards and play one on anyone." },
-    { "id": 13, "timing": "Any time", "kind": "react", "name": "Change Is Good", "text": "Hijack a card as it's played and re-aim it at the player of your choice — including the player who played it." },
+    { "id": 13, "timing": "Any time", "kind": "react", "rarity": "epic", "name": "Change Is Good", "text": "Hijack a card as it's played and re-aim it at the player of your choice — including the player who played it." },
     { "id": 14, "timing": "Before shot", "kind": "attack", "name": "CHRIS SPECIAL!", "text": "Force an opponent to throw a tomahawk on the upcoming drive or approach." },
     { "id": 15, "timing": "Before shot", "kind": "attack", "rarity": "uncommon", "name": "Close 'Em", "text": "Force an opponent to take the next putt with their eyes closed." },
     { "id": 16, "timing": "Before tee shot", "kind": "attack", "rarity": "uncommon", "name": "Code Words!", "text": "An opponent can't say \"yes\" or \"no\" this hole. 1 stroke penalty every time they do. ANY variation of the words yes or no counts." },
