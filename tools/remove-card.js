@@ -83,7 +83,7 @@ edit("app/src/main/java/com/chainreaction/data/GameCard.kt", (s) => {
  * card too high.
  */
 const ID_LISTS = ["NO_SELF_CARDS", "PLAY_ON_ALL", "INVITE_CARDS", "AIMED_CARDS",
-  "SAYS_IT_ALL", "ONLY_EXEMPT", "TEAM_CARDS"];
+  "SAYS_IT_ALL", "ONLY_EXEMPT", "TEAM_CARDS", "IGNORES_EXEMPT"];
 const ID_MAPS = ["ALERT_TAUNTS", "ALERT_LINES", "WHEEL_TEXT"];
 
 edit("web/template.html", (s) => {
