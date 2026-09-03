@@ -1171,7 +1171,7 @@ function playClip(base, volume, maxSeconds) {
     if (maxSeconds) {
       setTimeout(function () {
         a.crFade = setInterval(function () {
-          a.volume = Math.max(0, a.volume - 0.15);
+          a.volume = Math.max(0, a.volume - 0.34);
           if (a.volume <= 0) {
             clearInterval(a.crFade); a.crFade = null;
             try { a.pause(); } catch (e) { /* done */ }
@@ -6856,7 +6856,10 @@ app.addEventListener("click", function (e) {
     case "shuffleCards":
       secret.cards.deck = freshDeck52(); secret.cards.board = [];
       secret.cards.slots = [null, null, null, null, null];
-      playClip(shuffleAudio, sfxVolume()); render(); break;
+      // The riffle runs a second and a half and the last half of it is the
+      // cards settling, which nobody waits around for. Cut where the shuffle
+      // itself is done.
+      playClip(shuffleAudio, sfxVolume(), 1.04); render(); break;
     case "closeSecret": stopWheelSound(true); secret = null; render(); break;
     // Closing mid-spin takes the sound with it — and the heads-up banner off
     // everyone else's phone, when no result ever announced itself.
