@@ -4271,7 +4271,22 @@ function cardFaceSvg(c) {
     return s;
   }).join("");
 
+  // Wheel-only cards say so directly under the name, because it is the first
+  // thing about the card rather than a footnote at the bottom of it: this one
+  // cannot be drawn at all, only landed on.
+  var wheelTag = "";
   var octTop = y + 14;
+  if (wheelOnlyCard(c.id)) {
+    var bY = y + 8;
+    wheelTag = '<g transform="translate(286 ' + (bY - 7) + ')">' +
+      '<polygon points="-5,-24 5,-24 0,-13" fill="#FF8A1E"/>' +
+      '<circle r="15" fill="#061022" stroke="#4DC3FF" stroke-width="3"/>' +
+      '<path d="M0 0L15 0M0 0L7.5 13M0 0L-7.5 13M0 0L-15 0M0 0L-7.5 -13M0 0L7.5 -13" stroke="#4DC3FF" stroke-width="2"/>' +
+      '<circle r="3.5" fill="#4DC3FF"/></g>' +
+      '<text x="310" y="' + bY + '" fill="#FF8A1E" font-size="21" font-weight="900" letter-spacing="2">' +
+      'WHEEL ONLY</text>';
+    octTop = y + 46;
+  }
   var oct = '<polygon points="314,' + octTop + ' 406,' + octTop + ' 460,' + (octTop + 54) + ' 460,' +
     (octTop + 146) + ' 406,' + (octTop + 200) + ' 314,' + (octTop + 200) + ' 260,' + (octTop + 146) +
     ' 260,' + (octTop + 54) + '" fill="#061022" stroke="url(#facechip)" stroke-width="5"/>' +
@@ -4303,37 +4318,22 @@ function cardFaceSvg(c) {
     '<rect x="26" y="26" width="668" height="948" rx="20" fill="none" stroke="#22304A" stroke-width="2"/>' +
     '<rect x="60" y="64" width="150" height="3" fill="#1E6FFF"/>' +
     '<rect x="510" y="64" width="150" height="3" fill="#FF8A1E"/>' +
-    // The tier in words, in the bottom corner where it has the line to itself —
-    // the kind's own line is spoken for on a wheel-only card. The rim already
-    // says it in colour; this says it to anyone who has not learned the colours
-    // yet, which on the first round is everybody.
+    // The tier in the bottom right, the kind in the bottom left, one line
+    // holding both corners. The rim already says the tier in colour; this says
+    // it to anyone who has not learned the colours yet, which on the first
+    // round is everybody.
     '<text x="646" y="958" text-anchor="end" fill="' + rim +
     '" font-size="30" font-weight="900" letter-spacing="3">' +
     esc(rare.id.toUpperCase()) + '</text>' +
     '<text x="360" y="74" text-anchor="middle" fill="#4DC3FF" font-size="24" font-weight="800" letter-spacing="7">' +
     esc(c.timing.toUpperCase()) + '</text>' +
-    title + oct + body +
+    title + wheelTag + oct + body +
     // Plain text, not a filled chip: a block down here reads as something sitting
     // on top of the explanation rather than part of the card. Matches Android.
-    // It sat left because the card's number used to face it across the line;
-    // with the number gone it was simply off-centre, so it centres like every
-    // other line on the card. The wheel-only badge still gets a partner, and
-    // holds it left where it can face one.
-    '<text x="' + (wheelOnlyCard(c.id) ? 270 : 360) + '" y="910"' +
-    (wheelOnlyCard(c.id) ? '' : ' text-anchor="middle"') +
-    ' fill="#4DC3FF" font-size="21" font-weight="900" letter-spacing="2">' +
+    // Left corner, facing the tier across the foot of the card — the two facts
+    // about a card that are not its words, one at each end of the same line.
+    '<text x="58" y="958" fill="#4DC3FF" font-size="21" font-weight="900" letter-spacing="2">' +
     esc(c.kind.toUpperCase()) + '</text>' +
-    // Wheel-only cards say so where the card number used to live — the one
-    // fact about them a browsing player needs: you can't draw this. The little
-    // pie is the GAMBLE WHEEL!! itself, pointer and all.
-    (wheelOnlyCard(c.id)
-      ? '<g transform="translate(432 902)">' +
-        '<polygon points="-5,-24 5,-24 0,-13" fill="#FF8A1E"/>' +
-        '<circle r="15" fill="#061022" stroke="#4DC3FF" stroke-width="3"/>' +
-        '<path d="M0 0L15 0M0 0L7.5 13M0 0L-7.5 13M0 0L-15 0M0 0L-7.5 -13M0 0L7.5 -13" stroke="#4DC3FF" stroke-width="2"/>' +
-        '<circle r="3.5" fill="#4DC3FF"/></g>' +
-        '<text x="462" y="910" fill="#FF8A1E" font-size="21" font-weight="900" letter-spacing="2">WHEEL ONLY</text>'
-      : "") +
     '</svg>';
 }
 
