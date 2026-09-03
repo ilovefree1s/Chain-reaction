@@ -660,7 +660,23 @@
     position: absolute; right: 12px;
     bottom: calc(env(safe-area-inset-bottom) + 14px);
   }
+  .cardtable .tbar { display: flex; align-items: center; gap: 12px; }
   .cardtable .tbar .big { margin-bottom: 0; min-width: 130px; }
+  /* A switch rather than a button: it is a state the table is in, not a thing
+     that happens when you press it. */
+  .tswitch { display: flex; align-items: center; gap: 8px; cursor: pointer;
+             background: none; border: 0; padding: 6px 0; font: inherit;
+             color: var(--sage); font-size: 13px; font-weight: 700;
+             letter-spacing: 1px; text-transform: uppercase; }
+  .tswitch .track { width: 42px; height: 24px; border-radius: 12px; flex: 0 0 auto;
+                    background: #0B1526; border: 2px solid var(--edge);
+                    position: relative; transition: background 160ms, border-color 160ms; }
+  .tswitch .knob { position: absolute; top: 2px; left: 2px; width: 16px; height: 16px;
+                   border-radius: 50%; background: var(--sage);
+                   transition: transform 160ms, background 160ms; }
+  .tswitch.on .track { background: rgba(77, 195, 255, 0.22); border-color: #4DC3FF; }
+  .tswitch.on .knob { transform: translateX(18px); background: #4DC3FF; }
+  .tswitch.on { color: #4DC3FF; }
   /* The deck, sitting there with a stacked-paper shadow and its count. */
   .tdeck {
     position: absolute; left: 16px;
@@ -694,8 +710,12 @@
   /* Five card-sized cut-outs across the middle of the felt. */
   .slotrow { position: absolute; left: 0; right: 0; top: 50%; transform: translateY(-50%);
              display: flex; justify-content: center; gap: 8px; }
+  /* The cut-outs the community cards land in. Their outline is what says a game
+     is being laid out here rather than cards being left about, which is worth
+     seeing while dealing and worth losing once the cards are down. */
   .slot { width: 64px; height: 90px; box-sizing: border-box; border-radius: 8px;
-          border: 2px dashed rgba(77, 195, 255, 0.45); flex: 0 0 auto; }
+          border: 2px dashed transparent; flex: 0 0 auto; }
+  .slotrow.marked .slot { border-color: rgba(77, 195, 255, 0.45); }
   .slot .slotcard { width: 100%; height: 100%; cursor: pointer; }
   .slotcard img { width: 100%; height: 100%; display: block; border-radius: 6px; }
   .slotcard .tcorner { font-size: 15px; top: 3px; left: 5px; }
@@ -1040,7 +1060,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.204 · 3 Sep 00:09";
+var APP_VERSION = "v1.205 · 3 Sep 00:11";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. Opening the app fetches fresh anyway.
@@ -5830,11 +5850,14 @@ function renderCardsGame() {
   return '<div class="modal cardtable sgscreen" id="cardtable">' +
     '<button class="sgback" data-act="secretBack">&lsaquo;&nbsp;&nbsp;Back</button>' +
     '<div class="tbar">' +
+    '<button class="tswitch' + (c.marks === false ? '' : ' on') + '" data-act="slotMarks"' +
+    ' aria-pressed="' + (c.marks === false ? 'false' : 'true') + '">' +
+    '<span class="track"><span class="knob"></span></span>Slots</button>' +
     '<button class="big raised" data-act="shuffleCards">Shuffle all</button></div>' +
     '<div class="tdeck' + (c.deck.length ? "" : " empty") + '" id="tdeck">' +
     tcardBackHtml() +
     '<span class="tcount">' + c.deck.length + '</span></div>' +
-    '<div class="slotrow">' + slots + '</div>' +
+    '<div class="slotrow' + (c.marks === false ? '' : ' marked') + '">' + slots + '</div>' +
     cards + '</div>';
 }
 
@@ -6880,6 +6903,11 @@ app.addEventListener("click", function (e) {
       // hurried along so the whole thing is over in 0.7 — a shuffle is a flick
       // of the thumbs, not something you stand and listen to.
       playClip(shuffleAudio, sfxVolume(), 0.7, 1.49); render(); break;
+    // Undefined reads as on, so a table that has never been told behaves the
+    // way it always did.
+    case "slotMarks":
+      secret.cards.marks = secret.cards.marks === false;
+      render(); break;
     case "closeSecret": stopWheelSound(true); secret = null; render(); break;
     // Closing mid-spin takes the sound with it — and the heads-up banner off
     // everyone else's phone, when no result ever announced itself.
