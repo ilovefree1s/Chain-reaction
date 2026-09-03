@@ -225,37 +225,6 @@
           background: linear-gradient(var(--panel), var(--panel)) padding-box,
                       linear-gradient(100deg, var(--rare, #3FA9FF), var(--rare, #3FA9FF)) border-box;
           box-shadow: 0 0 14px var(--rareglow, rgba(30, 111, 255, 0.25)); }
-  /* The top tiers get lights running the border — two for a legendary, one
-     smaller for an epic, so the two are told apart at a glance and not only by
-     colour. Positioned in percentages so one rule fits a tile of any height,
-     and clipped by the card's own overflow so they ride the edge rather than
-     hang off it. The card has to become a positioning context for them, which
-     it was not before. */
-  .card.lit { position: relative; }
-  .spark {
-    position: absolute; width: 26px; height: 26px; border-radius: 50%;
-    margin: -13px 0 0 -13px; pointer-events: none; z-index: 1;
-    background: radial-gradient(circle, rgba(255,255,255,.95) 0%,
-                rgba(255,255,255,.55) 32%, rgba(255,255,255,0) 70%);
-    animation: sparkrun 5.5s linear infinite;
-  }
-  /* Half a lap apart, so there is always one of them in sight. */
-  .spark.two { animation-delay: -2.75s; }
-  /* An epic's single light is smaller and takes its time — a legendary should
-     still be the loudest thing in a hand. */
-  .spark.small { width: 15px; height: 15px; margin: -7.5px 0 0 -7.5px;
-                 animation-duration: 7s; }
-  /* The stops are weighted to the shape a card actually is — wider than it is
-     tall — so a light does not crawl the short edge and then bolt down the long
-     one. */
-  @keyframes sparkrun {
-    0%   { left: 0%;   top: 0%; }
-    35%  { left: 100%; top: 0%; }
-    50%  { left: 100%; top: 100%; }
-    85%  { left: 0%;   top: 100%; }
-    100% { left: 0%;   top: 0%; }
-  }
-  @media (prefers-reduced-motion: reduce) { .spark { animation: none; opacity: .5; } }
   .card .body { padding: 16px; flex: 1 1 auto; min-width: 0; }
   .tags { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
   .tag { font-size: 13px; font-weight: 900; letter-spacing: 1px; border-radius: 6px;
@@ -3947,25 +3916,19 @@ function cardHtml(c, withActions, altText, browse) {
   var rare = rarityOf(c);
   var edge = ' style="' + rarityVars(rare) +
     (withActions || browse ? ';cursor:pointer' : "") + '"';
-  // Only the top two tiers get lights, and they get different ones. If
-  // everything sparkles, nothing does.
-  var sparks = rare.id === "legendary"
-    ? '<span class="spark"></span><span class="spark two"></span>'
-    : rare.id === "epic" ? '<span class="spark small"></span>' : "";
-  var cls = sparks ? " lit" : "";
+
   // In hand a tile opens the card you are about to play; in the library it opens
   // the same face with nothing to press, because a reference is for looking at.
   var tap = withActions ? ' data-act="viewCard" data-i="' + c.id + '"'
     : browse ? ' data-act="browseCard" data-i="' + c.id + '"' : "";
   var art = CARD_ART[c.id];
   if (art) {
-    return '<div class="card artcard' + cls + '"' + tap + edge + '>' + sparks +
-      '<img class="cardart" src="' + art + '" alt="' +
+    return '<div class="card artcard"' + tap + edge + '><img class="cardart" src="' + art + '" alt="' +
       esc(c.name) + '. ' + esc(words) + '">' +
       (altText ? '<div class="body"><p>' + esc(altText) + '</p></div>' : "") +
       (acts ? '<div class="artacts">' + acts + '</div>' : "") + '</div>';
   }
-  return '<div class="card' + cls + '"' + tap + edge + '>' + sparks + '<div class="body">' +
+  return '<div class="card"' + tap + edge + '><div class="body">' +
     // The little GAMBLE WHEEL!! in the top corner — this card lives there.
     (wheelOnlyCard(c.id)
       ? '<svg width="30" height="38" viewBox="-18 -27 36 45" style="float:right;margin:-4px 0 4px 10px">' +
@@ -4304,10 +4267,13 @@ function kindGlyph(kind, cx, cy, id) {
 var FACE_RIM_PATH = "M39 13H681A26 26 0 0 1 707 39V961A26 26 0 0 1 681 987H39" +
   "A26 26 0 0 1 13 961V39A26 26 0 0 1 39 13Z";
 function faceSparks(tier) {
-  var runs = tier === "legendary" ? [[13, 0], [13, -4]]
-    : tier === "epic" ? [[8, 0]] : [];
+  var runs = tier === "legendary" ? [[15, 0], [15, -4]]
+    : tier === "epic" ? [[11, 0]] : [];
   return runs.map(function (r) {
-    return '<circle r="' + r[0] + '" fill="#fff" filter="url(#sparkblur)">' +
+    // Filled from a gradient that goes white at the centre and fades out through
+    // the rim's own colour, so a light reads as the border brightening under it
+    // rather than a white dot travelling over the top of it.
+    return '<circle r="' + r[0] + '" fill="url(#sparkfade)" filter="url(#sparkblur)">' +
       '<animateMotion dur="8s" repeatCount="indefinite" begin="' + r[1] + 's" path="' +
       FACE_RIM_PATH + '"/></circle>';
   }).join("");
@@ -4365,8 +4331,12 @@ function cardFaceSvg(c) {
     '</linearGradient>' +
     '<linearGradient id="facechip" x1="0" y1="0" x2="0" y2="1">' +
     '<stop offset="0" stop-color="#3FA9FF"/><stop offset="1" stop-color="#1E6FFF"/></linearGradient>' +
+    '<radialGradient id="sparkfade">' +
+    '<stop offset="0" stop-color="#FFFFFF" stop-opacity="0.95"/>' +
+    '<stop offset="0.4" stop-color="' + rim + '" stop-opacity="0.8"/>' +
+    '<stop offset="1" stop-color="' + rim + '" stop-opacity="0"/></radialGradient>' +
     '<filter id="sparkblur" x="-150%" y="-150%" width="400%" height="400%">' +
-    '<feGaussianBlur stdDeviation="5"/></filter>' +
+    '<feGaussianBlur stdDeviation="3.5"/></filter>' +
     '</defs>' +
     '<rect x="6" y="6" width="708" height="988" rx="30" fill="#05070C"/>' +
     '<rect x="13" y="13" width="694" height="974" rx="26" fill="#070B14" stroke="url(#facerim)" stroke-width="7"/>' +
