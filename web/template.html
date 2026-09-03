@@ -3894,7 +3894,7 @@ function counter(label, value, sublabel, act) {
 /* [altText] rewrites the card's words for where it is being shown — the wheel
    passes the wheel wording. Art is painted with the card's own text, so when a
    face exists the replacement words go underneath it rather than nowhere. */
-function cardHtml(c, withActions, altText) {
+function cardHtml(c, withActions, altText, browse) {
   var words = altText || c.text;
   var acts = "";
   if (withActions && confirmDiscard === c.id) {
@@ -3915,8 +3915,11 @@ function cardHtml(c, withActions, altText) {
   // and its glow come off the tier without the stylesheet knowing the tiers.
   var rare = rarityOf(c);
   var edge = ' style="' + rarityVars(rare) +
-    (withActions ? ';cursor:pointer' : "") + '"';
-  var tap = withActions ? ' data-act="viewCard" data-i="' + c.id + '"' : "";
+    (withActions || browse ? ';cursor:pointer' : "") + '"';
+  // In hand a tile opens the card you are about to play; in the library it opens
+  // the same face with nothing to press, because a reference is for looking at.
+  var tap = withActions ? ' data-act="viewCard" data-i="' + c.id + '"'
+    : browse ? ' data-act="browseCard" data-i="' + c.id + '"' : "";
   var art = CARD_ART[c.id];
   if (art) {
     return '<div class="card artcard"' + tap + edge + '><img class="cardart" src="' + art + '" alt="' +
@@ -4084,7 +4087,7 @@ function renderCardLibrary() {
     var group = CARDS.filter(function (c) { return c.timing === t; });
     if (!group.length) return "";
     return '<div class="label">' + esc(t) + ' &middot; ' + group.length + '</div>' +
-      group.map(function (c) { return cardHtml(c, false); }).join("");
+      group.map(function (c) { return cardHtml(c, false, null, true); }).join("");
   }).join("");
 }
 
@@ -4257,6 +4260,7 @@ function kindGlyph(kind, cx, cy, id) {
 }
 
 function cardFaceSvg(c) {
+  var rare = rarityOf(c), rim = rare.color;
   var titleLines = wrapWords(c.name.toUpperCase(), 14);
   var tf = titleLines.length >= 3 ? 46 : titleLines.length === 2 ? 58 : 66;
   var y = 150;
@@ -4285,9 +4289,12 @@ function cardFaceSvg(c) {
 
   return '<svg class="cardface" viewBox="0 0 720 1000" font-family="Segoe UI, Roboto, sans-serif">' +
     '<defs>' +
+    // The rim is the card's rarity, the same colour the tile in your hand wears.
+    // A painted face that told a different story about a card than the list it
+    // came from would be worse than no colour at all.
     '<linearGradient id="facerim" x1="0" y1="0" x2="1" y2="1">' +
-    '<stop offset="0" stop-color="#1E6FFF"/><stop offset="0.45" stop-color="#3FA9FF"/>' +
-    '<stop offset="1" stop-color="#FF8A1E"/></linearGradient>' +
+    '<stop offset="0" stop-color="' + rim + '"/><stop offset="1" stop-color="' + rim + '"/>' +
+    '</linearGradient>' +
     '<linearGradient id="facechip" x1="0" y1="0" x2="0" y2="1">' +
     '<stop offset="0" stop-color="#3FA9FF"/><stop offset="1" stop-color="#1E6FFF"/></linearGradient>' +
     '</defs>' +
@@ -4296,6 +4303,12 @@ function cardFaceSvg(c) {
     '<rect x="26" y="26" width="668" height="948" rx="20" fill="none" stroke="#22304A" stroke-width="2"/>' +
     '<rect x="60" y="64" width="150" height="3" fill="#1E6FFF"/>' +
     '<rect x="510" y="64" width="150" height="3" fill="#FF8A1E"/>' +
+    // The tier in words, opposite the kind at the foot of the card. The rim
+    // already says it in colour; this says it to anyone who has not learned
+    // the colours yet, which on the first round is everybody.
+    '<text x="' + (wheelOnlyCard(c.id) ? 450 : 360) + '" y="962" text-anchor="middle" fill="' +
+    rim + '" font-size="19" font-weight="900" letter-spacing="3">' +
+    esc(rare.id.toUpperCase()) + '</text>' +
     '<text x="360" y="74" text-anchor="middle" fill="#4DC3FF" font-size="24" font-weight="800" letter-spacing="7">' +
     esc(c.timing.toUpperCase()) + '</text>' +
     title + oct + body +
@@ -6630,6 +6643,9 @@ app.addEventListener("click", function (e) {
     case "askDiscard": confirmDiscard = i; render(); break;
     case "keepCard": confirmDiscard = null; render(); break;
     case "viewCard": viewCard = i; viewWords = null; viewOnly = false; render(); break;
+    // The library's own tap: the painted face, and nothing to do to it. Even a
+    // card sitting in your hand opens flat here — you came to look it up.
+    case "browseCard": viewCard = i; viewWords = null; viewOnly = true; render(); break;
     case "prevCard": stepViewCard(-1); break;
     case "nextCard": stepViewCard(1); break;
     // Close is the picker's cancel too, so it clears the pending target —
