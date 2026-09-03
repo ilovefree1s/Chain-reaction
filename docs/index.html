@@ -1040,7 +1040,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.201 · 3 Sep 00:01";
+var APP_VERSION = "v1.202 · 3 Sep 00:06";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. Opening the app fetches fresh anyway.
@@ -1160,11 +1160,18 @@ function warmClips() {
   [menuAudio, drawAudio, diceAudio, coinAudio, shuffleAudio]
     .forEach(function (a) { if (a) clipFrom(a); });
 }
-function playClip(base, volume, maxSeconds) {
+/* [rate] plays a clip faster or slower without moving its pitch, which is what
+   turns a long noise into a short one rather than into a different noise. Set
+   every time rather than only when asked for, since these copies come round
+   again and would otherwise keep the last rate they were given. */
+function playClip(base, volume, maxSeconds, rate) {
   if (!base || !(volume > 0)) return;
   try {
     var a = clipFrom(base);
     a.volume = Math.min(1, Math.max(0, volume));
+    a.preservesPitch = true;
+    a.webkitPreservesPitch = true;   // older Safari spells it its own way
+    a.playbackRate = rate || 1;
     var p = a.play();
     if (p && p.catch) p.catch(function () { /* nothing to do */ });
     // A clip longer than its moment gets faded out early.
@@ -6857,9 +6864,10 @@ app.addEventListener("click", function (e) {
       secret.cards.deck = freshDeck52(); secret.cards.board = [];
       secret.cards.slots = [null, null, null, null, null];
       // The riffle runs a second and a half and the last half of it is the
-      // cards settling, which nobody waits around for. Cut where the shuffle
-      // itself is done.
-      playClip(shuffleAudio, sfxVolume(), 1.04); render(); break;
+      // cards settling, which nobody waits around for. The first 1.04s of it,
+      // hurried along so the whole thing is over in 0.7 — a shuffle is a flick
+      // of the thumbs, not something you stand and listen to.
+      playClip(shuffleAudio, sfxVolume(), 0.7, 1.49); render(); break;
     case "closeSecret": stopWheelSound(true); secret = null; render(); break;
     // Closing mid-spin takes the sound with it — and the heads-up banner off
     // everyone else's phone, when no result ever announced itself.
