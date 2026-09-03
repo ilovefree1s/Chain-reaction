@@ -1037,7 +1037,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.146 · 2 Sep 22:17";
+var APP_VERSION = "v1.147 · 2 Sep 22:24";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. Opening the app fetches fresh anyway.
@@ -4266,16 +4266,27 @@ function kindGlyph(kind, cx, cy, id) {
    always one of them in sight. */
 var FACE_RIM_PATH = "M39 13H681A26 26 0 0 1 707 39V961A26 26 0 0 1 681 987H39" +
   "A26 26 0 0 1 13 961V39A26 26 0 0 1 39 13Z";
+/* A four-pointed twinkle, drawn rather than blurred: the sides pinch in toward
+   the middle, which is what makes it read as a sparkle instead of a diamond. */
+function sparkStar(R) {
+  var k = (R * 0.13).toFixed(1);
+  return "M0 -" + R + "Q" + k + " -" + k + " " + R + " 0Q" + k + " " + k + " 0 " + R +
+    "Q-" + k + " " + k + " -" + R + " 0Q-" + k + " -" + k + " 0 -" + R + "Z";
+}
 function faceSparks(tier) {
-  var runs = tier === "legendary" ? [[15, 0], [15, -4]]
-    : tier === "epic" ? [[11, 0]] : [];
+  var runs = tier === "legendary" ? [[17, 0], [17, -4]]
+    : tier === "epic" ? [[12, 0]] : [];
   return runs.map(function (r) {
-    // Filled from a gradient that goes white at the centre and fades out through
-    // the rim's own colour, so a light reads as the border brightening under it
-    // rather than a white dot travelling over the top of it.
-    return '<circle r="' + r[0] + '" fill="url(#sparkfade)" filter="url(#sparkblur)">' +
-      '<animateMotion dur="8s" repeatCount="indefinite" begin="' + r[1] + 's" path="' +
-      FACE_RIM_PATH + '"/></circle>';
+    // The motion goes on the group and the turn on the star inside it: both are
+    // transforms, and on one element the second would simply replace the first.
+    // A soft disc of the rim's own colour sits under it so the sharp white has
+    // something to sit in, rather than hanging over the border on its own.
+    return '<g><animateMotion dur="8s" repeatCount="indefinite" begin="' + r[1] + 's" path="' +
+      FACE_RIM_PATH + '"/>' +
+      '<circle r="' + Math.round(r[0] * 1.5) + '" fill="url(#sparkfade)" filter="url(#sparkblur)"/>' +
+      '<path d="' + sparkStar(r[0]) + '" fill="#FFFFFF">' +
+      '<animateTransform attributeName="transform" type="rotate" from="0" to="360"' +
+      ' dur="4s" repeatCount="indefinite"/></path></g>';
   }).join("");
 }
 function cardFaceSvg(c) {
@@ -4332,11 +4343,10 @@ function cardFaceSvg(c) {
     '<linearGradient id="facechip" x1="0" y1="0" x2="0" y2="1">' +
     '<stop offset="0" stop-color="#3FA9FF"/><stop offset="1" stop-color="#1E6FFF"/></linearGradient>' +
     '<radialGradient id="sparkfade">' +
-    '<stop offset="0" stop-color="#FFFFFF" stop-opacity="0.95"/>' +
-    '<stop offset="0.4" stop-color="' + rim + '" stop-opacity="0.8"/>' +
+    '<stop offset="0" stop-color="' + rim + '" stop-opacity="0.75"/>' +
     '<stop offset="1" stop-color="' + rim + '" stop-opacity="0"/></radialGradient>' +
     '<filter id="sparkblur" x="-150%" y="-150%" width="400%" height="400%">' +
-    '<feGaussianBlur stdDeviation="3.5"/></filter>' +
+    '<feGaussianBlur stdDeviation="4"/></filter>' +
     '</defs>' +
     '<rect x="6" y="6" width="708" height="988" rx="30" fill="#05070C"/>' +
     '<rect x="13" y="13" width="694" height="974" rx="26" fill="#070B14" stroke="url(#facerim)" stroke-width="7"/>' +
