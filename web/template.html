@@ -1128,8 +1128,8 @@ var shuffleAudio = SHUFFLE_SOUND ? new Audio(SHUFFLE_SOUND) : null;
  * than by cloning the element at the moment the sound is wanted. A fresh clone
  * carries the src but none of the audio: it has to fetch and decode before it
  * makes a noise, and that put the coin's ting about a third of a second behind
- * the thumb that flicked it. Three of them, so two plays close together don't
- * cut each other off.
+ * the thumb that flicked it. Five copies, so plays close together do not cut
+ * each other off — dealing a row rings the draw five times inside a second.
  */
 var clipRings = [];
 function clipFrom(base) {
@@ -1139,7 +1139,7 @@ function clipFrom(base) {
   }
   if (!ring) {
     ring = { base: base, at: 0, list: [] };
-    for (var k = 0; k < 3; k++) {
+    for (var k = 0; k < 5; k++) {
       var c = base.cloneNode();
       c.preload = "auto";
       try { c.load(); } catch (e) { /* nothing to do */ }
@@ -5897,6 +5897,26 @@ function overDeck(el) {
   return cx >= d.left - pad && cx <= d.right + pad &&
          cy >= d.top - pad && cy <= d.bottom + pad;
 }
+/*
+ * One tap on the deck fills every empty cut-out, a beat apart so it reads as
+ * dealing rather than as five cards appearing at once. It used to deal one per
+ * tap: five taps to lay out a game that takes one tap to play.
+ */
+function dealRow(c) {
+  var open = [];
+  (c.slots || []).forEach(function (s, i) { if (!s) open.push(i); });
+  (function step() {
+    // The screen can be left, or the table shuffled, between one card and the
+    // next — this is the same tray it started on or it stops.
+    if (!secret || secret.mode !== "cards" || secret.cards !== c) return;
+    if (!open.length || !c.deck.length) return;
+    c.slots[open.shift()] = { id: c.deck[0], up: false };
+    c.deck = c.deck.slice(1);
+    playClip(drawAudio, sfxVolume());
+    render();
+    if (open.length && c.deck.length) setTimeout(step, 120);
+  })();
+}
 function tableDrop(cancelled) {
   if (!tDrag) return;
   var d = tDrag; tDrag = null;
@@ -5905,15 +5925,7 @@ function tableDrop(cancelled) {
   if (d.kind === "deal") {
     // A plain tap on the deck deals into the next open cut-out instead.
     if (!d.moved && !cancelled) {
-      var open = -1;
-      for (var si = 0; si < (c.slots || []).length; si++) {
-        if (!c.slots[si]) { open = si; break; }
-      }
-      if (open !== -1 && c.deck.length) {
-        c.slots[open] = { id: c.deck[0], up: false };
-        c.deck = c.deck.slice(1);
-        playClip(drawAudio, sfxVolume());
-      }
+      dealRow(c);
       if (d.el) d.el.remove();
     }
     // Never left the deck mid-drag (the gesture died): the card stays on top.
