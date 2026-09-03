@@ -87,7 +87,7 @@ object CardDeck {
         GameCard(4, "Before shot", CardKind.ATTACK, "Baby Discs", "Force an opponent to throw a mini for their upcoming drive or putt. Through the basket floor still counts as in."),
         GameCard(5, "For the next hole", CardKind.ATTACK, "Bag Boy!", "Force an opponent to carry your bag for 3 holes! If they beat you before those 3 holes are up (1st or 2nd hole), they can play one of your cards and you take your bag back."),
         GameCard(6, "Before tee shot", CardKind.ATTACK, "Bag Exchange!", "Pick a player to swap bags with. Swap back after the first bogey by either player. The player that took the bogey first must volunteer as tribute to exchange lies with the other player the next time they go OB or miss a mando."),
-        GameCard(7, "Before shot", CardKind.ATTACK, "Bag Raid!", "Choose ANY disc from any bag. The target player must use that disc for their next shot."),
+        GameCard(7, "Before shot", CardKind.ATTACK, "Bag Raid!", "Choose ANY disc that belongs to anyone. The target player must use that disc for their next shot."),
         GameCard(8, "After throw", CardKind.ATTACK, "Big Ooof, Bud.", "Move an opponent's lie up to 10 paces (30 ft) in any direction, as long as it isn't out of bounds."),
         GameCard(9, "After throw", CardKind.SELF, "Big Putted!", "If you make a putt from outside C1 while any other players are inside C1, they all must use their left hand to putt this hole."),
         GameCard(10, "Before tee shot", CardKind.ATTACK, "Bizarro Golf!", "Force an opponent to drive with a putter and putt with a driver this hole."),
