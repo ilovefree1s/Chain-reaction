@@ -195,7 +195,7 @@ Suggested palette: deep pine ground (`#0C1A14`), panels (`#132A21`), muted sage 
     { "id": 56, "timing": "After throw", "kind": "attack", "name": "I Think It's Broke", "text": "Play on another player that just hit a tree. They lose that disc — they can't throw it again for the rest of the round. If they forget and throw it again, it's +1 stroke." },
     { "id": 57, "timing": "After card", "kind": "react", "name": "UNO REVERSO", "text": "Reverse any cards that effect you back to the person that used the card. (Doesn't work on wheel spins.)" },
     { "id": 58, "timing": "Before all tee", "kind": "group", "name": "LONE WOLF!", "text": "Whoever it lands on is the LONE WOLF! Cards played by the wolf effect everyone else! A lone wolf win gives him the right to go through everyone's cards and play 1 card from everyone's hand that effects that player. If the 3 players win then nobody cares, cuz 3 people should beat 1 every time — but they can flip fight for 1 free mulligan. Wolf calls heads or tails." },
-    { "id": 59, "timing": "Before tee shot", "kind": "attack", "name": "PUT EM ON TILT", "text": "Force an opponent to play the entire hole with the TILT!" },
+    { "id": 59, "timing": "Before tee shot", "kind": "attack", "rarity": "epic", "name": "PUT EM ON TILT", "text": "Force an opponent to play the entire hole with the TILT!" },
     { "id": 60, "timing": "Before tee shot", "kind": "attack", "name": "DESTINATION FUCKED!", "text": "Force an opponent to play the entire hole with the... slightly used Anax... Whoever played the card gets 30 seconds to abuse the disc before they tee off." }
   ]
 }
