@@ -175,7 +175,7 @@ Suggested palette: deep pine ground (`#0C1A14`), panels (`#132A21`), muted sage 
     { "id": 36, "timing": "After card", "kind": "react", "name": "No Way", "text": "Cancel any card just played. That card goes to the discard pile." },
     { "id": 37, "timing": "Before tee shot", "kind": "attack", "rarity": "rare", "name": "New mando on this hole, bud.", "text": "Choose a reasonable object the target player must pass on a side you specify." },
     { "id": 38, "timing": "Before tee shot", "kind": "dual", "rarity": "epic", "name": "Not Today!", "text": "Remove any and all card effects currently on you, or use it on another player to cancel the effects on them." },
-    { "id": 39, "timing": "Before tee shot", "kind": "attack", "rarity": "rare", "name": "One Disc Wonder!", "text": "Force an opponent to play the hole with only 1 DISC this hole! (If someone already gave them a mini, the TILT or the beater, that counts as their 1 disc.)" },
+    { "id": 39, "timing": "Before tee shot", "kind": "attack", "rarity": "rare", "name": "One Disc Wonder!", "text": "Force an opponent to play the hole with only 1 DISC this hole! (If someone already gave them a mini, the TILT or the \"beater\", that counts as their 1 disc.)" },
     { "id": 40, "timing": "Before tee shot", "kind": "attack", "rarity": "epic", "name": "Over Sharer", "text": "Give everyone a disc from your own bag to tee off with on this hole." },
     { "id": 41, "timing": "Before all tee", "kind": "attack", "name": "Plant Your Feet!", "text": "No run-up on everyone else's tee shot." },
     { "id": 42, "timing": "Any time", "kind": "dual", "name": "Player 2's Turn!", "text": "On yourself: retake any shot for free. On another player: force them to re-throw a shot that was too good." },
@@ -196,7 +196,7 @@ Suggested palette: deep pine ground (`#0C1A14`), panels (`#132A21`), muted sage 
     { "id": 57, "timing": "After card", "kind": "react", "name": "UNO REVERSO", "text": "Reverse any cards that effect you back to the person that used the card. (Doesn't work on wheel spins.)" },
     { "id": 58, "timing": "Before all tee", "kind": "group", "name": "LONE WOLF!", "text": "Whoever it lands on is the LONE WOLF! Cards played by the wolf effect everyone else! A lone wolf win gives him the right to go through everyone's cards and play 1 card from everyone's hand that effects that player. If the 3 players win then nobody cares, cuz 3 people should beat 1 every time — but they can flip fight for 1 free mulligan. Wolf calls heads or tails." },
     { "id": 59, "timing": "Before tee shot", "kind": "attack", "rarity": "epic", "name": "PUT EM ON TILT", "text": "Force an opponent to play the entire hole with the TILT!" },
-    { "id": 60, "timing": "Before tee shot", "kind": "attack", "rarity": "legendary", "name": "DESTINATION FUCKED!", "text": "Force an opponent to play the entire hole with the beater. Whoever played the card gets 30 seconds to abuse the disc before they tee off." }
+    { "id": 60, "timing": "Before tee shot", "kind": "attack", "rarity": "legendary", "name": "DESTINATION FUCKED!", "text": "Force an opponent to play the entire hole with the \"beater\". Whoever played the card gets 30 seconds to abuse the disc before they tee off." }
   ]
 }
 ```

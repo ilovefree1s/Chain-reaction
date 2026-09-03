@@ -119,7 +119,7 @@ object CardDeck {
         GameCard(36, "After card", CardKind.REACT, "No Way", "Cancel any card just played. That card goes to the discard pile."),
         GameCard(37, "Before tee shot", CardKind.ATTACK, "New mando on this hole, bud.", "Choose a reasonable object the target player must pass on a side you specify."),
         GameCard(38, "Before tee shot", CardKind.DUAL, "Not Today!", "Remove any and all card effects currently on you, or use it on another player to cancel the effects on them."),
-        GameCard(39, "Before tee shot", CardKind.ATTACK, "One Disc Wonder!", "Force an opponent to play the hole with only 1 DISC this hole! (If someone already gave them a mini, the TILT or the beater, that counts as their 1 disc.)"),
+        GameCard(39, "Before tee shot", CardKind.ATTACK, "One Disc Wonder!", "Force an opponent to play the hole with only 1 DISC this hole! (If someone already gave them a mini, the TILT or the \"beater\", that counts as their 1 disc.)"),
         GameCard(40, "Before tee shot", CardKind.ATTACK, "Over Sharer", "Give everyone a disc from your own bag to tee off with on this hole."),
         GameCard(41, "Before all tee", CardKind.ATTACK, "Plant Your Feet!", "No run-up on everyone else's tee shot."),
         GameCard(42, "Any time", CardKind.DUAL, "Player 2's Turn!", "On yourself: retake any shot for free. On another player: force them to re-throw a shot that was too good."),
@@ -140,7 +140,7 @@ object CardDeck {
         GameCard(57, "After card", CardKind.REACT, "UNO REVERSO", "Reverse any cards that effect you back to the person that used the card. (Doesn't work on wheel spins.)"),
         GameCard(58, "Before all tee", CardKind.GROUP, "LONE WOLF!", "Whoever it lands on is the LONE WOLF! Cards played by the wolf effect everyone else! A lone wolf win gives him the right to go through everyone's cards and play 1 card from everyone's hand that effects that player. If the 3 players win then nobody cares, cuz 3 people should beat 1 every time — but they can flip fight for 1 free mulligan. Wolf calls heads or tails."),
         GameCard(59, "Before tee shot", CardKind.ATTACK, "PUT EM ON TILT", "Force an opponent to play the entire hole with the TILT!"),
-        GameCard(60, "Before tee shot", CardKind.ATTACK, "DESTINATION FUCKED!", "Force an opponent to play the entire hole with the beater. Whoever played the card gets 30 seconds to abuse the disc before they tee off."),
+        GameCard(60, "Before tee shot", CardKind.ATTACK, "DESTINATION FUCKED!", "Force an opponent to play the entire hole with the \"beater\". Whoever played the card gets 30 seconds to abuse the disc before they tee off."),
     )
 
     private val byId: Map<Int, GameCard> = ALL.associateBy { it.id }
