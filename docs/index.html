@@ -1037,7 +1037,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.148 · 2 Sep 22:26";
+var APP_VERSION = "v1.149 · 2 Sep 22:31";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. Opening the app fetches fresh anyway.
@@ -4267,17 +4267,26 @@ function sparkStar(R) {
   return "M0 -" + R + "Q" + k + " -" + k + " " + R + " 0Q" + k + " " + k + " 0 " + R +
     "Q-" + k + " " + k + " -" + R + " 0Q-" + k + " -" + k + " 0 -" + R + "Z";
 }
-/* The two top corners, sitting on the rim where its curve turns. */
-var SPARK_CORNERS = [[21, 21], [699, 21]];
+/* All four corners, sitting on the rim where its curve turns. The third number
+   is which way along the edge that corner wanders — always inward first, so a
+   pair leans toward each other and back rather than both sliding one way. The
+   fourth staggers it: four lights on the same clock would pulse as one. */
+var SPARK_CORNERS = [
+  [21, 21, 1, 0], [699, 21, -1, -3.5],
+  [21, 979, 1, -1.75], [699, 979, -1, -5.25]
+];
 function faceSparks(tier) {
   var R = tier === "legendary" ? 17 : tier === "epic" ? 12 : 0;
   if (!R) return "";
-  return SPARK_CORNERS.map(function (at, i) {
-    // Out of step with each other, so the pair breathes rather than blinks.
-    var off = i ? "-3.5s" : "0s";
-    // Turning and swelling are both transforms; on one element the second would
-    // replace the first, so they are summed rather than set.
+  return SPARK_CORNERS.map(function (at) {
+    var off = at[3] + "s", swing = 26 * at[2];
+    // Every one of these is a transform, and on one element each would replace
+    // the last, so they are summed: the corner it lives at, the drift along the
+    // edge, the turn, and the swell.
     return '<g transform="translate(' + at[0] + ' ' + at[1] + ')">' +
+      '<animateTransform attributeName="transform" type="translate"' +
+      ' values="0 0;' + swing + ' 0;0 0" dur="11s" begin="' + off +
+      '" repeatCount="indefinite" additive="sum"/>' +
       '<circle r="' + Math.round(R * 1.5) + '" fill="url(#sparkfade)" filter="url(#sparkblur)">' +
       '<animate attributeName="opacity" values="0.55;1;0.55" dur="7s" begin="' + off +
       '" repeatCount="indefinite"/></circle>' +
