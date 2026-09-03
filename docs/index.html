@@ -667,7 +667,7 @@
   .tswitch { display: flex; align-items: center; gap: 8px; cursor: pointer;
              background: none; border: 0; padding: 6px 0; font: inherit;
              color: var(--sage); font-size: 13px; font-weight: 700;
-             letter-spacing: 1px; text-transform: uppercase; }
+             letter-spacing: 1px; text-transform: uppercase; white-space: nowrap; }
   .tswitch .track { width: 42px; height: 24px; border-radius: 12px; flex: 0 0 auto;
                     background: #0B1526; border: 2px solid var(--edge);
                     position: relative; transition: background 160ms, border-color 160ms; }
@@ -1060,7 +1060,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.205 · 3 Sep 00:11";
+var APP_VERSION = "v1.208 · 3 Sep 00:14";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. Opening the app fetches fresh anyway.
@@ -5852,7 +5852,7 @@ function renderCardsGame() {
     '<div class="tbar">' +
     '<button class="tswitch' + (c.marks === false ? '' : ' on') + '" data-act="slotMarks"' +
     ' aria-pressed="' + (c.marks === false ? 'false' : 'true') + '">' +
-    '<span class="track"><span class="knob"></span></span>Slots</button>' +
+    '<span class="track"><span class="knob"></span></span>Hold em</button>' +
     '<button class="big raised" data-act="shuffleCards">Shuffle all</button></div>' +
     '<div class="tdeck' + (c.deck.length ? "" : " empty") + '" id="tdeck">' +
     tcardBackHtml() +
@@ -5924,8 +5924,13 @@ function overDeck(el) {
  * One tap on the deck fills every empty cut-out, a beat apart so it reads as
  * dealing rather than as five cards appearing at once. It used to deal one per
  * tap: five taps to lay out a game that takes one tap to play.
+ *
+ * With Hold em switched off there is no board to deal to — the cut-outs are not
+ * merely unmarked, they are not part of the game being played — so a tap on the
+ * deck does nothing and the cards are dragged off it by hand.
  */
 function dealRow(c) {
+  if (c.marks === false) return;
   var open = [];
   (c.slots || []).forEach(function (s, i) { if (!s) open.push(i); });
   (function step() {
