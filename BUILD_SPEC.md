@@ -115,11 +115,11 @@ Suggested palette: deep pine ground (`#0C1A14`), panels (`#132A21`), muted sage 
   "wheelExcludes": [1, 3, 5, 6, 12, 13, 19, 20, 21, 22, 23, 24, 31, 34, 36, 38, 42, 43, 47, 53, 56, 57],
   "wheelOnly": [58],
   "rarities": [
-    { "id": "common",    "color": "#E6ECF5", "weight": 100 },
+    { "id": "common",    "color": "#E6ECF5", "weight": 86 },
     { "id": "uncommon",  "color": "#47D97F", "weight": 58 },
     { "id": "rare",      "color": "#4D8BFF", "weight": 30 },
-    { "id": "epic",      "color": "#B96BFF", "weight": 13 },
-    { "id": "legendary", "color": "#FFC72E", "weight": 5 }
+    { "id": "epic",      "color": "#B96BFF", "weight": 18 },
+    { "id": "legendary", "color": "#FFC72E", "weight": 9 }
   ],
   "drawLuck": { "last": 1.28, "nextToLast": 1.15 },
   "timings": [
