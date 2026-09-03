@@ -176,7 +176,7 @@ Suggested palette: deep pine ground (`#0C1A14`), panels (`#132A21`), muted sage 
     { "id": 37, "timing": "Before tee shot", "kind": "attack", "rarity": "rare", "name": "New mando on this hole, bud.", "text": "Choose a reasonable object the target player must pass on a side you specify." },
     { "id": 38, "timing": "Before tee shot", "kind": "dual", "rarity": "epic", "name": "Not Today!", "text": "Remove any and all card effects currently on you, or use it on another player to cancel the effects on them." },
     { "id": 39, "timing": "Before tee shot", "kind": "attack", "rarity": "rare", "name": "One Disc Wonder!", "text": "Force an opponent to play the hole with only 1 DISC this hole! (If someone already gave them a mini, the TILT or the Anax, that counts as their 1 disc.)" },
-    { "id": 40, "timing": "Before tee shot", "kind": "attack", "name": "Over Sharer", "text": "Give everyone a disc from your own bag to tee off with on this hole." },
+    { "id": 40, "timing": "Before tee shot", "kind": "attack", "rarity": "epic", "name": "Over Sharer", "text": "Give everyone a disc from your own bag to tee off with on this hole." },
     { "id": 41, "timing": "Before all tee", "kind": "attack", "name": "Plant Your Feet!", "text": "No run-up on everyone else's tee shot." },
     { "id": 42, "timing": "Any time", "kind": "dual", "name": "Player 2's Turn!", "text": "On yourself: retake any shot for free. On another player: force them to re-throw a shot that was too good." },
     { "id": 43, "timing": "After throw", "kind": "attack", "name": "Prove It", "text": "Cancel a shot an opponent just took. They throw again with a different disc of their choice from any bag. (No extra stroke, just a forced mulligan.)" },
