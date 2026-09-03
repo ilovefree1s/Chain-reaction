@@ -220,7 +220,7 @@
   /* The outline is the card's rarity — the one thing about a card you can read
      without reading it. Defaults kept for anything drawn before a tier is known,
      so a card is never left with no edge at all. */
-  .card { display: flex; border: 2px solid transparent; border-radius: 18px; overflow: hidden;
+  .card { display: flex; border: 3px solid transparent; border-radius: 18px; overflow: hidden;
           margin-bottom: 12px;
           background: linear-gradient(var(--panel), var(--panel)) padding-box,
                       linear-gradient(100deg, var(--rare, #3FA9FF), var(--rare, #3FA9FF)) border-box;
@@ -4299,15 +4299,16 @@ function cardFaceSvg(c) {
     '<stop offset="0" stop-color="#3FA9FF"/><stop offset="1" stop-color="#1E6FFF"/></linearGradient>' +
     '</defs>' +
     '<rect x="6" y="6" width="708" height="988" rx="30" fill="#05070C"/>' +
-    '<rect x="12" y="12" width="696" height="976" rx="26" fill="#070B14" stroke="url(#facerim)" stroke-width="4"/>' +
+    '<rect x="13" y="13" width="694" height="974" rx="26" fill="#070B14" stroke="url(#facerim)" stroke-width="7"/>' +
     '<rect x="26" y="26" width="668" height="948" rx="20" fill="none" stroke="#22304A" stroke-width="2"/>' +
     '<rect x="60" y="64" width="150" height="3" fill="#1E6FFF"/>' +
     '<rect x="510" y="64" width="150" height="3" fill="#FF8A1E"/>' +
-    // The tier in words, opposite the kind at the foot of the card. The rim
-    // already says it in colour; this says it to anyone who has not learned
-    // the colours yet, which on the first round is everybody.
-    '<text x="' + (wheelOnlyCard(c.id) ? 450 : 360) + '" y="962" text-anchor="middle" fill="' +
-    rim + '" font-size="19" font-weight="900" letter-spacing="3">' +
+    // The tier in words, in the bottom corner where it has the line to itself —
+    // the kind's own line is spoken for on a wheel-only card. The rim already
+    // says it in colour; this says it to anyone who has not learned the colours
+    // yet, which on the first round is everybody.
+    '<text x="646" y="958" text-anchor="end" fill="' + rim +
+    '" font-size="30" font-weight="900" letter-spacing="3">' +
     esc(rare.id.toUpperCase()) + '</text>' +
     '<text x="360" y="74" text-anchor="middle" fill="#4DC3FF" font-size="24" font-weight="800" letter-spacing="7">' +
     esc(c.timing.toUpperCase()) + '</text>' +
@@ -4318,7 +4319,7 @@ function cardFaceSvg(c) {
     // with the number gone it was simply off-centre, so it centres like every
     // other line on the card. The wheel-only badge still gets a partner, and
     // holds it left where it can face one.
-    '<text x="' + (wheelOnlyCard(c.id) ? 270 : 360) + '" y="929"' +
+    '<text x="' + (wheelOnlyCard(c.id) ? 270 : 360) + '" y="910"' +
     (wheelOnlyCard(c.id) ? '' : ' text-anchor="middle"') +
     ' fill="#4DC3FF" font-size="21" font-weight="900" letter-spacing="2">' +
     esc(c.kind.toUpperCase()) + '</text>' +
@@ -4326,12 +4327,12 @@ function cardFaceSvg(c) {
     // fact about them a browsing player needs: you can't draw this. The little
     // pie is the GAMBLE WHEEL!! itself, pointer and all.
     (wheelOnlyCard(c.id)
-      ? '<g transform="translate(432 921)">' +
+      ? '<g transform="translate(432 902)">' +
         '<polygon points="-5,-24 5,-24 0,-13" fill="#FF8A1E"/>' +
         '<circle r="15" fill="#061022" stroke="#4DC3FF" stroke-width="3"/>' +
         '<path d="M0 0L15 0M0 0L7.5 13M0 0L-7.5 13M0 0L-15 0M0 0L-7.5 -13M0 0L7.5 -13" stroke="#4DC3FF" stroke-width="2"/>' +
         '<circle r="3.5" fill="#4DC3FF"/></g>' +
-        '<text x="462" y="929" fill="#FF8A1E" font-size="21" font-weight="900" letter-spacing="2">WHEEL ONLY</text>'
+        '<text x="462" y="910" fill="#FF8A1E" font-size="21" font-weight="900" letter-spacing="2">WHEEL ONLY</text>'
       : "") +
     '</svg>';
 }
