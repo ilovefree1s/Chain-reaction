@@ -4278,28 +4278,33 @@ var SPARK_CORNERS = [
   [21, 979, 1, -1.75], [699, 979, -1, -5.25]
 ];
 /*
- * A legendary holds all four corners at once. An epic gets three, and only two
- * of them are alight at a time: each one is out for a third of the cycle and the
- * three are staggered by exactly that, so the pair that is showing keeps moving
- * round the card without the count ever changing.
+ * Each tier lights its corners differently, and the three of them read as one
+ * idea getting quieter: four corners always on, then three with two showing,
+ * then four with one walking round them.
  *
- * Nine seconds, which is slow enough that you notice a corner is dark rather
- * than watching it go dark.
+ * `lit` is the share of the cycle a corner spends alight. A corner starts its
+ * cycle a full share behind the one before it, which is what keeps the number
+ * showing constant while the ones showing keep changing — the dark corner walks
+ * for an epic, the lit one walks for a rare. `lit: 1` means it never goes out.
  */
-var SPARK_CYCLE = 9;
+var SPARK_PLAN = {
+  legendary: { r: 17, corners: 4, lit: 1, cycle: 0 },
+  epic: { r: 12, corners: 3, lit: 2 / 3, cycle: 9 },
+  rare: { r: 9, corners: 4, lit: 1 / 4, cycle: 12 }
+};
 function faceSparks(tier) {
-  var R = tier === "legendary" ? 17 : tier === "epic" ? 12 : 0;
-  if (!R) return "";
-  var rota = tier === "epic";
-  var corners = rota ? SPARK_CORNERS.slice(0, 3) : SPARK_CORNERS;
-  return corners.map(function (at, i) {
+  var plan = SPARK_PLAN[tier];
+  if (!plan) return "";
+  var R = plan.r;
+  return SPARK_CORNERS.slice(0, plan.corners).map(function (at, i) {
     var off = at[3] + "s", swing = SPARK_SWING * at[2];
-    // Full for two thirds of the turn, out for the last third, with the fades
-    // themselves kept short so it reads as lit or not rather than dimming.
-    var turn = rota
-      ? '<animate attributeName="opacity" values="1;1;0;0;1" keyTimes="0;0.6;0.7;0.96;1"' +
-        ' dur="' + SPARK_CYCLE + 's" begin="' + (-i * SPARK_CYCLE / 3).toFixed(2) +
-        's" repeatCount="indefinite"/>'
+    // The fades are kept short at both ends, so a corner reads as lit or not
+    // rather than as something forever dimming.
+    var turn = plan.lit < 1
+      ? '<animate attributeName="opacity" values="1;1;0;0;1" keyTimes="0;' +
+        (plan.lit - 0.04).toFixed(3) + ';' + plan.lit.toFixed(3) + ';0.96;1"' +
+        ' dur="' + plan.cycle + 's" begin="' +
+        (-i * plan.cycle / plan.corners).toFixed(2) + 's" repeatCount="indefinite"/>'
       : "";
     // Every one of these is a transform, and on one element each would replace
     // the last, so they are summed: the corner it lives at, the drift along the
