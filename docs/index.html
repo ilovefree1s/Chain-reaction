@@ -1073,7 +1073,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.236 · 4 Sep 22:14";
+var APP_VERSION = "v1.237 · 4 Sep 22:20";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. Opening the app fetches fresh anyway.
@@ -1256,7 +1256,9 @@ function sliceReady(url) {
   }
   return sliceBuf[url];
 }
-function playSlice(url, from, seconds, gain, loop) {
+/* [delay] holds the sound back without holding the picture back: scheduled on
+   the audio clock, so it is a real pause and not a timer that fires late. */
+function playSlice(url, from, seconds, gain, loop, delay) {
   var buf = sliceReady(url);
   if (!buf || !(gain > 0)) return null;
   try {
@@ -1266,7 +1268,7 @@ function playSlice(url, from, seconds, gain, loop) {
     g.gain.value = gain;
     src.connect(g); g.connect(sliceCtx.destination);
     if (loop) { src.loop = true; src.loopStart = from; src.loopEnd = from + seconds; }
-    src.start(0, from, loop ? undefined : seconds);
+    src.start(sliceCtx.currentTime + (delay || 0), from, loop ? undefined : seconds);
     return src;
   } catch (e) { return null; }
 }
@@ -5697,6 +5699,7 @@ function renderDiceGame() {
  * lifting that half in the recording itself.
  */
 var DICE_SHAKE_LEN = 1.13, DICE_ROLL_AT = 1.13, DICE_ROLL_LEN = 0.62;
+var DICE_ROLL_WAIT = 0.2;   // silence before the dice are heard to land
 var DIE_GRAVITY = 2600, DIE_BOUNCE = 0.42, DIE_FLOOR_DRAG = 0.82, DIE_AIR = 0.995;
 var diceSim = null;
 
@@ -5706,7 +5709,10 @@ function rollDice(strength) {
   if (typeof strength !== "number") strength = 0.4;
   strength = Math.max(0, Math.min(1, strength));
   d.rolling = true;
-  playSlice(DICE_SOUND, DICE_ROLL_AT, DICE_ROLL_LEN, sfxVolume());
+  // A beat of nothing first: the dice are still leaving the hand when the throw
+  // starts, and a landing that lands before they have gone anywhere is a noise
+  // rather than an event.
+  playSlice(DICE_SOUND, DICE_ROLL_AT, DICE_ROLL_LEN, sfxVolume(), false, DICE_ROLL_WAIT);
   render(); // once, into the rolling state; the loop owns them after this
   var fieldEl = app.querySelector(".dicefield");
   if (!fieldEl) { d.rolling = false; render(); return; }
