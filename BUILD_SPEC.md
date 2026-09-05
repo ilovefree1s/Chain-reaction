@@ -128,13 +128,10 @@ Suggested palette: deep pine ground (`#0C1A14`), panels (`#132A21`), muted sage 
     "Before shot",
     "Before tee shot",
     "Before all tee",
-    "On draw",
     "After throw",
     "After all tee",
     "After card",
     "After a hole",
-    "After all play a card",
-    "For the next hole",
     "Any time"
   ],
   "cards": [
