@@ -4003,6 +4003,14 @@ function wheelButton() {
     return '<button class="wheelplate" disabled>' + plate + "</button>" +
       '<p class="hint">' + esc(busy) + ' is on the wheel. It comes free when they finish.</p>';
   }
+  // Everyone has passed, so the talking is over and the throwing has started.
+  // Cards can still answer what happens out there; buying a spin cannot,
+  // because a wheel landed on a hole half-thrown lands on nothing.
+  if (prioOpen(s)) {
+    return '<button class="wheelplate" disabled>' + plate + "</button>" +
+      '<p class="hint">Everyone passed &mdash; the wheel is shut for this hole. ' +
+      'It opens again when the scores go in.</p>';
+  }
   if (live && !iHavePrio(s)) {
     return '<button class="wheelplate" disabled>' + plate + "</button>" +
       '<p class="hint">' + esc(prioHolder(s)) + ' has priority. The wheel is theirs until they pass.</p>';
@@ -7163,6 +7171,10 @@ app.addEventListener("click", function (e) {
       // One wheel, one spinner. Buying in while somebody else is mid-spin is how
       // two results end up arguing about which of them the table just saw.
       if (wheelHeldByOther()) break;
+      // Shut once the whole table has passed, and open again when the hole is
+      // scored. Not a live-only rule: it is about where the hole has got to,
+      // which one phone knows as well as four.
+      if (prioOpen(s)) break;
       // And one at a time in the order, when the phones are linked. Offline the
       // pointer cannot travel, so gating on it would lock everyone but the leader
       // out of the wheel for the whole round.
