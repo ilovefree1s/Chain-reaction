@@ -258,11 +258,15 @@
   .turn.me { text-decoration: underline; text-underline-offset: 3px; }
   .turnsep { color: #3A4A66; }
   .handgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  /* The outline is the card's rarity here as well: the hand is where you are
+     deciding what to play, which is the moment it matters most. Defaults kept
+     for anything drawn before a tier is known. */
   .minicard { border: 2px solid transparent; border-radius: 14px; padding: 12px;
               cursor: pointer;
               background: linear-gradient(#070B14, #070B14) padding-box,
-                          linear-gradient(100deg, #1E6FFF, #3FA9FF 45%, #FF8A1E) border-box;
-              box-shadow: 0 0 14px rgba(30, 111, 255, 0.25); }
+                          linear-gradient(100deg, var(--rare, #3FA9FF),
+                                          var(--rare, #3FA9FF)) border-box;
+              box-shadow: 0 0 14px var(--rareglow, rgba(30, 111, 255, 0.25)); }
   .minicard img { width: 100%; display: block; border-radius: 8px; }
   /* Sits in the gap directly above the button stack — next to the Settings button it
      points at, and clear of the logo. Solid, because the grass behind it is bright. */
@@ -282,6 +286,7 @@
   /* font-size is the starting point only — fitMetaLines() shrinks it per tile until
      the line fits, because the longest ("GROUP · AFTER ALL PLAY A CARD") overflows a
      half-width tile at any size a phone could still read. Same as Android. */
+  .minirare { font-weight: 900; }
   .minimeta { color: #4DC3FF; font-size: 10px; font-weight: 900; letter-spacing: .5px;
               text-transform: uppercase; margin-bottom: 8px;
               white-space: nowrap; overflow: hidden; text-overflow: clip; }
@@ -3939,13 +3944,15 @@ function openWheelNow(free) {
 function miniCardHtml(c, act, picked, held) {
   var art = CARD_ART[c.id];
   var tag = held ? '<div class="heldtag">HELD</div>' : "";
+  var rare = rarityOf(c);
   var open = '<div class="minicard' + (picked ? " picked" : "") + '" data-act="' +
-    (act || "viewCard") + '" data-i="' + c.id + '">';
+    (act || "viewCard") + '" data-i="' + c.id + '" style="' + rarityVars(rare) + '">';
   if (art) return open + tag + '<img src="' + art + '" alt="' + esc(c.name) + '"></div>';
   return open + tag +
     '<div class="minimeta">' + (wheelOnlyCard(c.id)
       ? '<span style="color:#FF8A1E">wheel only</span> &middot; ' : "") +
-    esc(c.kind) + ' &middot; ' + esc(c.timing) + '</div>' +
+    '<span class="minirare" style="color:' + rare.color + '">' + esc(rare.id) + '</span>' +
+    ' &middot; ' + esc(c.kind) + ' &middot; ' + esc(c.timing) + '</div>' +
     '<div class="mininame">' + esc(c.name) + '</div>' +
     '<div class="minitext">' + esc(c.text) + '</div></div>';
 }
