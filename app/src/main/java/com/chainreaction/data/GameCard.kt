@@ -140,6 +140,7 @@ object CardDeck {
         GameCard(57, "Before all tee", CardKind.GROUP, "LONE WOLF!", "Whoever it lands on is the LONE WOLF! Cards played by the wolf effect everyone else! A lone wolf win gives him the right to go through everyone's cards and play 1 card from everyone's hand that effects that player. If the 3 players win then nobody cares, cuz 3 people should beat 1 every time — but they can flip fight for 1 free mulligan. Wolf calls heads or tails."),
         GameCard(58, "Before tee shot", CardKind.ATTACK, "PUT EM ON TILT", "Force an opponent to play the entire hole with the TILT!"),
         GameCard(59, "Before tee shot", CardKind.ATTACK, "DESTINATION FUCKED!", "Force an opponent to play the entire hole with the \"beater\". Whoever played the card gets 30 seconds to abuse the disc before they tee off."),
+        GameCard(60, "Before all tee", CardKind.ATTACK, "The Curd!", "Everyone rolls 2 dice, including whoever played this card. The lowest roll uses the cottage cheese lid as their driver this hole."),
     )
 
     private val byId: Map<Int, GameCard> = ALL.associateBy { it.id }

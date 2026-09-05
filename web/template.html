@@ -2500,15 +2500,22 @@ var PLAY_ON_ALL = [
   11, // Call Your Shot
   18, // Dealer's Choice!
   19, // Do Not Pass Go — everyone is in the running until the drives land
-
   24, // FIVE FOR YOU, YOU, AND YOU! — everyone else pays the ace pot
   31, // I'm In Control
   40, // Over Sharer
   41, // Plant Your Feet! — nobody else gets a run-up
   51, // Turbo Time — every opponent inside C1
   54, // Your Tee Pad Is Over There! — the whole table tees from the new spot
+  60, // The Curd! — everyone rolls, and the dice choose who is stuck with the lid
 ];
 function playableOnAll(id) { return PLAY_ON_ALL.indexOf(id) !== -1; }
+
+/* Cards whose whole instruction is to go and do something with the dice or the
+   coin. Tapping the alert opens that game rather than the card: the alert has
+   already said what the card says, and what is wanted next is a roll. */
+var ALERT_GAME = {
+  60: "dice",   // The Curd! — everyone rolls 2, lowest gets the lid
+};
 /* Sent as the target when a card is played on the whole table, and understood
    on the other phones as "this hit everyone" — so every recipient gets the
    hot alert, not one. Not a real name, so it can't collide with a player. */
@@ -2569,6 +2576,7 @@ var IGNORES_EXEMPT = [
   11,  // Call Your Shot — the CTP decides it, and everyone is throwing for it
   28,  // Globetrotter Shit — the name putts behind the back for free, everyone else pays
   33,  // Lefty ON the Box — the name's offhand throw is free, everyone else's counts
+  60,  // The Curd! — the dice pick who gets the lid, so the spun name just rolls too
 ];
 function ignoresExempt(id) { return IGNORES_EXEMPT.indexOf(id) !== -1; }
 
@@ -2643,7 +2651,8 @@ var WHEEL_TEXT = {
   54: "[chooser] marks a new tee pad up to 10 paces (30 ft) from the original tee pad. Everyone else tees from there.",
   57: "[exempt] is the LONE WOLF! Cards played by [exempt] effect everyone else! A lone wolf win gives him the right to go through everyone's cards and play 1 card from everyone's hand that effects that player. If the 3 players win then nobody cares, cuz 3 people should beat 1 every time — but they can flip fight for 1 free mulligan. Wolf calls heads or tails.",
   58: "[spinner] spun the wheel and has to play the entire hole with the TILT!",
-  59: "[spinner] spun the wheel and has to play the entire hole with the \"beater\"."
+  59: "[spinner] spun the wheel and has to play the entire hole with the \"beater\".",
+  60: "[exempt] tees off with the cottage cheese lid this hole."
 };
 /*
  * Whether the fate spin has anything to decide. It reads the wheel wording
@@ -7146,6 +7155,13 @@ app.addEventListener("click", function (e) {
       var eid = el.getAttribute("data-eid");
       var hit = liveAlerts.filter(function (a) { return a.eid === eid; })[0];
       liveAlerts = liveAlerts.filter(function (a) { return a.eid !== eid; });
+      // Straight to the game the card is asking for, if it asks for one.
+      if (hit && hit.card != null && ALERT_GAME[hit.card] && !hit.wheel) {
+        openSecretWheel();
+        secret.mode = ALERT_GAME[hit.card];
+        render();
+        break;
+      }
       if (hit && hit.card != null) {
         viewCard = hit.card;
         viewOnly = true;

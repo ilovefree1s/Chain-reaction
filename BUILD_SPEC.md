@@ -16,7 +16,7 @@ If a PWA is easier to sideload, that's acceptable — but it must work offline, 
 - **Starting hand:** 4 cards, dealt at round start.
 - **Mulligans:** a mulligan is a free extra throw, not a shot you are forced to play. Cards hand them out; the thrower looks at both and plays whichever landed better, so a mulligan can never leave you worse off than not taking it.
 - **Hand cap:** 7. Cannot draw past it — must discard first.
-- **Each player has their own 59-card deck**, shuffled independently. Duplicate cards across players are expected and fine.
+- **Each player has their own 60-card deck**, shuffled independently. Duplicate cards across players are expected and fine.
 - **Played and discarded cards** go to that player's own discard pile. Reshuffle the discard back into the deck if the deck ever empties.
 - **The GAMBLE WHEEL!! outranks everything.** A wheel result is top priority and cannot be overridden by a played card.
 - **Card rarity.** Five tiers — common, uncommon, rare, epic, legendary — each rarer than the last and each with its own colour on the face. A card carries a `rarity` field only when it is not common; anything without one is common. Rarity is not a restriction: every card is in every deck exactly once. It sets how likely that card is to be the one a draw hands you.
@@ -197,7 +197,8 @@ Suggested palette: deep pine ground (`#0C1A14`), panels (`#132A21`), muted sage 
     { "id": 56, "timing": "After card", "kind": "react", "rarity": "epic", "name": "UNO REVERSO", "text": "Reverse any cards that effect you back to the person that used the card. (Doesn't work on wheel spins.)" },
     { "id": 57, "timing": "Before all tee", "kind": "group", "name": "LONE WOLF!", "text": "Whoever it lands on is the LONE WOLF! Cards played by the wolf effect everyone else! A lone wolf win gives him the right to go through everyone's cards and play 1 card from everyone's hand that effects that player. If the 3 players win then nobody cares, cuz 3 people should beat 1 every time — but they can flip fight for 1 free mulligan. Wolf calls heads or tails." },
     { "id": 58, "timing": "Before tee shot", "kind": "attack", "rarity": "rare", "name": "PUT EM ON TILT", "text": "Force an opponent to play the entire hole with the TILT!" },
-    { "id": 59, "timing": "Before tee shot", "kind": "attack", "rarity": "legendary", "name": "DESTINATION FUCKED!", "text": "Force an opponent to play the entire hole with the \"beater\". Whoever played the card gets 30 seconds to abuse the disc before they tee off." }
+    { "id": 59, "timing": "Before tee shot", "kind": "attack", "rarity": "legendary", "name": "DESTINATION FUCKED!", "text": "Force an opponent to play the entire hole with the \"beater\". Whoever played the card gets 30 seconds to abuse the disc before they tee off." },
+    { "id": 60, "timing": "Before all tee", "kind": "attack", "rarity": "uncommon", "name": "The Curd!", "text": "Everyone rolls 2 dice, including whoever played this card. The lowest roll uses the cottage cheese lid as their driver this hole." }
   ]
 }
 ```
