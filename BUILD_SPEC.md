@@ -115,7 +115,7 @@ Suggested palette: deep pine ground (`#0C1A14`), panels (`#132A21`), muted sage 
   "wheelCost": 2,
   "freeSpinCard": 22,
   "wheelExcludes": [1, 3, 5, 6, 12, 13, 19, 20, 21, 22, 23, 24, 31, 34, 36, 38, 42, 43, 52, 55, 56],
-  "wheelOnly": [57],
+  "wheelOnly": [],
   "rarities": [
     { "id": "common",    "color": "#E6ECF5", "weight": 86 },
     { "id": "uncommon",  "color": "#47D97F", "weight": 58 },
@@ -191,7 +191,7 @@ Suggested palette: deep pine ground (`#0C1A14`), panels (`#132A21`), muted sage 
     { "id": 54, "timing": "Before tee shot", "kind": "attack", "rarity": "legendary", "name": "Your Tee Pad Is Over There!", "text": "Use 2 of your discs to mark a new tee for everyone else, up to 10 paces (30 ft) from the original. They all tee from it." },
     { "id": 55, "timing": "After throw", "kind": "attack", "rarity": "epic", "name": "I Think It's Broke", "text": "Play on another player that just hit a tree. They lose that disc — they can't throw it again for the rest of the round. If they forget and throw it again, it's +1 stroke." },
     { "id": 56, "timing": "After card", "kind": "react", "rarity": "epic", "name": "UNO REVERSO", "text": "Reverse any cards that effect you back to the person that used the card. (Doesn't work on wheel spins.)" },
-    { "id": 57, "timing": "Before all tee", "kind": "group", "rarity": "legendary", "name": "LONE WOLF!", "text": "Whoever it lands on is the LONE WOLF! Cards played by the wolf effect everyone else! A lone wolf win gives him the right to go through everyone's cards and play 1 card from everyone's hand that effects that player. If the 3 players win then nobody cares, cuz 3 people should beat 1 every time — but they can roll dice to see who gets 1 free banked mulligan." },
+    { "id": 57, "timing": "Before all tee", "kind": "group", "rarity": "legendary", "name": "LONE WOLF!", "text": "Cards played by the wolf effect everyone else! A lone wolf win gives him the right to go through everyone's cards and play 1 card from everyone's hand that effects that player. If the 3 players win then nobody cares, cuz 3 people should beat 1 every time — but they can roll dice to see who gets 1 free banked mulligan." },
     { "id": 58, "timing": "Before tee shot", "kind": "attack", "rarity": "rare", "name": "PUT EM ON TILT", "text": "Force an opponent to play the entire hole with the TILT!" },
     { "id": 59, "timing": "Before tee shot", "kind": "attack", "rarity": "legendary", "name": "DESTINATION FUCKED!", "text": "Force an opponent to play the entire hole with the \"beater\". Whoever played the card gets 30 seconds to abuse the disc before they tee off. You must tee off within 5 seconds of being handed the disc, and ZERO attempts to repair it are allowed. Otherwise +1 stroke." },
     { "id": 60, "timing": "Before all tee", "kind": "attack", "rarity": "uncommon", "name": "The Curd!", "text": "Everyone rolls 2 dice, including whoever played this card. The lowest roll uses the cottage cheese lid as their driver this hole." }
