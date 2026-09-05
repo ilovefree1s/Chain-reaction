@@ -2338,6 +2338,8 @@ function livePrio(p) {
   state.prio = p.name;
   state.passes = laps;
   save(state);
+  // It has just landed on us and there may be nothing to do with it.
+  autoPassIfEmpty(state);
   liveRefresh();
 }
 
@@ -3941,6 +3943,25 @@ function iHavePrio(s) {
    their turn — a reversal you have to hold until your priority is not a
    reversal. Kind rather than a list of ids, so a new one behaves on arrival. */
 function bypassesPrio(c) { return !!c && c.kind === "react"; }
+/*
+ * Holding priority with nothing in hand is a turn nobody can take: there is no
+ * card to play and no card to buy a spin with. It passes itself and says why,
+ * rather than leaving three people waiting on somebody who cannot act.
+ *
+ * Only ever this phone's own hand. Every phone keeps its own deck, so nobody
+ * else's emptiness is ours to notice.
+ */
+function autoPassIfEmpty(s) {
+  if (!s || s.hand.length || prioOpen(s)) return false;
+  var who = prioHolder(s);
+  if (!who || who.trim().toLowerCase() !== (s.players[s.meIndex] || "").trim().toLowerCase()) {
+    return false;
+  }
+  passPrio(s);
+  localNote("Nothing in hand, so your turn passed on by itself. " +
+    "It comes back when the hole is scored and you draw.", "Passed for you");
+  return true;
+}
 /* Hands it to the next player in the order, wrapping past last back to first. */
 function passPrio(s) {
   var order = playOrder(s);
@@ -5064,6 +5085,8 @@ function resolveCard(s, id, played, target) {
   commit(s);
   // The alert on everyone else's phone. Plays only — a discard is nobody's
   // business beyond the hand count, which the commit's hello just carried.
+  // Played or discarded, an empty hand cannot hold the queue up.
+  setTimeout(function () { if (state === s && autoPassIfEmpty(s)) render(); }, 0);
   // Something to answer: the lap starts again, from the leader.
   if (played) {
     s.passes = 0;
