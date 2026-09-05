@@ -1073,7 +1073,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.225 · 4 Sep 21:45";
+var APP_VERSION = "v1.226 · 4 Sep 21:51";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. Opening the app fetches fresh anyway.
@@ -4127,6 +4127,11 @@ function renderRoundRules() {
   // looking for the button it saves you.
   return '<p class="hint" style="text-align:center;margin:0 0 14px">' +
     'Tap RULES 3&times; to end the round early.</p>' +
+    // The rules say an argument goes to the coin. This is the way there —
+    // at the top, because a table mid-argument is not going to scroll.
+    '<button class="big raised" data-act="dispute">Settle a dispute</button>' +
+    '<p class="hint" style="text-align:center;margin:-6px 0 16px">' +
+    'Coin, dice, wheel or cards &mdash; the app has no opinion.</p>' +
     renderLiveSection() + renderHouseRules() + renderCardLibrary() +
     '<div style="height:16px"></div>' + danger;
 }
@@ -7028,6 +7033,9 @@ app.addEventListener("click", function (e) {
     case "slotMarks":
       secret.cards.marks = secret.cards.marks === false;
       render(); break;
+    // Straight to the games, from inside the round. Closing them puts the
+    // round back exactly as it was — the overlay never touched it.
+    case "dispute": openSecretWheel(); break;
     case "closeSecret": stopWheelSound(true); secret = null; render(); break;
     // Closing mid-spin takes the sound with it — and the heads-up banner off
     // everyone else's phone, when no result ever announced itself.
