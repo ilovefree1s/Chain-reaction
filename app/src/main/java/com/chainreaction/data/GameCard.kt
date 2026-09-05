@@ -135,7 +135,7 @@ object CardDeck {
         GameCard(56, "After card", CardKind.REACT, "UNO REVERSO", "Reverse any cards that effect you back to the person that used the card. (Doesn't work on wheel spins.)"),
         GameCard(57, "Before all tee", CardKind.GROUP, "LONE WOLF!", "Whoever it lands on is the LONE WOLF! Cards played by the wolf effect everyone else! A lone wolf win gives him the right to go through everyone's cards and play 1 card from everyone's hand that effects that player. If the 3 players win then nobody cares, cuz 3 people should beat 1 every time — but they can roll dice to see who gets 1 free banked mulligan."),
         GameCard(58, "Before tee shot", CardKind.ATTACK, "PUT EM ON TILT", "Force an opponent to play the entire hole with the TILT!"),
-        GameCard(59, "Before tee shot", CardKind.ATTACK, "DESTINATION FUCKED!", "Force an opponent to play the entire hole with the \"beater\". Whoever played the card gets 30 seconds to abuse the disc before they tee off."),
+        GameCard(59, "Before tee shot", CardKind.ATTACK, "DESTINATION FUCKED!", "Force an opponent to play the entire hole with the \"beater\". Whoever played the card gets 30 seconds to abuse the disc before they tee off. You must tee off within 5 seconds of being handed the disc, and ZERO attempts to repair it are allowed. Otherwise +1 stroke."),
         GameCard(60, "Before all tee", CardKind.ATTACK, "The Curd!", "Everyone rolls 2 dice, including whoever played this card. The lowest roll uses the cottage cheese lid as their driver this hole."),
     )
 
