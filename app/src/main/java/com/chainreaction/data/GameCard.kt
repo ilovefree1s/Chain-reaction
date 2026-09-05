@@ -118,7 +118,7 @@ object CardDeck {
         GameCard(39, "Before tee shot", CardKind.ATTACK, "One Disc Wonder!", "Force an opponent to play the hole with only 1 DISC this hole! (If someone already gave them THE CURD!, the TILT or the \"beater\", that counts as their 1 disc.)"),
         GameCard(40, "Before tee shot", CardKind.ATTACK, "Over Sharer", "Give everyone a disc from your own bag to tee off with on this hole."),
         GameCard(41, "Before all tee", CardKind.ATTACK, "Plant Your Feet!", "No run-up on everyone else's tee shot."),
-        GameCard(42, "Any time", CardKind.DUAL, "Player 2's Turn!", "On yourself: retake any shot for free. On another player: force them to re-throw a shot that was too good."),
+        GameCard(42, "Any time", CardKind.DUAL, "Player 2's Turn!", "On yourself: retake any shot for free. On another player: force them to re-throw a shot — good or bad, it doesn't matter."),
         GameCard(43, "After throw", CardKind.ATTACK, "Prove It", "Cancel a shot an opponent just took. They throw again with a different disc of their choice from any bag. The extra throw counts as a stroke."),
         GameCard(44, "Before shot", CardKind.ATTACK, "Roll It!", "Force an opponent to throw a roller on the upcoming drive or approach."),
         GameCard(45, "Before shot", CardKind.DUAL, "Shoe Golf", "On yourself: putt with your own shoe at no stroke cost. On another player: they putt with a shoe and it still counts as a stroke. If they refuse to take their shoe off, they take +1 stroke after the hole."),
