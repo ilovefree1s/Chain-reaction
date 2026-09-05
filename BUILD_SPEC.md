@@ -100,6 +100,7 @@ Suggested palette: deep pine ground (`#0C1A14`), panels (`#132A21`), muted sage 
 
 - No score sync. (Since amended: the web build's live room shares card plays and hand counts — see MULTIPLAYER_PLAN.md — but the scorecard stays local on every phone, and no phone referees another.)
 - No enforcement of card effects.
+- **Disputes are settled by the secret gamble games.** The app has no opinion on anything it did not deal or count, so an argument goes to the coin, the dice or the wheel rather than to the phone holding the scorecard.
 - No stroke penalties applied automatically. Cards like GAMBLE!, Code Words!, Jomez Commentator, RUSH ATTACK!, Trade Offer and Me and You all rewrite scores — players enter those manually with the ± steppers.
 - No money tracking. FIVE FOR YOU, YOU, AND YOU! mentions a pot; it's honor-system.
 
