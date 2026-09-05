@@ -2715,7 +2715,12 @@ var WHEEL_TEXT = {
   54: "[chooser] marks a new tee pad up to 10 paces (30 ft) from the original tee pad. Everyone else tees from there.",
   57: "[exempt] is the LONE WOLF! Cards played by [exempt] effect everyone else! A lone wolf win gives him the right to go through everyone's cards and play 1 card from everyone's hand that effects that player. If the 3 players win then nobody cares, cuz 3 people should beat 1 every time — but they can roll dice to see who gets 1 free banked mulligan.",
   58: "[spinner] spun the wheel and has to play the entire hole with the TILT!",
-  59: "[spinner] spun the wheel and has to play the entire hole with the \"beater\".",
+  59: "[spinner] spun the wheel and has to play the entire hole with the \"beater\". " +
+      // The disc goes TO them rather than they get it: [others] falls back to
+      // "everyone else" when a name is missing, and that takes a singular verb
+      // where a list of names takes a plural one. Nothing here has to agree.
+      "The disc goes to [others] first, for 30 seconds of abuse. Tee off within 5 seconds of being " +
+      "handed it, and ZERO attempts to repair it are allowed. Otherwise +1 stroke.",
   60: "[exempt] tees off with the cottage cheese lid this hole."
 };
 /*
@@ -2775,6 +2780,10 @@ function wheelWords(c, w) {
     named.push(free ? null : landed);
   }
   if (t.indexOf("[mate]") !== -1) named.push((w && w.mate) || null);
+  // A card that lands on the spinner alone names them too, and "everybody
+  // else" has to mean everybody but them. Without this the spinner is counted
+  // among the others and told to abuse the disc they are about to throw.
+  if (t.indexOf("[spinner]") !== -1) named.push(spinner);
   var fill = {
     chooser: free ? spinner : landed,
     exempt: free
