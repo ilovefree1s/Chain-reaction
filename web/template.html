@@ -297,8 +297,16 @@
   .facemodal { display: flex; }
   /* margin:auto centres the card cluster when it fits and stays scrollable when not */
   .faceinner { width: 100%; max-width: 420px; margin: auto; }
-  .cardface { width: 100%; display: block; border-radius: 18px;
-              box-shadow: 0 0 22px rgba(30, 111, 255, 0.3); }
+  /* Lit from behind in its own colour. Three shadows rather than one: a tight
+     ring that reads as the edge glowing, a middle bloom, and a wide soft one
+     that puts light on the black around the card. A single large shadow is a
+     grey smudge; stacked, they are a glow. */
+  .cardface, .facemodal .cardart {
+    width: 100%; display: block; border-radius: 18px;
+    box-shadow: 0 0 14px var(--rareglow, rgba(30, 111, 255, 0.3)),
+                0 0 46px var(--rareaura, rgba(30, 111, 255, 0.3)),
+                0 0 110px var(--rareaura, rgba(30, 111, 255, 0.3));
+  }
   /* The enlarged card rides the thumb: dragged live, then either thrown off the
      edge or sprung back. pan-y hands horizontal drags to us and leaves vertical
      ones as scrolling. The chevrons deliberately skip all of it and cut. */
@@ -4590,7 +4598,8 @@ function renderFaceModal() {
   // so it renders with no entry animation and simply cuts.
   var enter = faceEnterDir === 1 ? " fromright" : faceEnterDir === -1 ? " fromleft" : "";
   faceEnterDir = 0;
-  return '<div class="modal facemodal"><div class="faceinner">' +
+  return '<div class="modal facemodal"><div class="faceinner" style="' +
+    rarityVars(rarityOf(c)) + '">' +
     '<div class="faceslide' + enter + '">' + face + '</div>' + nav + acts +
     (closeUsed ? "" : '<div class="facepair">' + closeBtn + '</div>') + '</div></div>';
 }
@@ -6183,7 +6192,14 @@ function rarityVars(rare) {
   var h = (rare.color || "#3FA9FF").replace("#", "");
   var n = parseInt(h, 16);
   var rgb = [(n >> 16) & 255, (n >> 8) & 255, n & 255].join(",");
-  return "--rare:" + rare.color + ";--rareglow:rgba(" + rgb + ",.28)";
+  // The aura burns brighter the higher the tier — a common is outlined, a
+  // legendary is lit from behind. One step per tier, so the order is visible
+  // across a table without anybody being told what the colours mean.
+  var at = 0;
+  for (var i = 0; i < RARITIES.length; i++) if (RARITIES[i].id === rare.id) at = i;
+  return "--rare:" + rare.color +
+    ";--rareglow:rgba(" + rgb + ",.28)" +
+    ";--rareaura:rgba(" + rgb + "," + (0.16 + at * 0.1).toFixed(2) + ")";
 }
 function rarityRank(c) {
   var r = rarityOf(c);
