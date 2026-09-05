@@ -3958,30 +3958,36 @@ function iHavePrio(s) {
    their turn — a reversal you have to hold until your priority is not a
    reversal. Kind rather than a list of ids, so a new one behaves on arrival. */
 function bypassesPrio(c) { return !!c && c.kind === "react"; }
-/*
- * Priority governs the huddle on the tee pad and nothing else. Those are the
- * cards played while everybody is standing around before anybody throws, and
- * four people playing them over each other is what turned a hole into a scrum.
- * Once the throwing starts, a card answering what just happened out there
- * cannot wait for a turn to come round.
- */
+/* Cards that only make sense while the group is still on the pad: once the
+   drives are away there is no tee shot left to play them before. */
 function beforeTee(c) {
   return !!c && /^Before (tee shot|all tee)$/.test(c.timing);
 }
 /*
- * Whether this card can be played right now. A tee-pad card cannot be played
- * out of turn — the warning that used to say so could be ignored, and was.
+ * A hole has two halves and the cards obey different rules in each.
  *
- * Reactions are the exception, as they always were, and once the whole table
- * has passed there are no turns left to be out of.
+ * Standing on the pad, everything waits its turn — the wheel and every card
+ * alike. Four people playing over each other is what turned a hole into a
+ * scrum, and whoever is last in the order gets the final word precisely
+ * because everybody before them has already had theirs.
+ *
+ * Once the whole table has passed, the throwing has started. There are no
+ * turns left to be out of, so anything that answers what is happening out
+ * there can be played by anyone at any time — but the tee-pad cards are done,
+ * because the tee shots are.
+ *
+ * Reactions sit outside both halves. A card that answers another card cannot
+ * wait for a turn, or it is not answering anything.
  *
  * Live tables only. Offline one phone stands in for the group and nobody else
  * is passing anything to it, so the holder would have to press Pass three times
  * to play a card from their own hand.
  */
 function canPlayNow(s, c) {
-  if (!live || !s || !beforeTee(c)) return true;
-  return iHavePrio(s) || bypassesPrio(c);
+  if (!live || !s) return true;
+  if (bypassesPrio(c)) return true;
+  if (prioOpen(s)) return !beforeTee(c);
+  return iHavePrio(s);
 }
 /*
  * Holding priority with nothing in hand is a turn nobody can take: there is no
@@ -4788,16 +4794,24 @@ function renderFaceModal() {
       // it — so it is claimed, and the standalone copy is left off.
       closeUsed = true;
       var waiting = !canPlayNow(state, c);
+      // Two different refusals: waiting your turn is a delay, a tee-pad card
+      // after the drives are away is not coming back this hole.
+      var teedOff = waiting && prioOpen(state);
       acts = '<div class="acts" style="margin-top:14px">' +
         (heldAt != null
           ? '<button class="big primary" disabled>Held</button>'
+          : teedOff
+          ? '<button class="big primary" disabled>Too late this hole</button>'
           : waiting
           ? '<button class="big primary" disabled>Not your turn</button>'
           : '<button class="big primary" data-act="playCard" data-i="' + c.id + '">Play</button>') +
         '</div>' +
         // Discarding stays open either way: the hand cap has to be answerable
         // whoever's turn it is.
-        (waiting
+        (teedOff
+          ? '<p class="hint" style="text-align:center;margin:2px 0 10px">' +
+            'Everyone passed and the tee shots are away. This one waits for the next hole.</p>'
+          : waiting
           ? '<p class="hint" style="text-align:center;margin:2px 0 10px">' +
             esc(prioHolder(state)) + ' has priority. Yours when they pass.</p>'
           : "") +
