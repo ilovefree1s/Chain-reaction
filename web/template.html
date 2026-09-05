@@ -1012,6 +1012,17 @@ var WHEEL_POOL = CARDS.filter(function (c) { return DATA.wheelExcludes.indexOf(c
 /* Cards that live on the wheel alone — they can land on a spin but are never
    shuffled into anyone's deck. */
 function wheelOnlyCard(id) { return (DATA.wheelOnly || []).indexOf(id) !== -1; }
+/*
+ * The card that howls, found by name rather than written down.
+ *
+ * It was written down, as 60, and two card removals later 60 was The Curd! —
+ * so the wolf had quietly handed its howl to a tub of cottage cheese and
+ * nothing anywhere said so. Ids move; names do not.
+ */
+var LONE_WOLF = (function () {
+  var m = CARDS.filter(function (c) { return c.name === "LONE WOLF!"; });
+  return m.length ? m[0].id : -1;
+})();
 var MIN_PLAYERS = 3, MAX_PLAYERS = 4, DEFAULT_PAR = 3;
 var PAR_CYCLE = [3, 4, 5];
 
@@ -2254,7 +2265,7 @@ function liveWheel(p) {
     save(state);
   }
   // LONE WOLF! howls on every phone; everything else gets the usual rattle.
-  if (c.id === 60) playWolfSound(sfxVolume()); else playMenuSound(sfxVolume());
+  if (c.id === LONE_WOLF) playWolfSound(sfxVolume()); else playMenuSound(sfxVolume());
   try { if (navigator.vibrate) navigator.vibrate([120, 60, 120, 60, 320]); } catch (e) { /* banner only */ }
   liveRefresh();
 }
@@ -2384,7 +2395,7 @@ function livePlayed(p) {
     // The chain rattle, doing the job it was born for. Both are best-effort:
     // a browser that blocks gesture-less audio or vibration just shows the banner.
     // An invite buzzes shorter — get their attention, not their adrenaline.
-    playMenuSound(sfxVolume());
+    if (c.id === LONE_WOLF) playWolfSound(sfxVolume()); else playMenuSound(sfxVolume());
     try {
       if (navigator.vibrate) navigator.vibrate(onYou ? [120, 60, 120, 60, 320] : [90, 50, 90]);
     } catch (e) { /* banner only */ }
@@ -2580,6 +2591,11 @@ function playableOnAll(id) { return PLAY_ON_ALL.indexOf(id) !== -1; }
 var ALERT_GAME = {
   60: "dice",   // The Curd! — everyone rolls 2, lowest gets the lid
 };
+/* Cards that are an announcement to the table rather than a hit on one person.
+   Nobody is targeted and nobody picks anybody, but every phone has to hear it
+   go down — the wolf changes what the rest of the hole means for all four. */
+function tellsTable(id) { return id === LONE_WOLF; }
+
 /* Sent as the target when a card is played on the whole table, and understood
    on the other phones as "this hit everyone" — so every recipient gets the
    hot alert, not one. Not a real name, so it can't collide with a player. */
@@ -5161,8 +5177,14 @@ function resolveCard(s, id, played, target) {
     if (live) liveCast("prio", { name: s.prio, passes: 0 });
   }
   if (played && live) {
-    liveCast("play", { name: s.players[s.meIndex], card: id, target: target || null });
+    // An announcement goes out addressed to the whole table, so it lands as a
+    // hot alert on every phone instead of fading unheard in the corner of three.
+    liveCast("play", { name: s.players[s.meIndex], card: id,
+                       target: target || (tellsTable(id) ? ALL_TARGET : null) });
   }
+  // The wolf howls on its own phone too. Every other phone gets it from the
+  // broadcast, and the one that played the card is not listening to itself.
+  if (played && id === LONE_WOLF) playWolfSound(sfxVolume());
   // The GAMBLE WHEEL!! card IS the spin — playing it opens the wheel with no further
   // cost, which is exactly what its text promises.
   // A free spin still waits for the wheel to be free. The card is spent either
@@ -5254,7 +5276,7 @@ function spinWheel(kind) {
       : kind === "card" && (wheel.isDual || needsMate(wheel.card.id)) ? "cardDone"
       : "done";
     // The wolf announces itself the moment the effect wheel lands on it.
-    if (kind === "card" && wheel.card.id === 60) playWolfSound(sfxVolume());
+    if (kind === "card" && wheel.card.id === LONE_WOLF) playWolfSound(sfxVolume());
     // The name landed: the table's heads-up banner learns who's exempt while
     // the effect wheel is still to spin.
     if (kind === "name" && live) {
