@@ -2683,7 +2683,7 @@ var WHEEL_TEXT = {
   26: "Everyone but [exempt] must GAMBLE if they miss their first putt — putt again. Make it and that was a free mulligan. Miss and that stroke counts too — play whichever disc landed farthest away, then +1 stroke after the hole.",
   27: "[exempt] gets to join whatever player they want, as if they drove on top of that player's disc, after everyone tees off.",
   28: "[exempt] gets a free putt behind the back for no stroke. Everyone else still has to do it but it does count as a regular stroke for them. Must be inside Circle 1 to take effect.",
-  29: "It's 2 teams this hole: [exempt] and [mate] are one team, and everyone else is the other. Cards hit both players on each team when played. Winners get a banked mulligan, losers take +1 extra stroke.",
+  29: "It's 2 teams this hole: [exempt] and [mate] are one team, [others] the other. Cards hit both players on each team when played. Winners get a banked mulligan, losers take +1 extra stroke.",
   30: "If anyone but [exempt] hits metal at any point on this hole, it counts as in.",
   32: "Everyone but [exempt] takes their next drive with their offhand.",
   33: "[exempt] throws offhand off the box for free — that's throw 0. Everyone else throws lefty too, and theirs counts as throw 1.",
@@ -2718,6 +2718,28 @@ function wheelHasHalves(c) {
   return hasTwoHalves(c);
 }
 
+/*
+ * The players a card has not named, written out. Two names at a table of four,
+ * which beats "everyone else" — nobody should have to work out who that means
+ * while standing on a tee pad.
+ *
+ * Falls back to the phrase when the names it was given are not players: a free
+ * spin has drawn nobody yet, and listing the whole table as the opposition is
+ * worse than saying nothing.
+ */
+function othersThan(named) {
+  if (!state || !state.players) return "everyone else";
+  var real = 0;
+  var taken = named.filter(Boolean).map(function (n) { return n.trim().toLowerCase(); });
+  var rest = state.players.filter(function (n) {
+    var at = taken.indexOf(n.trim().toLowerCase());
+    if (at !== -1) real++;
+    return at === -1;
+  });
+  if (!real || !rest.length) return "everyone else";
+  if (rest.length === 1) return rest[0];
+  return rest.slice(0, -1).join(", ") + " and " + rest[rest.length - 1];
+}
 function wheelWords(c, w) {
   var t = WHEEL_TEXT[c.id] || c.text;
   var free = !!(w && w.free);
@@ -2735,12 +2757,17 @@ function wheelWords(c, w) {
     // The partner off a team card's second spin, before it lands.
     mate: (w && w.mate) || "the second name",
     // Whoever bought the spin — for cards that land on the spinner alone.
-    spinner: spinner
+    spinner: spinner,
+    // Everybody the card did not name. At a table of four a team card leaves
+    // exactly two, and two names beat "everyone else" — nobody has to work out
+    // who that means while standing on a tee pad. Falls back to the phrase when
+    // there are no names to give, which is a table of two.
+    others: othersThan([landed, (w && w.mate) || null])
   };
   // Capitalised where the token opens a sentence, plain everywhere else. The
   // offset is what says "start of string" — a ^ match is an empty lead, which
   // reads as no lead at all and left "the player you exempt" in lower case.
-  return t.replace(/([.!?—] )?\[(chooser|exempt|mate|spinner)\]/g, function (m, lead, key, at) {
+  return t.replace(/([.!?—] )?\[(chooser|exempt|mate|spinner|others)\]/g, function (m, lead, key, at) {
     var who = fill[key];
     if (lead || at === 0) who = who.charAt(0).toUpperCase() + who.slice(1);
     return (lead || "") + who;
