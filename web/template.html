@@ -2729,14 +2729,20 @@ function wheelHasHalves(c) {
  */
 function othersThan(named) {
   if (!state || !state.players) return "everyone else";
-  var real = 0;
-  var taken = named.filter(Boolean).map(function (n) { return n.trim().toLowerCase(); });
+  var seat = function (n) {
+    return state.players.some(function (q) { return q.trim().toLowerCase() === n; });
+  };
+  // Every slot the card names has to be filled by somebody at the table. One
+  // half of a team drawn and the other still spinning means the opposition is
+  // not known — listing who is left would count the partner among them.
+  if (!named.length || named.some(function (n) { return !n || !seat(n.trim().toLowerCase()); })) {
+    return "everyone else";
+  }
+  var taken = named.map(function (n) { return n.trim().toLowerCase(); });
   var rest = state.players.filter(function (n) {
-    var at = taken.indexOf(n.trim().toLowerCase());
-    if (at !== -1) real++;
-    return at === -1;
+    return taken.indexOf(n.trim().toLowerCase()) === -1;
   });
-  if (!real || !rest.length) return "everyone else";
+  if (!rest.length) return "everyone else";
   if (rest.length === 1) return rest[0];
   return rest.slice(0, -1).join(", ") + " and " + rest[rest.length - 1];
 }
@@ -2749,6 +2755,15 @@ function wheelWords(c, w) {
   // nobody is sitting out, and the spinner is the one making the calls.
   // [w.spinner] is the free spin read from another phone — "you" is them.
   var spinner = (w && w.spinner) || me || "the spinner";
+  // The name slots this card's own wording uses, in the state they are in. A
+  // slot the card never mentions is not listed; a slot it does mention but has
+  // not filled yet is listed as nothing, which is what stops the opposition
+  // being named before the teams are.
+  var named = [];
+  if (t.indexOf("[exempt]") !== -1 || t.indexOf("[chooser]") !== -1) {
+    named.push(free ? null : landed);
+  }
+  if (t.indexOf("[mate]") !== -1) named.push((w && w.mate) || null);
   var fill = {
     chooser: free ? spinner : landed,
     exempt: free
@@ -2762,7 +2777,7 @@ function wheelWords(c, w) {
     // exactly two, and two names beat "everyone else" — nobody has to work out
     // who that means while standing on a tee pad. Falls back to the phrase when
     // there are no names to give, which is a table of two.
-    others: othersThan([landed, (w && w.mate) || null])
+    others: othersThan(named)
   };
   // Capitalised where the token opens a sentence, plain everywhere else. The
   // offset is what says "start of string" — a ^ match is an empty lead, which
