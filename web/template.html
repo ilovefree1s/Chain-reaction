@@ -2333,8 +2333,10 @@ function liveOrder(p) {
 
 function livePrio(p) {
   if (!state || typeof p.name !== "string" || !p.name) return;
-  if (state.prio === p.name) return;
+  var laps = typeof p.passes === "number" ? p.passes : state.passes;
+  if (state.prio === p.name && state.passes === laps) return;
   state.prio = p.name;
+  state.passes = laps;
   save(state);
   liveRefresh();
 }
@@ -3918,7 +3920,20 @@ function prioHolder(s) {
   // Unset, or naming somebody no longer at the table: the leader has it.
   return s.players[order[0]];
 }
+/*
+ * Everyone has passed in turn without playing anything, so there is nothing
+ * left to be first in line for. Priority lifts and the table plays freely —
+ * which is where the after-throw cards live, since by now the group has stopped
+ * discussing and started throwing.
+ *
+ * Counted since the last card was played rather than per hole: a card played
+ * mid-lap is a new thing to answer, and the queue starts again from the leader.
+ */
+function prioOpen(s) {
+  return !!s && (s.passes || 0) >= s.players.length;
+}
 function iHavePrio(s) {
+  if (prioOpen(s)) return true;
   var who = prioHolder(s);
   return !who || who.trim().toLowerCase() === (s.players[s.meIndex] || "").trim().toLowerCase();
 }
@@ -3935,8 +3950,9 @@ function passPrio(s) {
     if (s.players[order[i]] === who) { at = i; break; }
   }
   s.prio = s.players[order[(at + 1) % order.length]];
+  s.passes = (s.passes || 0) + 1;
   save(s);
-  if (live) liveCast("prio", { name: s.prio });
+  if (live) liveCast("prio", { name: s.prio, passes: s.passes });
 }
 
 /*
@@ -3947,11 +3963,13 @@ function passPrio(s) {
 function playOrderStrip(s) {
   if (!s || s.players.length < 2) return "";
   var order = playOrder(s);
+  var open = prioOpen(s);
   var up = prioHolder(s);
   var names = order.map(function (i, at) {
     var me = i === s.meIndex;
     var last = at === order.length - 1;
-    var holds = s.players[i] === up;
+    // Nobody is up once the queue has emptied — everybody is.
+    var holds = !open && s.players[i] === up;
     // Cards played later override the ones before them, so whoever goes last
     // settles it — which is the player having the worst round.
     return '<span class="turn' + (holds ? " up" : "") + (last ? " final" : "") +
@@ -3959,12 +3977,16 @@ function playOrderStrip(s) {
       (holds ? '<span class="turntag up">up</span>'
         : last ? '<span class="turntag">last word</span>' : "") + '</span>';
   }).join('<span class="turnsep">&rsaquo;</span>');
-  // Only the holder can hand it on, because only they have it to hand.
-  var pass = iHavePrio(s)
+  // Only the holder can hand it on, because only they have it to hand. Once
+  // the whole table has passed there is nothing left to hand anybody.
+  var pass = open
+    ? '<p class="hint">Everyone passed &mdash; play freely, or go and throw.</p>'
+    : iHavePrio(s)
     ? '<button class="big quiet" data-act="passPrio" style="margin:0 0 12px">' +
       'Pass priority &rsaquo;</button>'
     : '<p class="hint">' + esc(up) + ' has priority. Yours when they pass.</p>';
-  return '<div class="label">Card order &middot; leader first</div>' +
+  return '<div class="label">Card order &middot; ' +
+    (open ? 'open to everyone' : 'leader first') + '</div>' +
     '<div class="turnrow">' + names + '</div>' + pass;
 }
 
@@ -5034,6 +5056,13 @@ function resolveCard(s, id, played, target) {
   commit(s);
   // The alert on everyone else's phone. Plays only — a discard is nobody's
   // business beyond the hand count, which the commit's hello just carried.
+  // Something to answer: the lap starts again, from the leader.
+  if (played) {
+    s.passes = 0;
+    s.prio = s.players[playOrder(s)[0]];
+    save(s);
+    if (live) liveCast("prio", { name: s.prio, passes: 0 });
+  }
   if (played && live) {
     liveCast("play", { name: s.players[s.meIndex], card: id, target: target || null });
   }
@@ -7065,9 +7094,11 @@ app.addEventListener("click", function (e) {
         s.dealt[lockedHole] = { owed: drawForHole(s, lockedHole), cards: [], due: true };
       }
       s.locked[lockedHole] = true;
-      // A fresh hole, a fresh order: whoever leads now acts first on it.
+      // A fresh hole, a fresh order: whoever leads now acts first on it, and
+      // nobody has passed on it yet.
       s.prio = s.players[playOrder(s)[0]];
-      if (live) liveCast("prio", { name: s.prio });
+      s.passes = 0;
+      if (live) liveCast("prio", { name: s.prio, passes: 0 });
       settleDeals(s);
       releaseDeals(s);
       s.currentHole = Math.min(s.holeCount - 1, s.currentHole + 1);
