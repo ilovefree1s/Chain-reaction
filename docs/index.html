@@ -1073,7 +1073,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.237 · 4 Sep 22:20";
+var APP_VERSION = "v1.238 · 4 Sep 22:23";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. Opening the app fetches fresh anyway.
@@ -5397,6 +5397,34 @@ function coinDragEnd(dy) {
  * keep turning up new numbers, the way they would in a fist. It stops when you
  * stop; whatever they are showing when you put them down is what they are.
  */
+/*
+ * Keeps the rattle alive while the hand is moving and kills it when it stops.
+ * The loop plays until something stops it, and a finger resting on a die is
+ * still holding it — without this the dice sat there rattling in a hand that
+ * had gone still.
+ *
+ * A gap rather than a stop on every quiet frame: a shake is a series of moves
+ * with pauses in it, and cutting on each one would be a stutter.
+ */
+function shakeAlive(g) {
+  if (!g.shakeSound) {
+    // Looped, and lifted well past the recording's own level: this half of it
+    // peaks at about a ninth of the landing, which on a phone at arm's length
+    // is nothing at all.
+    g.shakeSound = playSlice(DICE_SOUND, 0, DICE_SHAKE_LEN, sfxVolume() * 4, true);
+  }
+  if (g.shakeIdle) clearTimeout(g.shakeIdle);
+  g.shakeIdle = setTimeout(function () {
+    shakeQuiet(g);
+    g.shakeSound = null;
+    g.shakeIdle = null;
+  }, 160);
+}
+function shakeQuiet(g) {
+  if (g.shakeIdle) { clearTimeout(g.shakeIdle); g.shakeIdle = null; }
+  stopSlice(g.shakeSound);
+  g.shakeSound = null;
+}
 function dieShake(g, x, y, now) {
   // A rattle is side to side and stays on one level. Gathering dice into a pile
   // is side to side too, but it travels — and a throw travels furthest of all.
@@ -5405,7 +5433,9 @@ function dieShake(g, x, y, now) {
   // nowhere until you let go and took hold again.
   if (g.shaking && g.shakeY != null && g.shakeY - y > 44) {
     g.shaking = false; g.turns = []; g.shakeDir = 0;
+    shakeQuiet(g);
   }
+  if (g.shaking) shakeAlive(g);
   if (Math.abs(x - (g.shakeX == null ? x : g.shakeX)) < 9) return;
   var dir = x > g.shakeX ? 1 : -1;
   g.shakeX = x;
@@ -5419,14 +5449,7 @@ function dieShake(g, x, y, now) {
   }
   g.shakeDir = dir;
   if (!g.shaking) return;
-  // The rattle runs for as long as the shaking does: started when it starts,
-  // begun again when the clip runs out, cut off when the hand stops.
-  if (!g.shakeSound) {
-    // Looped, and lifted well past the recording's own level: this half of it
-    // peaks at about a ninth of the landing, which on a phone at arm's length
-    // is nothing at all.
-    g.shakeSound = playSlice(DICE_SOUND, 0, DICE_SHAKE_LEN, sfxVolume() * 4, true);
-  }
+  shakeAlive(g);
   if (now - (g.rattled || 0) < 80) return;
   g.rattled = now;
   var d = secret && secret.dice;
