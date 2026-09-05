@@ -13,7 +13,7 @@ If a PWA is easier to sideload, that's acceptable — but it must work offline, 
 ## Core rules
 
 - **Stroke play.** Lowest total wins.
-- **Starting hand:** 4 cards, dealt at round start.
+- **Starting hand:** 4 cards, dealt at round start, never a legendary. Legendaries stay in the deck and have to be drawn for — the opening hand comes off a flat shuffle, so without this one hand in four would open holding one.
 - **Mulligans:** a mulligan is a free extra throw, not a shot you are forced to play. Cards hand them out; the thrower looks at both and plays whichever landed better, so a mulligan can never leave you worse off than not taking it.
 - **Hand cap:** 7. Cannot draw past it — must discard first.
 - **Each player has their own 60-card deck**, shuffled independently. Duplicate cards across players are expected and fine.

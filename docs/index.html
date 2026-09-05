@@ -1073,7 +1073,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.248 · 4 Sep 23:03";
+var APP_VERSION = "v1.250 · 4 Sep 23:13";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. Opening the app fetches fresh anyway.
@@ -2900,6 +2900,18 @@ function startRound() {
 function newRound(players, meIndex, holeCount, coursePars, courseName, characters, mode, teeBase) {
   var deck = shuffled(CARDS.filter(function (c) { return !wheelOnlyCard(c.id); })
     .map(function (c) { return c.id; }));
+  /*
+   * The opening four are dealt off the top, skipping legendaries — they stay in
+   * the deck and are drawn for like everything else. A round should not be
+   * decided by what somebody was handed before a disc was thrown, and the
+   * weighting that makes a legendary scarce only applies to draws: the opening
+   * hand comes off a flat shuffle, where one in four hands held gold.
+   */
+  var hand = [], rest = [];
+  deck.forEach(function (id) {
+    if (hand.length < DATA.handSize && rarityOf(BY_ID[id]).id !== "legendary") hand.push(id);
+    else rest.push(id);
+  });
   var source = (coursePars && coursePars.length === holeCount) ? coursePars : parList(holeCount);
   var pars = [], scores = [], locked = [];
   for (var h = 0; h < holeCount; h++) {
@@ -2916,7 +2928,7 @@ function newRound(players, meIndex, holeCount, coursePars, courseName, character
     // The order the wheel drew for the first tee, if it was spun for.
     teeBase: teeBase ? teeBase.slice() : null,
     pars: pars, scores: scores, locked: locked,
-    hand: deck.slice(0, DATA.handSize), deck: deck.slice(DATA.handSize), discard: [], owed: 0,
+    hand: hand, deck: rest, discard: [], owed: 0,
     dealt: [],
     // Everything that has left your hand, oldest first.
     playLog: [],
