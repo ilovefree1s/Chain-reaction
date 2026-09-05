@@ -1073,7 +1073,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.224 · 4 Sep 21:44";
+var APP_VERSION = "v1.225 · 4 Sep 21:45";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. Opening the app fetches fresh anyway.
@@ -4066,7 +4066,7 @@ var SHARED_RULES = [
   ["people", "Two attacks per player, per hole", "At most 2 attack cards may be played on any one player per hole. A cancel or a reverse doesn't count, and nor does anything else that doesn't change the way they actually throw. The app does not enforce this — track it yourselves."],
   // Cards hand these out all over the deck and nothing ever said what one is.
   ["recycle", "Mulligans", "Throwing a mulligan is a free extra throw, not a shot you have to play. Take it or leave it — if your first shot was better than the mulligan, you can play that."],
-  ["scales", "The app doesn't referee", "It deals cards and keeps score. It never applies card effects or stroke penalties. Cards that rewrite scores get entered by hand with the ± steppers. If there is a dispute on anything, straight to the secret gamble games to solve it."]
+  ["scales", "The app doesn't referee", "It deals cards and keeps score only. If you forget to do something a card says, you take +1 stroke — some cards say that, some don't. If there is a dispute on anything, straight to the secret gamble games to solve it."]
 ];
 
 function houseRules(mode) {
