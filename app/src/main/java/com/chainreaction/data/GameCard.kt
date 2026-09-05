@@ -89,7 +89,7 @@ object CardDeck {
         GameCard(6, "Before tee shot", CardKind.ATTACK, "Bag Exchange!", "Pick a player to swap bags with. Play until the first bogey by a single player (both bogey is nothing). That player must volunteer as tribute to exchange lies with the other player the next time they go OB/hazard or miss a mando."),
         GameCard(7, "Before shot", CardKind.ATTACK, "Bag Raid!", "Choose ANY disc that belongs to anyone. The target player must use that disc for their next shot."),
         GameCard(8, "After throw", CardKind.ATTACK, "Big Ooof, Bud.", "Move an opponent's lie up to 10 paces (30 ft) in any direction, as long as it isn't out of bounds."),
-        GameCard(9, "After throw", CardKind.SELF, "Big Putted!", "If you make a putt from outside C1 while any other players are inside C1, they all must use their left hand to putt this hole."),
+        GameCard(9, "After throw", CardKind.SELF, "Big Putted!", "After making a C2 putt, everyone else must use their left hand on their next putt this hole. (Make sure everyone putts in order this hole if you want to use the card, obviously.)"),
         GameCard(10, "Before tee shot", CardKind.ATTACK, "Bizarro Golf!", "Force an opponent to drive with a putter and putt with a driver this hole."),
         GameCard(11, "Before all tee", CardKind.SELF, "Call Your Shot", "Call CTP. If you win it, you're immune to cards and bad wheel effects next hole, and your next attack card hits every opponent — not you."),
         GameCard(12, "Any time", CardKind.ATTACK, "Can I Borrow This Card?", "Pick anyone you want. Look through their cards and play one on anyone."),
