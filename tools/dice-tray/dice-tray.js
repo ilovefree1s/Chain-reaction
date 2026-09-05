@@ -35,6 +35,11 @@
  *              places. Defaults match Chain Reaction's dice.mp3: rattle 0..1.13,
  *              landing from 1.13 for 0.62, held back 0.4s so the dice have left
  *              the hand before they are heard to arrive. Omit for silence.
+ *   upright    stand a settled die square and the right way up (default true)
+ *              Leave it on for any face with a top and a bottom — a letter, a
+ *              numeral. Turn it off for pips if you want the looser pose: the
+ *              die then stops however the throw left it, which on a pip face
+ *              nobody can tell and on a lettered one is unreadable.
  *   onSettle   (values, total) once a throw has come to rest
  *   onChange   (values, total) every time the numbers change, rattle included
  *
