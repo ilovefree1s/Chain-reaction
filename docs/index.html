@@ -1073,7 +1073,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.238 · 4 Sep 22:23";
+var APP_VERSION = "v1.239 · 4 Sep 22:26";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. Opening the app fetches fresh anyway.
@@ -5722,7 +5722,7 @@ function renderDiceGame() {
  * lifting that half in the recording itself.
  */
 var DICE_SHAKE_LEN = 1.13, DICE_ROLL_AT = 1.13, DICE_ROLL_LEN = 0.62;
-var DICE_ROLL_WAIT = 0.2;   // silence before the dice are heard to land
+var DICE_ROLL_WAIT = 0.4;   // silence before the dice are heard to land
 var DIE_GRAVITY = 2600, DIE_BOUNCE = 0.42, DIE_FLOOR_DRAG = 0.82, DIE_AIR = 0.995;
 var diceSim = null;
 
