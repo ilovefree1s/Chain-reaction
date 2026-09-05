@@ -2388,16 +2388,21 @@ function livePlayed(p) {
   var onYou = all || (!!target && target.trim().toLowerCase() === myRoundName());
   // Not the target of an invite card? You're being asked to pile on, not hit.
   var invite = !onYou && !!target && invitesTable(c.id);
+  // An announcement names one player and concerns all four: the wolf is one
+  // person, but the rest of the hole is different for everybody. Every phone
+  // hears it and keeps the banner, while "you" stays honest about who it
+  // actually landed on.
+  var told = tellsTable(c.id);
   liveAlerts.push({ eid: p.eid, who: typeof p.name === "string" ? p.name : "",
                     card: c.id, target: all ? null : target, all: all,
                     you: onYou, invite: invite });
-  if (onYou || invite) {
+  if (onYou || invite || told) {
     // The chain rattle, doing the job it was born for. Both are best-effort:
     // a browser that blocks gesture-less audio or vibration just shows the banner.
     // An invite buzzes shorter — get their attention, not their adrenaline.
     if (c.id === LONE_WOLF) playWolfSound(sfxVolume()); else playMenuSound(sfxVolume());
     try {
-      if (navigator.vibrate) navigator.vibrate(onYou ? [120, 60, 120, 60, 320] : [90, 50, 90]);
+      if (navigator.vibrate) navigator.vibrate(onYou || told ? [120, 60, 120, 60, 320] : [90, 50, 90]);
     } catch (e) { /* banner only */ }
   } else {
     setTimeout(function () { dropAlert(p.eid); }, ALERT_FADE_MS);
@@ -2529,6 +2534,7 @@ function renderLiveSection() {
    somebody new, so it asks like an attack does. By id, since its kind says otherwise. */
 var AIMED_CARDS = [
   13, // Change Is Good — you steal the card and pick who wears it
+  57, // LONE WOLF! — whoever plays it says who the wolf is
   27, // I'll Have What He's Having — you trade lies with an opponent of your
       // choice, and it never asked whose
 ];
@@ -2553,13 +2559,21 @@ function hasTwoHalves(c) {
   return /on yourself:/i.test(c.text) && /on another player:/i.test(c.text);
 }
 
+/* Cards that may land on the player who played them even though their kind
+   says otherwise. Going lone wolf yourself is a real choice — your cards then
+   hit the other three — so the name you pick has to be able to be your own. */
+var SELF_TOO_CARDS = [
+  57, // LONE WOLF!
+];
+
 /* Gifts that make no sense aimed at yourself — a team-up needs a second person.
    These lose the "Myself" button; everything else about their kind stands. */
 var NO_SELF_CARDS = [
   29, // GOOD GUYS VS. BAD GUYS! — you can't be your own teammate
 ];
 function selfMakesSense(c) {
-  return playableOnSelf(c.kind) && NO_SELF_CARDS.indexOf(c.id) === -1;
+  return (playableOnSelf(c.kind) || SELF_TOO_CARDS.indexOf(c.id) !== -1) &&
+    NO_SELF_CARDS.indexOf(c.id) === -1;
 }
 
 /*
@@ -5177,10 +5191,7 @@ function resolveCard(s, id, played, target) {
     if (live) liveCast("prio", { name: s.prio, passes: 0 });
   }
   if (played && live) {
-    // An announcement goes out addressed to the whole table, so it lands as a
-    // hot alert on every phone instead of fading unheard in the corner of three.
-    liveCast("play", { name: s.players[s.meIndex], card: id,
-                       target: target || (tellsTable(id) ? ALL_TARGET : null) });
+    liveCast("play", { name: s.players[s.meIndex], card: id, target: target || null });
   }
   // The wolf howls on its own phone too. Every other phone gets it from the
   // broadcast, and the one that played the card is not listening to itself.
