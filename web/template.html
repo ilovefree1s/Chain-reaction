@@ -3923,6 +3923,9 @@ function openWheelNow(free) {
     stage: free ? "nameDone" : "idle", free: !!free, card: winner, name: null,
     nameLabels: nameLabels, nameSeg: null, nameRot: 0,
     cardLabels: ring.map(function (c) { return c.name; }),
+    // The tier of the card on each slice, so the wheel is coloured the way the
+    // cards are and you can see what is on it before it stops.
+    cardTints: ring.map(function (c) { return rarityOf(c).color; }),
     cardIdx: ringIdx, cardRot: 0,
     // The partner wheel a team card spins up. mateRot must start at a real 0:
     // the click track counts segment crossings from it, and counting from
@@ -4652,7 +4655,8 @@ function renderWheel() {
       html += '<div class="label">The effect <span style="color:#FF8A1E">&middot; ' +
         wheel.cardLabels.length + ' left</span></div>' +
         '<div class="wheelbox"><div class="wheelptr"></div>' +
-        wheelSvg("wheel-card", wheel.cardLabels, wheel.cardRot, null, 7.5) +
+        wheelSvg("wheel-card", wheel.cardLabels, wheel.cardRot, null, 7.5,
+          false, wheel.cardTints) +
         '</div>';
       if (stage === "nameDone") {
         html += '<button class="big wheel" data-act="spinCard">Spin the effect</button>';
@@ -4709,11 +4713,25 @@ function renderWheel() {
 
 /* The wheel: alternating near-black wedges, labels along each spoke, a gradient
    rim and a hub. The svg itself rotates; the pointer div above it stays put. */
-function wheelSvg(id, labels, rotation, winner, fontSize, duo) {
+/* A colour dropped into the wheel's own dark ground. A slice painted in a full
+   rarity colour turns the wheel into a paint chart and the names unreadable; a
+   tint of it keeps the wheel a wheel and still says which tier is where. */
+function wheelTint(hex, mix) {
+  var n = parseInt(String(hex).replace("#", ""), 16);
+  var want = [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+  var ground = [6, 16, 34];   // #061022, the felt behind the wedges
+  return "rgb(" + want.map(function (v, i) {
+    return Math.round(ground[i] + (v - ground[i]) * mix);
+  }).join(",") + ")";
+}
+function wheelSvg(id, labels, rotation, winner, fontSize, duo, tints) {
   var n = labels.length, seg = 360 / n, C = 160, R = 152;
   var parts = labels.map(function (label, i) {
     var lit = i === winner;
     var good = duo && i % 2 === 0;
+    // Alternating strengths, so two slices of the same tier side by side are
+    // still two slices.
+    var tint = tints && tints[i];
     var a0 = (i * seg - 90) * Math.PI / 180;
     var a1 = ((i + 1) * seg - 90) * Math.PI / 180;
     var mid = i * seg + seg / 2 - 90;
@@ -4724,11 +4742,14 @@ function wheelSvg(id, labels, rotation, winner, fontSize, duo) {
       (C + R * Math.cos(a1)).toFixed(2) + ' ' + (C + R * Math.sin(a1)).toFixed(2) + ' Z"' +
       ' fill="' + (lit ? (good ? "#0A2C4A" : "#2A1503")
         : duo ? (good ? "#08131F" : "#170D06")
+        : tint ? wheelTint(tint, i % 2 ? 0.14 : 0.24)
         : i % 2 ? "#061022" : "#0B1424") + '"' +
-      ' stroke="' + (lit ? (good ? "#4DC3FF" : "#FF8A1E") : "#22304A") + '" stroke-width="2"/>' +
+      ' stroke="' + (lit ? (good ? "#4DC3FF" : "#FF8A1E")
+        : tint ? wheelTint(tint, 0.5) : "#22304A") + '" stroke-width="2"/>' +
       '<text x="' + (C + R * 0.42).toFixed(1) + '" y="' + C + '"' +
       ' transform="rotate(' + mid.toFixed(2) + ' ' + C + ' ' + C + ')"' +
-      ' fill="' + (duo ? (good ? "#4DC3FF" : "#FF8A1E") : lit ? "#FF8A1E" : "#F4F8FF") +
+      ' fill="' + (duo ? (good ? "#4DC3FF" : "#FF8A1E")
+        : lit ? "#FF8A1E" : tint || "#F4F8FF") +
       '" font-size="' + fontSize + '"' +
       ' font-weight="800" dominant-baseline="middle">' + esc(short) + '</text>';
   }).join("");
