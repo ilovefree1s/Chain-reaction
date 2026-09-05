@@ -1073,7 +1073,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.220 · 4 Sep 21:26";
+var APP_VERSION = "v1.221 · 4 Sep 21:36";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. Opening the app fetches fresh anyway.
@@ -2039,6 +2039,10 @@ function liveRefresh() {
   // Missed the wheel — joined late, or backgrounded through it. The hello that
   // says the host is playing is enough to take them in.
   if (!orderWheel && startIfHostHas()) return;
+  // The hello that just arrived may be the last phone locking the hole, which
+  // is what a booked deal has been waiting for. This is the only place the
+  // cards can arrive from somebody else's action, so it saves as well.
+  if (state && releaseDeals(state)) { save(state); }
   render();
 }
 
@@ -3750,6 +3754,13 @@ function renderHand() {
         DATA.handCap + '. Discard, then draw &mdash; locking the next hole loses ' +
         'whatever you haven\'t taken.</p>'
       : '<button class="big primary" data-act="draw">Draw a card (' + s.owed + ' owed)</button>';
+  }
+  // A hole you have locked that the table has not finished. Without this, a lock
+  // that pays nothing looks like a lock that went wrong.
+  var waiting = pendingDeal(s);
+  if (waiting) {
+    drawBlock += '<p class="hint">Hole ' + (waiting.hole + 1) + ' pays ' + waiting.owed +
+      ' card' + (waiting.owed === 1 ? "" : "s") + ' &mdash; ' + esc(waiting.why) + '</p>';
   }
 
   var held = heldCardIds(s);
@@ -6286,6 +6297,66 @@ function drawOne(s) {
  * The loop covers every dealt hole because in skins a correction ripples:
  * fixing hole 2's tie changes what holes 3 and 4 were worth.
  */
+/*
+ * Pays out the holes the table has finished arguing about. A hole books what it
+ * owes the moment you lock it and pays nothing; the cards arrive when every
+ * phone at the table has locked that hole and no two scorecards disagree, which
+ * is the point at which a wrong score would already have been caught.
+ *
+ * So a card is never dealt against a score that turns out to be wrong, and
+ * nothing has to be handed back. Offline there is nobody to wait for and the
+ * gate opens the instant you lock.
+ *
+ * Use-it-or-lose-it is unchanged: a hole's payout REPLACES whatever is still
+ * owed rather than adding to it, so nothing banks between holes.
+ */
+/* The oldest hole that is locked, booked and still unpaid, with the reason it
+   has not paid — a scorecard that disagrees is a different problem from a phone
+   that has not locked yet, and the fix is different too. */
+function pendingDeal(s) {
+  if (!s || !s.dealt || !live) return null;
+  for (var h = 0; h < s.holeCount; h++) {
+    var rec = s.dealt[h];
+    if (!rec || rec === true || !rec.due || !dealHeld(s, h)) continue;
+    if (scoreDisputes(s, h).length) {
+      return { hole: h, owed: rec.owed, why: "the scorecards disagree on it." };
+    }
+    var late = [];
+    livePeers().forEach(function (pr) {
+      var nm = pr.name.trim().toLowerCase();
+      if (!s.players.some(function (n) { return n.trim().toLowerCase() === nm; })) return;
+      if (!pr.locks || !pr.locks[h]) late.push(pr.name);
+    });
+    return {
+      hole: h, owed: rec.owed,
+      why: late.length
+        ? "waiting on " + late.join(", ") + " to lock it."
+        : "waiting on the table to lock it."
+    };
+  }
+  return null;
+}
+function releaseDeals(s) {
+  if (!s || !s.dealt) return false;
+  var paid = false;
+  for (var h = 0; h < s.holeCount; h++) {
+    var rec = s.dealt[h];
+    if (!rec || rec === true || !rec.due) continue;
+    if (dealHeld(s, h)) continue;   // the table is not done with this hole
+    rec.due = false;
+    s.owed = rec.owed;
+    s.lastDeal = h;
+    paid = true;
+  }
+  if (!paid) return false;
+  // Draws land immediately — only what the hand cap blocks stays owed,
+  // drawable once a discard makes room.
+  while (s.owed > 0 && !handIsFull(s) && (s.deck.length || s.discard.length)) {
+    drawOne(s);
+  }
+  return true;
+}
+
 function settleDeals(s) {
   if (!s.dealt) return;
   for (var h = 0; h < s.holeCount; h++) {
@@ -6299,6 +6370,10 @@ function settleDeals(s) {
     }
     if (!s.locked[h]) continue; // mid-fix — settle when it re-locks
     var e = drawForHole(s, h);
+    // Not paid yet: there is nothing to settle, only a new price. This is why
+    // corrections no longer take cards back — by the time the cards exist, the
+    // score they were dealt against is one the whole table has agreed.
+    if (rec.due) { rec.owed = e; continue; }
     var diff = e - rec.owed;
     if (!diff) continue;
     rec.owed = e;
@@ -6798,22 +6873,19 @@ app.addEventListener("click", function (e) {
       // rather than adding to it, so a full hand can't bank a pile of cards.
       // A re-lock isn't a fresh deal — corrections go through settleDeals,
       // which pays or takes back exactly the difference and nothing else.
+      // Locking books what the hole owes; it does not pay it. The cards come
+      // when the whole table has locked and the scorecards agree — see
+      // releaseDeals.
       if (!s.dealt[lockedHole]) {
-        s.owed = drawForHole(s, lockedHole);
-        s.dealt[lockedHole] = { owed: s.owed, cards: [] };
-        s.lastDeal = lockedHole;
+        s.dealt[lockedHole] = { owed: drawForHole(s, lockedHole), cards: [], due: true };
       }
       s.locked[lockedHole] = true;
       // A fresh hole, a fresh order: whoever leads now acts first on it.
       s.prio = s.players[playOrder(s)[0]];
       if (live) liveCast("prio", { name: s.prio });
       settleDeals(s);
+      releaseDeals(s);
       s.currentHole = Math.min(s.holeCount - 1, s.currentHole + 1);
-      // Draws land immediately — nothing banks between holes. Only what the
-      // hand cap blocks stays owed, drawable once a discard makes room.
-      while (s.owed > 0 && !handIsFull(s) && (s.deck.length || s.discard.length)) {
-        drawOne(s);
-      }
       showScorecard = false;
       commit(s); break;
 
