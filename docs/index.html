@@ -261,7 +261,14 @@
   /* The outline is the card's rarity here as well: the hand is where you are
      deciding what to play, which is the moment it matters most. Defaults kept
      for anything drawn before a tier is known. */
-  .minicard { border: 2px solid transparent; border-radius: 14px; padding: 12px;
+  /* min-width:0 or the column is sized by the widest thing that refuses to
+     wrap. A grid track is 1fr of the space OR its content's minimum, whichever
+     is larger, and the kind-and-timing line is nowrap by design — so the tiles
+     grew to fit a line nobody was ever meant to read at full width, and the two
+     columns came out different sizes because their lines are different lengths.
+     fitMetaLines shrinks that line to fit; this lets it. */
+  .minicard { min-width: 0;
+              border: 2px solid transparent; border-radius: 14px; padding: 12px;
               cursor: pointer;
               background: linear-gradient(#070B14, #070B14) padding-box,
                           linear-gradient(100deg, var(--rare, #3FA9FF),
@@ -1073,7 +1080,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.257 · 4 Sep 23:58";
+var APP_VERSION = "v1.259 · 5 Sep 00:03";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. Opening the app fetches fresh anyway.
@@ -3270,7 +3277,15 @@ function render() {
  */
 var META_MAX_PX = 10, META_MIN_PX = 6;
 
-function fitMetaLines() {
+/*
+ * Run once as the tiles go in and again on the next frame. The first pass reads
+ * a layout the browser has only just been handed and can measure the line
+ * narrower than it ends up — which leaves it at a size that does not fit and
+ * clips the timing off the end. The second pass measures a settled grid.
+ * Idempotent: every pass starts again from the largest size.
+ */
+function fitMetaLines(again) {
+  if (again !== false) requestAnimationFrame(function () { fitMetaLines(false); });
   var nodes = app.querySelectorAll(".minimeta");
   for (var i = 0; i < nodes.length; i++) {
     var el = nodes[i], size = META_MAX_PX;
