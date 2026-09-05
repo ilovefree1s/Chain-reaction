@@ -1080,7 +1080,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.259 · 5 Sep 00:03";
+var APP_VERSION = "v1.260 · 5 Sep 00:08";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. Opening the app fetches fresh anyway.
@@ -3959,6 +3959,31 @@ function iHavePrio(s) {
    reversal. Kind rather than a list of ids, so a new one behaves on arrival. */
 function bypassesPrio(c) { return !!c && c.kind === "react"; }
 /*
+ * Priority governs the huddle on the tee pad and nothing else. Those are the
+ * cards played while everybody is standing around before anybody throws, and
+ * four people playing them over each other is what turned a hole into a scrum.
+ * Once the throwing starts, a card answering what just happened out there
+ * cannot wait for a turn to come round.
+ */
+function beforeTee(c) {
+  return !!c && /^Before (tee shot|all tee)$/.test(c.timing);
+}
+/*
+ * Whether this card can be played right now. A tee-pad card cannot be played
+ * out of turn — the warning that used to say so could be ignored, and was.
+ *
+ * Reactions are the exception, as they always were, and once the whole table
+ * has passed there are no turns left to be out of.
+ *
+ * Live tables only. Offline one phone stands in for the group and nobody else
+ * is passing anything to it, so the holder would have to press Pass three times
+ * to play a card from their own hand.
+ */
+function canPlayNow(s, c) {
+  if (!live || !s || !beforeTee(c)) return true;
+  return iHavePrio(s) || bypassesPrio(c);
+}
+/*
  * Holding priority with nothing in hand is a turn nobody can take: there is no
  * card to play and no card to buy a spin with. It passes itself and says why,
  * rather than leaving three people waiting on somebody who cannot act.
@@ -4762,16 +4787,19 @@ function renderFaceModal() {
       // Close joins Discard on one line here rather than standing alone below
       // it — so it is claimed, and the standalone copy is left off.
       closeUsed = true;
+      var waiting = !canPlayNow(state, c);
       acts = '<div class="acts" style="margin-top:14px">' +
         (heldAt != null
           ? '<button class="big primary" disabled>Held</button>'
+          : waiting
+          ? '<button class="big primary" disabled>Not your turn</button>'
           : '<button class="big primary" data-act="playCard" data-i="' + c.id + '">Play</button>') +
         '</div>' +
-        // Not a block: the app never referees a card. But it says whose turn
-        // it is, because playing over somebody is what made the round a scrum.
-        ((!iHavePrio(state) && !bypassesPrio(c))
+        // Discarding stays open either way: the hand cap has to be answerable
+        // whoever's turn it is.
+        (waiting
           ? '<p class="hint" style="text-align:center;margin:2px 0 10px">' +
-            esc(prioHolder(state)) + ' has priority &mdash; this plays out of turn</p>'
+            esc(prioHolder(state)) + ' has priority. Yours when they pass.</p>'
           : "") +
         '<div class="facepair">' +
         '<button class="big raised" data-act="askDiscard" data-i="' + c.id + '">Discard</button>' +
@@ -7176,6 +7204,7 @@ app.addEventListener("click", function (e) {
     // somebody on the other end of it, which is why one of them asks.
     case "playCard":
       if (heldCardIds(s)[i] != null) break; // the face modal already says why
+      if (!canPlayNow(s, BY_ID[i])) break;  // and so does the disabled button
       // A card aimed at one person, or one that hits the whole table, opens
       // the picker; anything else (self, group, reaction) just plays.
       if ((aimedAtSomeone(BY_ID[i]) || playableOnAll(i)) && s.players.length > 1) {
@@ -7186,6 +7215,7 @@ app.addEventListener("click", function (e) {
       resolveCard(s, i, true, null);
       break;
     case "playOn":
+      if (!canPlayNow(s, BY_ID[i])) break;
       resolveCard(s, i, true, el.getAttribute("data-t"));
       break;
     case "discardCard":
