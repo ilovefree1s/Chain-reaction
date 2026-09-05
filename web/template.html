@@ -4939,6 +4939,14 @@ function resolveCard(s, id, played, target) {
     if (busy) localNote(busy + " is on the wheel — spin yours when they are done.", "Wheel busy");
     else openWheelNow(true);
   }
+  // A card that ends in a roll takes the player who threw it there too. The
+  // Curd! counts whoever played it among the rollers, so sending everyone else
+  // to the dice and leaving them behind would be sending them to roll alone.
+  if (played && ALERT_GAME[id]) {
+    openSecretWheel();
+    secret.mode = ALERT_GAME[id];
+    render();
+  }
 }
 
 function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
@@ -5662,7 +5670,13 @@ function rollDice(strength) {
 
 function diceStep(now) {
   var sim = diceSim;
-  if (!sim || !secret || secret.mode !== "dice") { diceSim = null; return; }
+  if (!sim || !secret || secret.mode !== "dice") {
+    // Abandoned mid-throw. Whatever the dice were doing, they are not doing it
+    // any more, and a tray left rolling is a tray nobody can touch again.
+    if (sim && sim.d) sim.d.rolling = false;
+    diceSim = null;
+    return;
+  }
   // The first frame has no previous one to measure against, and a tab left in
   // the background hands back a gap of seconds — either would teleport them.
   var dt = sim.last ? Math.min(0.032, (now - sim.last) / 1000) : 0.016;
@@ -7007,7 +7021,10 @@ app.addEventListener("click", function (e) {
     case "spinMate": spinWheel("mate"); break;
     case "spinSecret": spinSecret(); break;
     case "secretWheel": secret.mode = "wheel"; render(); break;
-    case "secretDice": secret.mode = "dice"; render(); break;
+    case "secretDice":
+      secret.mode = "dice";
+      if (!diceSim) secret.dice.rolling = false;
+      render(); break;
     case "secretCoin": secret.mode = "coin"; render(); break;
     case "secretCards":
       if (!secret.cards.deck.length && !secret.cards.board.length &&
