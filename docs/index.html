@@ -1073,7 +1073,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.226 · 4 Sep 21:51";
+var APP_VERSION = "v1.228 · 4 Sep 21:54";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. Opening the app fetches fresh anyway.
@@ -2454,6 +2454,8 @@ function renderLiveSection() {
    somebody new, so it asks like an attack does. By id, since its kind says otherwise. */
 var AIMED_CARDS = [
   13, // Change Is Good — you steal the card and pick who wears it
+  27, // I'll Have What He's Having — you trade lies with an opponent of your
+      // choice, and it never asked whose
 ];
 function aimedAtSomeone(c) {
   return c.kind === "attack" || c.kind === "dual" || AIMED_CARDS.indexOf(c.id) !== -1;

@@ -2454,6 +2454,8 @@ function renderLiveSection() {
    somebody new, so it asks like an attack does. By id, since its kind says otherwise. */
 var AIMED_CARDS = [
   13, // Change Is Good — you steal the card and pick who wears it
+  27, // I'll Have What He's Having — you trade lies with an opponent of your
+      // choice, and it never asked whose
 ];
 function aimedAtSomeone(c) {
   return c.kind === "attack" || c.kind === "dual" || AIMED_CARDS.indexOf(c.id) !== -1;
