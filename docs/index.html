@@ -251,6 +251,9 @@
   /* The timing strip above it — small, wide-tracked, and in the app's ice blue
      rather than the body's off-white, the way the drawn faces have it. */
   .arttiming { color: #4DC3FF; font-weight: 900; letter-spacing: 0.18em; }
+  /* What kind of card it is, in the bar the frame leaves for it. */
+  .artkind { color: #4DC3FF; font-weight: 900; letter-spacing: 0.06em; }
+  .artkind > div { white-space: nowrap; }
   .arttiming > div { white-space: nowrap; }
   .artwords {
     position: absolute; display: flex; align-items: center; justify-content: center;
@@ -1140,7 +1143,7 @@ function fitArtWords() {
 function artSlots(id) {
   var b = ART_BOXES[id];
   if (!b) return null;
-  if (b.text || b.title || b.timing) return b;
+  if (b.text || b.title || b.timing || b.kind) return b;
   return { ar: b.ar, text: b };
 }
 /* Where a box sits, as a percentage rectangle. */
@@ -1170,6 +1173,7 @@ function artFaceHtml(c, art, words) {
     fill(slots.timing, "arttiming", c.id + ":t", esc(c.timing.toUpperCase()), c.timing) +
     fill(slots.title, "arttitle", c.id + ":n", esc(c.name), c.name) +
     fill(slots.text, "", c.id + ":w", cardHalves(words).map(esc).join("<br>"), words) +
+    fill(slots.kind, "artkind", c.id + ":k", esc(c.kind.toUpperCase()), c.kind) +
     "</div>";
 }
 
@@ -1230,7 +1234,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.306 · 6 Sep 17:00";
+var APP_VERSION = "v1.308 · 6 Sep 17:06";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. Opening the app fetches fresh anyway.
