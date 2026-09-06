@@ -244,17 +244,31 @@
      hundredths of it — so the same markup reads right on a full-screen face
      and on a hand tile, with nothing recalculated in between. */
   .artwrap { position: relative; container-type: inline-size; }
-  /* The name across its bar: one line, as large as the bar will take, and it
-     shrinks rather than wraps — a two-line card name reads as a mistake. */
-  .arttitle { font-weight: 900; letter-spacing: 0.01em; text-transform: none; }
+  /* The name across its bar. Heavy italic, the way the drawn faces already set
+     a card name and the way the painted ones were lettered, condensed where the
+     phone has a condensed face. One line always: it shrinks rather than wraps,
+     because a name broken in two reads as a mistake rather than a decision. */
+  .arttitle {
+    font-family: "Roboto Condensed", "Arial Narrow", system-ui, sans-serif;
+    font-weight: 900; font-style: italic; color: #F4F8FF;
+    letter-spacing: 0.005em; text-shadow: 0 2px 6px rgba(0, 0, 0, 0.55);
+  }
   .arttitle > div { white-space: nowrap; }
-  /* The timing strip above it — small, wide-tracked, and in the app's ice blue
-     rather than the body's off-white, the way the drawn faces have it. */
-  .arttiming { color: #4DC3FF; font-weight: 900; letter-spacing: 0.18em; }
+  /* The timing strip above it: ice blue and wide-tracked, with a rule running
+     out to each side — blue to the left, orange to the right, the same pair the
+     drawn faces carry. Painted as background bars rather than as elements, so
+     the words stay a plain line of text for the fitter to measure; the padding
+     is what keeps them off the rules. */
+  .arttiming {
+    color: #4DC3FF; font-weight: 900; letter-spacing: 0.18em;
+    padding: 0 27%; box-sizing: border-box;
+    background: linear-gradient(#1E6FFF, #1E6FFF) left center / 24% 2px no-repeat,
+                linear-gradient(#FF8A1E, #FF8A1E) right center / 24% 2px no-repeat;
+  }
+  .arttiming > div { white-space: nowrap; }
   /* What kind of card it is, in the bar the frame leaves for it. */
   .artkind { color: #4DC3FF; font-weight: 900; letter-spacing: 0.06em; }
   .artkind > div { white-space: nowrap; }
-  .arttiming > div { white-space: nowrap; }
   .artwords {
     position: absolute; display: flex; align-items: center; justify-content: center;
     text-align: center; line-height: 1.24; color: #E9F1FF; font-weight: 600;
@@ -1093,7 +1107,7 @@ var ART_BOXES = {"2":{"x":0.0576,"y":0.6809,"w":0.8868,"h":0.1404,"ar":0.7033},"
 function startingSize(box, words) {
   var w = box.w * 100, h = box.h * 100;
   var size = Math.sqrt((w * h) / (0.62 * Math.max(1, words.length)));
-  return Math.max(1.4, Math.min(6, size));
+  return Math.max(1.4, Math.min(14, size));
 }
 /* What the fit actually came out at, per card, so a reopened card is right on
    the first frame instead of settling into place while you look at it. */
@@ -1113,7 +1127,10 @@ function fitArtWords() {
     var cardW = wrap.clientWidth;
     // Too small to read at, or not laid out yet: leave the guess alone.
     if (ART_FIT[key] || !cardW || cardW < 140) continue;
-    var lo = 1.4, hi = 6;
+    // The ceiling has to clear a card name set across its own bar, which is
+    // several times the size of a line of rules text. It is only a bound —
+    // nothing reaches it unless its box has the room.
+    var lo = 1.4, hi = 14;
     for (var k = 0; k < 11; k++) {
       var mid = (lo + hi) / 2;
       el.style.fontSize = (mid / 100 * cardW).toFixed(2) + "px";
@@ -1123,8 +1140,12 @@ function fitArtWords() {
       // Width as well as height: a title is set on one line, so it runs out of
       // the bar sideways long before it runs out of it downwards. Wrapped text
       // never exceeds its width, so the extra test costs it nothing.
+      // clientWidth counts padding, and the timing strip is padded to hold its
+      // words off the rules either side. Measure the room the words really have.
+      var cs = getComputedStyle(el);
+      var pad = (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0);
       var fits = inner.scrollHeight <= el.clientHeight - 2 &&
-        inner.scrollWidth <= el.clientWidth;
+        inner.scrollWidth <= el.clientWidth - pad;
       if (fits) lo = mid; else hi = mid;
     }
     ART_FIT[key] = lo;
@@ -1234,7 +1255,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.308 · 6 Sep 17:06";
+var APP_VERSION = "v1.315 · 6 Sep 17:15";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. Opening the app fetches fresh anyway.
