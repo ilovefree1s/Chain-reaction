@@ -59,3 +59,17 @@ to see a new one; `web/build.js` stamps the build time next to it, so two
 phones can be compared even between version bumps.
 
 It shows at the foot of the menu and at the foot of Settings.
+
+## png.js
+
+A minimal PNG reader/writer/cropper, used to trim the dark surround off card
+art. There is no ImageMagick on this machine — `convert` on the PATH is
+Windows' filesystem converter — so this exists to avoid needing one.
+
+    const png = require("./tools/png.js");
+    const img = png.read(file);
+    png.write(file, png.crop(img, x, y, w, h));
+
+8-bit RGB and RGBA only, which is what the card art is. Rows are filtered five
+ways and the flattest kept, so a re-encode does not come out bigger than what
+went in.
