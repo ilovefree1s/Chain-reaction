@@ -150,6 +150,29 @@ function copyAudio(name) {
   return "assets/" + name;
 }
 
+/*
+ * ---- the two display faces, carried inside the page ----
+ *
+ * Baked in as base64 rather than fetched: the app has to work with no signal on
+ * a course, and a card whose name arrives in a fallback face on the eighteenth
+ * hole is a different card. Latin only — the deck is English, and the other
+ * subsets are several times the weight of the one that gets used.
+ *
+ * Both are under the SIL Open Font License; the licences travel with them in
+ * app/src/main/res/font.
+ */
+const fontDir = path.join(root, "app", "src", "main", "res", "font");
+function embedFont(file) {
+  const from = path.join(fontDir, file);
+  if (!fs.existsSync(from)) {
+    console.warn(`! ${file} not found — building without it.`);
+    return "";
+  }
+  return "data:font/woff2;base64," + fs.readFileSync(from).toString("base64");
+}
+const nameFont = embedFont("blackopsone.woff2");
+const bodyFont = embedFont("titanone.woff2");
+
 const menuImage = copyArt("chainreactionmain.png", "menu.png");
 const buttonsImage = copyArt("newbuttons.png", "buttons.png");
 const grassImage = copyArt("moregrass.png", "grass.png");
@@ -351,6 +374,8 @@ const template = fs.readFileSync(path.join(__dirname, "template.html"), "utf8");
   "/*__ART_FRAMES__*/",
   "/*__CHARACTER_DATA__*/",
   "/*__CHARACTER_ART__*/",
+  "__NAME_FONT__",
+  "__BODY_FONT__",
   "__MENU_IMAGE__",
   "__BUTTONS_IMAGE__",
   "__GRASS_IMAGE__",
@@ -386,6 +411,8 @@ const html = template
   .replace("/*__ART_FRAMES__*/", JSON.stringify(tierFrames))
   .replace("/*__CHARACTER_DATA__*/", JSON.stringify(characters))
   .replace("/*__CHARACTER_ART__*/", JSON.stringify(characterArt))
+  .replace("__NAME_FONT__", nameFont)
+  .replace("__BODY_FONT__", bodyFont)
   .replace("__MENU_IMAGE__", menuImage)
   .replace("__BUTTONS_IMAGE__", buttonsImage)
   .replace("__GRASS_IMAGE__", grassImage)

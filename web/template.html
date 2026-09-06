@@ -243,14 +243,26 @@
   /* The card's own width is what the words are measured against — cqw is
      hundredths of it — so the same markup reads right on a full-screen face
      and on a hand tile, with nothing recalculated in between. */
+  /* Carried inside the page, so a card reads the same on the eighteenth hole
+     with no signal as it does at home. Neither face ships an italic, so the
+     slant is put on them — which is how the painted cards are lettered. */
+  @font-face {
+    font-family: "CardName"; font-style: normal; font-weight: 400;
+    font-display: block; src: url("__NAME_FONT__") format("woff2");
+  }
+  @font-face {
+    font-family: "CardBody"; font-style: normal; font-weight: 400;
+    font-display: block; src: url("__BODY_FONT__") format("woff2");
+  }
   .artwrap { position: relative; container-type: inline-size; }
   /* The name across its bar. Heavy italic, the way the drawn faces already set
      a card name and the way the painted ones were lettered, condensed where the
      phone has a condensed face. One line always: it shrinks rather than wraps,
      because a name broken in two reads as a mistake rather than a decision. */
-  .arttitle {
-    font-family: "Roboto Condensed", "Arial Narrow", system-ui, sans-serif;
-    font-weight: 900; font-style: italic; letter-spacing: 0.005em;
+  .artwords.arttitle {
+    font-family: "CardName", "Roboto Condensed", system-ui, sans-serif;
+    font-weight: 400; font-style: normal; letter-spacing: 0.005em;
+    transform: skewX(-9deg);
     /* Cut out of the card rather than shaded across: solid white, a hard dark
        edge around every letter, and a shadow under it. A gradient down the
        letters greys their middles, which on a name this size reads as blurred
@@ -260,12 +272,12 @@
     paint-order: stroke fill;
     text-shadow: 0 0.05em 0.02em rgba(0, 0, 0, 0.75), 0 0 0.22em rgba(0, 0, 0, 0.5);
   }
-  .arttitle > div { white-space: nowrap; }
+  .artwords.arttitle > div { white-space: nowrap; }
   /* A rule under the name, so the first line of the rules is not read as part
      of the title. Silver and straight across, the way 69% OF THE SPLITS has it
      painted in — sampled off it: #B7BEC4, five pixels on a card a thousand
      wide, which is half a percent of the width. */
-  .arttitle::after {
+  .artwords.arttitle::after {
     content: ""; position: absolute; left: 0; right: 0; bottom: 0;
     height: 0.5cqw; background: #B7BEC4;
   }
@@ -274,7 +286,7 @@
      drawn faces carry. Painted as background bars rather than as elements, so
      the words stay a plain line of text for the fitter to measure; the padding
      is what keeps them off the rules. */
-  .arttiming {
+  .artwords.arttiming {
     /* Sampled off the painted card rather than borrowed from the app's ice
        blue, which is pale enough beside it to read as white. */
     color: #05ACFC; font-weight: 900; letter-spacing: 0.18em;
@@ -282,22 +294,24 @@
     background: linear-gradient(#1E6FFF, #1E6FFF) left center / 24% 2px no-repeat,
                 linear-gradient(#FF8A1E, #FF8A1E) right center / 24% 2px no-repeat;
   }
-  .arttiming > div { white-space: nowrap; }
+  .artwords.arttiming > div { white-space: nowrap; }
   /* What kind of card it is, in the bar the frame leaves for it. */
   /* The kind gets the same striking, in its own colour rather than chrome —
      the tier already owns a colour and this is the one place to spend it. */
-  .artkind {
-    font-family: "Roboto Condensed", "Arial Narrow", system-ui, sans-serif;
-    font-weight: 900; font-style: italic; letter-spacing: 0.06em;
+  .artwords.artkind {
+    font-family: "CardName", "Roboto Condensed", system-ui, sans-serif;
+    font-weight: 400; font-style: normal; letter-spacing: 0.06em;
+    transform: skewX(-9deg);
     color: #29BEFF;
     -webkit-text-stroke: 0.03em rgba(2, 12, 28, 0.9);
     paint-order: stroke fill;
     text-shadow: 0 0.05em 0.02em rgba(0, 0, 0, 0.75), 0 0 0.2em rgba(0, 0, 0, 0.5);
   }
-  .artkind > div { white-space: nowrap; }
+  .artwords.artkind > div { white-space: nowrap; }
   .artwords {
     position: absolute; display: flex; align-items: center; justify-content: center;
-    text-align: center; line-height: 1.24; color: #E9F1FF; font-weight: 600;
+    text-align: center; line-height: 1.24; color: #E9F1FF; font-weight: 400;
+    font-family: "CardBody", system-ui, sans-serif;
     /* Even lines rather than four full ones and a single word marooned on the
        fifth. Where it isn't supported the text simply wraps as it always did. */
     text-wrap: balance;
@@ -1141,6 +1155,8 @@ function startingSize(box, words) {
 /* What the fit actually came out at, per card, so a reopened card is right on
    the first frame instead of settling into place while you look at it. */
 var ART_FIT = {};
+/* Set once the page has asked the faces to load, so it only asks the once. */
+var artFacesReady = false;
 
 /*
  * Grows the words until the panel is full and no further. Measured rather than
@@ -3496,6 +3512,17 @@ function render() {
   app.innerHTML = html;
   fitMetaLines();
   fitArtWords();
+  // The faces are carried in the page but still arrive after the first paint.
+  // Anything measured before then was measured against a stand-in, and these two
+  // are far wider than what stands in for them — so those answers are thrown
+  // away and taken again once the real faces are here.
+  if (!artFacesReady && document.fonts && document.fonts.ready) {
+    artFacesReady = true;
+    document.fonts.ready.then(function () {
+      ART_FIT = {};
+      fitArtWords();
+    });
+  }
   if (secretSel) {
     var ta1 = document.getElementById("secretnames");
     if (ta1) { ta1.focus(); ta1.setSelectionRange(secretSel[0], secretSel[1]); }
