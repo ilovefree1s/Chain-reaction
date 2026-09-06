@@ -239,7 +239,15 @@
      ever yours. The gap is what says so. */
   .card p + p { margin-top: 10px; }
   .card .acts { display: flex; gap: 10px; margin-top: 14px; }
-  .card.artcard { display: block; }
+  /* A painted card brings its own frame and its own edge, so the tile's border,
+     ground and rectangular glow would all be a second card drawn around the
+     first. The light comes off the picture's shape instead, same as the face. */
+  .card.artcard {
+    display: block; border: 0; background: none; overflow: visible;
+    box-shadow: none;
+    filter: drop-shadow(0 0 6px var(--rareglow, rgba(30, 111, 255, 0.25)))
+            drop-shadow(0 0 20px var(--rareaura, rgba(30, 111, 255, 0.25)));
+  }
   .cardart { width: 100%; display: block; }
   /* The card's own width is what the words are measured against — cqw is
      hundredths of it — so the same markup reads right on a full-screen face
@@ -320,11 +328,23 @@
      ring that reads as the edge glowing, a middle bloom, and a wide soft one
      that puts light on the black around the card. A single large shadow is a
      grey smudge; stacked, they are a glow. */
-  .cardface, .facemodal .cardart {
+  .cardface {
     width: 100%; display: block; border-radius: 18px;
     box-shadow: 0 0 14px var(--rareglow, rgba(30, 111, 255, 0.3)),
                 0 0 46px var(--rareaura, rgba(30, 111, 255, 0.3)),
                 0 0 110px var(--rareaura, rgba(30, 111, 255, 0.3));
+  }
+  /* A painted card is cut-cornered and see-through outside its frame, so the
+     light has to come off the picture's own shape. box-shadow glows the
+     element's rectangle, which lit the empty corners and read as a rounded-rect
+     halo hanging behind a card that is not one. drop-shadow follows the alpha,
+     so the glow ends where the gold does. Blur radii are halved: box-shadow
+     spreads about twice as far as drop-shadow for the same number. */
+  .facemodal .cardart {
+    width: 100%; display: block;
+    filter: drop-shadow(0 0 7px var(--rareglow, rgba(30, 111, 255, 0.3)))
+            drop-shadow(0 0 23px var(--rareaura, rgba(30, 111, 255, 0.3)))
+            drop-shadow(0 0 55px var(--rareaura, rgba(30, 111, 255, 0.3)));
   }
   /* The enlarged card rides the thumb: dragged live, then either thrown off the
      edge or sprung back. pan-y hands horizontal drags to us and leaves vertical
@@ -1170,7 +1190,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.288 · 6 Sep 14:24";
+var APP_VERSION = "v1.290 · 6 Sep 14:27";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. Opening the app fetches fresh anyway.
