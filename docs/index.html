@@ -1032,7 +1032,7 @@ var BUILT_IN_COURSES = [{"name":"W.S. Gibbs Memorial Disc Golf Course — White/
 
 /* Card faces present in the Android drawables, id -> asset path. Injected by
    web/build.js; empty until artwork lands. */
-var CARD_ART = {};
+var CARD_ART = {"57":"assets/card_57.png"};
 
 /* The pickable characters, from shared/characters.json — the same file the Android
    build reads. Cosmetic only: a face and a name beside a player, no rules attached.
@@ -1091,7 +1091,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.273 · 5 Sep 16:29";
+var APP_VERSION = "v1.274 · 6 Sep 12:03";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. Opening the app fetches fresh anyway.
