@@ -216,10 +216,54 @@ fs.readdirSync(artDir).sort().forEach((f) => {
   characterArt[id] = "assets/" + f;
 });
 
+/*
+ * ---- card art against the card it was painted from ----
+ *
+ * A painted card carries its own words: LONE WOLF! has its timing across the
+ * top, its rules in the panel and its kind and tier in the corners. Reword the
+ * card afterwards and the deck says one thing while the picture says another,
+ * and nothing anywhere complains — you find out at a tee pad, mid-argument,
+ * holding a phone that disagrees with itself.
+ *
+ * So each piece of art is stamped with the card as it stood when the art
+ * arrived. If the card moves out from under it, the build stops and says which
+ * part changed. Repaint the art, or, if the change never made it into the
+ * picture, re-stamp:
+ *
+ *   node tools/stamp-art.js 57
+ *
+ * Only the parts a painting actually shows are stamped. Rarity is in there
+ * because the corner says LEGENDARY; the id is not, because nothing draws it.
+ */
+const STAMPS = path.join(root, "web", "art-stamps.json");
+const artOf = (c) => [c.name, c.text, c.timing, c.kind, c.rarity || "common"].join(" ");
+const stampOf = (c) => crypto.createHash("sha1").update(artOf(c)).digest("hex").slice(0, 12);
+const stamps = fs.existsSync(STAMPS) ? JSON.parse(fs.readFileSync(STAMPS, "utf8")) : {};
+let stampsChanged = false;
+
+Object.keys(cardArt).forEach((key) => {
+  const card = data.cards.find((c) => c.id === Number(key));
+  const now = stampOf(card);
+  const was = stamps[key];
+  if (!was) {
+    // First sight of this art: take the card as it stands as the truth.
+    stamps[key] = { stamp: now, name: card.name, stamped: new Date().toISOString().slice(0, 10) };
+    stampsChanged = true;
+    console.log(`  stamped card art ${key} against "${card.name}" as it reads today`);
+    return;
+  }
+  if (was.stamp === now) return;
+  problems.push(
+    `card ${key} has been reworded since its art was painted — the picture still ` +
+    `shows the old ${card.name}. Repaint it, or run: node tools/stamp-art.js ${key}`
+  );
+});
+
 if (problems.length) {
   problems.forEach((p) => console.error("  - " + p));
   process.exit(1);
 }
+if (stampsChanged) fs.writeFileSync(STAMPS, JSON.stringify(stamps, null, 1) + "\n");
 
 /*
  * The version everyone reads off the bottom of the menu, and the whole point of
