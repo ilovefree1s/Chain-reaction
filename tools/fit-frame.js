@@ -75,29 +75,80 @@ const lum = (x, y) => {
   return 0.299 * cut.data[i] + 0.587 * cut.data[i + 1] + 0.114 * cut.data[i + 2];
 };
 
-// ---- the window, cut out or merely dark ----
+/*
+ * ---- the window: cut out, or merely darker than the frame around it ----
+ *
+ * Backgrounds arrive at any brightness. The first frames had near-black
+ * middles; a later pair came in a lit blue running to 131 where the older ones
+ * sat at 20. So the edge cannot be a brightness written down here: one loose
+ * enough for the blue walks straight through the dark frames' inner border,
+ * and one tight enough for those stops on the blue's own glow.
+ *
+ * It is measured off each picture instead. Sample the middle, take the
+ * brightest tenth of it as what the background gets up to, and call the frame
+ * anything well past that. The metal is far brighter than any background —
+ * 190 and up against 135 at the very most — so the gap is wide either way.
+ *
+ * And it has to be a run of bright pixels, not one. These backgrounds carry
+ * glints and hot spots, and a single bright pixel is a speck in the artwork,
+ * not the edge of the card.
+*/
 const probeX = Math.round(FW / 2), probeY = Math.round(FH * 0.32);
 const seeThrough = a2(probeX, probeY) < 60;
+
+/** How bright this background gets: the 90th percentile of a patch of it. */
+function backgroundLevel(x0, x1, y0, y1) {
+  const seen = [];
+  for (let y = y0; y < y1; y += 3) for (let x = x0; x < x1; x += 3) seen.push(lum(x, y));
+  seen.sort((a, b) => a - b);
+  return seen[Math.floor(seen.length * 0.9)] || 0;
+}
+const bgWindow = backgroundLevel(
+  Math.round(FW * 0.35), Math.round(FW * 0.65),
+  Math.round(FH * 0.22), Math.round(FH * 0.45));
+// Clear of the background, and still clear of the metal.
+const windowEdge = Math.max(75, Math.round(bgWindow + 45));
 const inside = seeThrough
   ? (x, y) => a2(x, y) < 60
-  : (x, y) => lum(x, y) < 75;
-let wl = probeX, wr = probeX, wt = probeY, wb = probeY;
-while (wl > 0 && inside(wl - 1, probeY)) wl--;
-while (wr < FW - 1 && inside(wr + 1, probeY)) wr++;
+  : (x, y) => lum(x, y) < windowEdge;
+const RUN = 3;
+/* Walks out from [from] until the frame proper starts, and answers with the
+   last pixel that was still inside the window. */
+function edgeFrom(from, step, fixed, along, test) {
+  const within = test || inside;
+  const limit = along === "x" ? FW : FH;
+  let at = from, last = from, run = 0;
+  while (true) {
+    const next = at + step;
+    if (next < 0 || next >= limit) break;
+    const isIn = along === "x" ? within(next, fixed) : within(fixed, next);
+    if (isIn) { run = 0; last = next; }
+    else if (++run >= RUN) break;
+    at = next;
+  }
+  return last;
+}
+const wl = edgeFrom(probeX, -1, probeY, "x");
+const wr = edgeFrom(probeX, 1, probeY, "x");
 const midX = Math.round((wl + wr) / 2);
-while (wt > 0 && inside(midX, wt - 1)) wt--;
-while (wb < FH - 1 && inside(midX, wb + 1)) wb++;
+const wt = edgeFrom(probeY, -1, midX, "y");
+const wb = edgeFrom(probeY, 1, midX, "y");
 const WW = wr - wl + 1, WH2 = wb - wt + 1;
 
 // ---- the empty bar at the foot, where the kind goes ----
+// Measured on its own: the bar's ground is a different brightness from the
+// window's, and on some frames it is the darker of the two.
 const barY = Math.round(FH * 0.90), barX = Math.round(FW * 0.18);
-const dark = (x, y) => lum(x, y) < 75;
-let bl = barX, br = barX, bt = barY, bb = barY;
-while (bl > 0 && dark(bl - 1, barY)) bl--;
-while (br < FW - 1 && dark(br + 1, barY)) br++;
+const bgBar = backgroundLevel(
+  Math.round(FW * 0.13), Math.round(FW * 0.23),
+  Math.round(FH * 0.875), Math.round(FH * 0.925));
+const barEdge = Math.max(75, Math.round(bgBar + 45));
+const insideBar = (x, y) => lum(x, y) < barEdge;
+const bl = edgeFrom(barX, -1, barY, "x", insideBar);
+const br = edgeFrom(barX, 1, barY, "x", insideBar);
 const barMid = Math.round((bl + br) / 2);
-while (bt > 0 && dark(barMid, bt - 1)) bt--;
-while (bb < FH - 1 && dark(barMid, bb + 1)) bb++;
+const bt = edgeFrom(barY, -1, barMid, "y", insideBar);
+const bb = edgeFrom(barY, 1, barMid, "y", insideBar);
 const BW = br - bl + 1, BH = bb - bt + 1;
 
 const box = (x, y, w, h) => ({
