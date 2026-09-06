@@ -121,3 +121,19 @@ rules out in fixed proportions of that window. Fixed rather than hunted for,
 because these frames arrive as one open field with nothing drawn inside them —
 and holding every tier to the same proportions is what makes a common and a
 rare look like the same deck when the frames come out different shapes.
+
+## font-preview.html
+
+A chooser for the two faces a card is set in. Open it from the dev server:
+
+    http://localhost:5173/../tools/font-preview.html
+
+Ten faces for the name and six for the rules, each set the way the app sets it,
+with the long card name as the test — whatever survives DESTINATION FUCKED! at
+a readable size will hold every other card. The one in use is marked.
+
+It pulls the faces off Google's CDN, so it needs a connection. That is why it
+lives here and not in the app: whichever pair wins is downloaded into
+`app/src/main/res/font` and baked into the page as base64, so the cards
+themselves never need one. Every face offered is under the SIL Open Font
+License.

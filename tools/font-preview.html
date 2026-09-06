@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Card faces</title>
+<!--
+  A chooser for the two faces a card is set in, not part of the app.
+  Open it from the dev server:  http://localhost:5173/../tools/font-preview.html
+
+  It pulls the faces off Google's CDN, so it needs a connection — which is
+  exactly why it is not in the app. Whichever pair wins gets downloaded into
+  app/src/main/res/font and baked into the page as base64, so the cards
+  themselves never need one.
+
+  Every face here is under the SIL Open Font License: free to embed and ship.
+
+  In use right now: Black Ops One for the name, Titan One for the rules.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Bungee&family=Titan+One&family=Archivo+Black&family=Russo+One&family=Black+Ops+One&family=Bebas+Neue&family=Passion+One:wght@700&family=Staatliches&family=Fredoka:wght@600&family=Roboto+Condensed:ital,wght@1,900&display=swap" rel="stylesheet">
+<style>
+  body { margin: 0; padding: 18px 16px 48px; background: #1B0A2E; color: #E9F1FF;
+         font: 14px/1.45 system-ui, sans-serif; }
+  h1 { font: 700 15px/1 system-ui; letter-spacing: .14em; text-transform: uppercase;
+       color: #C9A6FF; margin: 0 0 4px; }
+  h2 { font: 700 13px/1 system-ui; letter-spacing: .16em; text-transform: uppercase;
+       color: #FF9A2E; margin: 34px 0 2px; }
+  p.note { margin: 0 0 14px; color: #9A86C4; font-size: 13px; }
+  .row { border-top: 1px solid #3A2258; padding: 14px 0 16px; }
+  .row.live { background: rgba(255, 154, 46, .07); }
+  .name { font: 700 12px/1 system-ui; letter-spacing: .16em; text-transform: uppercase;
+          color: #C9A6FF; margin-bottom: 10px; }
+  .name span { color: #6E5A94; letter-spacing: 0; text-transform: none; font-weight: 400; }
+  .name b { color: #FF9A2E; letter-spacing: 0; text-transform: none; }
+
+  /* Exactly how the app sets a name: solid white, hard dark edge, shadow, and
+     slanted — none of these faces ships an italic. */
+  .set { color: #fff; -webkit-text-stroke: .028em rgba(3, 8, 20, .9);
+         paint-order: stroke fill;
+         text-shadow: 0 .05em .02em rgba(0,0,0,.75), 0 0 .22em rgba(0,0,0,.5);
+         transform: skewX(-9deg); transform-origin: left center;
+         white-space: nowrap; line-height: 1.16; }
+  .long { font-size: 29px; }
+  .short { font-size: 33px; margin-top: 4px; }
+  .kind { font-size: 21px; margin-top: 6px; color: #29BEFF;
+          -webkit-text-stroke: .03em rgba(2,12,28,.9); letter-spacing: .06em; }
+
+  /* And how it sets the rules: centred, no slant, no outline. */
+  .body { max-width: 330px; font-size: 21px; line-height: 1.24; text-align: center;
+          color: #E9F1FF; text-shadow: 0 1px 3px rgba(0,0,0,.75);
+          text-wrap: balance; margin-top: 4px; }
+
+  .anton { font-family: "Anton", sans-serif; }
+  .bungee { font-family: "Bungee", sans-serif; }
+  .titan { font-family: "Titan One", sans-serif; }
+  .archivo { font-family: "Archivo Black", sans-serif; }
+  .russo { font-family: "Russo One", sans-serif; }
+  .blackops { font-family: "Black Ops One", sans-serif; }
+  .bebas { font-family: "Bebas Neue", sans-serif; }
+  .passion { font-family: "Passion One", sans-serif; font-weight: 700; }
+  .staat { font-family: "Staatliches", sans-serif; }
+  .fredoka { font-family: "Fredoka", sans-serif; font-weight: 600; }
+  .roboto { font-family: "Roboto Condensed", sans-serif; font-weight: 900; font-style: italic; }
+  .roboto.set { transform: none; }
+</style>
+</head>
+<body>
+  <h1>Card faces</h1>
+  <p class="note">The long name is the test — whatever survives DESTINATION FUCKED!
+     at a readable size will hold every other card.</p>
+
+  <h2>The name</h2>
+  <p class="note">Set the way the app sets it.</p>
+
+  <div class="row live">
+    <div class="name">Black Ops One <b>— in use</b></div>
+    <div class="set long blackops">DESTINATION FUCKED!</div>
+    <div class="set short blackops">Baby Discs</div>
+    <div class="set kind blackops">ATTACK</div>
+  </div>
+  <div class="row">
+    <div class="name">Anton <span>— heavy condensed, holds long names best</span></div>
+    <div class="set long anton">DESTINATION FUCKED!</div>
+    <div class="set short anton">Baby Discs</div>
+    <div class="set kind anton">ATTACK</div>
+  </div>
+  <div class="row">
+    <div class="name">Bungee <span>— chunky signage</span></div>
+    <div class="set long bungee">DESTINATION FUCKED!</div>
+    <div class="set short bungee">Baby Discs</div>
+    <div class="set kind bungee">ATTACK</div>
+  </div>
+  <div class="row">
+    <div class="name">Titan One <span>— fat and rounded</span></div>
+    <div class="set long titan">DESTINATION FUCKED!</div>
+    <div class="set short titan">Baby Discs</div>
+    <div class="set kind titan">ATTACK</div>
+  </div>
+  <div class="row">
+    <div class="name">Archivo Black <span>— heavy grotesque</span></div>
+    <div class="set long archivo">DESTINATION FUCKED!</div>
+    <div class="set short archivo">Baby Discs</div>
+    <div class="set kind archivo">ATTACK</div>
+  </div>
+  <div class="row">
+    <div class="name">Russo One <span>— squared-off, techy</span></div>
+    <div class="set long russo">DESTINATION FUCKED!</div>
+    <div class="set short russo">Baby Discs</div>
+    <div class="set kind russo">ATTACK</div>
+  </div>
+  <div class="row">
+    <div class="name">Bebas Neue <span>— tall condensed caps</span></div>
+    <div class="set long bebas">DESTINATION FUCKED!</div>
+    <div class="set short bebas">Baby Discs</div>
+    <div class="set kind bebas">ATTACK</div>
+  </div>
+  <div class="row">
+    <div class="name">Passion One <span>— heavy poster</span></div>
+    <div class="set long passion">DESTINATION FUCKED!</div>
+    <div class="set short passion">Baby Discs</div>
+    <div class="set kind passion">ATTACK</div>
+  </div>
+  <div class="row">
+    <div class="name">Staatliches <span>— condensed poster caps</span></div>
+    <div class="set long staat">DESTINATION FUCKED!</div>
+    <div class="set short staat">Baby Discs</div>
+    <div class="set kind staat">ATTACK</div>
+  </div>
+  <div class="row">
+    <div class="name">Roboto Condensed <span>— what the cards used before</span></div>
+    <div class="set long roboto">DESTINATION FUCKED!</div>
+    <div class="set short roboto">Baby Discs</div>
+    <div class="set kind roboto">ATTACK</div>
+  </div>
+
+  <h2>The rules</h2>
+  <p class="note">A paragraph, at the size a middling card sets at. This one is
+     read at arm's length on a tee pad, so it is the one that has to stay easy.</p>
+
+  <div class="row live">
+    <div class="name">Titan One <b>— in use</b></div>
+    <div class="body titan">Force an opponent to throw a mini for their upcoming
+      drive or putt. Through the basket floor still counts as in.</div>
+  </div>
+  <div class="row">
+    <div class="name">Fredoka <span>— rounded, easy at a glance</span></div>
+    <div class="body fredoka">Force an opponent to throw a mini for their upcoming
+      drive or putt. Through the basket floor still counts as in.</div>
+  </div>
+  <div class="row">
+    <div class="name">Archivo Black <span>— heavy but plain</span></div>
+    <div class="body archivo">Force an opponent to throw a mini for their upcoming
+      drive or putt. Through the basket floor still counts as in.</div>
+  </div>
+  <div class="row">
+    <div class="name">Russo One <span>— techy</span></div>
+    <div class="body russo">Force an opponent to throw a mini for their upcoming
+      drive or putt. Through the basket floor still counts as in.</div>
+  </div>
+  <div class="row">
+    <div class="name">Bungee <span>— very wide, eats the box</span></div>
+    <div class="body bungee">Force an opponent to throw a mini for their upcoming
+      drive or putt. Through the basket floor still counts as in.</div>
+  </div>
+  <div class="row">
+    <div class="name">Roboto Condensed <span>— what the cards used before</span></div>
+    <div class="body roboto">Force an opponent to throw a mini for their upcoming
+      drive or putt. Through the basket floor still counts as in.</div>
+  </div>
+</body>
+</html>
