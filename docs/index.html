@@ -306,6 +306,12 @@
     text-shadow: 0 0.05em 0.02em rgba(0, 0, 0, 0.75), 0 0 0.2em rgba(0, 0, 0, 0.5);
   }
   .artwords.artkind > div { white-space: nowrap; }
+  /* A dual card makes two separate offers — one if you play it on yourself,
+     one if you play it on somebody else — and run together as a single block
+     they read as one long sentence. A line of air between them says they are
+     alternatives without any punctuation having to. */
+  .artwords p { margin: 0; }
+  .artwords p + p { margin-top: 0.7em; }
   .artwords {
     position: absolute; display: flex; align-items: center; justify-content: center;
     text-align: center; line-height: 1.24; color: #E9F1FF; font-weight: 400;
@@ -1279,7 +1285,9 @@ function artFaceHtml(c, art, words, slots) {
     (slots.ar ? ' style="aspect-ratio:' + slots.ar + '"' : "") + ">" + img +
     fill(slots.timing, "arttiming", c.id + ":t", esc(c.timing.toUpperCase()), c.timing) +
     fill(slots.title, "arttitle", c.id + ":n", esc(c.name), c.name) +
-    fill(slots.text, "", c.id + ":w", cardHalves(words).map(esc).join("<br>"), words) +
+    fill(slots.text, "", c.id + ":w",
+      cardHalves(words).map(function (h) { return "<p>" + esc(h) + "</p>"; }).join(""),
+      words) +
     fill(slots.kind, "artkind", c.id + ":k", esc(c.kind.toUpperCase()), c.kind) +
     "</div>";
 }
@@ -1341,7 +1349,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.341 · 6 Sep 18:43";
+var APP_VERSION = "v1.343 · 6 Sep 18:45";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. Opening the app fetches fresh anyway.
