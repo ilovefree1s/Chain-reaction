@@ -94,3 +94,16 @@ Lays one PNG over another, scaled and centred, straight alpha.
 
 For swapping a badge on a painted card. Give an `out.png` and look at the result
 before overwriting the card itself.
+
+## Card pictures
+
+Two ways a card gets a face:
+
+- **Its own painting.** `drawable-nodpi/card_NN.png`, prepared with `fit-art.js`.
+  Its entry in `web/art-boxes.json` says which bars the painting left empty.
+- **Its tier's frame.** `drawable-nodpi/frame_<tier>.png`, with the bars in
+  `web/art-frames.json`. Every card of that rarity with no painting wears it,
+  and the deck writes the name, timing, rules and kind into it.
+
+A painting always wins over a frame. Neither one carries words, so rewording a
+card reflows it and never needs a repaint.

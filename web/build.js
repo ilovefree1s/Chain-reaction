@@ -227,6 +227,37 @@ fs.readdirSync(artDir).sort().forEach((f) => {
  * off the image itself rather than guessed. A card with art but no box here
  * keeps whatever its painting says.
  */
+/*
+ * ---- one frame per rarity ----
+ *
+ * A card without a painting of its own wears its tier's frame, and the deck
+ * writes the name, the timing, the rules and the kind into the empty bars it
+ * leaves. Fifty-odd cards then cost one picture between them rather than one
+ * each, and a reworded card is still just a reworded card.
+ *
+ * drawable-nodpi/frame_<tier>.png is the picture; web/art-frames.json says
+ * where that tier's bars are, as fractions of it.
+ */
+const FRAMES = path.join(root, "web", "art-frames.json");
+const frameBoxes = fs.existsSync(FRAMES) ? JSON.parse(fs.readFileSync(FRAMES, "utf8")) : {};
+const TIERS = ["common", "uncommon", "rare", "epic", "legendary"];
+const tierFrames = {};
+fs.readdirSync(artDir).sort().forEach((f) => {
+  const m = /^frame_([a-z]+).(png|webp|jpe?g)$/.exec(f);
+  if (!m) return;
+  if (TIERS.indexOf(m[1]) === -1) {
+    problems.push(`frame art ${f} names no rarity the deck uses`);
+    return;
+  }
+  if (!frameBoxes[m[1]]) {
+    problems.push(`${f} has no entry in web/art-frames.json saying where its bars are`);
+    return;
+  }
+  fs.copyFileSync(path.join(artDir, f), path.join(assetsDir, f));
+  copied.push(f);
+  tierFrames[m[1]] = Object.assign({ image: "assets/" + f }, frameBoxes[m[1]]);
+});
+
 const BOXES = path.join(root, "web", "art-boxes.json");
 const artBoxes = fs.existsSync(BOXES) ? JSON.parse(fs.readFileSync(BOXES, "utf8")) : {};
 Object.keys(artBoxes).forEach((key) => {
@@ -317,6 +348,7 @@ const template = fs.readFileSync(path.join(__dirname, "template.html"), "utf8");
   "/*__COURSE_DATA__*/",
   "/*__CARD_ART__*/",
   "/*__ART_BOXES__*/",
+  "/*__ART_FRAMES__*/",
   "/*__CHARACTER_DATA__*/",
   "/*__CHARACTER_ART__*/",
   "__MENU_IMAGE__",
@@ -351,6 +383,7 @@ const html = template
   .replace("/*__COURSE_DATA__*/", JSON.stringify(courses))
   .replace("/*__CARD_ART__*/", JSON.stringify(cardArt))
   .replace("/*__ART_BOXES__*/", JSON.stringify(artBoxes))
+  .replace("/*__ART_FRAMES__*/", JSON.stringify(tierFrames))
   .replace("/*__CHARACTER_DATA__*/", JSON.stringify(characters))
   .replace("/*__CHARACTER_ART__*/", JSON.stringify(characterArt))
   .replace("__MENU_IMAGE__", menuImage)

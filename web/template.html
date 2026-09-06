@@ -1089,6 +1089,9 @@ var CARD_ART = /*__CARD_ART__*/;
 /* Where a painting leaves an empty panel for the card's own words, as
    fractions of the picture. Art without one keeps whatever it has painted. */
 var ART_BOXES = /*__ART_BOXES__*/;
+/* One frame per rarity, worn by every card of that rarity with no painting of
+   its own. The same shape as an art box, plus the picture to wear. */
+var ART_FRAMES = /*__ART_FRAMES__*/;
 
 /*
  * A painted card with its words dropped into the panel the painting left empty.
@@ -1175,10 +1178,18 @@ function boxStyle(b) {
     "%;width:" + (b.w * 100).toFixed(2) + "%;height:" + (b.h * 100).toFixed(2) + "%";
 }
 
-function artFaceHtml(c, art, words) {
+/* The picture a card shows and the bars written into it: its own painting when
+   it has one, otherwise the frame its tier shares. */
+function cardPicture(c) {
+  var own = CARD_ART[c.id];
+  if (own) return { src: own, slots: artSlots(c.id) };
+  var frame = ART_FRAMES[rarityOf(c).id];
+  return frame && frame.image ? { src: frame.image, slots: frame } : null;
+}
+
+function artFaceHtml(c, art, words, slots) {
   var img = '<img class="cardart" onload="fitArtWords()" src="' + art + '" alt="' +
     esc(c.name) + ". " + esc(words) + '">';
-  var slots = artSlots(c.id);
   if (!slots) return img;
 
   /* One filled box. [key] tells the fitter which measurement is whose, so three
@@ -4943,15 +4954,16 @@ function cardFaceSvg(c) {
 function renderFaceModal() {
   var c = BY_ID[viewCard];
   var inHand = !viewOnly && state && state.hand.indexOf(c.id) !== -1;
-  var art = CARD_ART[c.id];
+  // Its own painting if it has one, otherwise its tier's frame.
+  var pic = cardPicture(c);
   // A wheel alert opens the wheel wording, names filled in, exactly as the
   // spinner's screen shows it — the plain face would tell a different story.
   var face = viewWords != null
     ? cardHtml(c, false, viewWords)
-    : art
-    // The words go in the panel the painting left for them, so this is the
-    // same picture the hand tile shows and the same words the deck holds.
-    ? artFaceHtml(c, art, c.text)
+    : pic
+    // The words go in the bars the picture left for them, so the card says what
+    // the deck says rather than what it was painted saying.
+    ? artFaceHtml(c, pic.src, c.text, pic.slots)
     : cardFaceSvg(c);
 
   var acts = "";
