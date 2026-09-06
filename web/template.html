@@ -244,8 +244,8 @@
      hundredths of it — so the same markup reads right on a full-screen face
      and on a hand tile, with nothing recalculated in between. */
   /* Carried inside the page, so a card reads the same on the eighteenth hole
-     with no signal as it does at home. Neither face ships an italic, so the
-     slant is put on them — which is how the painted cards are lettered. */
+     with no signal as it does at home — and the same on an iPhone, which has
+     no Roboto at all and was quietly setting these cards in whatever it had. */
   @font-face {
     font-family: "CardName"; font-style: normal; font-weight: 400;
     font-display: block; src: url("__NAME_FONT__") format("woff2");
@@ -262,7 +262,6 @@
   .artwords.arttitle {
     font-family: "CardName", "Roboto Condensed", system-ui, sans-serif;
     font-weight: 400; font-style: normal; letter-spacing: 0.005em;
-    transform: skewX(-9deg);
     /* Cut out of the card rather than shaded across: solid white, a hard dark
        edge around every letter, and a shadow under it. A gradient down the
        letters greys their middles, which on a name this size reads as blurred
@@ -301,7 +300,6 @@
   .artwords.artkind {
     font-family: "CardName", "Roboto Condensed", system-ui, sans-serif;
     font-weight: 400; font-style: normal; letter-spacing: 0.06em;
-    transform: skewX(-9deg);
     color: #29BEFF;
     -webkit-text-stroke: 0.03em rgba(2, 12, 28, 0.9);
     paint-order: stroke fill;
@@ -1157,6 +1155,18 @@ function startingSize(box, words) {
 var ART_FIT = {};
 /* Set once the page has asked the faces to load, so it only asks the once. */
 var artFacesReady = false;
+/*
+ * As large as a card's rules are ever set, in hundredths of the card's width.
+ *
+ * Without it every card fills its box, and a card of five words comes out at
+ * twice the size of a card of forty — which reads as the short one shouting
+ * rather than the long one being long. This is roughly where the wordiest cards
+ * land anyway, so most of the deck now sets at exactly this and only the few
+ * that cannot fit go under it.
+ */
+var RULES_MAX = 6.1;
+/* Which slot a fit belongs to, off the end of its key. */
+function isRules(key) { return key.slice(-2) === ":w"; }
 
 /*
  * Grows the words until the panel is full and no further. Measured rather than
@@ -1171,11 +1181,21 @@ function fitArtWords() {
     var wrap = el.parentNode;
     var cardW = wrap.clientWidth;
     // Too small to read at, or not laid out yet: leave the guess alone.
-    if (ART_FIT[key] || !cardW || cardW < 140) continue;
-    // The ceiling has to clear a card name set across its own bar, which is
-    // several times the size of a line of rules text. It is only a bound —
-    // nothing reaches it unless its box has the room.
-    var lo = 1.4, hi = 14;
+    if (!cardW || cardW < 140) continue;
+    /*
+     * An answer already worked out is kept — unless it does not hold. A fit
+     * measured while the card was still settling can be a line too big, and
+     * cached it stays wrong for the rest of the session: one card quietly
+     * clipped, and nothing to say why. Checking it costs one read.
+     */
+    if (ART_FIT[key]) {
+      if (inner.scrollHeight <= el.clientHeight) continue;
+      delete ART_FIT[key];
+    }
+    // A name is set across its own bar and runs several times the size of a
+    // line of rules, so it needs the headroom; the rules are held to one size
+    // across the deck so that a short card does not shout.
+    var lo = 1.4, hi = isRules(key) ? RULES_MAX : 14;
     for (var k = 0; k < 11; k++) {
       var mid = (lo + hi) / 2;
       el.style.fontSize = (mid / 100 * cardW).toFixed(2) + "px";
@@ -1248,7 +1268,8 @@ function artFaceHtml(c, art, words, slots) {
      boxes on a card are sized independently rather than sharing one answer. */
   function fill(box, cls, key, html, plain) {
     if (!box) return "";
-    var size = ART_FIT[key] || startingSize(box, plain);
+    var size = ART_FIT[key] ||
+      Math.min(startingSize(box, plain), isRules(key) ? RULES_MAX : 14);
     return '<div class="artwords ' + cls + '" style="' + boxStyle(box) +
       ";font-size:" + size.toFixed(2) + 'cqw" data-fit="' + key + '">' +
       "<div>" + html + "</div></div>";

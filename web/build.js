@@ -170,8 +170,8 @@ function embedFont(file) {
   }
   return "data:font/woff2;base64," + fs.readFileSync(from).toString("base64");
 }
-const nameFont = embedFont("blackopsone.woff2");
-const bodyFont = embedFont("titanone.woff2");
+const nameFont = embedFont("robotocondensed-italic.woff2");
+const bodyFont = embedFont("russoone.woff2");
 
 const menuImage = copyArt("chainreactionmain.png", "menu.png");
 const buttonsImage = copyArt("newbuttons.png", "buttons.png");
