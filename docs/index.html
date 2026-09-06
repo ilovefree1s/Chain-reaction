@@ -260,14 +260,16 @@
      the words stay a plain line of text for the fitter to measure; the padding
      is what keeps them off the rules. */
   .arttiming {
-    color: #4DC3FF; font-weight: 900; letter-spacing: 0.18em;
+    /* Sampled off the painted card rather than borrowed from the app's ice
+       blue, which is pale enough beside it to read as white. */
+    color: #05ACFC; font-weight: 900; letter-spacing: 0.18em;
     padding: 0 27%; box-sizing: border-box;
     background: linear-gradient(#1E6FFF, #1E6FFF) left center / 24% 2px no-repeat,
                 linear-gradient(#FF8A1E, #FF8A1E) right center / 24% 2px no-repeat;
   }
   .arttiming > div { white-space: nowrap; }
   /* What kind of card it is, in the bar the frame leaves for it. */
-  .artkind { color: #4DC3FF; font-weight: 900; letter-spacing: 0.06em; }
+  .artkind { color: #05ACFC; font-weight: 900; letter-spacing: 0.06em; }
   .artkind > div { white-space: nowrap; }
   .artwords {
     position: absolute; display: flex; align-items: center; justify-content: center;
@@ -1255,7 +1257,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.315 · 6 Sep 17:15";
+var APP_VERSION = "v1.316 · 6 Sep 17:17";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. Opening the app fetches fresh anyway.
