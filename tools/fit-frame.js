@@ -42,8 +42,14 @@ if (!fs.existsSync(src)) { console.error("no such file: " + src); process.exit(1
 const LAYOUT = {
   timing: [0.0119, 0.0436],
   title:  [0.0574, 0.1208],
-  photo:  [0.1842, 0.5941],
-  text:   [0.7881, 0.2020],
+  // The ground covers the whole window: on a frame that is cut out there,
+  // anything it does not cover is a hole through to the screen.
+  ground: [0, 1],
+  // And the rules take everything under the name. With no photograph to make
+  // room for, the words are what the card is, and they are read at arm's
+  // length on a tee pad — so they get the room rather than a panel's worth of
+  // it. Short cards simply set larger and sit in the middle of it.
+  text:   [0.20, 0.77],
 };
 
 const raw = png.read(src);
@@ -106,8 +112,8 @@ const entry = {
   ar: +(FW / FH).toFixed(4),
   timing: band("timing", 10),
   title: band("title", 10),
-  photo: band("photo", 0),
-  text: band("text", 30),
+  ground: band("ground", 0),
+  text: band("text", 44),
   // Held to the middle of its bar: given the whole thing the kind grows past
   // the card's own name, which reads as the card being called ATTACK.
   kind: box(bl + Math.round(BW * 0.075), bt + Math.round(BH * 0.22),

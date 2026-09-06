@@ -1159,8 +1159,20 @@ function fitArtWords() {
         inner.scrollWidth <= el.clientWidth - pad;
       if (fits) lo = mid; else hi = mid;
     }
-    ART_FIT[key] = lo;
     el.style.fontSize = lo.toFixed(2) + "cqw";
+    /*
+     * Then check the answer instead of trusting it. Balanced wrapping settles
+     * after the measurement the search made — the browser hands back the
+     * unbalanced layout while the loop is running — and it can come back a
+     * whole line taller. On the longest card in the deck that was thirty-five
+     * pixels of overflow, quietly clipped.
+     */
+    var guard = 0;
+    while (inner.scrollHeight > el.clientHeight && guard++ < 24) {
+      lo *= 0.94;
+      el.style.fontSize = lo.toFixed(2) + "cqw";
+    }
+    ART_FIT[key] = lo;
   }
 }
 
@@ -1211,7 +1223,9 @@ function artFaceHtml(c, art, words, slots) {
   return '<div class="artwrap"' +
     (slots.ar ? ' style="aspect-ratio:' + slots.ar + '"' : "") + ">" +
     // Behind the frame, so a cut-out window has a ground rather than a hole.
-    (slots.photo ? '<div class="artphoto" style="' + boxStyle(slots.photo) + '"></div>' : "") + img +
+    (slots.ground || slots.photo
+      ? '<div class="artphoto" style="' + boxStyle(slots.ground || slots.photo) + '"></div>'
+      : "") + img +
     fill(slots.timing, "arttiming", c.id + ":t", esc(c.timing.toUpperCase()), c.timing) +
     fill(slots.title, "arttitle", c.id + ":n", esc(c.name), c.name) +
     fill(slots.text, "", c.id + ":w", cardHalves(words).map(esc).join("<br>"), words) +
