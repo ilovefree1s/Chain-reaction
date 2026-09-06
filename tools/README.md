@@ -107,3 +107,17 @@ Two ways a card gets a face:
 
 A painting always wins over a frame. Neither one carries words, so rewording a
 card reflows it and never needs a repaint.
+
+## fit-frame.js
+
+Prepares a tier frame — the picture every card of one rarity wears.
+
+    node tools/fit-frame.js uncommon app/src/main/res/drawable/uncommon.png
+    node tools/fit-frame.js uncommon <file> --check    # measure, write nothing
+
+Trims to the frame's edge, finds the window (cut out or merely dark), finds the
+bar at the foot where the kind goes, and lays the timing, name, picture and
+rules out in fixed proportions of that window. Fixed rather than hunted for,
+because these frames arrive as one open field with nothing drawn inside them —
+and holding every tier to the same proportions is what makes a common and a
+rare look like the same deck when the frames come out different shapes.
