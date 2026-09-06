@@ -244,12 +244,6 @@
      hundredths of it — so the same markup reads right on a full-screen face
      and on a hand tile, with nothing recalculated in between. */
   .artwrap { position: relative; container-type: inline-size; }
-  /* What shows through the picture window. A frame may be cut out there so a
-     photograph can sit behind it — and with no photograph yet, an uncut hole
-     would show the screen through the middle of the card. Sampled from the
-     common frame's own ground so a filled window and a painted one match. */
-  .artphoto { position: absolute; background: #001B38; }
-  .artphoto img { width: 100%; height: 100%; display: block; object-fit: cover; }
   /* The name across its bar. Heavy italic, the way the drawn faces already set
      a card name and the way the painted ones were lettered, condensed where the
      phone has a condensed face. One line always: it shrinks rather than wraps,
@@ -1229,11 +1223,7 @@ function artFaceHtml(c, art, words, slots) {
   }
 
   return '<div class="artwrap"' +
-    (slots.ar ? ' style="aspect-ratio:' + slots.ar + '"' : "") + ">" +
-    // Behind the frame, so a cut-out window has a ground rather than a hole.
-    (slots.ground || slots.photo
-      ? '<div class="artphoto" style="' + boxStyle(slots.ground || slots.photo) + '"></div>'
-      : "") + img +
+    (slots.ar ? ' style="aspect-ratio:' + slots.ar + '"' : "") + ">" + img +
     fill(slots.timing, "arttiming", c.id + ":t", esc(c.timing.toUpperCase()), c.timing) +
     fill(slots.title, "arttitle", c.id + ":n", esc(c.name), c.name) +
     fill(slots.text, "", c.id + ":w", cardHalves(words).map(esc).join("<br>"), words) +
