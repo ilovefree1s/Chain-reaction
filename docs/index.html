@@ -260,6 +260,14 @@
     letter-spacing: 0.005em; text-shadow: 0 2px 6px rgba(0, 0, 0, 0.55);
   }
   .arttitle > div { white-space: nowrap; }
+  /* A rule under the name, so the first line of the rules is not read as part
+     of the title. Silver and straight across, the way 69% OF THE SPLITS has it
+     painted in — sampled off it: #B7BEC4, five pixels on a card a thousand
+     wide, which is half a percent of the width. */
+  .arttitle::after {
+    content: ""; position: absolute; left: 0; right: 0; bottom: 0;
+    height: 0.5cqw; background: #B7BEC4;
+  }
   /* The timing strip above it: ice blue and wide-tracked, with a rule running
      out to each side — blue to the left, orange to the right, the same pair the
      drawn faces carry. Painted as background bars rather than as elements, so
@@ -1290,7 +1298,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.323 · 6 Sep 17:51";
+var APP_VERSION = "v1.325 · 6 Sep 17:54";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. Opening the app fetches fresh anyway.
