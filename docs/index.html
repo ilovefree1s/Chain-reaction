@@ -1055,10 +1055,10 @@ var BUILT_IN_COURSES = [{"name":"W.S. Gibbs Memorial Disc Golf Course — White/
 
 /* Card faces present in the Android drawables, id -> asset path. Injected by
    web/build.js; empty until artwork lands. */
-var CARD_ART = {"54":"assets/card_54.png","57":"assets/card_57.png","59":"assets/card_59.png"};
+var CARD_ART = {"43":"assets/card_43.png","54":"assets/card_54.png","57":"assets/card_57.png","59":"assets/card_59.png"};
 /* Where a painting leaves an empty panel for the card's own words, as
    fractions of the picture. Art without one keeps whatever it has painted. */
-var ART_BOXES = {"54":{"x":0.1065,"y":0.6968,"w":0.7889,"h":0.1286,"ar":0.723},"57":{"x":0.1061,"y":0.6655,"w":0.7877,"h":0.1597,"ar":0.7453},"59":{"x":0.1037,"y":0.7018,"w":0.7916,"h":0.1287,"ar":0.7187}};
+var ART_BOXES = {"43":{"x":0.1054,"y":0.7005,"w":0.7902,"h":0.1171,"ar":0.7242},"54":{"x":0.1065,"y":0.6968,"w":0.7889,"h":0.1286,"ar":0.723},"57":{"x":0.1061,"y":0.6655,"w":0.7877,"h":0.1597,"ar":0.7453},"59":{"x":0.1037,"y":0.7018,"w":0.7916,"h":0.1287,"ar":0.7187}};
 
 /*
  * A painted card with its words dropped into the panel the painting left empty.
@@ -1184,7 +1184,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.298 · 6 Sep 15:05";
+var APP_VERSION = "v1.299 · 6 Sep 15:08";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. Opening the app fetches fresh anyway.
