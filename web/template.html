@@ -244,6 +244,14 @@
      hundredths of it — so the same markup reads right on a full-screen face
      and on a hand tile, with nothing recalculated in between. */
   .artwrap { position: relative; container-type: inline-size; }
+  /* The name across its bar: one line, as large as the bar will take, and it
+     shrinks rather than wraps — a two-line card name reads as a mistake. */
+  .arttitle { font-weight: 900; letter-spacing: 0.01em; text-transform: none; }
+  .arttitle > div { white-space: nowrap; }
+  /* The timing strip above it — small, wide-tracked, and in the app's ice blue
+     rather than the body's off-white, the way the drawn faces have it. */
+  .arttiming { color: #4DC3FF; font-weight: 900; letter-spacing: 0.18em; }
+  .arttiming > div { white-space: nowrap; }
   .artwords {
     position: absolute; display: flex; align-items: center; justify-content: center;
     text-align: center; line-height: 1.24; color: #E9F1FF; font-weight: 600;
@@ -1097,11 +1105,11 @@ function fitArtWords() {
   var nodes = app.querySelectorAll(".artwords");
   for (var i = 0; i < nodes.length; i++) {
     var el = nodes[i], inner = el.firstChild;
-    var id = el.getAttribute("data-fit");
+    var key = el.getAttribute("data-fit");
     var wrap = el.parentNode;
     var cardW = wrap.clientWidth;
     // Too small to read at, or not laid out yet: leave the guess alone.
-    if (ART_FIT[id] || !cardW || cardW < 140) continue;
+    if (ART_FIT[key] || !cardW || cardW < 140) continue;
     var lo = 1.4, hi = 6;
     for (var k = 0; k < 11; k++) {
       var mid = (lo + hi) / 2;
@@ -1109,25 +1117,60 @@ function fitArtWords() {
       // Two pixels of slack rather than none: balanced wrapping re-breaks the
       // lines after this measurement, and a fit that was exact beforehand comes
       // out a line-fragment too tall afterwards — clipped, with overflow hidden.
-      if (inner.scrollHeight <= el.clientHeight - 2) lo = mid; else hi = mid;
+      // Width as well as height: a title is set on one line, so it runs out of
+      // the bar sideways long before it runs out of it downwards. Wrapped text
+      // never exceeds its width, so the extra test costs it nothing.
+      var fits = inner.scrollHeight <= el.clientHeight - 2 &&
+        inner.scrollWidth <= el.clientWidth;
+      if (fits) lo = mid; else hi = mid;
     }
-    ART_FIT[id] = lo;
+    ART_FIT[key] = lo;
     el.style.fontSize = lo.toFixed(2) + "cqw";
   }
 }
 
+/*
+ * The boxes a painting has left empty, in a shape that reads the same whether
+ * the entry names one or three.
+ *
+ * The first paintings carried their own name and timing and left only the rules
+ * panel, so their entry is that panel written flat. A frame drawn once and
+ * reused for a whole tier carries nothing at all, and leaves three.
+ */
+function artSlots(id) {
+  var b = ART_BOXES[id];
+  if (!b) return null;
+  if (b.text || b.title || b.timing) return b;
+  return { ar: b.ar, text: b };
+}
+/* Where a box sits, as a percentage rectangle. */
+function boxStyle(b) {
+  return "left:" + (b.x * 100).toFixed(2) + "%;top:" + (b.y * 100).toFixed(2) +
+    "%;width:" + (b.w * 100).toFixed(2) + "%;height:" + (b.h * 100).toFixed(2) + "%";
+}
+
 function artFaceHtml(c, art, words) {
-  var img = '<img class="cardart" onload="fitArtWords()" src="' + art + '" alt="' + 
+  var img = '<img class="cardart" onload="fitArtWords()" src="' + art + '" alt="' +
     esc(c.name) + ". " + esc(words) + '">';
-  var box = ART_BOXES[c.id];
-  if (!box) return img;
-  var size = ART_FIT[c.id] || startingSize(box, words);
+  var slots = artSlots(c.id);
+  if (!slots) return img;
+
+  /* One filled box. [key] tells the fitter which measurement is whose, so three
+     boxes on a card are sized independently rather than sharing one answer. */
+  function fill(box, cls, key, html, plain) {
+    if (!box) return "";
+    var size = ART_FIT[key] || startingSize(box, plain);
+    return '<div class="artwords ' + cls + '" style="' + boxStyle(box) +
+      ";font-size:" + size.toFixed(2) + 'cqw" data-fit="' + key + '">' +
+      "<div>" + html + "</div></div>";
+  }
+
   return '<div class="artwrap"' +
-    (box.ar ? ' style="aspect-ratio:' + box.ar + '"' : "") + '>' + img +
-    '<div class="artwords" style="left:' + (box.x * 100).toFixed(2) + '%;top:' +
-    (box.y * 100).toFixed(2) + '%;width:' + (box.w * 100).toFixed(2) + '%;height:' +
-    (box.h * 100).toFixed(2) + '%;font-size:' + size.toFixed(2) + 'cqw" data-fit="' + c.id + '">' +
-    '<div>' + cardHalves(words).map(esc).join("<br>") + '</div></div></div>';
+    (slots.ar ? ' style="aspect-ratio:' + slots.ar + '"' : "") + ">" + img +
+    fill(slots.timing, "arttiming", c.id + ":t", esc(c.timing.toUpperCase()), c.timing) +
+    fill(slots.title, "arttitle", c.id + ":n", esc(c.name), c.name) +
+    fill(slots.text, "", c.id + ":w", cardHalves(words).map(esc).join("<br>"), words) +
+    "</div>";
 }
 
 /* The pickable characters, from shared/characters.json — the same file the Android
