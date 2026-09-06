@@ -1097,7 +1097,7 @@ var CARD_ART = {"2":"assets/card_02.png","31":"assets/card_31.png","43":"assets/
 var ART_BOXES = {"2":{"x":0.0576,"y":0.6809,"w":0.8868,"h":0.1404,"ar":0.7033},"31":{"x":0.1065,"y":0.6841,"w":0.786,"h":0.1319,"ar":0.7347},"43":{"x":0.1054,"y":0.7005,"w":0.7902,"h":0.1171,"ar":0.7242},"54":{"x":0.1065,"y":0.6968,"w":0.7889,"h":0.1286,"ar":0.723},"57":{"x":0.1061,"y":0.6655,"w":0.7877,"h":0.1597,"ar":0.7453},"59":{"x":0.1037,"y":0.7018,"w":0.7916,"h":0.1287,"ar":0.7187}};
 /* One frame per rarity, worn by every card of that rarity with no painting of
    its own. The same shape as an art box, plus the picture to wear. */
-var ART_FRAMES = {"common":{"image":"assets/frame_common.png","ar":0.742,"timing":{"x":0.058,"y":0.0445,"w":0.8841,"h":0.0321},"title":{"x":0.058,"y":0.078,"w":0.8841,"h":0.0889},"photo":{"x":0.0481,"y":0.1713,"w":0.9037,"h":0.4373},"text":{"x":0.0776,"y":0.6159,"w":0.8448,"h":0.1487},"kind":{"x":0.0727,"y":0.8732,"w":0.2672,"h":0.0641}}};
+var ART_FRAMES = {"common":{"image":"assets/frame_common.png","ar":0.742,"timing":{"x":0.058,"y":0.0445,"w":0.8841,"h":0.0321},"title":{"x":0.058,"y":0.078,"w":0.8841,"h":0.0889},"photo":{"x":0.0481,"y":0.1713,"w":0.9037,"h":0.4373},"text":{"x":0.0776,"y":0.6159,"w":0.8448,"h":0.1487},"kind":{"x":0.0727,"y":0.8732,"w":0.2672,"h":0.0641}},"rare":{"image":"assets/frame_rare.png","ar":0.7715,"timing":{"x":0.0655,"y":0.0581,"w":0.8671,"h":0.0309},"title":{"x":0.0655,"y":0.0905,"w":0.8671,"h":0.086},"photo":{"x":0.0557,"y":0.181,"w":0.8866,"h":0.4223},"text":{"x":0.085,"y":0.6101,"w":0.828,"h":0.1433},"kind":{"x":0.0733,"y":0.8733,"w":0.2405,"h":0.0611}}};
 
 /*
  * A painted card with its words dropped into the panel the painting left empty.
@@ -1276,7 +1276,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.318 · 6 Sep 17:22";
+var APP_VERSION = "v1.319 · 6 Sep 17:24";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. Opening the app fetches fresh anyway.
