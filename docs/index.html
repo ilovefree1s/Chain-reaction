@@ -1058,10 +1058,10 @@ var BUILT_IN_COURSES = [{"name":"W.S. Gibbs Memorial Disc Golf Course — White/
 
 /* Card faces present in the Android drawables, id -> asset path. Injected by
    web/build.js; empty until artwork lands. */
-var CARD_ART = {"2":"assets/card_02.png","31":"assets/card_31.png","43":"assets/card_43.png","54":"assets/card_54.png","57":"assets/card_57.png","59":"assets/card_59.png"};
+var CARD_ART = {"2":"assets/card_02.png","14":"assets/card_14.png","31":"assets/card_31.png","43":"assets/card_43.png","54":"assets/card_54.png","57":"assets/card_57.png","59":"assets/card_59.png"};
 /* Where a painting leaves an empty panel for the card's own words, as
    fractions of the picture. Art without one keeps whatever it has painted. */
-var ART_BOXES = {"2":{"x":0.0576,"y":0.6809,"w":0.8868,"h":0.1404,"ar":0.7033},"31":{"x":0.1065,"y":0.6841,"w":0.786,"h":0.1319,"ar":0.7347},"43":{"x":0.1054,"y":0.7005,"w":0.7902,"h":0.1171,"ar":0.7242},"54":{"x":0.1065,"y":0.6968,"w":0.7889,"h":0.1286,"ar":0.723},"57":{"x":0.1061,"y":0.6655,"w":0.7877,"h":0.1597,"ar":0.7453},"59":{"x":0.1037,"y":0.7018,"w":0.7916,"h":0.1287,"ar":0.7187}};
+var ART_BOXES = {"2":{"x":0.0576,"y":0.6809,"w":0.8868,"h":0.1404,"ar":0.7033},"14":{"x":0.0685,"y":0.681,"w":0.8641,"h":0.1372,"ar":0.7151},"31":{"x":0.1065,"y":0.6841,"w":0.786,"h":0.1319,"ar":0.7347},"43":{"x":0.1054,"y":0.7005,"w":0.7902,"h":0.1171,"ar":0.7242},"54":{"x":0.1065,"y":0.6968,"w":0.7889,"h":0.1286,"ar":0.723},"57":{"x":0.1061,"y":0.6655,"w":0.7877,"h":0.1597,"ar":0.7453},"59":{"x":0.1037,"y":0.7018,"w":0.7916,"h":0.1287,"ar":0.7187}};
 
 /*
  * A painted card with its words dropped into the panel the painting left empty.
@@ -1187,7 +1187,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.302 · 6 Sep 15:51";
+var APP_VERSION = "v1.303 · 6 Sep 16:04";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. Opening the app fetches fresh anyway.
