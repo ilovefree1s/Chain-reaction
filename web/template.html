@@ -239,15 +239,6 @@
      ever yours. The gap is what says so. */
   .card p + p { margin-top: 10px; }
   .card .acts { display: flex; gap: 10px; margin-top: 14px; }
-  /* A painted card brings its own frame and its own edge, so the tile's border,
-     ground and rectangular glow would all be a second card drawn around the
-     first. The light comes off the picture's shape instead, same as the face. */
-  .card.artcard {
-    display: block; border: 0; background: none; overflow: visible;
-    box-shadow: none;
-    filter: drop-shadow(0 0 6px var(--rareglow, rgba(30, 111, 255, 0.25)))
-            drop-shadow(0 0 20px var(--rareaura, rgba(30, 111, 255, 0.25)));
-  }
   .cardart { width: 100%; display: block; }
   /* The card's own width is what the words are measured against — cqw is
      hundredths of it — so the same markup reads right on a full-screen face
@@ -261,8 +252,6 @@
        words off the texture without putting a box around them. */
     text-shadow: 0 1px 3px rgba(0, 0, 0, 0.75);
   }
-  .artacts { padding: 12px; }
-  .artacts .acts { margin-top: 0; }
   .confirmq { margin: 14px 0 0; font-weight: 700; }
   /* The running order, read left to right. Whoever is up is loud; you are
      underlined wherever you happen to sit in it. */
@@ -365,7 +354,6 @@
              margin-top: 10px; color: #5E6C88; font-weight: 700; font-size: 18px; }
   .facenav span[data-act] { font-size: 38px; line-height: 1; padding: 0 14px;
                             color: #4DC3FF; cursor: pointer; }
-  .artacts .confirmq { margin-top: 0; }
   .card .acts button { flex: 1; margin: 0; }
 
   .hint { color: var(--sage); margin: 0 0 12px; }
@@ -4317,13 +4305,14 @@ function openWheelNow(free) {
    opens the full face, where Play and Discard live. */
 /* [act] and [picked] let the same tile double as the pay-for-a-spin picker;
    [held] marks a card still frozen while the table locks its hole. */
+/* Painted or not, a tile is a tile: the name, the tier and what the card does,
+   at a size you can read down a list. A painting shrunk to this is a stamp —
+   handsome and unreadable — so the art waits until the card is opened. */
 function miniCardHtml(c, act, picked, held) {
-  var art = CARD_ART[c.id];
   var tag = held ? '<div class="heldtag">HELD</div>' : "";
   var rare = rarityOf(c);
   var open = '<div class="minicard' + (picked ? " picked" : "") + '" data-act="' +
     (act || "viewCard") + '" data-i="' + c.id + '" style="' + rarityVars(rare) + '">';
-  if (art) return open + tag + '<img src="' + art + '" alt="' + esc(c.name) + '"></div>';
   return open + tag +
     '<div class="minimeta">' + (wheelOnlyCard(c.id)
       ? '<span style="color:#FF8A1E">wheel only</span> &middot; ' : "") +
@@ -4380,13 +4369,8 @@ function cardHtml(c, withActions, altText, browse) {
   // the same face with nothing to press, because a reference is for looking at.
   var tap = withActions ? ' data-act="viewCard" data-i="' + c.id + '"'
     : browse ? ' data-act="browseCard" data-i="' + c.id + '"' : "";
-  var art = CARD_ART[c.id];
-  if (art) {
-    return '<div class="card artcard"' + tap + edge + '>' +
-      artFaceHtml(c, art, words) +
-      (altText ? '<div class="body"><p>' + esc(altText) + '</p></div>' : "") +
-      (acts ? '<div class="artacts">' + acts + '</div>' : "") + '</div>';
-  }
+  // The library reads as a list whether or not a card has been painted — same
+  // rows, same words, same order. The painting is what opening one gets you.
   return '<div class="card"' + tap + edge + '><div class="body">' +
     // The little GAMBLE WHEEL!! in the top corner — this card lives there.
     (wheelOnlyCard(c.id)
