@@ -250,8 +250,15 @@
      because a name broken in two reads as a mistake rather than a decision. */
   .arttitle {
     font-family: "Roboto Condensed", "Arial Narrow", system-ui, sans-serif;
-    font-weight: 900; font-style: italic; color: #F4F8FF;
-    letter-spacing: 0.005em; text-shadow: 0 2px 6px rgba(0, 0, 0, 0.55);
+    font-weight: 900; font-style: italic; letter-spacing: 0.005em;
+    /* Cut out of the card rather than shaded across: solid white, a hard dark
+       edge around every letter, and a shadow under it. A gradient down the
+       letters greys their middles, which on a name this size reads as blurred
+       rather than struck.  */
+    color: #FFFFFF;
+    -webkit-text-stroke: 0.028em rgba(3, 8, 20, 0.9);
+    paint-order: stroke fill;
+    text-shadow: 0 0.05em 0.02em rgba(0, 0, 0, 0.75), 0 0 0.22em rgba(0, 0, 0, 0.5);
   }
   .arttitle > div { white-space: nowrap; }
   /* A rule under the name, so the first line of the rules is not read as part
@@ -277,7 +284,16 @@
   }
   .arttiming > div { white-space: nowrap; }
   /* What kind of card it is, in the bar the frame leaves for it. */
-  .artkind { color: #05ACFC; font-weight: 900; letter-spacing: 0.06em; }
+  /* The kind gets the same striking, in its own colour rather than chrome —
+     the tier already owns a colour and this is the one place to spend it. */
+  .artkind {
+    font-family: "Roboto Condensed", "Arial Narrow", system-ui, sans-serif;
+    font-weight: 900; font-style: italic; letter-spacing: 0.06em;
+    color: #29BEFF;
+    -webkit-text-stroke: 0.03em rgba(2, 12, 28, 0.9);
+    paint-order: stroke fill;
+    text-shadow: 0 0.05em 0.02em rgba(0, 0, 0, 0.75), 0 0 0.2em rgba(0, 0, 0, 0.5);
+  }
   .artkind > div { white-space: nowrap; }
   .artwords {
     position: absolute; display: flex; align-items: center; justify-content: center;

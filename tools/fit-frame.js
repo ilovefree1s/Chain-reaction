@@ -135,10 +135,18 @@ const WW = wr - wl + 1, WH2 = wb - wt + 1;
 // ---- the empty bar at the foot, where the kind goes ----
 // Measured on its own: the bar's ground is a different brightness from the
 // window's, and on some frames it is the darker of the two.
-const barY = Math.round(FH * 0.90), barX = Math.round(FW * 0.18);
+// Halfway between the foot of the window and the foot of the card, which is
+// where that bar is on every frame so far. A fixed fraction of the height does
+// not do: one frame carries its bar high enough that 90% lands underneath it,
+// in the border, and the measurement then runs the width of the card.
+const barY = Math.round((wb + FH) / 2), barX = Math.round(FW * 0.18);
+// Sampled around the probe itself rather than at a fixed spot lower down. On a
+// frame that carries its bar high, a fixed patch sits below it and catches the
+// bar's own lit border, which puts the threshold above that border — and the
+// measurement then walks straight through it and off the card.
 const bgBar = backgroundLevel(
-  Math.round(FW * 0.13), Math.round(FW * 0.23),
-  Math.round(FH * 0.875), Math.round(FH * 0.925));
+  Math.max(0, barX - 40), Math.min(FW, barX + 40),
+  Math.max(0, barY - 25), Math.min(FH, barY + 25));
 const barEdge = Math.max(75, Math.round(bgBar + 45));
 const insideBar = (x, y) => lum(x, y) < barEdge;
 const bl = edgeFrom(barX, -1, barY, "x", insideBar);
