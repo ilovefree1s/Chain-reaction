@@ -73,3 +73,15 @@ Windows' filesystem converter — so this exists to avoid needing one.
 8-bit RGB and RGBA only, which is what the card art is. Rows are filtered five
 ways and the flattest kept, so a re-encode does not come out bigger than what
 went in.
+
+## fit-art.js
+
+Prepares a painted card: trims it to its own edge, finds the empty panel left
+for the card's words, and records both.
+
+    node tools/fit-art.js 57 app/src/main/res/drawable/lonewolf.png
+    node tools/fit-art.js 57 <file> --check    # measure, write nothing
+
+Writes `drawable-nodpi/card_NN.png` and an entry in `web/art-boxes.json`. The
+trim matters because the tier glow is cast from the picture's own shape, so it
+has to sit against the painted edge rather than against a transparent surround.
