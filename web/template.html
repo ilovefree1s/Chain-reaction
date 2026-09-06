@@ -351,7 +351,10 @@
   @keyframes facein-left { from { transform: translateX(-60%) rotate(-6deg); opacity: 0; } }
   /* Discard and Close share a line: two ways out of the card, neither of them
      the thing you came to do, so they split the width Play does not need. */
-  .facepair { display: flex; gap: 10px; margin-top: 12px; }
+  /* Well clear of the card. The tier glow reaches a long way past the edge —
+     55px of blur on a painted card, more on a drawn one — and at twelve pixels
+     the button was sitting inside the bloom. */
+  .facepair { display: flex; gap: 10px; margin-top: 34px; }
   .facepair button { flex: 1; margin: 0; }
   .facenav { display: flex; align-items: center; justify-content: center; gap: 26px;
              margin-top: 10px; color: #5E6C88; font-weight: 700; font-size: 18px; }
@@ -4973,7 +4976,10 @@ function renderFaceModal() {
   return '<div class="modal facemodal"><div class="faceinner" style="' +
     rarityVars(rarityOf(c)) + '">' +
     '<div class="faceslide' + enter + '">' + face + '</div>' + nav + acts +
-    (closeUsed ? "" : '<div class="facepair">' + closeBtn + '</div>') + '</div></div>';
+    (closeUsed
+      ? ""
+      : '<div class="facepair"><button class="big primary" data-act="closeView">' +
+        'Close</button></div>') + '</div></div>';
 }
 
 /* Step the enlarged view to a neighbouring hand card. Clamped at the ends. */
