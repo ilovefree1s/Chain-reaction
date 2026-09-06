@@ -93,8 +93,10 @@ let left = midX, right = midX;
 while (left > 0 && cl(left - 1, midY) < 60) left--;
 while (right < cut.width - 1 && cl(right + 1, midY) < 60) right++;
 
-// A little air inside the painted border, so the words never touch it.
-const padX = Math.round((right - left + 1) * 0.04), padY = Math.round((bot - top + 1) * 0.08);
+// Just enough air that the words never touch the painted border. Kept mean:
+// these panels are shallow, and every pixel given away here comes straight
+// off the type size, which is what has to be readable on a tee pad.
+const padX = Math.round((right - left + 1) * 0.03), padY = Math.round((bot - top + 1) * 0.035);
 const box = {
   x: +((left + padX) / cut.width).toFixed(4),
   y: +((top + padY) / cut.height).toFixed(4),

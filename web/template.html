@@ -246,7 +246,10 @@
   .artwrap { position: relative; container-type: inline-size; }
   .artwords {
     position: absolute; display: flex; align-items: center; justify-content: center;
-    text-align: center; line-height: 1.34; color: #E9F1FF; font-weight: 600;
+    text-align: center; line-height: 1.24; color: #E9F1FF; font-weight: 600;
+    /* Even lines rather than four full ones and a single word marooned on the
+       fifth. Where it isn't supported the text simply wraps as it always did. */
+    text-wrap: balance;
     letter-spacing: 0.01em; overflow: hidden; pointer-events: none;
     /* The panel is painted dark but not flat — a whisper of shadow keeps the
        words off the texture without putting a box around them. */
@@ -1075,7 +1078,7 @@ var ART_BOXES = /*__ART_BOXES__*/;
  */
 function startingSize(box, words) {
   var w = box.w * 100, h = box.h * 100;
-  var size = Math.sqrt((w * h) / (0.67 * Math.max(1, words.length)));
+  var size = Math.sqrt((w * h) / (0.62 * Math.max(1, words.length)));
   return Math.max(1.4, Math.min(6, size));
 }
 /* What the fit actually came out at, per card, so a reopened card is right on
@@ -1100,7 +1103,10 @@ function fitArtWords() {
     for (var k = 0; k < 11; k++) {
       var mid = (lo + hi) / 2;
       el.style.fontSize = (mid / 100 * cardW).toFixed(2) + "px";
-      if (inner.scrollHeight <= el.clientHeight + 1) lo = mid; else hi = mid;
+      // Two pixels of slack rather than none: balanced wrapping re-breaks the
+      // lines after this measurement, and a fit that was exact beforehand comes
+      // out a line-fragment too tall afterwards — clipped, with overflow hidden.
+      if (inner.scrollHeight <= el.clientHeight - 2) lo = mid; else hi = mid;
     }
     ART_FIT[id] = lo;
     el.style.fontSize = lo.toFixed(2) + "cqw";
