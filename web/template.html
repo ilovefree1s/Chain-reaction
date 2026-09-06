@@ -241,6 +241,18 @@
   .card .acts { display: flex; gap: 10px; margin-top: 14px; }
   .card.artcard { display: block; }
   .cardart { width: 100%; display: block; }
+  /* The card's own width is what the words are measured against — cqw is
+     hundredths of it — so the same markup reads right on a full-screen face
+     and on a hand tile, with nothing recalculated in between. */
+  .artwrap { position: relative; container-type: inline-size; }
+  .artwords {
+    position: absolute; display: flex; align-items: center; justify-content: center;
+    text-align: center; line-height: 1.34; color: #E9F1FF; font-weight: 600;
+    letter-spacing: 0.01em; overflow: hidden; pointer-events: none;
+    /* The panel is painted dark but not flat — a whisper of shadow keeps the
+       words off the texture without putting a box around them. */
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.75);
+  }
   .artacts { padding: 12px; }
   .artacts .acts { margin-top: 0; }
   .confirmq { margin: 14px 0 0; font-weight: 700; }
@@ -1033,6 +1045,73 @@ var BUILT_IN_COURSES = /*__COURSE_DATA__*/;
 /* Card faces present in the Android drawables, id -> asset path. Injected by
    web/build.js; empty until artwork lands. */
 var CARD_ART = /*__CARD_ART__*/;
+/* Where a painting leaves an empty panel for the card's own words, as
+   fractions of the picture. Art without one keeps whatever it has painted. */
+var ART_BOXES = /*__ART_BOXES__*/;
+
+/*
+ * A painted card with its words dropped into the panel the painting left empty.
+ *
+ * The words are the deck's, not the picture's, so rewording a card reflows it
+ * rather than sending the artist back to the easel. The text is sized in cqw —
+ * hundredths of the card's own width — so it holds its place whether the card
+ * is filling a phone or sitting in a hand tile the size of a stamp.
+ */
+/*
+ * A first guess at how big the words can be, in hundredths of the card's width.
+ *
+ * N characters at size F wrap to about NF/2W lines, and those lines stand
+ * 1.34F tall, so the panel holds them when F is around sqrt(WH/0.67N). Close
+ * enough to paint immediately; fitArtWords() then measures the real thing and
+ * corrects it, and the correction is remembered so it only happens once.
+ */
+function startingSize(box, words) {
+  var w = box.w * 100, h = box.h * 100;
+  var size = Math.sqrt((w * h) / (0.67 * Math.max(1, words.length)));
+  return Math.max(1.4, Math.min(6, size));
+}
+/* What the fit actually came out at, per card, so a reopened card is right on
+   the first frame instead of settling into place while you look at it. */
+var ART_FIT = {};
+
+/*
+ * Grows the words until the panel is full and no further. Measured rather than
+ * calculated, because a wrapped line leaves a ragged edge no formula predicts —
+ * and the answer is a ratio of the card's own width, so it holds at any size.
+ */
+function fitArtWords() {
+  var nodes = app.querySelectorAll(".artwords");
+  for (var i = 0; i < nodes.length; i++) {
+    var el = nodes[i], inner = el.firstChild;
+    var id = el.getAttribute("data-fit");
+    var wrap = el.parentNode;
+    var cardW = wrap.clientWidth;
+    // Too small to read at, or not laid out yet: leave the guess alone.
+    if (ART_FIT[id] || !cardW || cardW < 140) continue;
+    var lo = 1.4, hi = 6;
+    for (var k = 0; k < 11; k++) {
+      var mid = (lo + hi) / 2;
+      el.style.fontSize = (mid / 100 * cardW).toFixed(2) + "px";
+      if (inner.scrollHeight <= el.clientHeight + 1) lo = mid; else hi = mid;
+    }
+    ART_FIT[id] = lo;
+    el.style.fontSize = lo.toFixed(2) + "cqw";
+  }
+}
+
+function artFaceHtml(c, art, words) {
+  var img = '<img class="cardart" onload="fitArtWords()" src="' + art + '" alt="' + 
+    esc(c.name) + ". " + esc(words) + '">';
+  var box = ART_BOXES[c.id];
+  if (!box) return img;
+  var size = ART_FIT[c.id] || startingSize(box, words);
+  return '<div class="artwrap"' +
+    (box.ar ? ' style="aspect-ratio:' + box.ar + '"' : "") + '>' + img +
+    '<div class="artwords" style="left:' + (box.x * 100).toFixed(2) + '%;top:' +
+    (box.y * 100).toFixed(2) + '%;width:' + (box.w * 100).toFixed(2) + '%;height:' +
+    (box.h * 100).toFixed(2) + '%;font-size:' + size.toFixed(2) + 'cqw" data-fit="' + c.id + '">' +
+    '<div>' + cardHalves(words).map(esc).join("<br>") + '</div></div></div>';
+}
 
 /* The pickable characters, from shared/characters.json — the same file the Android
    build reads. Cosmetic only: a face and a name beside a player, no rules attached.
@@ -3282,6 +3361,7 @@ function render() {
   html += renderAlerts(); // rides over everything, on every screen
   app.innerHTML = html;
   fitMetaLines();
+  fitArtWords();
   if (secretSel) {
     var ta1 = document.getElementById("secretnames");
     if (ta1) { ta1.focus(); ta1.setSelectionRange(secretSel[0], secretSel[1]); }
@@ -4282,8 +4362,8 @@ function cardHtml(c, withActions, altText, browse) {
     : browse ? ' data-act="browseCard" data-i="' + c.id + '"' : "";
   var art = CARD_ART[c.id];
   if (art) {
-    return '<div class="card artcard"' + tap + edge + '><img class="cardart" src="' + art + '" alt="' +
-      esc(c.name) + '. ' + esc(words) + '">' +
+    return '<div class="card artcard"' + tap + edge + '>' +
+      artFaceHtml(c, art, words) +
       (altText ? '<div class="body"><p>' + esc(altText) + '</p></div>' : "") +
       (acts ? '<div class="artacts">' + acts + '</div>' : "") + '</div>';
   }
@@ -4786,7 +4866,9 @@ function renderFaceModal() {
   var face = viewWords != null
     ? cardHtml(c, false, viewWords)
     : art
-    ? '<img class="cardart" src="' + art + '" style="border-radius:18px;width:100%">'
+    // The words go in the panel the painting left for them, so this is the
+    // same picture the hand tile shows and the same words the deck holds.
+    ? artFaceHtml(c, art, c.text)
     : cardFaceSvg(c);
 
   var acts = "";

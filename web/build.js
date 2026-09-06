@@ -217,6 +217,23 @@ fs.readdirSync(artDir).sort().forEach((f) => {
 });
 
 /*
+ * ---- where a painting leaves room for the card's own words ----
+ *
+ * Art that carries its rules in the paint goes stale the moment the card is
+ * reworded. Art with an empty panel does not: the picture is the picture, the
+ * words are the deck's, and a reword reflows rather than needing repainting.
+ *
+ * The box is where that panel is, as fractions of the painted card, measured
+ * off the image itself rather than guessed. A card with art but no box here
+ * keeps whatever its painting says.
+ */
+const BOXES = path.join(root, "web", "art-boxes.json");
+const artBoxes = fs.existsSync(BOXES) ? JSON.parse(fs.readFileSync(BOXES, "utf8")) : {};
+Object.keys(artBoxes).forEach((key) => {
+  if (!cardArt[key]) problems.push(`art box for card ${key}, which has no art`);
+});
+
+/*
  * ---- card art against the card it was painted from ----
  *
  * A painted card carries its own words: LONE WOLF! has its timing across the
@@ -236,7 +253,13 @@ fs.readdirSync(artDir).sort().forEach((f) => {
  * because the corner says LEGENDARY; the id is not, because nothing draws it.
  */
 const STAMPS = path.join(root, "web", "art-stamps.json");
-const artOf = (c) => [c.name, c.text, c.timing, c.kind, c.rarity || "common"].join(" ");
+// Only what the painting itself shows. A card whose panel is left empty has
+// its words drawn by the app, so rewording it changes nothing in the picture
+// and must not stop the build — the whole point of leaving the panel empty.
+const artOf = (c) => [
+  c.name, c.timing, c.kind, c.rarity || "common",
+  artBoxes[c.id] ? "" : c.text,
+].join(" ");
 const stampOf = (c) => crypto.createHash("sha1").update(artOf(c)).digest("hex").slice(0, 12);
 const stamps = fs.existsSync(STAMPS) ? JSON.parse(fs.readFileSync(STAMPS, "utf8")) : {};
 let stampsChanged = false;
@@ -293,6 +316,7 @@ const template = fs.readFileSync(path.join(__dirname, "template.html"), "utf8");
   "/*__CARD_DATA__*/",
   "/*__COURSE_DATA__*/",
   "/*__CARD_ART__*/",
+  "/*__ART_BOXES__*/",
   "/*__CHARACTER_DATA__*/",
   "/*__CHARACTER_ART__*/",
   "__MENU_IMAGE__",
@@ -326,6 +350,7 @@ const html = template
   .replace("/*__CARD_DATA__*/", JSON.stringify(data))
   .replace("/*__COURSE_DATA__*/", JSON.stringify(courses))
   .replace("/*__CARD_ART__*/", JSON.stringify(cardArt))
+  .replace("/*__ART_BOXES__*/", JSON.stringify(artBoxes))
   .replace("/*__CHARACTER_DATA__*/", JSON.stringify(characters))
   .replace("/*__CHARACTER_ART__*/", JSON.stringify(characterArt))
   .replace("__MENU_IMAGE__", menuImage)
