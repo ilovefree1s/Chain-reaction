@@ -85,3 +85,12 @@ for the card's words, and records both.
 Writes `drawable-nodpi/card_NN.png` and an entry in `web/art-boxes.json`. The
 trim matters because the tier glow is cast from the picture's own shape, so it
 has to sit against the painted edge rather than against a transparent surround.
+
+## overlay.js
+
+Lays one PNG over another, scaled and centred, straight alpha.
+
+    node tools/overlay.js <base.png> <over.png> <cx> <cy> <size> [out.png]
+
+For swapping a badge on a painted card. Give an `out.png` and look at the result
+before overwriting the card itself.
