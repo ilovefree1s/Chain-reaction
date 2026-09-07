@@ -137,6 +137,7 @@ object CardDeck {
         GameCard(58, "Before tee shot", CardKind.ATTACK, "PUT EM ON TILT", "Force an opponent to play the entire hole with the TILT!"),
         GameCard(59, "Before tee shot", CardKind.ATTACK, "DESTINATION FUCKED!", "Force an opponent to play the entire hole with the \"beater\". Whoever played the card gets 30 seconds to abuse the disc before they tee off. You must tee off within 5 seconds of being handed the disc, and ZERO attempts to repair it are allowed. Otherwise +1 stroke."),
         GameCard(60, "Before all tee", CardKind.ATTACK, "The Curd!", "Everyone rolls 2 dice, including whoever played this card. The lowest roll uses the cottage cheese lid as their driver this hole."),
+        GameCard(61, "Before tee shot", CardKind.ATTACK, "MIND IF I TAKE THIS ONE?", "Throw the target opponent's drive for them on this hole. (No throwing backwards is the only rule.)"),
     )
 
     private val byId: Map<Int, GameCard> = ALL.associateBy { it.id }

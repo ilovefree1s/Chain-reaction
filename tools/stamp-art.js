@@ -23,7 +23,16 @@ const ART = path.join(root, "app", "src", "main", "res", "drawable-nodpi");
 const spec = fs.readFileSync(path.join(root, "BUILD_SPEC.md"), "utf8");
 const cards = JSON.parse(spec.match(/```json\s*([\s\S]*?)```/)[1]).cards;
 
-const artOf = (c) => [c.name, c.text, c.timing, c.kind, c.rarity || "common"].join(" ");
+// Must stay the same formula the build checks against, or a re-stamp writes
+// something it will never accept. What the painting itself shows: the rules
+// text only when the picture carries it, since a card with an empty panel has
+// its words drawn by the app and can be reworded freely.
+const BOXES = path.join(root, "web", "art-boxes.json");
+const artBoxes = fs.existsSync(BOXES) ? JSON.parse(fs.readFileSync(BOXES, "utf8")) : {};
+const artOf = (c) => [
+  c.name, c.timing, c.kind, c.rarity || "common",
+  artBoxes[c.id] ? "" : c.text,
+].join(" ");
 const stampOf = (c) => crypto.createHash("sha1").update(artOf(c)).digest("hex").slice(0, 12);
 
 const painted = fs.readdirSync(ART)
