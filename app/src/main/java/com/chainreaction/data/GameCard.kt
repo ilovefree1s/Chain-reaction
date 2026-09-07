@@ -99,7 +99,7 @@ object CardDeck {
         GameCard(20, "After throw", CardKind.DUAL, "Doesn't Look Like a Penalty to Me", "Play on a shot that missed a mando or went OB. Instead of actually being OB, in a hazard, or past a mando, it can just be played where it lies, with no penalty at all."),
         GameCard(21, "After throw", CardKind.SELF, "Don't Nice Me!", "If any player says any form of \"nice\" as your disc is in flight and it hits a tree, you can move to where your disc landed and throw again for a free stroke."),
         GameCard(22, "Before tee shot", CardKind.GROUP, "GAMBLE WHEEL!!", "Free spin on the GAMBLE WHEEL!! The name doesn't matter — you choose who gets the benefit or the punishment."),
-        GameCard(23, "Before shot", CardKind.ATTACK, "Easily Distracted?", "Everyone can do anything they want to distract a player while they are about to putt."),
+        GameCard(23, "Before shot", CardKind.ATTACK, "Easily Distracted?", "Everyone can do anything they want to distract a player while they are putting, but CANNOT touch the player or the disc being putted."),
         GameCard(24, "After a hole", CardKind.SELF, "FIVE FOR YOU, YOU, AND YOU!", "Play after you birdie a hole nobody else birdied. Everyone else owes five dollars to the pot!"),
         GameCard(25, "After throw", CardKind.SELF, "Foot Wedge!", "Move your own lie up to 10 paces (30 ft) in any direction."),
         GameCard(26, "After throw", CardKind.SELF, "GAMBLE!", "Take a second chance at a putt you just missed. Make it and it was a free mulligan. Miss and the second stroke counts too — play whichever disc landed farthest away, then add +1 stroke after the hole ends."),
