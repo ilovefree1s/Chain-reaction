@@ -992,14 +992,20 @@
   /* Build marker. Menu orange — the Play button's colour — so it reads at a
      glance when two phones are held together. */
   .ver {
+    display: flex; align-items: center; justify-content: center; gap: 5px;
+    width: 100%; background: none; border: 0; cursor: pointer;
     text-align: center; font-size: 15px; font-weight: 800; letter-spacing: 1px;
-    color: #F7941E;
+    font-family: inherit; color: #F7941E;
     padding: 10px 0 calc(10px + env(safe-area-inset-bottom));
   }
+  .ver svg { display: block; opacity: 0.85; }
+  /* Turning while the check is out — the same gesture as the arrow itself. */
+  .verspin { display: block; animation: verspin 900ms linear infinite; }
+  @keyframes verspin { to { transform: rotate(360deg); } }
   /* On the menu it sits alone in the bottom-right corner, off the artwork. */
   .menu .ver {
     position: absolute; left: auto; right: 14px; bottom: calc(env(safe-area-inset-bottom) + 8px);
-    z-index: 3; padding: 0; line-height: 20px; font-size: 15px;
+    z-index: 3; padding: 0; line-height: 20px; font-size: 15px; width: auto;
   }
 
   nav {
@@ -1374,11 +1380,63 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.366 · 6 Sep 21:52";
+var APP_VERSION = "v1.368 · 6 Sep 21:54";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
-  // the lobby's stale-phone check. Opening the app fetches fresh anyway.
-  return '<div class="ver">' + esc(APP_VERSION.split(" · ")[0]) + '</div>';
+  // the lobby's stale-phone check. The arrow beside it goes and looks for a
+  // newer build, which is the only way off a cached one short of uninstalling.
+  var arrow = '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" ' +
+    'stroke="currentColor" stroke-width="2.6" stroke-linecap="round" ' +
+    'stroke-linejoin="round"><path d="M12 3v11"/><path d="M7 10l5 5 5-5"/>' +
+    '<path d="M4 20h16"/></svg>';
+  return '<button class="ver" data-act="getUpdate" title="Check for an update">' +
+    (updating ? '<span class="verspin">' + arrow + '</span>' : arrow) +
+    '<span>' + esc(APP_VERSION.split(" · ")[0]) + '</span></button>';
+}
+
+/* Set while the check is out, so the arrow can say it is working. */
+var updating = false;
+
+/*
+ * Goes and looks for a newer build, and reloads into it if there is one.
+ *
+ * The service worker is asked to check rather than the caches being emptied.
+ * A build names its caches after its own contents, so a check downloads only
+ * what actually changed; emptying would refetch sixty megabytes of unchanged
+ * artwork over course wifi to pick up a reworded card.
+ *
+ * Without a service worker at all — a browser that blocks them, or a first
+ * visit that has not registered yet — a hard reload is the whole of it.
+ */
+function checkForUpdate() {
+  if (updating) return;
+  updating = true;
+  render();
+  var done = false;
+  function finish(found) {
+    if (done) return;
+    done = true;
+    if (found) { location.reload(); return; }
+    updating = false;
+    localNote("You are on the newest version.", "Up to date");
+    render();
+  }
+  // However it goes, the arrow stops spinning: a check that hangs on a dead
+  // connection must not leave the button looking busy for the rest of the round.
+  setTimeout(function () { finish(false); }, 12000);
+  if (!navigator.serviceWorker) { location.reload(); return; }
+  navigator.serviceWorker.getRegistrations().then(function (regs) {
+    if (!regs.length) { location.reload(); return; }
+    var waited = 0;
+    regs.forEach(function (reg) {
+      // A worker that turns up installing or waiting IS the new build.
+      reg.addEventListener("updatefound", function () { waited++; });
+      reg.update().then(function () {
+        if (reg.installing || reg.waiting || waited) finish(true);
+        else finish(false);
+      }).catch(function () { finish(false); });
+    });
+  }).catch(function () { finish(false); });
 }
 
 /* Artwork, inlined as data URIs by web/build.js so this stays one file. */
@@ -8058,6 +8116,7 @@ app.addEventListener("click", function (e) {
       break;
 
     // ---- menu navigation ----
+    case "getUpdate": checkForUpdate(); break;
     case "menu": screen = "menu"; render(); break;
     case "play":
       if (state) {
