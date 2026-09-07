@@ -149,7 +149,7 @@ Suggested palette: deep pine ground (`#0C1A14`), panels (`#132A21`), muted sage 
     { "id": 12, "timing": "Any time", "kind": "attack", "rarity": "rare", "name": "Can I Borrow This Card?", "text": "Pick anyone you want. Look through their cards and play one on anyone." },
     { "id": 13, "timing": "After card", "kind": "react", "rarity": "epic", "name": "Change Is Good", "text": "Hijack a card as it's played and re-aim it at the player of your choice — including the player who played it." },
     { "id": 14, "timing": "Before shot", "kind": "attack", "name": "CHRIS SPECIAL!", "text": "Force an opponent to throw a tomahawk on the upcoming drive or approach." },
-    { "id": 15, "timing": "Before shot", "kind": "attack", "rarity": "uncommon", "name": "Close 'Em", "text": "Force an opponent to take the next putt with their eyes closed." },
+    { "id": 15, "timing": "Before shot", "kind": "attack", "name": "Close 'Em", "text": "Force an opponent to take the next putt with their eyes closed." },
     { "id": 16, "timing": "Before tee shot", "kind": "attack", "rarity": "uncommon", "name": "Code Words!", "text": "An opponent can't say \"yes\" or \"no\" this hole. 1 stroke penalty every time they do. ANY variation of the words yes or no counts." },
     { "id": 17, "timing": "Before tee shot", "kind": "attack", "name": "Jomez Commentator", "text": "Another player has to announce every shot you take this hole like they are a commentator. If they forget one, they take +1 stroke." },
     { "id": 18, "timing": "Before tee shot", "kind": "attack", "rarity": "epic", "name": "Dealer's Choice!", "text": "You pick the discs every other player tees off with this hole." },
