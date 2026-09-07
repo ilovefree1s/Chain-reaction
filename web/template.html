@@ -464,6 +464,12 @@
      hit without aiming and ruled off so it reads as the way out rather than part
      of the message. Everything left of that rule opens the card. */
   .alert { padding-right: 60px; }
+  /* The beater's question sits under the banner's own words, with a rule
+     above it: it is a different thing from what the banner is telling you. */
+  .beaterask { margin-top: 10px; padding-top: 10px;
+               border-top: 1px solid rgba(255, 138, 30, 0.3); }
+  .beaterask .acts { display: flex; gap: 8px; margin-top: 8px; }
+  .beaterask .big { flex: 1; margin: 0; min-height: 42px; font-size: 15px; }
   .alertx {
     position: absolute; top: 0; right: 0; bottom: 0; width: 52px;
     display: flex; align-items: center; justify-content: center;
@@ -1118,6 +1124,25 @@ var LONE_WOLF = (function () {
   var m = CARDS.filter(function (c) { return c.name === "LONE WOLF!"; });
   return m.length ? m[0].id : -1;
 })();
+/* The card that hands somebody a beater and everybody else thirty seconds
+   with it. Found by name for the same reason the wolf is: ids move. */
+var BEATER = (function () {
+  var m = CARDS.filter(function (c) { return c.name === "DESTINATION FUCKED!"; });
+  return m.length ? m[0].id : -1;
+})();
+/*
+ * Whoever has to throw the disc, and so is the one person at the table with no
+ * claim on wrecking it first. On the wheel the spinner is the one stuck with
+ * it; in hand it is whoever the card was played on.
+ */
+function beaterVictim(a) { return a.wheel ? a.who : a.target; }
+function myClaimOnTheBeater(a) {
+  if (!state || a.card !== BEATER) return false;
+  var victim = beaterVictim(a);
+  if (!victim) return false;
+  var me = (state.players[state.meIndex] || "").trim().toLowerCase();
+  return victim.trim().toLowerCase() !== me;
+}
 var MIN_PLAYERS = 3, MAX_PLAYERS = 4, DEFAULT_PAR = 3;
 var PAR_CYCLE = [3, 4, 5];
 
@@ -2735,6 +2760,22 @@ function alertX(eid) {
     '" aria-label="Dismiss">&times;</button>';
 }
 
+/*
+ * The question the beater asks everyone who is not throwing it: who gets the
+ * thirty seconds? Only ever on the phones with a claim — the player stuck with
+ * the disc is not in the running to wreck it.
+ */
+function beaterAsk(a) {
+  if (!myClaimOnTheBeater(a)) return "";
+  return '<div class="beaterask">' +
+    '<div class="onwho">Who gets the 30 seconds with it?</div>' +
+    '<div class="acts">' +
+    '<button class="big raised" data-act="beaterPass" data-eid="' + esc(a.eid) + '">' +
+    'Pass</button>' +
+    '<button class="big primary" data-act="beaterSettle" data-eid="' + esc(a.eid) + '">' +
+    'Settle it</button></div></div>';
+}
+
 function renderAlerts() {
   if (!liveAlerts.length) return "";
   return '<div class="alerts">' + liveAlerts.map(function (a) {
@@ -2763,6 +2804,7 @@ function renderAlerts() {
         '<div class="who">' + esc(a.who || "Someone") + ' spun the wheel</div>' +
         '<div class="what">' + esc(wc.name) + fate + '</div>' +
         (sub ? '<div class="onwho">' + esc(sub) + '</div>' : "") +
+        beaterAsk(a) +
         '</div>';
     }
     var c = BY_ID[a.card];
@@ -2781,6 +2823,7 @@ function renderAlerts() {
           ? '<div class="onwho">' + esc(a.target) + ' &mdash; ' +
             esc(ALERT_LINES[a.card].others) + '</div>'
         : a.target ? '<div class="onwho">on ' + (a.you ? "YOU" : esc(a.target)) + '</div>' : "") +
+      beaterAsk(a) +
       '</div>';
   }).join("") + '</div>';
 }
@@ -7970,6 +8013,20 @@ app.addEventListener("click", function (e) {
       break;
     // Tapping a banner answers "what does that card do?" — the face opens,
     // and the banner is done arguing for attention.
+    // Out of the running: the banner stays for the others, this phone is done.
+    case "beaterPass": {
+      var pe = el.getAttribute("data-eid");
+      liveAlerts = liveAlerts.filter(function (a) { return a.eid !== pe; });
+      render();
+      break;
+    }
+    // Settle it the way the table settles everything else.
+    case "beaterSettle": {
+      var se = el.getAttribute("data-eid");
+      liveAlerts = liveAlerts.filter(function (a) { return a.eid !== se; });
+      openSecretWheel();
+      break;
+    }
     case "alertTap": {
       var eid = el.getAttribute("data-eid");
       var hit = liveAlerts.filter(function (a) { return a.eid === eid; })[0];
