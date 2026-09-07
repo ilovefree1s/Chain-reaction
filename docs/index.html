@@ -1374,7 +1374,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.357 · 6 Sep 21:26";
+var APP_VERSION = "v1.358 · 6 Sep 21:33";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. Opening the app fetches fresh anyway.
@@ -2539,6 +2539,13 @@ function liveWheel(p) {
   if (p.spin) return; // this phone's own spin, already turning
   // The moment the spin is bought, before anything lands: heads up, banner up.
   if (p.spinning) {
+    // Already watching it turn: the banner would be telling you about the
+    // thing you are looking at. Keep the wheel held and say nothing.
+    if (wheel && wheel.mirror && !mine) {
+      holdWheel(who);
+      liveRefresh();
+      return;
+    }
     // An update to a banner already up (the name landed) swaps it in quietly;
     // only the first heads-up dings and buzzes.
     var had = liveAlerts.some(function (a) { return a.spinStart && a.who === who; });
@@ -4796,6 +4803,20 @@ function settleMirrorSpin(kind, w) {
     : "done";
 }
 
+/* Lets a watcher out of a wheel that has stopped saying anything — a spinner
+   who walked off mid-spin must not pin the rest of the table to a screen. */
+var mirrorGiveUp = null;
+function mirrorWatchdog() {
+  if (mirrorGiveUp) clearTimeout(mirrorGiveUp);
+  mirrorGiveUp = setTimeout(function () {
+    if (wheel && wheel.mirror) {
+      wheel = null;
+      localNote("The spin went quiet, so the wheel closed itself.", "Wheel closed");
+      render();
+    }
+  }, 120000);
+}
+
 function openMirrorWheel(who, w) {
   if (!state || !w || !Array.isArray(w.cardLabels)) return;
   var card = BY_ID[w.card];
@@ -4812,6 +4833,7 @@ function openMirrorWheel(who, w) {
     fateLabels: w.fateLabels || [], fateIdx: null, fateRot: 0, fateGood: null,
     spinning: false
   };
+  mirrorWatchdog();
   render();
 }
 
@@ -4822,6 +4844,7 @@ function openMirrorWheel(who, w) {
  */
 function runMirrorSpin(kind, w) {
   if (!wheel || !wheel.mirror || wheel.spinning) return;
+  mirrorWatchdog(); // it is still alive; start the clock again
   if (typeof w.rot !== "number") return;
   // The stage has to be showing this wheel before it can be seen to turn.
   if (kind === "card" && wheel.stage === "idle") wheel.stage = "nameDone";
@@ -5678,9 +5701,14 @@ function renderWheel() {
       '<button class="big raised" data-act="wheelKeep">Keep spinning</button>' +
       '<button class="big primary" data-act="wheelCloseYes">Close anyway</button></div></div>';
   } else {
-    html += '<button class="big quiet" data-act="closeWheel">' +
-      (watching ? "Look away" : stage === "done" ? "Done" : "Close") +
-      "</button></div>";
+    // A watched wheel offers no way out until it has landed: joining a spin
+    // is joining it, and half a spin is worse than none. The spinner's own
+    // wheel keeps its Close, because they are the one who can call it off.
+    html += (watching && stage !== "done"
+      ? ""
+      : '<button class="big quiet" data-act="closeWheel">' +
+        (watching ? "Done" : stage === "done" ? "Done" : "Close") + "</button>") +
+      "</div>";
   }
   return html;
 }
