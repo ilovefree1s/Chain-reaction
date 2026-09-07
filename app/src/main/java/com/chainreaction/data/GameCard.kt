@@ -94,7 +94,7 @@ object CardDeck {
         GameCard(15, "Before shot", CardKind.ATTACK, "Close 'Em", "Force an opponent to take the next putt with their eyes closed."),
         GameCard(16, "Before tee shot", CardKind.ATTACK, "Code Words!", "An opponent can't say \"yes\" or \"no\" this hole. 1 stroke penalty every time they do. ANY variation of the words yes or no counts."),
         GameCard(17, "Before tee shot", CardKind.ATTACK, "Jomez Commentator", "Another player has to announce every shot you take this hole like they are a commentator. If they forget one, they take +1 stroke."),
-        GameCard(18, "Before tee shot", CardKind.ATTACK, "Dealer's Choice!", "You pick the discs every other player tees off with this hole."),
+        GameCard(18, "Before tee shot", CardKind.ATTACK, "Dealer's Choice!", "Pick the discs every player tees off with this hole. (From their own bag.)"),
         GameCard(19, "Before tee shot", CardKind.DUAL, "Do Not Pass Go", "On another player: whoever has the shortest drive on this hole gets no free mulligan to bank while everyone else does. On yourself: play after everyone tees — if you have the shortest drive, throw your 2nd shot with the person that had the farthest drive."),
         GameCard(20, "After throw", CardKind.DUAL, "Doesn't Look Like a Penalty to Me", "Play on a shot that missed a mando or went OB. Instead of actually being OB, in a hazard, or past a mando, it can just be played where it lies, with no penalty at all."),
         GameCard(21, "After throw", CardKind.SELF, "Don't Nice Me!", "If any player says any form of \"nice\" as your disc is in flight and it hits a tree, you can move to where your disc landed and throw again for a free stroke."),
