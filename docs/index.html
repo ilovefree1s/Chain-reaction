@@ -1421,7 +1421,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.401 · 7 Sep 15:28";
+var APP_VERSION = "v1.402 · 7 Sep 15:31";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. The arrow beside it goes and looks for a
@@ -5299,6 +5299,7 @@ var SHARED_RULES = [
     (CARDS.length - (DATA.wheelOnly || []).length) +
     "-card deck. Duplicates across players are expected and fine. This phone only tracks your deck."],
   ["wheel", "GAMBLE WHEEL!", "Gamble wheel is top priority and cannot be overridden with a played card."],
+  ["crown", "Legendaries can't be stopped", "Nothing touches a legendary's effect. No Way, UNO REVERSO and Change Is Good all bounce off it, and so does everything else in the deck. Once a legendary is played, it happens."],
   // The order two cards land in is not something either card can answer on
   // its own, and every pair asks it again. One rule, up front.
   ["scales", "When two cards clash", "The rarer card wins — legendary over epic, epic over rare, rare over uncommon, uncommon over common. Two cards of the same rarity, and the one played later wins. Cancels and reverses are the exception — they work on anything but a legendary. The GAMBLE WHEEL still beats the lot."],
@@ -5392,6 +5393,7 @@ var NEON_ICONS = {
   people: '<circle cx="8.5" cy="8.5" r="3"/><circle cx="15.5" cy="8.5" r="3"/><path d="M3.5 20a5 5 0 0 1 10 0"/><path d="M10.5 20a5 5 0 0 1 10 0"/>',
   scales: '<path d="M12 3v15M8 20h8M5 6h14"/><path d="M5 6l-2.5 5h5z"/><path d="M19 6l-2.5 5h5z"/>',
   cap: '<path d="M2 9.5L12 5l10 4.5L12 14z"/><path d="M6.5 11.5v4.5c0 1.8 11 1.8 11 0v-4.5"/><path d="M22 9.5v5"/>',
+  crown: '<path d="M3 7.5l4 4 5-6.5 5 6.5 4-4-1.8 11.5H4.8z"/>',
   gift: '<rect x="3" y="10" width="18" height="11"/><path d="M12 10v11M3 10h18"/><circle cx="8" cy="6.5" r="2.6"/><circle cx="16" cy="6.5" r="2.6"/>',
   wheel: '<circle cx="12" cy="12" r="9.5"/><circle cx="12" cy="12" r="1.8" fill="#4DC3FF" stroke="none"/><path d="M12 12V2.5M12 12v9.5M12 12H2.5M12 12h9.5M12 12l6.7-6.7M12 12l6.7 6.7M12 12l-6.7 6.7M12 12l-6.7-6.7"/>'
 };

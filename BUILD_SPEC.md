@@ -19,6 +19,7 @@ If a PWA is easier to sideload, that's acceptable — but it must work offline, 
 - **Each player has their own 60-card deck**, shuffled independently. Duplicate cards across players are expected and fine.
 - **Played and discarded cards** go to that player's own discard pile. Reshuffle the discard back into the deck if the deck ever empties.
 - **The GAMBLE WHEEL!! outranks everything.** A wheel result is top priority and cannot be overridden by a played card.
+- **Legendaries cannot be stopped.** Nothing in the deck touches a legendary's effect — No Way, UNO REVERSO and Change Is Good all bounce off it, and so does everything else. Once a legendary is played, it happens.
 - **When two cards clash, the rarer one wins.** Legendary over epic, epic over rare, rare over uncommon, uncommon over common. Two cards of the same rarity, and the one played later wins. Cancels and reverses are the exception — they work on anything but a legendary. The wheel still outranks all of it.
 - **A lie is where the disc lands after a throw.** It can be moved with cards, but the final say on the lie goes to the rarest card type; ties are broken by whoever plays their card last.
 - **Card rarity.** Five tiers — common, uncommon, rare, epic, legendary — each rarer than the last and each with its own colour on the face. A card carries a `rarity` field only when it is not common; anything without one is common. Rarity is not a restriction: every card is in every deck exactly once. It sets how likely that card is to be the one a draw hands you.
