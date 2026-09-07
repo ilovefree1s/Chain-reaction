@@ -2483,6 +2483,15 @@ function wheelHeldByOther() {
 
 function liveWheel(p) {
   var who = typeof p.name === "string" ? p.name : "";
+  var mine = state && who &&
+    who.trim().toLowerCase() === (state.players[state.meIndex] || "").trim().toLowerCase();
+  // A spin in progress, mirrored: the same slices, turning the same way. Never
+  // on the spinner's own phone, which is already turning the real one.
+  if (p.spin && !mine && wheel && wheel.mirror) {
+    runMirrorSpin(p.spin, p);
+    return;
+  }
+  if (p.spin) return; // a spin for a wheel this phone is not watching
   // The moment the spin is bought, before anything lands: heads up, banner up.
   if (p.spinning) {
     // An update to a banner already up (the name landed) swaps it in quietly;
@@ -2499,11 +2508,19 @@ function liveWheel(p) {
     holdWheel(who);
     // Safety net: a spinner who walks away mid-wheel shouldn't pin a banner forever.
     setTimeout(function () { dropAlert(eid); }, 90000);
+    // And put their wheel on this screen, so the table watches it land rather
+    // than reading about it afterwards.
+    if (p.open && !mine && !wheel) openMirrorWheel(who, p.open);
     liveRefresh();
     return;
   }
   // The spinner closed the wheel without a result — take the banner down.
-  if (p.cancel) { holdWheel(null); dropSpinStart(who); liveRefresh(); return; }
+  if (p.cancel) {
+    holdWheel(null); dropSpinStart(who);
+    if (wheel && wheel.mirror) wheel = null;
+    liveRefresh();
+    return;
+  }
   var c = BY_ID[p.card];
   if (!c) return; // an id this build doesn't know
   holdWheel(null); // landed: the wheel is free again
@@ -2521,6 +2538,13 @@ function liveWheel(p) {
   if (state && (state.wheelUsed || []).indexOf(c.id) === -1) {
     state.wheelUsed = (state.wheelUsed || []).concat([c.id]);
     save(state);
+  }
+  // The mirrored wheel has said everything it has to say. It stays a moment so
+  // the last slice is read, then gets out of the way of the result banner.
+  if (wheel && wheel.mirror) {
+    setTimeout(function () {
+      if (wheel && wheel.mirror) { wheel = null; render(); }
+    }, 2200);
   }
   // LONE WOLF! howls on every phone; everything else gets the usual rattle.
   if (c.id === LONE_WOLF) playWolfSound(sfxVolume()); else playMenuSound(sfxVolume());
@@ -4437,10 +4461,7 @@ function renderWheelCost() {
 function openWheelNow(free) {
   // The table hears the wheel the second it's bought — the cards are already
   // discarded (or GAMBLE WHEEL!! already played), so this moment is committed.
-  if (live) {
-    liveCast("wheel", { name: state.players[state.meIndex], spinning: true });
-    holdWheel(state.players[state.meIndex]);
-  }
+  if (live) holdWheel(state.players[state.meIndex]);
   // What rides the wheel is the pool MINUS everything that already landed
   // this round — a settled result retires its card on every phone, so the
   // wheel shrinks identically for the whole table as the round goes on.
@@ -4480,7 +4501,106 @@ function openWheelNow(free) {
     fateLabels: fateLabels, fateIdx: null, fateRot: 0, fateGood: null,
     spinning: false
   };
+  // Sent whole, after it is built: the slices are this phone's remaining pool,
+  // and a phone that missed a result has a different pool. Send the slices
+  // themselves and there is nothing for the other phones to work out — they
+  // turn the wheel this phone is turning.
+  if (live) {
+    liveCast("wheel", {
+      name: state.players[state.meIndex], spinning: true,
+      open: {
+        stage: wheel.stage, free: wheel.free, card: winner.id,
+        nameLabels: nameLabels, cardLabels: wheel.cardLabels,
+        cardTints: wheel.cardTints, fateLabels: fateLabels,
+        isDual: wheel.isDual
+      }
+    });
+  }
   render();
+}
+
+/*
+ * The same wheel on a phone that is not spinning it: every slice as sent, and
+ * not one button. It turns when the spinner turns theirs and closes when the
+ * result lands.
+ */
+function openMirrorWheel(who, w) {
+  if (!state || !w || !Array.isArray(w.cardLabels)) return;
+  var card = BY_ID[w.card];
+  if (!card) return; // a card this build does not know
+  wheel = {
+    mirror: true, spinner: who,
+    stage: w.stage === "nameDone" ? "nameDone" : "idle",
+    free: !!w.free, card: card, name: null,
+    nameLabels: w.nameLabels || [], nameSeg: null, nameRot: 0,
+    cardLabels: w.cardLabels, cardTints: w.cardTints || [],
+    cardIdx: null, cardRot: 0,
+    mate: null, mateLabels: null, mateSeg: null, mateRot: 0,
+    isDual: !!w.isDual,
+    fateLabels: w.fateLabels || [], fateIdx: null, fateRot: 0, fateGood: null,
+    spinning: false
+  };
+  render();
+}
+
+/*
+ * Turns a mirrored wheel to where the spinner's landed. The rotation comes
+ * over the wire rather than being worked out again, so the two wheels travel
+ * the same distance at the same speed and stop on the same slice.
+ */
+function runMirrorSpin(kind, w) {
+  if (!wheel || !wheel.mirror || wheel.spinning) return;
+  if (typeof w.rot !== "number") return;
+  // The stage has to be showing this wheel before it can be seen to turn.
+  if (kind === "card" && wheel.stage === "idle") wheel.stage = "nameDone";
+  if (kind === "name") { wheel.name = w.who || null; wheel.nameRot = w.rot; }
+  else if (kind === "card") wheel.cardRot = w.rot;
+  else if (kind === "mate") {
+    wheel.mate = w.who || null;
+    wheel.mateLabels = w.labels || wheel.mateLabels;
+    wheel.mateRot = w.rot;
+  } else if (kind === "fate") { wheel.fateGood = !!w.good; wheel.fateRot = w.rot; }
+  wheel.spinning = true;
+  var mine = wheel;
+  render();
+  var id = kind === "name" ? "wheel-name" : kind === "fate" ? "wheel-fate"
+    : kind === "mate" ? "wheel-mate" : "wheel-card";
+  /*
+   * Wait for the wheel to actually be on screen before turning it.
+   *
+   * A render replaces the whole app, so the element read a frame after one can
+   * already be a node that has been swapped out — the transform then lands on
+   * something detached and the wheel sits there, stage advancing, never having
+   * moved. So look each frame until an element that is really in the document
+   * turns up, and give up after a handful rather than spinning forever.
+   */
+  var tries = 0;
+  (function look() {
+    if (wheel !== mine) return;
+    var el = document.getElementById(id);
+    if (!el || !el.isConnected) {
+      if (++tries > 12) { mine.spinning = false; render(); return; }
+      requestAnimationFrame(look);
+      return;
+    }
+    startWheelSound(sfxVolume(), segmentCrossings(0, w.rot, w.n || 8));
+    el.classList.add("go");
+    requestAnimationFrame(function () {
+      requestAnimationFrame(function () {
+        var now = document.getElementById(id);
+        if (now && now.isConnected) now.style.transform = "rotate(" + w.rot + "deg)";
+      });
+    });
+    setTimeout(function () {
+      if (wheel !== mine) return;
+      mine.spinning = false;
+      mine.stage = kind === "name" ? "nameDone"
+        : kind === "card" && (mine.isDual || needsMate(mine.card.id)) ? "cardDone"
+        : "done";
+      if (kind === "card" && mine.card.id === LONE_WOLF) playWolfSound(sfxVolume());
+      render();
+    }, SPIN_MS + 300);
+  })();
 }
 
 /* Half-width hand tile: tags, name, a taste of the text. No buttons — tapping
@@ -5181,14 +5301,19 @@ function renderWheel() {
   // once the name lands — said once, cleanly, up top. A free spin has no name
   // stage at all: the GAMBLE WHEEL!! card says the name doesn't matter, so asking for a spin
   // it just told you to disregard would be theatre.
+  var watching = !!wheel.mirror;
   var html = '<div class="modal">';
+  if (watching) {
+    html += '<div class="exempt" style="color:#FF8A1E">' +
+      esc(wheel.spinner || "Somebody") + ' is spinning</div>';
+  }
   if (!nameSettled && !free) {
     html += '<div class="label">Who\'s exempt</div>' +
       '<div class="wheelbox"><div class="wheelptr"></div>' +
       wheelSvg("wheel-name", wheel.nameLabels, wheel.nameRot, null, 14) +
       '</div>';
   }
-  if (stage === "idle") {
+  if (stage === "idle" && !watching) {
     html += '<button class="big wheel" data-act="spinName">Spin the name</button>';
   }
   var cardSettled = stage === "cardDone" || stage === "done";
@@ -5219,7 +5344,7 @@ function renderWheel() {
         wheelSvg("wheel-card", wheel.cardLabels, wheel.cardRot, null, 7.5,
           false, wheel.cardTints) +
         '</div>';
-      if (stage === "nameDone") {
+      if (stage === "nameDone" && !watching) {
         html += '<button class="big wheel" data-act="spinCard">Spin the effect</button>';
       }
     }
@@ -5234,14 +5359,14 @@ function renderWheel() {
       wheelSvg("wheel-mate", wheel.mateLabels || mateLabels().concat(mateLabels()),
         wheel.mateRot, null, 14) +
       '</div>' +
-      '<button class="big wheel" data-act="spinMate">Spin the partner</button>';
+      (watching ? "" : '<button class="big wheel" data-act="spinMate">Spin the partner</button>');
   } else if (stage === "cardDone") {
     // Dual cards only: which half applies?
     html += '<div class="label">Good or bad?</div>' +
       '<div class="wheelbox"><div class="wheelptr"></div>' +
       wheelSvg("wheel-fate", wheel.fateLabels, wheel.fateRot, null, 16, true) +
       '</div>' +
-      '<button class="big wheel" data-act="spinFate">Spin good or bad</button>';
+      (watching ? "" : '<button class="big wheel" data-act="spinFate">Spin good or bad</button>');
   }
   // The wheel wording carries the whole story with the names filled in, so no
   // summing-up line under it. What stays: which half a dual card landed on,
@@ -5267,7 +5392,8 @@ function renderWheel() {
       '<button class="big primary" data-act="wheelCloseYes">Close anyway</button></div></div>';
   } else {
     html += '<button class="big quiet" data-act="closeWheel">' +
-      (stage === "done" ? "Done" : "Close") + "</button></div>";
+      (watching ? "Look away" : stage === "done" ? "Done" : "Close") +
+      "</button></div>";
   }
   return html;
 }
@@ -5543,6 +5669,16 @@ function spinWheel(kind) {
   else if (kind === "mate") wheel.mateRot = target;
   else wheel.cardRot = target;
 
+  // Sent as it starts turning rather than once it has stopped, which is the
+  // difference between the table watching the spin and being told about it.
+  if (live) {
+    liveCast("wheel", {
+      name: state.players[state.meIndex], spin: kind, rot: target, n: n,
+      who: kind === "name" ? wheel.name : kind === "mate" ? wheel.mate : null,
+      labels: kind === "mate" ? wheel.mateLabels : null,
+      good: kind === "fate" ? wheel.fateGood : false
+    });
+  }
   var btn = document.querySelector(
     kind === "name" ? '[data-act="spinName"]'
       : kind === "fate" ? '[data-act="spinFate"]'
@@ -7664,6 +7800,8 @@ app.addEventListener("click", function (e) {
     // everyone else's phone, when no result ever announced itself.
     case "closeWheel":
       if (!wheel) break;
+      // Only watching: this closes a window, it does not cancel anything.
+      if (wheel.mirror) { stopWheelSound(); wheel = null; render(); break; }
       // Paid, but the name wheel never turned: no spin, no charge — the two
       // cards come straight back out of the discard into the hand.
       if (wheel.paid && wheel.stage === "idle" && s) {
