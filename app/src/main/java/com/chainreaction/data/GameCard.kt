@@ -57,7 +57,7 @@ object Rules {
     // The house blacklist: reaction cards plus everything too situational,
     // too group-shaped or too slow to land as a wheel result — and the Double
     // Wheel itself, so the wheel can never demand another wheel.
-    val WHEEL_EXCLUDES = setOf(1, 3, 5, 6, 12, 13, 19, 20, 21, 22, 23, 24, 31, 34, 36, 38, 42, 43, 52, 55, 56)
+    val WHEEL_EXCLUDES = setOf(1, 3, 5, 6, 12, 13, 19, 20, 21, 22, 23, 24, 31, 34, 36, 38, 42, 43, 52, 55, 56, 61)
 
     /** Cards that live on the wheel alone — never shuffled into a deck. */
     val WHEEL_ONLY = setOf(57)

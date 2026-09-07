@@ -114,7 +114,7 @@ Suggested palette: deep pine ground (`#0C1A14`), panels (`#132A21`), muted sage 
   "maxCardsOnOnePlayerPerHole": 2,
   "wheelCost": 2,
   "freeSpinCard": 22,
-  "wheelExcludes": [1, 3, 5, 6, 12, 13, 19, 20, 21, 22, 23, 24, 31, 34, 36, 38, 42, 43, 52, 55, 56],
+  "wheelExcludes": [1, 3, 5, 6, 12, 13, 19, 20, 21, 22, 23, 24, 31, 34, 36, 38, 42, 43, 52, 55, 56, 61],
   "wheelOnly": [],
   "rarities": [
     { "id": "common",    "color": "#E6ECF5", "weight": 86 },
@@ -156,7 +156,7 @@ Suggested palette: deep pine ground (`#0C1A14`), panels (`#132A21`), muted sage 
     { "id": 19, "timing": "Before tee shot", "kind": "dual", "name": "Do Not Pass Go", "text": "On another player: whoever has the shortest drive on this hole gets no free mulligan to bank while everyone else does. On yourself: play after everyone tees — if you have the shortest drive, throw your 2nd shot with the person that had the farthest drive." },
     { "id": 20, "timing": "After throw", "kind": "dual", "rarity": "uncommon", "name": "Doesn't Look Like a Penalty to Me", "text": "Play on a shot that missed a mando or went OB. Instead of actually being OB, in a hazard, or past a mando, it can just be played where it lies, with no penalty at all." },
     { "id": 21, "timing": "After throw", "kind": "self", "name": "Don't Nice Me!", "text": "If any player says any form of \"nice\" as your disc is in flight and it hits a tree, you can move to where your disc landed and throw again for a free stroke." },
-    { "id": 22, "timing": "Before tee shot", "kind": "group", "rarity": "rare", "name": "GAMBLE WHEEL!!", "text": "Free spin on the GAMBLE WHEEL!! The name doesn't matter — you choose who gets the benefit or the punishment." },
+    { "id": 22, "timing": "Before tee shot", "kind": "group", "rarity": "common", "name": "GAMBLE WHEEL!!", "text": "Free spin on the GAMBLE WHEEL!! The name doesn't matter — you choose who gets the benefit or the punishment." },
     { "id": 23, "timing": "Before shot", "kind": "attack", "rarity": "uncommon", "name": "Easily Distracted?", "text": "Everyone can do anything they want to distract a player while they are putting, but CANNOT touch the player or the disc being putted." },
     { "id": 24, "timing": "After a hole", "kind": "self", "name": "FIVE FOR YOU, YOU, AND YOU!", "text": "Play after you birdie a hole nobody else birdied. Everyone else owes five dollars to the pot!" },
     { "id": 25, "timing": "After throw", "kind": "self", "rarity": "epic", "name": "Foot Wedge!", "text": "Move your own lie up to 10 paces (30 ft) in any direction." },
@@ -192,7 +192,7 @@ Suggested palette: deep pine ground (`#0C1A14`), panels (`#132A21`), muted sage 
     { "id": 55, "timing": "After throw", "kind": "attack", "rarity": "epic", "name": "I Think It's Broke", "text": "Play on another player that just hit a tree. They lose that disc — they can't throw it again for the rest of the round. If they forget and throw it again, it's +1 stroke." },
     { "id": 56, "timing": "After card", "kind": "react", "rarity": "epic", "name": "UNO REVERSO", "text": "Reverse any cards that effect you back to the person that used the card. (Doesn't work on wheel spins.)" },
     { "id": 57, "timing": "Before all tee", "kind": "group", "rarity": "legendary", "name": "LONE WOLF!", "text": "Cards played by the wolf effect everyone else! A lone wolf win gives him the right to go through everyone's cards and play 1 card from everyone's hand that effects that player. If the 3 players win then nobody cares, cuz 3 people should beat 1 every time — but they can roll dice to see who gets 1 free banked mulligan." },
-    { "id": 58, "timing": "Before tee shot", "kind": "attack", "rarity": "rare", "name": "PUT EM ON TILT", "text": "Force an opponent to play the entire hole with the TILT!" },
+    { "id": 58, "timing": "Before tee shot", "kind": "attack", "rarity": "uncommon", "name": "PUT EM ON TILT", "text": "Force an opponent to play the entire hole with the TILT!" },
     { "id": 59, "timing": "Before tee shot", "kind": "attack", "rarity": "legendary", "name": "DESTINATION FUCKED!", "text": "Force an opponent to play the entire hole with the \"beater\". Whoever played the card gets 30 seconds to abuse the disc before they tee off. You must tee off within 5 seconds of being handed the disc, and ZERO attempts to repair it are allowed. Otherwise +1 stroke." },
     { "id": 60, "timing": "Before all tee", "kind": "attack", "rarity": "uncommon", "name": "The Curd!", "text": "Everyone rolls 2 dice, including whoever played this card. The lowest roll uses the cottage cheese lid as their driver this hole." },
     { "id": 61, "timing": "Before tee shot", "kind": "attack", "rarity": "legendary", "name": "MIND IF I TAKE THIS ONE?", "text": "Throw the target opponent's drive for them on this hole. (No throwing backwards is the only rule.)" }
