@@ -2842,9 +2842,21 @@ function dropAlert(eid) {
 /* This phone talking to its own player — a corrected deal, not a broadcast.
    Same banner, quiet style, fades on its own. */
 var noteN = 0;
+/* At most this many of the same note on screen at once. */
+var NOTE_STACK = 3;
 function localNote(text, head) {
   var eid = "local." + (++noteN);
-  liveAlerts.push({ eid: eid, note: text, head: head || "Deal corrected" });
+  var title = head || "Deal corrected";
+  /*
+   * Three of a kind and no more. A button that can be pressed again the moment
+   * it answers — the update check, mostly — will be pressed again, and the
+   * answers were stacking until they filled the screen. The oldest goes as the
+   * newest arrives, so a held thumb reads as a short queue moving rather than a
+   * wall building.
+   */
+  var same = liveAlerts.filter(function (a) { return a.note && a.head === title; });
+  while (same.length >= NOTE_STACK) dropAlert(same.shift().eid);
+  liveAlerts.push({ eid: eid, note: text, head: title });
   setTimeout(function () { dropAlert(eid); }, ALERT_FADE_MS);
 }
 
