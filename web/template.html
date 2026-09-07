@@ -3055,7 +3055,26 @@ function renderLiveSection() {
       stale.map(esc).join(", ") + (stale.length === 1 ? " isn&rsquo;t" : " aren&rsquo;t") +
       ' on this version &mdash; have them reload the app.</p>'
     : "") +
-    '<button class="big quiet" data-act="liveLeave">Leave the lobby</button>';
+    /*
+     * Asked first, because leaving is not a small thing and this button sits
+     * halfway down a tab people scroll through mid-round. A player's goodbye
+     * empties their chair on the other phones; the host's closes the lobby on
+     * everybody. Neither is undone by tapping it again.
+     */
+    (confirmLeave
+      ? '<div class="panel"><div style="font-size:19px;font-weight:700">' +
+        (live && live.hosting ? "Close the lobby?" : "Leave the lobby?") + '</div>' +
+        '<p style="color:var(--sage);margin:6px 0 10px">' +
+        (live && live.hosting
+          ? "You are hosting, so this ends it for " +
+            (names.length > 1 ? esc(names.length - 1) + " other players" : "everyone") +
+            ". Their scores stay on their own phones."
+          : "Card plays and hand counts stop reaching this phone. Your round and " +
+            "your scores stay put.") + '</p>' +
+        '<div class="row"><button class="big danger" data-act="leaveYes" style="margin:0">' +
+        (live && live.hosting ? "Close it" : "Leave") + '</button>' +
+        '<button class="big quiet" data-act="leaveNo" style="margin:0">Stay</button></div></div>'
+      : '<button class="big quiet" data-act="askLeave">Leave the lobby</button>');
 }
 
 /* Only cards that land on one named person are worth asking about. Self is you, group
@@ -3715,6 +3734,8 @@ var confirming = false;
 /* Asked before handing the turn on with cards still in hand. Cleared on every
    render of a new hole the way the other confirmations are. */
 var confirmPass = false;
+/* Asked before hanging up on the table. */
+var confirmLeave = false;
 var parsUI = { open: false, name: "" };
 var confirmDeleteCourse = null; // course name awaiting its delete confirmation
 /* Which name slot is choosing a character, and on which screen. Null when closed. */
@@ -8342,6 +8363,11 @@ app.addEventListener("click", function (e) {
       }
       if (s) { s.liveCode = LIVE_ROOM; commit(s); } else render();
       break;
+    case "askLeave": confirmLeave = true; render(); break;
+    case "leaveNo": confirmLeave = false; render(); break;
+    case "leaveYes":
+      confirmLeave = false;
+      // falls through to the goodbye itself
     case "liveLeave":
       // Say goodbye before hanging up. A plain player's goodbye empties their
       // chair on the other phones; the HOST's goodbye closes the whole lobby.
