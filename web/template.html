@@ -502,6 +502,29 @@
                            linear-gradient(100deg, #FF8A1E, #F7791E) border-box;
                animation: alertpulse 1.1s ease-in-out infinite alternate; }
   .alert.you .who, .alert.you .onwho { color: #FF8A1E; }
+  /*
+   * A played card's banner in that card's tier colour, so what landed is
+   * legible across a tee pad before anybody has read a word of it. The tier
+   * colours are the same ones the card itself is outlined in.
+   */
+  .alert.tinted {
+    background: linear-gradient(#070B14, #070B14) padding-box,
+                linear-gradient(100deg, var(--rare), var(--rare)) border-box;
+    box-shadow: 0 6px 24px rgba(0, 0, 0, .55), 0 0 16px var(--rareglow);
+  }
+  .alert.tinted .who { color: var(--rare); }
+  .alert.tinted .alertx { color: var(--rare); border-left-color: var(--rareglow); }
+  /* Aimed at you: still breathes, just no longer always orange. */
+  .alert.you.tinted {
+    background: linear-gradient(#0A0D16, #0A0D16) padding-box,
+                linear-gradient(100deg, var(--rare), var(--rare)) border-box;
+    animation: alerttint 1.1s ease-in-out infinite alternate;
+  }
+  .alert.you.tinted .who, .alert.you.tinted .onwho { color: var(--rare); }
+  @keyframes alerttint {
+    from { box-shadow: 0 6px 24px rgba(0, 0, 0, .55), 0 0 10px var(--rareglow); }
+    to   { box-shadow: 0 6px 24px rgba(0, 0, 0, .55), 0 0 26px var(--rareglow); }
+  }
   /* An invitation, not an attack: ice, steady, stays until tapped. */
   .alert.join { background: linear-gradient(#050F1C, #050F1C) padding-box,
                             linear-gradient(100deg, #4DC3FF, #1E6FFF) border-box;
@@ -3121,8 +3144,11 @@ function renderAlerts() {
         '</div>';
     }
     var c = BY_ID[a.card];
+    // An invite is not a report of a card, so it keeps its own colour.
     return '<div class="alert' + (a.you ? " you" : a.invite ? " join" : "") +
-      '" data-act="alertTap" data-eid="' + esc(a.eid) + '">' +
+      (a.invite ? "" : " tinted") +
+      '" style="' + rarityVars(rarityOf(c)) + '"' +
+      ' data-act="alertTap" data-eid="' + esc(a.eid) + '">' +
       alertX(a.eid) +
       '<div class="who">' + esc(a.who || "Someone") + ' played</div>' +
       '<div class="what">' + esc(c.name) + '</div>' +
