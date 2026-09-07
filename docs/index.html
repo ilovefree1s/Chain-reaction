@@ -1374,7 +1374,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.360 · 6 Sep 21:36";
+var APP_VERSION = "v1.361 · 6 Sep 21:39";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. Opening the app fetches fresh anyway.
@@ -5082,7 +5082,12 @@ function renderRoundRules() {
   // tab is for rules, cards and ending the round, nothing else.
   // The shortcut is announced where you would otherwise start the long scroll
   // looking for the button it saves you.
-  return '<p class="hint" style="text-align:center;margin:0 0 14px">' +
+  //
+  // Asked, the question comes to the top. It was reached by scrolling the
+  // whole tab to its foot, which is a lot of travel to watch when the group is
+  // already packing up — and the shortcut existed to save exactly that.
+  return (confirming ? danger + '<div style="height:14px"></div>' : "") +
+    '<p class="hint" style="text-align:center;margin:0 0 14px">' +
     'Tap RULES 3&times; to end the round early.</p>' +
     // The rules say an argument goes to the coin. This is the way there —
     // at the top, because a table mid-argument is not going to scroll.
@@ -5090,7 +5095,9 @@ function renderRoundRules() {
     '<p class="hint" style="text-align:center;margin:-6px 0 16px">' +
     'Coin, dice, wheel or cards &mdash; the app has no opinion.</p>' +
     renderLiveSection() + renderHouseRules() + renderCardLibrary() +
-    '<div style="height:16px"></div>' + danger;
+    '<div style="height:16px"></div>' +
+    // Not repeated when it is already up top — one question, in one place.
+    (confirming ? "" : danger);
 }
 
 /* ---- neon page helpers ---- */
@@ -7708,11 +7715,12 @@ app.addEventListener("contextmenu", function (e) {
 
 /* The secret way in: five rapid taps on the FOR THE BOYS banner inside one
    second. The banner does nothing else, so stray taps cost nothing. */
-/* Three quick taps on RULES drops you at the foot of it and asks the question
-   waiting down there. The tab is a long read and ending the round is the one
-   thing at the bottom of it somebody wants in a hurry, usually with the group
-   already packing up. The confirmation is the whole safety net, so the shortcut
-   stops where the button would have — nothing ends without a second tap. */
+/* Three quick taps on RULES asks whether to end the round, and puts the
+   question at the top of the tab where you already are. The tab is a long read
+   and ending the round is the one thing on it somebody wants in a hurry,
+   usually with the group already packing up. The confirmation is the whole
+   safety net, so the shortcut stops where the button would have — nothing ends
+   without a second tap. */
 var rulesTaps = [];
 function rulesTapJump() {
   var now = Date.now();
@@ -7722,10 +7730,10 @@ function rulesTapJump() {
   rulesTaps = [];
   confirming = true;
   render();
-  // Measured after that render: asking the question changes the page's height.
-  var to = document.documentElement.scrollHeight;
-  try { window.scrollTo({ top: to, behavior: "smooth" }); }
-  catch (e) { window.scrollTo(0, to); } // older webviews take two numbers only
+  // Up, not down: the question is drawn at the top of the tab now, and three
+  // taps from halfway through the card library should still land on it.
+  try { window.scrollTo({ top: 0, behavior: "smooth" }); }
+  catch (e) { window.scrollTo(0, 0); } // older webviews take two numbers only
 }
 
 var secretTaps = [];
