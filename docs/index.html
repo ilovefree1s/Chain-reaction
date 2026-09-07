@@ -1349,7 +1349,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.347 · 6 Sep 21:13";
+var APP_VERSION = "v1.349 · 6 Sep 21:15";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. Opening the app fetches fresh anyway.
@@ -2503,11 +2503,14 @@ function liveWheel(p) {
     who.trim().toLowerCase() === (state.players[state.meIndex] || "").trim().toLowerCase();
   // A spin in progress, mirrored: the same slices, turning the same way. Never
   // on the spinner's own phone, which is already turning the real one.
-  if (p.spin && !mine && wheel && wheel.mirror) {
-    runMirrorSpin(p.spin, p);
+  if (p.spin && !mine) {
+    // Watching it: turn it. Not watching yet: remember it, so tapping the
+    // banner later opens the wheel where the spin has actually got to.
+    if (wheel && wheel.mirror) runMirrorSpin(p.spin, p);
+    else if (mirrorWaiting) mirrorWaiting.spins.push(Object.assign({ kind: p.spin }, p));
     return;
   }
-  if (p.spin) return; // a spin for a wheel this phone is not watching
+  if (p.spin) return; // this phone's own spin, already turning
   // The moment the spin is bought, before anything lands: heads up, banner up.
   if (p.spinning) {
     // An update to a banner already up (the name landed) swaps it in quietly;
@@ -2524,15 +2527,16 @@ function liveWheel(p) {
     holdWheel(who);
     // Safety net: a spinner who walks away mid-wheel shouldn't pin a banner forever.
     setTimeout(function () { dropAlert(eid); }, 90000);
-    // And put their wheel on this screen, so the table watches it land rather
-    // than reading about it afterwards.
-    if (p.open && !mine && !wheel) openMirrorWheel(who, p.open);
+    // Kept, not opened: the banner is the invitation, and the wheel comes up
+    // when it is tapped.
+    if (p.open && !mine) mirrorWaiting = { who: who, open: p.open, spins: [] };
     liveRefresh();
     return;
   }
   // The spinner closed the wheel without a result — take the banner down.
   if (p.cancel) {
     holdWheel(null); dropSpinStart(who);
+    mirrorWaiting = null;
     if (wheel && wheel.mirror) wheel = null;
     liveRefresh();
     return;
@@ -2555,6 +2559,7 @@ function liveWheel(p) {
     state.wheelUsed = (state.wheelUsed || []).concat([c.id]);
     save(state);
   }
+  mirrorWaiting = null;
   // The mirrored wheel has said everything it has to say. It stays a moment so
   // the last slice is read, then gets out of the way of the result banner.
   if (wheel && wheel.mirror) {
@@ -4540,6 +4545,43 @@ function openWheelNow(free) {
  * not one button. It turns when the spinner turns theirs and closes when the
  * result lands.
  */
+/*
+ * The spin somebody else is taking, held until this phone asks to see it: the
+ * wheel as they built it, and every turn they have taken since.
+ */
+var mirrorWaiting = null;
+
+/* Opens what has been waiting, caught up to wherever the spin has got to. */
+function watchTheWheel() {
+  if (!mirrorWaiting) return false;
+  var held = mirrorWaiting;
+  openMirrorWheel(held.who, held.open);
+  if (!wheel || !wheel.mirror) return false;
+  /*
+   * Turns taken before you looked are set, not played. Watching a wheel spin
+   * through three stages you already missed is not catching up, it is a
+   * recap — and the result is on its way regardless.
+   */
+  held.spins.forEach(function (sp) { settleMirrorSpin(sp.kind, sp); });
+  render();
+  return true;
+}
+
+/* Puts a spin where it ended without turning anything. */
+function settleMirrorSpin(kind, w) {
+  if (!wheel || !wheel.mirror) return;
+  if (kind === "name") { wheel.name = w.who || null; wheel.nameRot = w.rot; }
+  else if (kind === "card") wheel.cardRot = w.rot;
+  else if (kind === "mate") {
+    wheel.mate = w.who || null;
+    wheel.mateLabels = w.labels || wheel.mateLabels;
+    wheel.mateRot = w.rot;
+  } else if (kind === "fate") { wheel.fateGood = !!w.good; wheel.fateRot = w.rot; }
+  wheel.stage = kind === "name" ? "nameDone"
+    : kind === "card" && (wheel.isDual || needsMate(wheel.card.id)) ? "cardDone"
+    : "done";
+}
+
 function openMirrorWheel(who, w) {
   if (!state || !w || !Array.isArray(w.cardLabels)) return;
   var card = BY_ID[w.card];
@@ -4600,12 +4642,23 @@ function runMirrorSpin(kind, w) {
       return;
     }
     startWheelSound(sfxVolume(), segmentCrossings(0, w.rot, w.n || 8));
+    /*
+     * Give it an angle to start from, and make the browser take that as read
+     * before asking for the finish.
+     *
+     * This wheel is drawn fresh by the render a moment earlier, so it has no
+     * angle the browser has actually computed — and a transition with nothing
+     * to travel from does not run. The wheel simply appears at the result,
+     * which is what every phone but the spinner's was seeing.
+     */
+    el.style.transition = "none";
+    el.style.transform = "rotate(0deg)";
+    void el.offsetWidth;
+    el.style.transition = "";
     el.classList.add("go");
     requestAnimationFrame(function () {
-      requestAnimationFrame(function () {
-        var now = document.getElementById(id);
-        if (now && now.isConnected) now.style.transform = "rotate(" + w.rot + "deg)";
-      });
+      var now = document.getElementById(id);
+      if (now && now.isConnected) now.style.transform = "rotate(" + w.rot + "deg)";
     });
     setTimeout(function () {
       if (wheel !== mine) return;
@@ -7921,6 +7974,12 @@ app.addEventListener("click", function (e) {
       var eid = el.getAttribute("data-eid");
       var hit = liveAlerts.filter(function (a) { return a.eid === eid; })[0];
       liveAlerts = liveAlerts.filter(function (a) { return a.eid !== eid; });
+      // The spin banner opens the spin, caught up to wherever it has got to.
+      if (hit && hit.spinStart) {
+        if (watchTheWheel()) break;
+        render();
+        break;
+      }
       // Straight to the game the card is asking for, if it asks for one.
       if (hit && hit.card != null && ALERT_GAME[hit.card] && !hit.wheel) {
         openSecretWheel();
