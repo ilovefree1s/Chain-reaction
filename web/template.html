@@ -2533,7 +2533,11 @@ function liveWheel(p) {
     // Watching it: turn it. Not watching yet: remember it, so tapping the
     // banner later opens the wheel where the spin has actually got to.
     if (wheel && wheel.mirror) runMirrorSpin(p.spin, p);
-    else if (mirrorWaiting) mirrorWaiting.spins.push(Object.assign({ kind: p.spin }, p));
+    else if (mirrorWaiting) {
+      // Stamped on arrival: a spin picked up later needs to know how much of
+      // it has already gone by, and the spinner's clock is not ours to read.
+      mirrorWaiting.spins.push(Object.assign({ kind: p.spin, at: Date.now() }, p));
+    }
     return;
   }
   if (p.spin) return; // this phone's own spin, already turning
@@ -4788,8 +4792,102 @@ function watchTheWheel() {
    * knowing who is exempt and be ready for the next one than to watch a
    * beautiful recap of a question already answered.
    */
-  held.spins.forEach(function (sp) { settleMirrorSpin(sp.kind, sp); });
+  /*
+   * Everything finished is set where it landed. The last one is only set too
+   * if it has finished — if it is still turning you come in on it, at the angle
+   * it is passing through, and land with everybody else.
+   */
+  var last = held.spins[held.spins.length - 1];
+  var running = last && Date.now() - last.at < SPIN_MS;
+  held.spins.forEach(function (sp) {
+    if (running && sp === last) return;
+    settleMirrorSpin(sp.kind, sp);
+  });
   render();
+  if (running && !joinMidSpin(last.kind, last, Date.now() - last.at)) {
+    // Too little of it left to be worth joining: take the result instead.
+    settleMirrorSpin(last.kind, last);
+    render();
+  }
+  return true;
+}
+
+/*
+ * How far along its travel the wheel is, a fraction [t] of the way through the
+ * time. The same curve the stylesheet turns it on — cubic-bezier(.12,.8,.08,1)
+ * — solved by bisection, which is plenty for something read once per join and
+ * shorter than writing the cubic out.
+ */
+function spinEase(t) {
+  if (t <= 0) return 0;
+  if (t >= 1) return 1;
+  var x1 = 0.12, y1 = 0.8, x2 = 0.08, y2 = 1;
+  var lo = 0, hi = 1, u = t;
+  for (var i = 0; i < 24; i++) {
+    u = (lo + hi) / 2;
+    var v = 1 - u;
+    var x = 3 * v * v * u * x1 + 3 * v * u * u * x2 + u * u * u;
+    if (x < t) lo = u; else hi = u;
+  }
+  var w = 1 - u;
+  return 3 * w * w * u * y1 + 3 * w * u * u * y2 + u * u * u;
+}
+
+/*
+ * Picks a spin up in the middle of it: the angle it is passing through right
+ * now, and the rest of the way in the time it has left.
+ *
+ * The remainder is run out linearly rather than on the original curve. By the
+ * time anyone can join, the wheel is deep into the slow end of that curve and
+ * nearly straight anyway — and a second easing applied to what is left would
+ * put a fresh slow-down in the middle of a turn that is already slowing.
+ */
+function joinMidSpin(kind, w, elapsed) {
+  var left = SPIN_MS - elapsed;
+  if (!wheel || !wheel.mirror || left <= 250) return false;
+  var id = kind === "name" ? "wheel-name" : kind === "fate" ? "wheel-fate"
+    : kind === "mate" ? "wheel-mate" : "wheel-card";
+  if (kind === "card" && wheel.stage === "idle") wheel.stage = "nameDone";
+  if (kind === "name") wheel.name = w.who || null;
+  else if (kind === "mate") { wheel.mate = w.who || null; wheel.mateLabels = w.labels || wheel.mateLabels; }
+  else if (kind === "fate") wheel.fateGood = !!w.good;
+  var soFar = w.rot * spinEase(elapsed / SPIN_MS);
+  if (kind === "name") wheel.nameRot = w.rot;
+  else if (kind === "card") wheel.cardRot = w.rot;
+  else if (kind === "mate") wheel.mateRot = w.rot;
+  else wheel.fateRot = w.rot;
+  wheel.spinning = true;
+  var mine = wheel;
+  render();
+  var tries = 0;
+  (function look() {
+    if (wheel !== mine) return;
+    var el = document.getElementById(id);
+    if (!el || !el.isConnected) {
+      if (++tries > 12) { mine.spinning = false; render(); return; }
+      requestAnimationFrame(look);
+      return;
+    }
+    el.classList.remove("go");
+    el.style.transition = "none";
+    el.style.transform = "rotate(" + soFar.toFixed(1) + "deg)";
+    el.getBoundingClientRect();
+    el.style.transition = "transform " + left + "ms linear";
+    startWheelSound(sfxVolume(), segmentCrossings(soFar, w.rot, w.n || 8));
+    requestAnimationFrame(function () {
+      var now = document.getElementById(id);
+      if (now && now.isConnected) now.style.transform = "rotate(" + w.rot + "deg)";
+    });
+    setTimeout(function () {
+      if (wheel !== mine) return;
+      mine.spinning = false;
+      mine.stage = kind === "name" ? "nameDone"
+        : kind === "card" && (mine.isDual || needsMate(mine.card.id)) ? "cardDone"
+        : "done";
+      if (kind === "card" && mine.card.id === LONE_WOLF) playWolfSound(sfxVolume());
+      render();
+    }, left + 120);
+  })();
   return true;
 }
 
