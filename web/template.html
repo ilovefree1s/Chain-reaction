@@ -2697,6 +2697,9 @@ function livePrio(p) {
   if (state.prio === p.name && state.passes === laps) return;
   state.prio = p.name;
   state.passes = laps;
+  // A question asked about a turn this phone no longer holds is a question
+  // about nothing, and would be waiting when the turn came back round.
+  confirmPass = false;
   save(state);
   // It has just landed on us and there may be nothing to do with it.
   autoPassIfEmpty(state);
@@ -3709,6 +3712,9 @@ var viewOnly = false;
 var pileOpen = false; // the discard pile sheet, opened from its counter
 var pileAt = null; // whose pile the sheet is showing; null = your own
 var confirming = false;
+/* Asked before handing the turn on with cards still in hand. Cleared on every
+   render of a new hole the way the other confirmations are. */
+var confirmPass = false;
 var parsUI = { open: false, name: "" };
 var confirmDeleteCourse = null; // course name awaiting its delete confirmation
 /* Which name slot is choosing a character, and on which screen. Null when closed. */
@@ -4587,6 +4593,16 @@ function autoPassIfEmpty(s) {
     "It comes back when the hole is scored and you draw.", "Passed for you");
   return true;
 }
+/* Who priority goes to next — the same walk passPrio takes, without taking it. */
+function nextInLine(s) {
+  var order = playOrder(s);
+  var who = prioHolder(s);
+  for (var i = 0; i < order.length; i++) {
+    if (s.players[order[i]] === who) return s.players[order[(i + 1) % order.length]];
+  }
+  return s.players[order[0]];
+}
+
 /* Hands it to the next player in the order, wrapping past last back to first. */
 function passPrio(s) {
   var order = playOrder(s);
@@ -4625,12 +4641,29 @@ function playOrderStrip(s) {
   }).join('<span class="turnsep">&rsaquo;</span>');
   // Only the holder can hand it on, because only they have it to hand. Once
   // the whole table has passed there is nothing left to hand anybody.
+  /*
+   * Passing with cards in hand asks first. It hands the turn on and cannot be
+   * taken back — the lap moves and the next player is already deciding — and
+   * it is a wide button sitting under a row of names people tap at.
+   *
+   * With an empty hand there is nothing to ask about: no card to play, no spin
+   * to buy, and the app passes for you anyway the moment it notices.
+   */
   var pass = open
     ? '<p class="hint">Everyone passed &mdash; play freely, or go and throw.</p>'
-    : iHavePrio(s)
-    ? '<button class="big quiet" data-act="passPrio" style="margin:0 0 12px">' +
-      'Pass priority &rsaquo;</button>'
-    : '<p class="hint">' + esc(up) + ' has priority. Yours when they pass.</p>';
+    : !iHavePrio(s)
+    ? '<p class="hint">' + esc(up) + ' has priority. Yours when they pass.</p>'
+    : confirmPass
+    ? '<div class="panel" style="margin:0 0 12px">' +
+      '<div style="font-size:19px;font-weight:700">Pass your turn?</div>' +
+      '<p style="color:var(--sage);margin:6px 0 10px">You still hold ' +
+      s.hand.length + (s.hand.length === 1 ? ' card' : ' cards') +
+      '. It goes to ' + esc(nextInLine(s)) + ' and comes back when the lap does.</p>' +
+      '<div class="row"><button class="big primary" data-act="passYes" style="margin:0">' +
+      'Pass</button>' +
+      '<button class="big quiet" data-act="passNo" style="margin:0">Keep it</button></div></div>'
+    : '<button class="big quiet" data-act="passPrio" style="margin:0 0 12px">' +
+      'Pass priority &rsaquo;</button>';
   return '<div class="label">Card order &middot; ' +
     (open ? 'open to everyone' : 'leader first') + '</div>' +
     '<div class="turnrow">' + names + '</div>' + pass;
@@ -7934,6 +7967,13 @@ app.addEventListener("click", function (e) {
     case "closeOrder": orderWheel = null; orderThenStart = false; render(); break;
     case "passPrio":
       if (!iHavePrio(s)) break;
+      // Holding nothing, there is nothing to think about.
+      if (s.hand.length) { confirmPass = true; render(); break; }
+      passPrio(s); render(); break;
+    case "passNo": confirmPass = false; render(); break;
+    case "passYes":
+      confirmPass = false;
+      if (!iHavePrio(s)) { render(); break; }
       passPrio(s); render(); break;
     case "addPlayer":
       if (setup.names.length < MAX_PLAYERS) { setup.names.push(""); setup.chars.push(null); }
