@@ -1349,7 +1349,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.346 · 6 Sep 21:09";
+var APP_VERSION = "v1.347 · 6 Sep 21:13";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. Opening the app fetches fresh anyway.
@@ -1754,7 +1754,23 @@ function load() {
     if (raw) s = JSON.parse(raw);
   } catch (e) { /* fall through */ }
   if (!s) s = memoryStore;
-  return s && s.v === SCHEMA_VERSION ? s : null;
+  if (!s || s.v !== SCHEMA_VERSION) return null;
+  return looksLikeARound(s) ? s : null;
+}
+/*
+ * A saved round has to be the shape the game expects, not merely the right
+ * version. The version number only says which deck it was saved against; it
+ * cannot say the file is intact.
+ *
+ * Without this a round whose lists are not lists takes the whole app down on
+ * load — every screen, including the menu, because the menu asks whether the
+ * round is finished. And there is no way back out of that from inside the app:
+ * the button that would clear it is on a screen that will not draw.
+ */
+function looksLikeARound(s) {
+  return Array.isArray(s.players) && s.players.length > 0 &&
+    Array.isArray(s.locked) && Array.isArray(s.scores) &&
+    Array.isArray(s.pars) && Array.isArray(s.hand);
 }
 function clearSaved() {
   memoryStore = null;

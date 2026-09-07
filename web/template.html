@@ -1754,7 +1754,23 @@ function load() {
     if (raw) s = JSON.parse(raw);
   } catch (e) { /* fall through */ }
   if (!s) s = memoryStore;
-  return s && s.v === SCHEMA_VERSION ? s : null;
+  if (!s || s.v !== SCHEMA_VERSION) return null;
+  return looksLikeARound(s) ? s : null;
+}
+/*
+ * A saved round has to be the shape the game expects, not merely the right
+ * version. The version number only says which deck it was saved against; it
+ * cannot say the file is intact.
+ *
+ * Without this a round whose lists are not lists takes the whole app down on
+ * load — every screen, including the menu, because the menu asks whether the
+ * round is finished. And there is no way back out of that from inside the app:
+ * the button that would clear it is on a screen that will not draw.
+ */
+function looksLikeARound(s) {
+  return Array.isArray(s.players) && s.players.length > 0 &&
+    Array.isArray(s.locked) && Array.isArray(s.scores) &&
+    Array.isArray(s.pars) && Array.isArray(s.hand);
 }
 function clearSaved() {
   memoryStore = null;
