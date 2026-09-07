@@ -1421,7 +1421,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.398 · 7 Sep 15:07";
+var APP_VERSION = "v1.399 · 7 Sep 15:15";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. The arrow beside it goes and looks for a
@@ -5299,6 +5299,10 @@ var SHARED_RULES = [
     (CARDS.length - (DATA.wheelOnly || []).length) +
     "-card deck. Duplicates across players are expected and fine. This phone only tracks your deck."],
   ["wheel", "GAMBLE WHEEL!", "Gamble wheel is top priority and cannot be overridden with a played card."],
+  // The order two cards land in is not something either card can answer on
+  // its own, and every pair asks it again. One rule, up front.
+  ["scales", "When two cards clash", "The rarer card wins — legendary over epic, epic over rare, rare over uncommon, uncommon over common. Two cards of the same rarity, and the one played later wins. The GAMBLE WHEEL still beats the lot."],
+  ["golf", "Disc lies", "Your lie is where your disc sits, and where you throw from next. A card that moves your lie makes that new spot your lie for everything after it — the next card trades, copies or attacks the lie you are standing on NOW, not the shot you threw. Two cards after the same lie, and the rarer one wins."],
   ["people", "Two attacks per player, per hole", "At most 2 attack cards may be played on any one player per hole. A cancel or a reverse doesn't count, and nor does anything else that doesn't change the way they actually throw. The app does not enforce this — track it yourselves."],
   // Cards hand these out all over the deck and nothing ever said what one is.
   ["recycle", "Mulligans", "Throwing a mulligan is a free extra throw, not a shot you have to play. Take it or leave it — if your first shot was better than the mulligan, you can play that."],
