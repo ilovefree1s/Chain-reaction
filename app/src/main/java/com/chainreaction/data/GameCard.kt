@@ -111,7 +111,7 @@ object CardDeck {
         GameCard(32, "Before tee shot", CardKind.ATTACK, "It's Like a Stranger Is Doing It!", "Force an opponent to take the upcoming drive with their off hand."),
         GameCard(33, "Before tee shot", CardKind.DUAL, "Lefty ON the Box", "Your first throw off the box is with your offhand, for free — that's throw 0. The player in last place gets it too. If 2 players are tied for last, they can flip a coin or roll dice to see who gets it."),
         GameCard(34, "After a hole", CardKind.DUAL, "Me and You", "On yourself: take the best score made on the hole. On another player: they take the worst score made on the hole."),
-        GameCard(35, "Before tee shot", CardKind.SELF, "My Tee Pad Is Over Here!", "Use 2 of your discs to mark a new tee for yourself, up to 10 paces (30 ft) from the original. Feeling nice? You may pick 1 player to join you."),
+        GameCard(35, "Before tee shot", CardKind.SELF, "My Tee Pad Is Over Here!", "Use 2 of your discs to mark a new tee for yourself, up to 10 paces (30 ft) from the original. You must pick 1 player to join you — anyone but whoever is in 1st."),
         GameCard(36, "After card", CardKind.REACT, "No Way", "Cancel any card just played. That card goes to the discard pile."),
         GameCard(37, "Before tee shot", CardKind.ATTACK, "New mando on this hole, bud.", "Choose a reasonable object the target player must pass on a side you specify."),
         GameCard(38, "Before tee shot", CardKind.DUAL, "Not Today!", "Remove any and all card effects currently on you, or use it on another player to cancel the effects on them."),
