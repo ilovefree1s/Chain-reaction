@@ -1239,6 +1239,22 @@ var RULES_MAX = 6.1;
 function isRules(key) { return key.slice(-2) === ":w"; }
 
 /*
+ * Whether the words are outside their box.
+ *
+ * Sideways counts. A timing strip or a card name is set on one line and runs
+ * out of its bar to the right long before it ever runs out downwards, so a
+ * check that only looks at height calls that a fit. Padding holds the strip’s
+ * words off the frame either side and clientWidth counts it, so it comes off
+ * the room the words really have.
+ */
+function artSpills(el, inner, slack) {
+  var cs = getComputedStyle(el);
+  var pad = (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0);
+  return inner.scrollHeight > el.clientHeight - (slack || 0) ||
+    inner.scrollWidth > el.clientWidth - pad;
+}
+
+/*
  * Grows the words until the panel is full and no further. Measured rather than
  * calculated, because a wrapped line leaves a ragged edge no formula predicts —
  * and the answer is a ratio of the card's own width, so it holds at any size.
@@ -1259,7 +1275,7 @@ function fitArtWords() {
      * clipped, and nothing to say why. Checking it costs one read.
      */
     if (ART_FIT[key]) {
-      if (inner.scrollHeight <= el.clientHeight) continue;
+      if (!artSpills(el, inner)) continue;
       delete ART_FIT[key];
     }
     // A name is set across its own bar and runs several times the size of a
@@ -1272,16 +1288,7 @@ function fitArtWords() {
       // Two pixels of slack rather than none: balanced wrapping re-breaks the
       // lines after this measurement, and a fit that was exact beforehand comes
       // out a line-fragment too tall afterwards — clipped, with overflow hidden.
-      // Width as well as height: a title is set on one line, so it runs out of
-      // the bar sideways long before it runs out of it downwards. Wrapped text
-      // never exceeds its width, so the extra test costs it nothing.
-      // clientWidth counts padding, and the timing strip is padded to hold its
-      // words off the rules either side. Measure the room the words really have.
-      var cs = getComputedStyle(el);
-      var pad = (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0);
-      var fits = inner.scrollHeight <= el.clientHeight - 2 &&
-        inner.scrollWidth <= el.clientWidth - pad;
-      if (fits) lo = mid; else hi = mid;
+      if (!artSpills(el, inner, 2)) lo = mid; else hi = mid;
     }
     el.style.fontSize = lo.toFixed(2) + "cqw";
     /*
@@ -1289,10 +1296,11 @@ function fitArtWords() {
      * after the measurement the search made — the browser hands back the
      * unbalanced layout while the loop is running — and it can come back a
      * whole line taller. On the longest card in the deck that was thirty-five
-     * pixels of overflow, quietly clipped.
+     * pixels of overflow, quietly clipped. Sideways is checked here too, so a
+     * one-line bar that came out too wide is brought back rather than kept.
      */
     var guard = 0;
-    while (inner.scrollHeight > el.clientHeight && guard++ < 24) {
+    while (artSpills(el, inner) && guard++ < 24) {
       lo *= 0.94;
       el.style.fontSize = lo.toFixed(2) + "cqw";
     }
@@ -1413,7 +1421,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.393 · 7 Sep 14:40";
+var APP_VERSION = "v1.396 · 7 Sep 14:52";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. The arrow beside it goes and looks for a
@@ -4424,7 +4432,7 @@ function renderScore() {
         ? 'Enter every score to lock the hole.'
         : s.dealt && s.dealt[h]
           ? 'Already dealt &mdash; locking again gives no new cards.'
-          : 'Locking gives you ' + drawForHole(s, h) + ' card(s).') + '</p>';
+          : 'Locking gives you ' + plural(drawForHole(s, h), 'card') + '.') + '</p>';
 
   // Every locked hole's disagreements, not just this one's: locking auto-
   // advances, so a flag pinned to its own hole would talk to an empty room.
@@ -4614,7 +4622,7 @@ function renderHand() {
   if (s.owed > 0) {
     drawBlock = handIsFull(s)
       ? '<button class="big quiet" disabled>Hand is full &mdash; discard first</button>' +
-        '<p class="hint">You\'re owed ' + s.owed + ' card(s) but you\'re holding the maximum of ' +
+        '<p class="hint">You\'re owed ' + plural(s.owed, 'card') + ' but you\'re holding the maximum of ' +
         DATA.handCap + '. Discard, then draw &mdash; locking the next hole loses ' +
         'whatever you haven\'t taken.</p>'
       : '<button class="big primary" data-act="draw">Draw a card (' + s.owed + ' owed)</button>';
