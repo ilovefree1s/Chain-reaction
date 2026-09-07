@@ -1374,7 +1374,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.352 · 6 Sep 21:20";
+var APP_VERSION = "v1.355 · 6 Sep 21:24";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. Opening the app fetches fresh anyway.
@@ -2038,6 +2038,7 @@ function liveOpen() {
     if (m.payload.event === "order") liveOrder(p);
     if (m.payload.event === "unspent") liveUnspent(p);
     if (m.payload.event === "wheel") liveWheel(p);
+    if (m.payload.event === "bid") liveBid(p);
     if (m.payload.event === "bye") liveBye(p);
   };
 
@@ -2585,6 +2586,8 @@ function liveWheel(p) {
     save(state);
   }
   mirrorWaiting = null;
+  // The beater is a question before it is an instruction: who wrecks it?
+  if (c.id === BEATER) openBeaterBid(liveAlerts[liveAlerts.length - 1]);
   // The mirrored wheel has said everything it has to say. It stays a moment so
   // the last slice is read, then gets out of the way of the result banner.
   if (wheel && wheel.mirror) {
@@ -2724,6 +2727,8 @@ function livePlayed(p) {
   liveAlerts.push({ eid: p.eid, who: typeof p.name === "string" ? p.name : "",
                     card: c.id, target: all ? null : target, all: all,
                     you: onYou, invite: invite });
+  // Played, the beater asks the same question it asks off the wheel.
+  if (c.id === BEATER) openBeaterBid(liveAlerts[liveAlerts.length - 1]);
   if (onYou || invite || told) {
     // The chain rattle, doing the job it was born for. Both are best-effort:
     // a browser that blocks gesture-less audio or vibration just shows the banner.
@@ -2765,15 +2770,175 @@ function alertX(eid) {
  * thirty seconds? Only ever on the phones with a claim — the player stuck with
  * the disc is not in the running to wreck it.
  */
+/*
+ * The bidding in progress: who may bid, what each has said, and the wheel once
+ * they have all said it. One at a time — a second beater before the first is
+ * settled replaces it, which is the only sane reading of a table that has got
+ * that far ahead of itself.
+ */
+var beaterBid = null;
+
+/* Everyone with a claim: the table, less whoever is throwing the disc. */
+function beaterBidders(victim) {
+  if (!state || !victim) return [];
+  var v = victim.trim().toLowerCase();
+  return state.players.filter(function (n) {
+    return n && n.trim().toLowerCase() !== v;
+  });
+}
+
+/* Starts a round of bidding off a beater landing, if one is not already up. */
+function openBeaterBid(a) {
+  var victim = beaterVictim(a);
+  if (!victim || !state) return;
+  beaterBid = {
+    eid: a.eid, victim: victim, who: beaterBidders(victim),
+    said: {}, wheel: null, winner: null
+  };
+}
+
+/* This phone's answer, and everyone else's as they arrive. */
+function sayBid(name, wants) {
+  if (!beaterBid || !name) return;
+  beaterBid.said[name.trim().toLowerCase()] = !!wants;
+  // The player holding the disc calls it once everybody has answered.
+  if (beaterBid.wheel || !state) { liveRefresh(); return; }
+  var all = beaterBid.who.every(function (n) {
+    return beaterBid.said[n.trim().toLowerCase()] !== undefined;
+  });
+  if (!all) { liveRefresh(); return; }
+  var me = (state.players[state.meIndex] || "").trim().toLowerCase();
+  if (beaterBid.victim.trim().toLowerCase() !== me) { liveRefresh(); return; }
+  var inIt = beaterBid.who.filter(function (n) { return beaterBid.said[n.trim().toLowerCase()]; });
+  if (!inIt.length) {
+    if (live) liveCast("bid", { eid: beaterBid.eid, done: true, winner: null });
+    finishBeaterBid(null, null, null);
+    return;
+  }
+  if (inIt.length === 1) {
+    if (live) liveCast("bid", { eid: beaterBid.eid, done: true, winner: inIt[0] });
+    finishBeaterBid(inIt[0], null, null);
+    return;
+  }
+  // Two or more still in: spin for it, and let the table watch.
+  var labels = inIt.concat(inIt); // twice around, so two names still fill the wheel
+  var pick = Math.floor(Math.random() * inIt.length);
+  var seg = 360 / labels.length;
+  var slot = pick + inIt.length * (Math.random() < 0.5 ? 0 : 1);
+  var rot = 5 * 360 + (360 - (slot * seg + seg / 2)) + (Math.random() - 0.5) * 0.6 * seg;
+  if (live) {
+    liveCast("bid", { eid: beaterBid.eid, labels: labels, rot: rot, winner: inIt[pick] });
+  }
+  runBeaterSpin(labels, rot, inIt[pick]);
+}
+
+/* The wheel, on every phone, turning the same way to the same name. */
+function runBeaterSpin(labels, rot, winner) {
+  if (!beaterBid || beaterBid.wheel) return;
+  beaterBid.wheel = { labels: labels, rot: rot, spinning: true };
+  beaterBid.winner = null;
+  var mine = beaterBid;
+  render();
+  var tries = 0;
+  (function look() {
+    if (beaterBid !== mine) return;
+    var el = document.getElementById("wheel-bid");
+    if (!el || !el.isConnected) {
+      if (++tries > 12) { mine.wheel.spinning = false; render(); return; }
+      requestAnimationFrame(look);
+      return;
+    }
+    // An angle it has actually been at, or there is nothing to travel from.
+    el.style.transition = "none";
+    el.style.transform = "rotate(0deg)";
+    void el.offsetWidth;
+    el.style.transition = "";
+    el.classList.add("go");
+    startWheelSound(sfxVolume(), segmentCrossings(0, rot, labels.length));
+    requestAnimationFrame(function () {
+      var now = document.getElementById("wheel-bid");
+      if (now && now.isConnected) now.style.transform = "rotate(" + rot + "deg)";
+    });
+    setTimeout(function () {
+      if (beaterBid !== mine) return;
+      mine.wheel.spinning = false;
+      mine.winner = winner;
+      playMenuSound(sfxVolume());
+      render();
+    }, SPIN_MS + 300);
+  })();
+}
+
+/* Settled without a spin: nobody wanted it, or only one did. */
+function finishBeaterBid(winner) {
+  if (!beaterBid) return;
+  beaterBid.wheel = null;
+  beaterBid.winner = winner;
+  beaterBid.settled = true;
+  render();
+}
+
+/* What the other phones do with a bid. */
+function liveBid(p) {
+  if (!beaterBid || p.eid !== beaterBid.eid) return;
+  if (p.labels && typeof p.rot === "number") { runBeaterSpin(p.labels, p.rot, p.winner || null); return; }
+  if (p.done) { finishBeaterBid(p.winner || null); return; }
+  if (typeof p.name === "string") sayBid(p.name, !!p.bid);
+}
+
 function beaterAsk(a) {
-  if (!myClaimOnTheBeater(a)) return "";
-  return '<div class="beaterask">' +
+  if (a.card !== BEATER || !state) return "";
+  if (!beaterBid || beaterBid.eid !== a.eid) return "";
+  var me = state.players[state.meIndex] || "";
+  var key = me.trim().toLowerCase();
+  var mine = beaterBid.said[key];
+  var waiting = beaterBid.who.filter(function (n) {
+    return beaterBid.said[n.trim().toLowerCase()] === undefined;
+  });
+  var line = '<div class="beaterask">';
+  // Whoever is throwing the disc watches the bidding rather than joining it.
+  if (!myClaimOnTheBeater(a)) {
+    return line + '<div class="onwho">' +
+      (waiting.length ? esc(waiting.join(", ")) + ' still to bid for the 30 seconds&hellip;'
+        : 'Bidding done.') + '</div></div>';
+  }
+  if (mine !== undefined) {
+    return line + '<div class="onwho">' +
+      (mine ? "You&rsquo;re in. " : "You passed. ") +
+      (waiting.length ? 'Waiting on ' + esc(waiting.join(", ")) + '&hellip;'
+        : "That&rsquo;s everyone.") + "</div></div>";
+  }
+  return line +
     '<div class="onwho">Who gets the 30 seconds with it?</div>' +
     '<div class="acts">' +
-    '<button class="big raised" data-act="beaterPass" data-eid="' + esc(a.eid) + '">' +
-    'Pass</button>' +
-    '<button class="big primary" data-act="beaterSettle" data-eid="' + esc(a.eid) + '">' +
-    'Settle it</button></div></div>';
+    '<button class="big raised" data-act="beaterPass">Pass</button>' +
+    '<button class="big primary" data-act="beaterBid">Bid</button>' +
+    '</div></div>';
+}
+
+/*
+ * The bid wheel: the names still in, turning on every phone at once. No
+ * buttons — nobody spins this one, it is spun for them.
+ */
+function renderBeaterWheel() {
+  if (!beaterBid || (!beaterBid.wheel && !beaterBid.settled)) return "";
+  var html = '<div class="modal">' +
+    '<div class="exempt" style="color:#FF8A1E">Who wrecks the beater</div>';
+  if (beaterBid.wheel) {
+    html += '<div class="wheelbox"><div class="wheelptr"></div>' +
+      wheelSvg("wheel-bid", beaterBid.wheel.labels, beaterBid.wheel.rot, null, 14) +
+      '</div>';
+  }
+  if (beaterBid.winner) {
+    html += '<div class="exempt">' + esc(beaterBid.winner) +
+      ' gets 30 seconds with it</div>';
+  } else if (beaterBid.settled) {
+    html += '<p>Nobody wanted it &mdash; the disc goes over as it is.</p>';
+  }
+  if (!beaterBid.wheel || !beaterBid.wheel.spinning) {
+    html += '<button class="big quiet" data-act="closeBid">Done</button>';
+  }
+  return html + '</div>';
 }
 
 function renderAlerts() {
@@ -3620,6 +3785,7 @@ function render() {
   }
   if (viewCard != null) html += renderFaceModal();
   if (wheel) html += renderWheel();
+  html += renderBeaterWheel();
   if (secret) html += renderSecret();
   if (pileOpen) html += renderPile();
   if (parsUI.open) html += renderParGrid();
@@ -8013,20 +8179,19 @@ app.addEventListener("click", function (e) {
       break;
     // Tapping a banner answers "what does that card do?" — the face opens,
     // and the banner is done arguing for attention.
-    // Out of the running: the banner stays for the others, this phone is done.
-    case "beaterPass": {
-      var pe = el.getAttribute("data-eid");
-      liveAlerts = liveAlerts.filter(function (a) { return a.eid !== pe; });
+    // Out, and the table is told: a passed name gets no slot on the wheel.
+    case "beaterPass":
+    case "beaterBid": {
+      if (!beaterBid || !s) break;
+      var wants = act === "beaterBid";
+      var myName = s.players[s.meIndex];
+      if (beaterBid.said[myName.trim().toLowerCase()] !== undefined) break;
+      if (live) liveCast("bid", { eid: beaterBid.eid, name: myName, bid: wants });
+      sayBid(myName, wants);
       render();
       break;
     }
-    // Settle it the way the table settles everything else.
-    case "beaterSettle": {
-      var se = el.getAttribute("data-eid");
-      liveAlerts = liveAlerts.filter(function (a) { return a.eid !== se; });
-      openSecretWheel();
-      break;
-    }
+    case "closeBid": beaterBid = null; render(); break;
     case "alertTap": {
       var eid = el.getAttribute("data-eid");
       var hit = liveAlerts.filter(function (a) { return a.eid === eid; })[0];
