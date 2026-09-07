@@ -460,6 +460,23 @@
   .alert .what { font-size: 20px; font-weight: 900; color: #F4F8FF; }
   .alert .onwho { font-size: 14px; font-weight: 900; color: #A9B8D4; }
   .alert { position: relative; }
+  /*
+   * On its way off the top. The height and the gap close with it, so the
+   * banners underneath rise into the space rather than jumping up once it has
+   * gone. A generous max-height to start from, since a banner's height depends
+   * on its words; it only has to be more than any of them.
+   */
+  .alert.leaving {
+    pointer-events: none;
+    animation: alertout 260ms cubic-bezier(0.4, 0, 1, 1) forwards;
+  }
+  @keyframes alertout {
+    from { transform: translateY(0); opacity: 1; max-height: 300px; margin-top: 0; }
+    60%  { opacity: 0; }
+    to   { transform: translateY(-130%); opacity: 0;
+           max-height: 0; margin-top: -8px; padding-top: 0; padding-bottom: 0;
+           border-top-width: 0; border-bottom-width: 0; }
+  }
   /* The ✕ owns a column down the right-hand edge of every banner, big enough to
      hit without aiming and ruled off so it reads as the way out rather than part
      of the message. Everything left of that rule opens the card. */
@@ -1174,10 +1191,10 @@ var BUILT_IN_COURSES = [{"name":"W.S. Gibbs Memorial Disc Golf Course — White/
 
 /* Card faces present in the Android drawables, id -> asset path. Injected by
    web/build.js; empty until artwork lands. */
-var CARD_ART = {"2":"assets/card_02.png","31":"assets/card_31.png","43":"assets/card_43.png","54":"assets/card_54.png","57":"assets/card_57.png","59":"assets/card_59.png"};
+var CARD_ART = {"31":"assets/card_31.png","43":"assets/card_43.png","54":"assets/card_54.png","57":"assets/card_57.png","59":"assets/card_59.png"};
 /* Where a painting leaves an empty panel for the card's own words, as
    fractions of the picture. Art without one keeps whatever it has painted. */
-var ART_BOXES = {"2":{"x":0.0576,"y":0.6809,"w":0.8868,"h":0.1404,"ar":0.7033},"31":{"x":0.1065,"y":0.6841,"w":0.786,"h":0.1319,"ar":0.7347},"43":{"x":0.1054,"y":0.7005,"w":0.7902,"h":0.1171,"ar":0.7242},"54":{"x":0.1065,"y":0.6968,"w":0.7889,"h":0.1286,"ar":0.723},"57":{"x":0.1061,"y":0.6655,"w":0.7877,"h":0.1597,"ar":0.7453},"59":{"x":0.1037,"y":0.7018,"w":0.7916,"h":0.1287,"ar":0.7187}};
+var ART_BOXES = {"31":{"x":0.1065,"y":0.6841,"w":0.786,"h":0.1319,"ar":0.7347},"43":{"x":0.1054,"y":0.7005,"w":0.7902,"h":0.1171,"ar":0.7242},"54":{"x":0.1065,"y":0.6968,"w":0.7889,"h":0.1286,"ar":0.723},"57":{"x":0.1061,"y":0.6655,"w":0.7877,"h":0.1597,"ar":0.7453},"59":{"x":0.1037,"y":0.7018,"w":0.7916,"h":0.1287,"ar":0.7187}};
 /* One frame per rarity, worn by every card of that rarity with no painting of
    its own. The same shape as an art box, plus the picture to wear. */
 var ART_FRAMES = {"common":{"image":"assets/frame_common.png","ar":0.742,"timing":{"x":0.058,"y":0.0445,"w":0.8841,"h":0.0328},"title":{"x":0.058,"y":0.0787,"w":0.8841,"h":0.0897},"text":{"x":0.0914,"y":0.1844,"w":0.8173,"h":0.5729},"kind":{"x":0.0707,"y":0.8732,"w":0.2682,"h":0.0641}},"epic":{"image":"assets/frame_epic.png","ar":0.7082,"timing":{"x":0.0851,"y":0.0938,"w":0.8308,"h":0.026},"title":{"x":0.0851,"y":0.1212,"w":0.8308,"h":0.0726},"text":{"x":0.118,"y":0.2075,"w":0.765,"h":0.4637},"kind":{"x":0.0783,"y":0.8233,"w":0.2573,"h":0.0527}},"rare":{"image":"assets/frame_rare.png","ar":0.7219,"timing":{"x":0.0892,"y":0.0686,"w":0.8353,"h":0.029},"title":{"x":0.0892,"y":0.0991,"w":0.8353,"h":0.08},"text":{"x":0.1225,"y":0.1932,"w":0.7686,"h":0.5103},"kind":{"x":0.0676,"y":0.8259,"w":0.2706,"h":0.0644}},"uncommon":{"image":"assets/frame_uncommon.png","ar":0.7502,"timing":{"x":0.0601,"y":0.0554,"w":0.8798,"h":0.0318},"title":{"x":0.0601,"y":0.088,"w":0.8798,"h":0.0872},"text":{"x":0.0936,"y":0.1914,"w":0.8128,"h":0.5565},"kind":{"x":0.0709,"y":0.8744,"w":0.2542,"h":0.0628}}};
@@ -1396,7 +1413,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.375 · 6 Sep 22:07";
+var APP_VERSION = "v1.377 · 7 Sep 13:42";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. The arrow beside it goes and looks for a
@@ -2854,10 +2871,25 @@ function localNote(text, head) {
    * newest arrives, so a held thumb reads as a short queue moving rather than a
    * wall building.
    */
+  /*
+   * The one being pushed out leaves rather than disappearing. Vanishing reads
+   * as the screen glitching; sliding off the top reads as a queue, and says
+   * plainly that the button is still being pressed and the old answers are
+   * going somewhere.
+   */
   var same = liveAlerts.filter(function (a) { return a.note && a.head === title; });
-  while (same.length >= NOTE_STACK) dropAlert(same.shift().eid);
+  while (same.length >= NOTE_STACK) pushNoteOut(same.shift().eid);
   liveAlerts.push({ eid: eid, note: text, head: title });
   setTimeout(function () { dropAlert(eid); }, ALERT_FADE_MS);
+}
+
+/* Sends one banner up and off the top, then takes it out of the list. Marked
+   rather than removed, so the render that follows draws it on its way out. */
+function pushNoteOut(eid) {
+  var going = liveAlerts.filter(function (a) { return a.eid === eid; })[0];
+  if (!going || going.leaving) return;
+  going.leaving = true;
+  setTimeout(function () { dropAlert(eid); }, 260);
 }
 
 /* The way out of a banner, on every one of them: a column down the right-hand
@@ -3052,7 +3084,8 @@ function renderAlerts() {
   if (!liveAlerts.length) return "";
   return '<div class="alerts">' + liveAlerts.map(function (a) {
     if (a.note) {
-      return '<div class="alert" data-act="alertTap" data-eid="' + esc(a.eid) + '">' +
+      return '<div class="alert' + (a.leaving ? " leaving" : "") +
+        '" data-act="alertTap" data-eid="' + esc(a.eid) + '">' +
         alertX(a.eid) +
         '<div class="who">' + esc(a.head || "Deal corrected") + '</div>' +
         '<div class="what" style="font-size:16px">' + esc(a.note) + '</div></div>';

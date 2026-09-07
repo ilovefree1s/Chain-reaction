@@ -460,6 +460,23 @@
   .alert .what { font-size: 20px; font-weight: 900; color: #F4F8FF; }
   .alert .onwho { font-size: 14px; font-weight: 900; color: #A9B8D4; }
   .alert { position: relative; }
+  /*
+   * On its way off the top. The height and the gap close with it, so the
+   * banners underneath rise into the space rather than jumping up once it has
+   * gone. A generous max-height to start from, since a banner's height depends
+   * on its words; it only has to be more than any of them.
+   */
+  .alert.leaving {
+    pointer-events: none;
+    animation: alertout 260ms cubic-bezier(0.4, 0, 1, 1) forwards;
+  }
+  @keyframes alertout {
+    from { transform: translateY(0); opacity: 1; max-height: 300px; margin-top: 0; }
+    60%  { opacity: 0; }
+    to   { transform: translateY(-130%); opacity: 0;
+           max-height: 0; margin-top: -8px; padding-top: 0; padding-bottom: 0;
+           border-top-width: 0; border-bottom-width: 0; }
+  }
   /* The ✕ owns a column down the right-hand edge of every banner, big enough to
      hit without aiming and ruled off so it reads as the way out rather than part
      of the message. Everything left of that rule opens the card. */
@@ -2854,10 +2871,25 @@ function localNote(text, head) {
    * newest arrives, so a held thumb reads as a short queue moving rather than a
    * wall building.
    */
+  /*
+   * The one being pushed out leaves rather than disappearing. Vanishing reads
+   * as the screen glitching; sliding off the top reads as a queue, and says
+   * plainly that the button is still being pressed and the old answers are
+   * going somewhere.
+   */
   var same = liveAlerts.filter(function (a) { return a.note && a.head === title; });
-  while (same.length >= NOTE_STACK) dropAlert(same.shift().eid);
+  while (same.length >= NOTE_STACK) pushNoteOut(same.shift().eid);
   liveAlerts.push({ eid: eid, note: text, head: title });
   setTimeout(function () { dropAlert(eid); }, ALERT_FADE_MS);
+}
+
+/* Sends one banner up and off the top, then takes it out of the list. Marked
+   rather than removed, so the render that follows draws it on its way out. */
+function pushNoteOut(eid) {
+  var going = liveAlerts.filter(function (a) { return a.eid === eid; })[0];
+  if (!going || going.leaving) return;
+  going.leaving = true;
+  setTimeout(function () { dropAlert(eid); }, 260);
 }
 
 /* The way out of a banner, on every one of them: a column down the right-hand
@@ -3052,7 +3084,8 @@ function renderAlerts() {
   if (!liveAlerts.length) return "";
   return '<div class="alerts">' + liveAlerts.map(function (a) {
     if (a.note) {
-      return '<div class="alert" data-act="alertTap" data-eid="' + esc(a.eid) + '">' +
+      return '<div class="alert' + (a.leaving ? " leaving" : "") +
+        '" data-act="alertTap" data-eid="' + esc(a.eid) + '">' +
         alertX(a.eid) +
         '<div class="who">' + esc(a.head || "Deal corrected") + '</div>' +
         '<div class="what" style="font-size:16px">' + esc(a.note) + '</div></div>';
