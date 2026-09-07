@@ -991,22 +991,38 @@
 
   /* Build marker. Menu orange — the Play button's colour — so it reads at a
      glance when two phones are held together. */
-  .ver {
-    display: flex; align-items: center; justify-content: center; gap: 5px;
-    width: 100%; background: none; border: 0; cursor: pointer;
-    text-align: center; font-size: 15px; font-weight: 800; letter-spacing: 1px;
-    font-family: inherit; color: #F7941E;
+  /* The update button and the build number it belongs to, stacked. */
+  .vercorner {
+    display: flex; flex-direction: column; align-items: center; gap: 5px;
     padding: 10px 0 calc(10px + env(safe-area-inset-bottom));
   }
-  .ver svg { display: block; opacity: 0.85; }
+  /* A ring, so it reads as something to press rather than decoration beside
+     the number. Sized to a thumb: this is tapped on a tee pad, one-handed. */
+  .verbtn {
+    display: flex; align-items: center; justify-content: center;
+    width: 46px; height: 46px; min-height: 0; box-sizing: border-box;
+    border-radius: 50%; cursor: pointer;
+    color: #F7941E; background: rgba(10, 6, 2, 0.55);
+    border: 2px solid #F7941E;
+    box-shadow: 0 0 12px rgba(247, 148, 30, 0.45), inset 0 0 10px rgba(247, 148, 30, 0.15);
+    padding: 0;
+  }
+  .verbtn:active { background: rgba(247, 148, 30, 0.22); }
+  .verbtn svg { display: block; }
+  .ver {
+    text-align: center; font-size: 15px; font-weight: 800; letter-spacing: 1px;
+    color: #F7941E;
+  }
   /* Turning while the check is out — the same gesture as the arrow itself. */
   .verspin { display: block; animation: verspin 900ms linear infinite; }
   @keyframes verspin { to { transform: rotate(360deg); } }
   /* On the menu it sits alone in the bottom-right corner, off the artwork. */
-  .menu .ver {
+  /* On the menu it sits alone in the bottom-right corner, off the artwork. */
+  .menu .vercorner {
     position: absolute; left: auto; right: 14px; bottom: calc(env(safe-area-inset-bottom) + 8px);
-    z-index: 3; padding: 0; line-height: 20px; font-size: 15px; width: auto;
+    z-index: 3; padding: 0;
   }
+  .menu .ver { line-height: 18px; font-size: 15px; }
 
   nav {
     position: fixed; left: 0; right: 0; bottom: 0; display: flex; background: var(--panel);
@@ -1385,13 +1401,15 @@ function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. The arrow beside it goes and looks for a
   // newer build, which is the only way off a cached one short of uninstalling.
-  var arrow = '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" ' +
-    'stroke="currentColor" stroke-width="2.6" stroke-linecap="round" ' +
+  var arrow = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" ' +
+    'stroke="currentColor" stroke-width="2.4" stroke-linecap="round" ' +
     'stroke-linejoin="round"><path d="M12 3v11"/><path d="M7 10l5 5 5-5"/>' +
     '<path d="M4 20h16"/></svg>';
-  return '<button class="ver" data-act="getUpdate" title="Check for an update">' +
+  return '<div class="vercorner">' +
+    '<button class="verbtn" data-act="getUpdate" aria-label="Check for an update">' +
     (updating ? '<span class="verspin">' + arrow + '</span>' : arrow) +
-    '<span>' + esc(APP_VERSION.split(" · ")[0]) + '</span></button>';
+    '</button>' +
+    '<div class="ver">' + esc(APP_VERSION.split(" · ")[0]) + '</div></div>';
 }
 
 /* Set while the check is out, so the arrow can say it is working. */
