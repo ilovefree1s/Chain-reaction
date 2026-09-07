@@ -1374,7 +1374,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.355 · 6 Sep 21:24";
+var APP_VERSION = "v1.357 · 6 Sep 21:26";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. Opening the app fetches fresh anyway.
@@ -2810,11 +2810,12 @@ function sayBid(name, wants) {
   var me = (state.players[state.meIndex] || "").trim().toLowerCase();
   if (beaterBid.victim.trim().toLowerCase() !== me) { liveRefresh(); return; }
   var inIt = beaterBid.who.filter(function (n) { return beaterBid.said[n.trim().toLowerCase()]; });
-  if (!inIt.length) {
-    if (live) liveCast("bid", { eid: beaterBid.eid, done: true, winner: null });
-    finishBeaterBid(null, null, null);
-    return;
-  }
+  /*
+   * Everybody passed, so everybody goes on it — bar the player throwing the
+   * disc. Passing is a way of letting somebody else have it, not a way out:
+   * with nobody else to take it, the wheel picks and that is that.
+   */
+  if (!inIt.length) inIt = beaterBid.who.slice();
   if (inIt.length === 1) {
     if (live) liveCast("bid", { eid: beaterBid.eid, done: true, winner: inIt[0] });
     finishBeaterBid(inIt[0], null, null);
@@ -2851,7 +2852,11 @@ function runBeaterSpin(labels, rot, winner) {
     // An angle it has actually been at, or there is nothing to travel from.
     el.style.transition = "none";
     el.style.transform = "rotate(0deg)";
-    void el.offsetWidth;
+    // A read that forces the browser to settle the style it was just given.
+    // offsetWidth is the usual way and it is useless here: these wheels are
+    // SVG, and an SVG element has no offsetWidth, so reading it does nothing
+    // at all and the starting angle never gets committed.
+    el.getBoundingClientRect();
     el.style.transition = "";
     el.classList.add("go");
     startWheelSound(sfxVolume(), segmentCrossings(0, rot, labels.length));
@@ -4862,7 +4867,11 @@ function runMirrorSpin(kind, w) {
      */
     el.style.transition = "none";
     el.style.transform = "rotate(0deg)";
-    void el.offsetWidth;
+    // A read that forces the browser to settle the style it was just given.
+    // offsetWidth is the usual way and it is useless here: these wheels are
+    // SVG, and an SVG element has no offsetWidth, so reading it does nothing
+    // at all and the starting angle never gets committed.
+    el.getBoundingClientRect();
     el.style.transition = "";
     el.classList.add("go");
     requestAnimationFrame(function () {
