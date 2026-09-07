@@ -198,7 +198,7 @@ Suggested palette: deep pine ground (`#0C1A14`), panels (`#132A21`), muted sage 
     { "id": 58, "timing": "Before tee shot", "kind": "attack", "rarity": "uncommon", "name": "PUT EM ON TILT", "text": "Force an opponent to play the entire hole with the TILT!" },
     { "id": 59, "timing": "Before tee shot", "kind": "attack", "rarity": "legendary", "name": "DESTINATION FUCKED!", "text": "Force an opponent to play the entire hole with the \"beater\". Whoever played the card gets 30 seconds to abuse the disc before they tee off. You must tee off within 5 seconds of being handed the disc, and ZERO attempts to repair it are allowed. Otherwise +1 stroke." },
     { "id": 60, "timing": "Before all tee", "kind": "attack", "rarity": "uncommon", "name": "The Curd!", "text": "Everyone rolls 2 dice, including whoever played this card. The lowest roll uses the cottage cheese lid as their driver this hole." },
-    { "id": 61, "timing": "Before tee shot", "kind": "attack", "rarity": "legendary", "name": "MIND IF I TAKE THIS ONE?", "text": "Throw the target opponent's drive for them on this hole. (No throwing backwards is the only rule.)" }
+    { "id": 61, "timing": "Before tee shot", "kind": "attack", "rarity": "legendary", "name": "MIND IF I TAKE THIS ONE?", "text": "Take the next putt for an opponent. (No full send drivers.)" }
   ]
 }
 ```
