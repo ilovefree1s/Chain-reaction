@@ -1374,7 +1374,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.358 · 6 Sep 21:33";
+var APP_VERSION = "v1.360 · 6 Sep 21:36";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. Opening the app fetches fresh anyway.
@@ -4779,12 +4779,19 @@ function watchTheWheel() {
   openMirrorWheel(held.who, held.open);
   if (!wheel || !wheel.mirror) return false;
   /*
-   * Turns taken before you looked are set, not played. Watching a wheel spin
-   * through three stages you already missed is not catching up, it is a
-   * recap — and the result is on its way regardless.
+   * Come in at the name wheel, whatever stage the spinner has reached.
+   *
+   * Being dropped onto a spun effect wheel is being handed an answer with no
+   * question attached — you have not seen who was exempt, and the slice under
+   * the pointer means nothing. So the name is the way in: if it has already
+   * been spun it is spun again here, and you watch it land the way everyone
+   * else did. Anything after that is skipped, and the next thing the spinner
+   * does you see live.
    */
-  held.spins.forEach(function (sp) { settleMirrorSpin(sp.kind, sp); });
+  var theName = null;
+  held.spins.forEach(function (sp) { if (sp.kind === "name") theName = sp; });
   render();
+  if (theName) runMirrorSpin("name", theName);
   return true;
 }
 
