@@ -1345,10 +1345,20 @@ function artSlots(id) {
   if (b.text || b.title || b.timing || b.kind) return b;
   return { ar: b.ar, text: b };
 }
-/* Where a box sits, as a percentage rectangle. */
+/*
+ * Where a box sits, as a percentage rectangle.
+ *
+ * A box may also carry its own side padding, and does when its bar is narrower
+ * than the tier frames the stylesheet's padding was written for. Given as a
+ * fraction of the card, because that is what a percentage padding is measured
+ * against — the containing block, not the element it is on.
+ */
 function boxStyle(b) {
   return "left:" + (b.x * 100).toFixed(2) + "%;top:" + (b.y * 100).toFixed(2) +
-    "%;width:" + (b.w * 100).toFixed(2) + "%;height:" + (b.h * 100).toFixed(2) + "%";
+    "%;width:" + (b.w * 100).toFixed(2) + "%;height:" + (b.h * 100).toFixed(2) + "%" +
+    (b.pad == null ? "" :
+      ";padding-left:" + (b.pad * 100).toFixed(2) +
+      "%;padding-right:" + (b.pad * 100).toFixed(2) + "%");
 }
 
 /* The picture a card shows and the bars written into it: its own painting when
