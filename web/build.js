@@ -344,12 +344,13 @@ if (stampsChanged) fs.writeFileSync(STAMPS, JSON.stringify(stamps, null, 1) + "\
 
 /*
  * The version everyone reads off the bottom of the menu, and the whole point of
- * it is telling phones apart: every build counts one higher, so "are you on 1.104
+ * it is telling phones apart: every build counts one higher, so "are you on 1.3.4
  * yet?" has an answer you can read off a screen across a tee pad.
  *
- * Counted here rather than by hand, because a number you have to remember to
- * bump is a number that silently stops moving. The last part goes up; 1.109 rolls
- * to 1.110, not 1.11 — these are build counts, not decimals.
+ * Counted here rather than by hand, because a number you have to remember to bump
+ * is a number that silently stops moving. Only the last part moves, and it moves
+ * by counting: 1.3.9 rolls to 1.3.10, not 1.4 — it is a build count, not a
+ * decimal. The middle number is moved by hand, when the game itself changes.
  */
 const versionPath = path.join(__dirname, "VERSION");
 const wasVersion = fs.readFileSync(versionPath, "utf8").trim();
