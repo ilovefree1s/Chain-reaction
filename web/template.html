@@ -4338,11 +4338,18 @@ function skinLine(s, h) {
 
 /*
  * House order: the leader plays first and whoever is furthest behind gets the
- * last word — on the tee, and in what order cards get played. It is the
- * standings straight down, so it moves as the round does.
+ * last word — on the tee, and in what order cards get played.
+ *
+ * Literally the tee order, rather than the same idea worked out a second time
+ * from the standings. The two agree from the second hole on and cannot on the
+ * first: with nobody having thrown, every total is level, the sort is a flat
+ * tie, and a stable sort hands back the order the names were typed in on the
+ * setup screen. So the wheel would draw a tee order and the cards would ignore
+ * it — priority to whoever was entered first, who is as likely as not teeing
+ * last.
  */
 function playOrder(s) {
-  return standings(s);
+  return s ? teeOrder(s, s.currentHole) : [];
 }
 /*
  * Every order four players could tee in — 24 of them, or 6 for three, 2 for two.
@@ -4819,7 +4826,8 @@ function playOrderStrip(s) {
     // Nobody is up once the queue has emptied — everybody is.
     var holds = !open && s.players[i] === up;
     // Cards played later override the ones before them, so whoever goes last
-    // settles it — which is the player having the worst round.
+    // settles it — the same player who tees last, which is whoever came off
+    // the hole before worst, or whoever the wheel put last on the first.
     return '<span class="turn' + (holds ? " up" : "") + (last ? " final" : "") +
       (me ? " me" : "") + '">' + esc(s.players[i]) +
       (holds ? '<span class="turntag up">up</span>'
@@ -4851,7 +4859,7 @@ function playOrderStrip(s) {
     : '<button class="big quiet" data-act="passPrio" style="margin:0 0 12px">' +
       'Pass priority &rsaquo;</button>';
   return '<div class="label">Card order &middot; ' +
-    (open ? 'open to everyone' : 'leader first') + '</div>' +
+    (open ? 'open to everyone' : 'same as the tee') + '</div>' +
     '<div class="turnrow">' + names + '</div>' + pass;
 }
 
