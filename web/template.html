@@ -7120,6 +7120,18 @@ function dicePlaces(d) {
  * round of them.
  */
 function dieIsSet(d, i) { return !!d && !!d.set && d.set.indexOf(i) !== -1; }
+/*
+ * Rolled dice wait in the bottom-left corner, stacking up the left edge in the
+ * order they were thrown. Out of the middle, which is where the rest are
+ * thrown from, and out of the way of everything that shuffles the felt.
+ */
+function parkSetDice(d) {
+  if (!d || !d.set || !d.pos || allDiceSet(d)) return;
+  for (var k = 0; k < d.set.length; k++) {
+    var i = d.set[k];
+    if (d.pos[i]) d.pos[i] = { x: 11, y: 86 - k * 15 };
+  }
+}
 function allDiceSet(d) { return !!d && d.count > 0 && ((d.set && d.set.length) || 0) >= d.count; }
 /* Free to be thrown: not yet rolled, or every die has been and the next throw
    is a new round. */
@@ -7439,7 +7451,17 @@ function diceStep(now) {
   // stack of one. Shove them apart in the field's own proportions — a percent
   // across a narrow felt is a much longer way than a percent up it — then put
   // them back inside the walls the shoving pushed them out of.
-  spaceOut(d.pos, padX * 2.1, sim.h / sim.w, { x: padX, y: padY });
+  //
+  // Only the dice still in play, though. A parked die nudged aside to make
+  // room is a die that moved on somebody else's throw, which is the whole
+  // thing parking them was for.
+  var loose = [], looseAt = [];
+  for (i = 0; i < d.count; i++) {
+    if (dieIsSet(d, i) && !allDiceSet(d)) continue;
+    looseAt.push(i); loose.push(d.pos[i]);
+  }
+  spaceOut(loose, padX * 2.1, sim.h / sim.w, { x: padX, y: padY });
+  looseAt.forEach(function (at, k) { d.pos[at] = loose[k]; });
   // The number is whatever it stopped on. Nothing is drawn for it afterwards:
   // the die rocks onto the nearest flat side and that side is read off it, so it
   // never lands showing one face and then changes to another.
@@ -7460,6 +7482,10 @@ function diceStep(now) {
       box.style.transform = "rotateZ(" + sx + "deg) rotateX(" + sy + "deg) rotateY(" + sz + "deg)";
     }
   }
+  // Whatever just landed now stands, so it goes to the corner before anything
+  // is drawn — otherwise it is seen in the middle and then moved.
+  parkSetDice(d);
+  placeDice(field, d);
   diceSim = null;
   d.rolling = false;
   // Straight off the dice, before anybody has had a chance to read them out.
@@ -7475,7 +7501,14 @@ function diceStep(now) {
     if (d.rolling || dieDrag) return;
     var f = app.querySelector(".dicefield");
     if (!f) return;
-    d.pos = diceHome(d);
+    // Home is for the dice still to be thrown. A standing die is already where
+    // it belongs, and calling it home was the second half of the jumping.
+    var home = diceHome(d);
+    for (var q = 0; q < d.count; q++) {
+      if (dieIsSet(d, q) && !allDiceSet(d)) continue;
+      d.pos[q] = home[q];
+    }
+    parkSetDice(d);
     placeDice(f, d);
   }, 1000);
 }
