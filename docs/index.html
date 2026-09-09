@@ -668,13 +668,10 @@
      off transform entirely — it would fight the finger for it. */
   /* Standing until the rest have been thrown: dimmed, and ringed so it reads
      as put aside rather than as a die that has gone dark. */
-  .dicefield .die.set { opacity: 0.72; }
-  .dicefield .die.set::after {
-    content: ""; position: absolute; inset: -7px; border-radius: 16px;
-    border: 2px solid rgba(247, 148, 30, 0.75);
-    box-shadow: 0 0 10px rgba(247, 148, 30, 0.4);
-    pointer-events: none;
-  }
+  /* Half size once it stands. It is a record of a number now, not a die you
+     can do anything with, and at full size two of them own the felt the rest
+     are still being thrown across. */
+  .dicefield .die.set { opacity: 0.72; transform: translate(-50%, -50%) scale(0.5); }
   .dicefield .die.held { z-index: 2; will-change: transform;
                          box-shadow: 0 8px 20px rgba(0, 0, 0, 0.6),
                                      0 0 18px rgba(77, 195, 255, 0.5); }
@@ -1479,7 +1476,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.3.18 · 9 Sep 18:45";
+var APP_VERSION = "v1.3.20 · 9 Sep 18:49";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. The arrow beside it goes and looks for a
@@ -7129,7 +7126,9 @@ function parkSetDice(d) {
   if (!d || !d.set || !d.pos || allDiceSet(d)) return;
   for (var k = 0; k < d.set.length; k++) {
     var i = d.set[k];
-    if (d.pos[i]) d.pos[i] = { x: 11, y: 86 - k * 15 };
+    // Tucked into the corner and stacked close: at half size the old spacing
+    // left a column of gaps down the side of the felt.
+    if (d.pos[i]) d.pos[i] = { x: 8, y: 92 - k * 10 };
   }
 }
 function allDiceSet(d) { return !!d && d.count > 0 && ((d.set && d.set.length) || 0) >= d.count; }
