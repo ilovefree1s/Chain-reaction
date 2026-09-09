@@ -3434,6 +3434,20 @@ function noteCurdRoll(d) {
   var total = d.vals.reduce(function (a, b) { return a + b; }, 0);
   liveCast("roll", { id: curdRoll.id, name: me, total: total });
   sayCurdRoll(me, total);
+  /*
+   * Your throw was the only thing you were in there for, so back to your hand
+   * rather than watching settled dice until the last player throws. Everyone
+   * else's totals arrive as a banner wherever you are.
+   *
+   * A beat first: the dice are seen to land rather than the screen being taken
+   * away as they settle.
+   */
+  setTimeout(function () {
+    if (secret && secret.mode === "dice") { stopWheelSound(true); secret = null; }
+    screen = "round";
+    tab = "hand";
+    render();
+  }, 1200);
 }
 /* Two dice, and the count is not up for discussion while the table is rolling
    for the lid. The card says two. */
