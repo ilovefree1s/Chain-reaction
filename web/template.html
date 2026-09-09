@@ -3138,7 +3138,8 @@ function renderAlerts() {
         '" data-act="alertTap" data-eid="' + esc(a.eid) + '">' +
         alertX(a.eid) +
         '<div class="who">' + esc(a.head || "Deal corrected") + '</div>' +
-        '<div class="what" style="font-size:16px">' + esc(a.note) + '</div></div>';
+        '<div class="what" style="font-size:16px;white-space:pre-line">' +
+        esc(a.note) + '</div></div>';
     }
     if (a.spinStart) {
       return '<div class="alert you" data-act="alertTap" data-eid="' + esc(a.eid) + '">' +
@@ -3403,12 +3404,16 @@ function finishCurdRoll() {
     var rest = tied.filter(function (n) { return n.trim().toLowerCase() !== by; });
     if (rest.length && rest.length < tied.length) { lost = rest; spared = true; }
   }
-  localNote(all.map(function (r) { return r.name + " " + r.total; }).join("  \u00B7  ") +
-    "  \u2014  " + (lost.length > 1
-      ? sayNames(lost) + " tie lowest on " + low + "."
-      : lost[0] + " rolled " + low + " and plays the hole with the lid.") +
-    (spared ? "  " + curdRoll.by + " also rolled " + low + " but played the card, so they are out of it." : ""),
-    "The Curd!");
+  // Lowest first, so whoever has the lid is the line under the heading.
+  var lines = all.map(function (r) { return r.name + "  \u00B7  " + r.total; });
+  // Said out loud, rather than left to be worked out from the column above it.
+  lines.push(lost.length > 1
+    ? "TIED LOWEST: " + sayNames(lost) + " on " + low + "."
+    : "LOSER: " + lost[0] + " \u2014 cottage cheese lid this hole.");
+  if (spared) {
+    lines.push(curdRoll.by + " also rolled " + low + " but played the card, so they are out of it.");
+  }
+  localNote(lines.join("\n"), "The Curd!");
   setTimeout(function () {
     if (secret && secret.mode === "dice") { stopWheelSound(true); secret = null; }
     curdRoll = null;
