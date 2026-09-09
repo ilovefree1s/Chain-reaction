@@ -1470,7 +1470,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.3.14 · 9 Sep 18:35";
+var APP_VERSION = "v1.3.15 · 9 Sep 18:37";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. The arrow beside it goes and looks for a
@@ -4834,7 +4834,10 @@ function renderHand() {
     drawBlock = handIsFull(s)
       ? '<button class="big quiet" disabled>Hand is full &mdash; trade up first</button>' +
         '<p class="hint">You\'re owed ' + plural(s.owed, 'card') + ' but you\'re holding the maximum of ' +
-        DATA.handCap + '. A trade takes 2 and gives 1 back, so it makes the room. ' +
+        DATA.handCap + '. ' + (tradesLeft(s)
+          ? 'A trade takes 2 and gives 1 back, so it makes the room. '
+          : 'Your ' + TRADES_PER_ROUND + ' trades are spent, so the room has to come ' +
+            'from playing one. ') +
         'Locking the next hole loses whatever you haven\'t taken.</p>'
       : '<button class="big primary" data-act="draw">Draw a card (' + s.owed + ' owed)</button>';
   }
@@ -7879,6 +7882,12 @@ function takeTier(s, tierId) {
   if (fromDeck) s.deck = drop(s.deck); else s.discard = drop(s.discard);
   return got;
 }
+/* A round's worth of trades. */
+var TRADES_PER_ROUND = 5;
+function tradesLeft(s) {
+  return Math.max(0, TRADES_PER_ROUND - ((s && s.trades) || 0));
+}
+
 /* Two of a tier in hand, with a tier above them to trade into. */
 function anyTradeUp(s) {
   if (!s || !s.hand) return false;
@@ -7901,18 +7910,24 @@ var tradeUp = null;
  * to have meant.
  */
 function tradeBlock(s) {
+  var left = tradesLeft(s);
   if (!tradeUp) {
+    if (!left) {
+      return '<p class="hint" style="margin:0 0 12px">All ' + TRADES_PER_ROUND +
+        ' trades spent for the round.</p>';
+    }
     return anyTradeUp(s)
+      // The count rides the button: it is a thing being spent, not a feature.
       ? '<button class="big raised" data-act="askTrade" style="margin:0 0 12px">' +
-        'Trade up</button>'
+        'Trade up &middot; ' + left + ' left</button>'
       : '<p class="hint" style="margin:0 0 12px">Trade up needs 2 cards of the same ' +
-        'rarity &mdash; they buy 1 card a rarity higher.</p>';
+        'rarity &mdash; they buy 1 card a rarity higher. ' + left + ' left this round.</p>';
   }
   var picks = tradeUp.picks;
   var first = picks.length ? BY_ID[picks[0]] : null;
   var tier = first ? rarityOf(first) : null;
   var up = first ? tierAbove(first) : null;
-  var ready = picks.length === 2 && !!up;
+  var ready = picks.length === 2 && !!up && left > 0;
   return '<p class="hint" style="margin:0 0 8px">' + (
     !picks.length
       ? 'Pick 2 cards of the same rarity.'
@@ -7935,6 +7950,7 @@ function doTradeUp(s, a, b) {
   var A = BY_ID[a], B = BY_ID[b];
   var tier = A && tierAbove(A);
   if (!A || !B || !tier) return;
+  if (tradesLeft(s) <= 0) return;
   if (s.hand.indexOf(a) < 0 || s.hand.indexOf(b) < 0) return;
   if (rarityOf(A).id !== rarityOf(B).id) return;
   var got = takeTier(s, tier.id);
@@ -7948,6 +7964,7 @@ function doTradeUp(s, a, b) {
   s.hand = s.hand.filter(function (id) { return id !== a && id !== b; });
   s.discard = s.discard.concat([a, b]);
   s.hand = s.hand.concat([got]);
+  s.trades = ((s.trades || 0) + 1);
   tradeUp = null;
   viewCard = null;
   commit(s);
