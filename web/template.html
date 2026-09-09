@@ -4819,10 +4819,10 @@ function renderHand() {
   var drawBlock = "";
   if (s.owed > 0) {
     drawBlock = handIsFull(s)
-      ? '<button class="big quiet" disabled>Hand is full &mdash; discard first</button>' +
+      ? '<button class="big quiet" disabled>Hand is full &mdash; trade up first</button>' +
         '<p class="hint">You\'re owed ' + plural(s.owed, 'card') + ' but you\'re holding the maximum of ' +
-        DATA.handCap + '. Discard, then draw &mdash; locking the next hole loses ' +
-        'whatever you haven\'t taken.</p>'
+        DATA.handCap + '. A trade takes 2 and gives 1 back, so it makes the room. ' +
+        'Locking the next hole loses whatever you haven\'t taken.</p>'
       : '<button class="big primary" data-act="draw">Draw a card (' + s.owed + ' owed)</button>';
   }
   // A hole you have locked that the table has not finished. Without this, a lock
@@ -4834,15 +4834,19 @@ function renderHand() {
   }
 
   var held = heldCardIds(s);
+  // Mid-trade the hand is a picker: the tiles choose instead of opening.
+  var picking = !!tradeUp;
   var cards = s.hand.length
     ? '<div class="handgrid">' +
       s.hand.map(function (id) {
-        return miniCardHtml(BY_ID[id], null, false, held[id] != null);
+        return miniCardHtml(BY_ID[id], picking ? "tradePick" : null,
+          picking && tradeUp.picks.indexOf(id) !== -1, held[id] != null);
       }).join("") + '</div>'
     : '<p class="hint">Nothing in hand. Cards arrive when you lock a hole.</p>';
 
   return counters + drawBlock + playOrderStrip(s) + wheelButton() +
-    '<div class="label">Your hand</div>' + cards;
+    '<div class="label">Your hand</div>' +
+    (s.hand.length ? tradeBlock(s) : "") + cards;
 }
 
 /*
@@ -5449,9 +5453,11 @@ function cardHtml(c, withActions, altText, browse) {
       '<button class="big raised" data-act="keepCard">Keep it</button>' +
       '<button class="big primary" data-act="discardCard" data-i="' + c.id + '">Discard</button></div>';
   } else if (withActions) {
+    // Play alone. Getting rid of a card is a trade now, and a trade is two
+    // cards — which is a decision about the hand, not about this card.
     acts = '<div class="acts">' +
       '<button class="big primary" data-act="playCard" data-i="' + c.id + '">Play</button>' +
-      '<button class="big raised" data-act="askDiscard" data-i="' + c.id + '">Discard</button></div>';
+      '</div>';
   }
   // Art, when it exists, IS the card face; any card without art keeps the
   // interim text tile, so faces can land one at a time.
@@ -6042,8 +6048,8 @@ function renderFaceModal() {
           ? '<button class="big primary" disabled>Not your turn</button>'
           : '<button class="big primary" data-act="playCard" data-i="' + c.id + '">Play</button>') +
         '</div>' +
-        // Discarding stays open either way: the hand cap has to be answerable
-        // whoever's turn it is.
+        // Whether the card can be played is a matter of turn; getting rid of
+        // it is not, and is done over the hand rather than on the card.
         (teedOff
           ? '<p class="hint" style="text-align:center;margin:2px 0 10px">' +
             'Everyone passed and the tee shots are away. This one waits for the next hole.</p>'
@@ -6051,9 +6057,7 @@ function renderFaceModal() {
           ? '<p class="hint" style="text-align:center;margin:2px 0 10px">' +
             esc(prioHolder(state)) + ' has priority. Yours when they pass.</p>'
           : "") +
-        '<div class="facepair">' +
-        '<button class="big raised" data-act="askDiscard" data-i="' + c.id + '">Discard</button>' +
-        closeBtn + '</div>' +
+        '<div class="facepair">' + closeBtn + '</div>' +
         (heldAt != null
           ? '<p class="hint" style="text-align:center;margin-top:10px">Fresh from hole ' +
             (heldAt + 1) + ' &mdash; playable once the whole table locks it in agreement.</p>'
@@ -7822,6 +7826,122 @@ function rarityVars(rare) {
     ";--rareglow:rgba(" + rgb + ",.28)" +
     ";--rareaura:rgba(" + rgb + "," + (0.16 + at * 0.1).toFixed(2) + ")";
 }
+/* The tier above this card's own, or nothing at all if it is legendary. */
+function tierAbove(c) {
+  return RARITIES[rarityRank(c) + 1] || null;
+}
+/* The cards in hand this one could be traded with: same tier, not itself. A
+   hand holds any card at most once, so identity is enough to tell them apart. */
+function tradeMates(s, c) {
+  if (!s || !s.hand) return [];
+  var tier = rarityOf(c).id;
+  return s.hand.filter(function (id) {
+    return id !== c.id && rarityOf(BY_ID[id]).id === tier;
+  });
+}
+/* Worth offering only if there is something to trade with and somewhere to
+   trade up to. Whether the tier above still has a card left in the deck is
+   not asked here — that is answered when the trade is taken, and a deck that
+   has run dry of a tier is a thing to be told, not a button that vanishes. */
+function canTradeUp(s, c) {
+  return !!tierAbove(c) && tradeMates(s, c).length > 0;
+}
+/*
+ * One card of a given tier, out of the deck. A deck with none of that tier
+ * left looks in the discard pile — which is where the two cards being traded
+ * have just gone, so a late-round trade is still worth making.
+ *
+ * Flat random within the tier. The draw's weighting is about which tier you
+ * get, and a trade has already settled that.
+ */
+function takeTier(s, tierId) {
+  var of = function (list) {
+    return list.filter(function (id) { return rarityOf(BY_ID[id]).id === tierId; });
+  };
+  var pool = of(s.deck), fromDeck = true;
+  if (!pool.length) { pool = of(s.discard); fromDeck = false; }
+  if (!pool.length) return null;
+  var got = pool[Math.floor(Math.random() * pool.length)];
+  var drop = function (list) { return list.filter(function (id) { return id !== got; }); };
+  if (fromDeck) s.deck = drop(s.deck); else s.discard = drop(s.discard);
+  return got;
+}
+/* Two of a tier in hand, with a tier above them to trade into. */
+function anyTradeUp(s) {
+  if (!s || !s.hand) return false;
+  var seen = {};
+  for (var i = 0; i < s.hand.length; i++) {
+    var c = BY_ID[s.hand[i]];
+    if (!c || !tierAbove(c)) continue;
+    var t = rarityOf(c).id;
+    if (seen[t]) return true;
+    seen[t] = true;
+  }
+  return false;
+}
+/* The trade being built: null when there isn't one, else the cards picked. */
+var tradeUp = null;
+/*
+ * The button, and the running commentary once it is pressed. The pair has to
+ * match, so a pick of a different tier starts the pair again rather than being
+ * refused — you changed your mind about which two, which is the likelier thing
+ * to have meant.
+ */
+function tradeBlock(s) {
+  if (!tradeUp) {
+    return anyTradeUp(s)
+      ? '<button class="big raised" data-act="askTrade" style="margin:0 0 12px">' +
+        'Trade up</button>'
+      : '<p class="hint" style="margin:0 0 12px">Trade up needs 2 cards of the same ' +
+        'rarity &mdash; they buy 1 card a rarity higher.</p>';
+  }
+  var picks = tradeUp.picks;
+  var first = picks.length ? BY_ID[picks[0]] : null;
+  var tier = first ? rarityOf(first) : null;
+  var up = first ? tierAbove(first) : null;
+  var ready = picks.length === 2 && !!up;
+  return '<p class="hint" style="margin:0 0 8px">' + (
+    !picks.length
+      ? 'Pick 2 cards of the same rarity.'
+      : picks.length === 1
+      ? 'Now pick another <b style="color:' + tier.color + '">' + esc(tier.id) + '</b>.'
+      : !up
+      ? 'Nothing sits above legendary. Pick a different pair.'
+      : 'Two <b style="color:' + tier.color + '">' + esc(tier.id) + '</b> for one ' +
+        '<b style="color:' + up.color + '">' + esc(up.id) + '</b>.') + '</p>' +
+    '<div class="acts" style="margin:0 0 12px">' +
+    '<button class="big primary" data-act="doTrade"' + (ready ? "" : " disabled") +
+    '>Trade up</button>' +
+    '<button class="big quiet" data-act="cancelTrade">Never mind</button></div>';
+}
+/*
+ * Two out, one better in. Checked before anything moves: a tier with nothing
+ * left anywhere would otherwise take the two cards and give nothing back.
+ */
+function doTradeUp(s, a, b) {
+  var A = BY_ID[a], B = BY_ID[b];
+  var tier = A && tierAbove(A);
+  if (!A || !B || !tier) return;
+  if (s.hand.indexOf(a) < 0 || s.hand.indexOf(b) < 0) return;
+  if (rarityOf(A).id !== rarityOf(B).id) return;
+  var got = takeTier(s, tier.id);
+  if (got == null) {
+    localNote("No " + tier.id + " cards left in your deck or your pile, so there is " +
+      "nothing to trade up into.", "Trade up");
+    tradeUp = null;
+    render();
+    return;
+  }
+  s.hand = s.hand.filter(function (id) { return id !== a && id !== b; });
+  s.discard = s.discard.concat([a, b]);
+  s.hand = s.hand.concat([got]);
+  tradeUp = null;
+  viewCard = null;
+  commit(s);
+  localNote(A.name + " and " + B.name + " for " + BY_ID[got].name + ".", "Trade up");
+  render();
+}
+
 function rarityRank(c) {
   var r = rarityOf(c);
   for (var i = 0; i < RARITIES.length; i++) if (RARITIES[i] === r) return i;
@@ -8553,6 +8673,24 @@ app.addEventListener("click", function (e) {
       resolveCard(s, i, false, null);
       break;
 
+    case "askTrade": tradeUp = { picks: [] }; viewCard = null; render(); break;
+    case "cancelTrade": tradeUp = null; render(); break;
+    case "tradePick":
+      if (tradeUp) {
+        var at = tradeUp.picks.indexOf(i);
+        if (at !== -1) tradeUp.picks.splice(at, 1);
+        else if (!tradeUp.picks.length) tradeUp.picks.push(i);
+        // A second pick of another tier is a change of mind about the pair,
+        // not a mistake to refuse: it becomes the new first card.
+        else if (rarityOf(BY_ID[tradeUp.picks[0]]).id === rarityOf(BY_ID[i]).id &&
+                 tradeUp.picks.length < 2) tradeUp.picks.push(i);
+        else tradeUp.picks = [i];
+        render();
+      }
+      break;
+    case "doTrade":
+      if (tradeUp && tradeUp.picks.length === 2) doTradeUp(s, tradeUp.picks[0], tradeUp.picks[1]);
+      break;
     case "askDiscard": confirmDiscard = i; render(); break;
     case "keepCard": confirmDiscard = null; render(); break;
     case "viewCard": viewCard = i; viewWords = null; viewOnly = false; render(); break;
