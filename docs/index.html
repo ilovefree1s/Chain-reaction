@@ -1479,7 +1479,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.3.17 · 9 Sep 18:43";
+var APP_VERSION = "v1.3.18 · 9 Sep 18:45";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. The arrow beside it goes and looks for a
@@ -7187,9 +7187,11 @@ function diceFieldHtml(d) {
     // transform. The resting left/top has to go, not be overridden: it is inline,
     // and no stylesheet rule can outrank that — the transform was landing on top
     // of it, so every throw was offset by wherever the die had been sitting.
-    // Mid-throw only the dice actually thrown hand their placement to the
-    // simulation; the ones standing stay exactly where they landed.
-    var flying = d.rolling && (!diceSim || !diceSim.live || diceSim.live.indexOf(i) !== -1);
+    // Mid-throw only the dice actually thrown hand their placement over to the
+    // simulation; the ones standing stay exactly where they landed. Read off
+    // the tray rather than the simulation, which does not exist yet at the
+    // render that starts the throw.
+    var flying = d.rolling && (!d.flying || d.flying.indexOf(i) !== -1);
     var place = flying ? 'left:0;top:0'
       : 'left:' + at[i].x.toFixed(2) + '%;top:' + at[i].y.toFixed(2) + '%';
     // Every face is always there, carrying its own number. Nothing rewrites pips
@@ -7283,6 +7285,9 @@ function rollDice(strength, which) {
     live = live.filter(function (q) { return which.indexOf(q) !== -1; });
   }
   if (!live.length) return;
+  // Set before anything is drawn: the render below is the one that hands the
+  // thrown dice to the simulation, and it has to know which those are.
+  d.flying = live;
   if (typeof strength !== "number") strength = 0.4;
   strength = Math.max(0, Math.min(1, strength));
   d.rolling = true;
@@ -7292,7 +7297,7 @@ function rollDice(strength, which) {
   playSlice(DICE_SOUND, DICE_ROLL_AT, DICE_ROLL_LEN, sfxVolume(), false, DICE_ROLL_WAIT);
   render(); // once, into the rolling state; the loop owns them after this
   var fieldEl = app.querySelector(".dicefield");
-  if (!fieldEl) { d.rolling = false; render(); return; }
+  if (!fieldEl) { d.rolling = false; d.flying = null; render(); return; }
   var fb = fieldEl.getBoundingClientRect();
   var first = fieldEl.querySelector(".die");
   var size = first ? first.getBoundingClientRect().width : 74;
@@ -7333,7 +7338,7 @@ function diceStep(now) {
   if (!sim || !secret || secret.mode !== "dice") {
     // Abandoned mid-throw. Whatever the dice were doing, they are not doing it
     // any more, and a tray left rolling is a tray nobody can touch again.
-    if (sim && sim.d) sim.d.rolling = false;
+    if (sim && sim.d) { sim.d.rolling = false; sim.d.flying = null; }
     diceSim = null;
     return;
   }
@@ -7482,6 +7487,7 @@ function diceStep(now) {
       box.style.transform = "rotateZ(" + sx + "deg) rotateX(" + sy + "deg) rotateY(" + sz + "deg)";
     }
   }
+  d.flying = null;
   // Whatever just landed now stands, so it goes to the corner before anything
   // is drawn — otherwise it is seen in the middle and then moved.
   parkSetDice(d);
