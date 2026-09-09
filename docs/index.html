@@ -514,6 +514,17 @@
   }
   .alert.tinted .who { color: var(--rare); }
   .alert.tinted .alertx { color: var(--rare); border-left-color: var(--rareglow); }
+  /*
+   * A trade is the one banner about two cards, so it runs between their tiers:
+   * what was spent on the left, what came back on the right. The glow is the
+   * new tier's — that is the half worth noticing.
+   */
+  .alert.trade {
+    background: linear-gradient(#070B14, #070B14) padding-box,
+                linear-gradient(100deg, var(--rare), var(--rare2)) border-box;
+  }
+  .alert.trade .who { color: var(--rare2); }
+  .alert.trade .alertx { color: var(--rare2); }
   /* Aimed at you: still breathes, just no longer always orange. */
   .alert.you.tinted {
     background: linear-gradient(#0A0D16, #0A0D16) padding-box,
@@ -1459,7 +1470,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.3.13 · 9 Sep 18:31";
+var APP_VERSION = "v1.3.14 · 9 Sep 18:35";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. The arrow beside it goes and looks for a
@@ -2911,7 +2922,7 @@ function dropAlert(eid) {
 var noteN = 0;
 /* At most this many of the same note on screen at once. */
 var NOTE_STACK = 3;
-function localNote(text, head) {
+function localNote(text, head, tint) {
   var eid = "local." + (++noteN);
   var title = head || "Deal corrected";
   /*
@@ -2929,7 +2940,7 @@ function localNote(text, head) {
    */
   var same = liveAlerts.filter(function (a) { return a.note && a.head === title; });
   while (same.length >= NOTE_STACK) pushNoteOut(same.shift().eid);
-  liveAlerts.push({ eid: eid, note: text, head: title });
+  liveAlerts.push({ eid: eid, note: text, head: title, tint: tint || null });
   setTimeout(function () { dropAlert(eid); }, ALERT_FADE_MS);
 }
 
@@ -3135,7 +3146,9 @@ function renderAlerts() {
   return '<div class="alerts">' + liveAlerts.map(function (a) {
     if (a.note) {
       return '<div class="alert' + (a.leaving ? " leaving" : "") +
-        '" data-act="alertTap" data-eid="' + esc(a.eid) + '">' +
+        (a.tint ? " tinted trade" : "") + '"' +
+        (a.tint ? ' style="' + a.tint + '"' : "") +
+        ' data-act="alertTap" data-eid="' + esc(a.eid) + '">' +
         alertX(a.eid) +
         '<div class="who">' + esc(a.head || "Deal corrected") + '</div>' +
         '<div class="what" style="font-size:16px;white-space:pre-line">' +
@@ -7938,7 +7951,11 @@ function doTradeUp(s, a, b) {
   tradeUp = null;
   viewCard = null;
   commit(s);
-  localNote(A.name + " and " + B.name + " for " + BY_ID[got].name + ".", "Trade up");
+  /* rarityVars gives the tier's colour and glow; --rare is then reaimed at the
+     tier that was spent, so the banner runs from the old to the new. */
+  var from = rarityOf(A), to = rarityOf(BY_ID[got]);
+  localNote(A.name + " and " + B.name + " for " + BY_ID[got].name + ".", "Trade up",
+    rarityVars(to) + ";--rare:" + from.color + ";--rare2:" + to.color);
   render();
 }
 
