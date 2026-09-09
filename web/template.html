@@ -1186,6 +1186,11 @@ var LONE_WOLF = (function () {
   var m = CARDS.filter(function (c) { return c.name === "LONE WOLF!"; });
   return m.length ? m[0].id : -1;
 })();
+/* The card the whole table rolls for. By name, like the others. */
+var CURD = (function () {
+  var m = CARDS.filter(function (c) { return c.name === "The Curd!"; });
+  return m.length ? m[0].id : -1;
+})();
 /* The card that hands somebody a beater and everybody else thirty seconds
    with it. Found by name for the same reason the wolf is: ids move. */
 var BEATER = (function () {
@@ -2173,6 +2178,7 @@ function liveOpen() {
     if (m.payload.event === "unspent") liveUnspent(p);
     if (m.payload.event === "wheel") liveWheel(p);
     if (m.payload.event === "bid") liveBid(p);
+    if (m.payload.event === "roll") liveRoll(p);
     if (m.payload.event === "bye") liveBye(p);
   };
 
@@ -2877,6 +2883,9 @@ function livePlayed(p) {
                     you: onYou, invite: invite });
   // Played, the beater asks the same question it asks off the wheel.
   if (c.id === BEATER) openBeaterBid(liveAlerts[liveAlerts.length - 1]);
+  // The Curd! takes the whole table to the dice rather than waiting to be
+  // tapped: everybody rolls, so everybody needs the tray in front of them.
+  if (c.id === CURD && startCurdRoll(p.name)) openCurdDice();
   if (onYou || invite || told) {
     // The chain rattle, doing the job it was born for. Both are best-effort:
     // a browser that blocks gesture-less audio or vibration just shows the banner.
@@ -3319,6 +3328,119 @@ function playableOnAll(id) { return PLAY_ON_ALL.indexOf(id) !== -1; }
 var ALERT_GAME = {
   60: "dice",   // The Curd! — everyone rolls 2, lowest gets the lid
 };
+
+/*
+ * One roll, four phones.
+ *
+ * Everybody rolls for The Curd! and the lowest plays the hole with a cottage
+ * cheese lid, which used to mean four people reading their own dice and saying
+ * a number. Each phone announces what it rolled as it lands, so the totals
+ * arrive from the dice rather than from the player holding them.
+ *
+ * Named after the hole and whoever played the card, because that is a name all
+ * four phones can work out for themselves — the broadcast's own id is minted
+ * per message and would be different on every one of them.
+ */
+var curdRoll = null;
+function curdRollId(by) {
+  return "curd:" + (state ? state.currentHole : 0) + ":" + (by || "").trim().toLowerCase();
+}
+/* Live tables only. Offline one phone stands in for the group, so there is
+   nobody to broadcast to and nothing to wait for. */
+function startCurdRoll(by) {
+  if (!live || !state) return false;
+  curdRoll = { id: curdRollId(by), by: by, rolls: {}, done: false };
+  return true;
+}
+/* Whose roll is still outstanding. */
+function curdWaiting() {
+  if (!curdRoll || curdRoll.done || !state) return [];
+  return state.players.filter(function (n) {
+    return n && !curdRoll.rolls[n.trim().toLowerCase()];
+  });
+}
+/* A list of names as you would say them. */
+function sayNames(list) {
+  if (list.length <= 1) return list[0] || "";
+  return list.slice(0, -1).join(", ") + " and " + list[list.length - 1];
+}
+/*
+ * One player's total, from this phone or another. Their first roll is their
+ * roll — the whole point is that it cannot be rolled again until it is liked.
+ */
+function sayCurdRoll(name, total) {
+  if (!curdRoll || curdRoll.done || !state) return;
+  var key = (name || "").trim().toLowerCase();
+  if (!key || curdRoll.rolls[key]) return;
+  curdRoll.rolls[key] = { name: name, total: total };
+  if (curdWaiting().length) { render(); return; }
+  finishCurdRoll();
+}
+/*
+ * The last roll is in. Every phone reads the same list, and the tray closes
+ * itself — after a beat, so whoever rolled last sees their own dice land
+ * rather than having the screen taken away as they settle.
+ *
+ * A tie is reported and left there. The app does not referee, and the house
+ * already sends anything disputed to the gamble games.
+ */
+function finishCurdRoll() {
+  if (!curdRoll || curdRoll.done) return;
+  curdRoll.done = true;
+  var all = Object.keys(curdRoll.rolls).map(function (k) { return curdRoll.rolls[k]; });
+  all.sort(function (a, b) { return a.total - b.total; });
+  var low = all[0].total;
+  var tied = all.filter(function (r) { return r.total === low; })
+    .map(function (r) { return r.name; });
+  /*
+   * Whoever played the card wins ties, so they step out of one — unless they
+   * are the only name in it, which is not a tie at all, or unless everybody
+   * tied and stepping out would leave nobody holding the lid.
+   */
+  var by = (curdRoll.by || "").trim().toLowerCase();
+  var lost = tied, spared = false;
+  if (tied.length > 1) {
+    var rest = tied.filter(function (n) { return n.trim().toLowerCase() !== by; });
+    if (rest.length && rest.length < tied.length) { lost = rest; spared = true; }
+  }
+  localNote(all.map(function (r) { return r.name + " " + r.total; }).join("  \u00B7  ") +
+    "  \u2014  " + (lost.length > 1
+      ? sayNames(lost) + " tie lowest on " + low + "."
+      : lost[0] + " rolled " + low + " and plays the hole with the lid.") +
+    (spared ? "  " + curdRoll.by + " also rolled " + low + " but played the card, so they are out of it." : ""),
+    "The Curd!");
+  setTimeout(function () {
+    if (secret && secret.mode === "dice") { stopWheelSound(true); secret = null; }
+    curdRoll = null;
+    render();
+  }, 1400);
+  render();
+}
+/* Heard from another phone. */
+function liveRoll(p) {
+  if (!curdRoll || p.id !== curdRoll.id) return;
+  if (typeof p.name === "string" && typeof p.total === "number") sayCurdRoll(p.name, p.total);
+}
+/* Called the moment a throw settles, from the phone that threw it. */
+function noteCurdRoll(d) {
+  if (!curdRoll || curdRoll.done || !state) return;
+  var me = state.players[state.meIndex];
+  if (!me || curdRoll.rolls[me.trim().toLowerCase()]) return;
+  var total = d.vals.reduce(function (a, b) { return a + b; }, 0);
+  liveCast("roll", { id: curdRoll.id, name: me, total: total });
+  sayCurdRoll(me, total);
+}
+/* Two dice, and the count is not up for discussion while the table is rolling
+   for the lid. The card says two. */
+function curdLocked() { return !!(curdRoll && !curdRoll.done); }
+/* Opens the tray on this phone with the card's own two dice in it. */
+function openCurdDice() {
+  openSecretWheel();
+  secret.mode = "dice";
+  secret.dice.count = 2;
+  secret.dice.vals = [3, 4];
+  render();
+}
 /* Cards that are an announcement to the table rather than a hit on one person.
    Nobody is targeted and nobody picks anybody, but every phone has to hear it
    go down — the wolf changes what the rest of the hole means for all four. */
@@ -6265,6 +6387,8 @@ function resolveCard(s, id, played, target) {
   // Curd! counts whoever played it among the rollers, so sending everyone else
   // to the dice and leaving them behind would be sending them to roll alone.
   if (played && ALERT_GAME[id]) {
+    if (id === CURD) startCurdRoll(s.players[s.meIndex]);
+    if (id === CURD) { openCurdDice(); return; }
     openSecretWheel();
     secret.mode = ALERT_GAME[id];
     render();
@@ -6952,6 +7076,16 @@ function diceFieldHtml(d) {
       face[1] + 'deg)">' + dieFacesHtml() + '</div></div>';
   }).join("");
 }
+/* Where the table has got to, for whoever is looking at the tray. */
+function curdRollHint() {
+  if (!curdRoll || !state) return "";
+  var mine = curdRoll.rolls[myRoundName()];
+  var left = curdWaiting();
+  if (curdRoll.done || !left.length) return "Everybody has rolled.";
+  return (mine ? "You rolled " + mine.total + ". " : "The Curd! &mdash; roll 2. ") +
+    "Waiting on " + esc(sayNames(left)) + ".";
+}
+
 function renderDiceGame() {
   var d = secret.dice;
   var total = d.vals.reduce(function (a, b) { return a + b; }, 0);
@@ -6962,11 +7096,18 @@ function renderDiceGame() {
     '<div class="label">Dice</div>' +
     // Opposite Back, on its own line, out of the felt the dice need.
     '<div class="dicesteps">' +
-    '<button class="step" data-act="diceLess"' + (d.count <= 1 || d.rolling ? " disabled" : "") + '>&minus;</button>' +
+    '<button class="step" data-act="diceLess"' +
+      (d.count <= 1 || d.rolling || curdLocked() ? " disabled" : "") + '>&minus;</button>' +
     '<div class="dicecount">' + d.count + (d.count === 1 ? " die" : " dice") + '</div>' +
-    '<button class="step" data-act="diceMore"' + (d.count >= 6 || d.rolling ? " disabled" : "") + '>+</button></div>' +
+    '<button class="step" data-act="diceMore"' +
+      (d.count >= 6 || d.rolling || curdLocked() ? " disabled" : "") + '>+</button></div>' +
+    /* Rolling for the lid, the tray says where the table has got to: your own
+       total once it has landed, and who has still to throw. Without it the
+       last three players are sitting in a dice tray with nothing to say when
+       it closes itself. */
     '<p class="hint" style="text-align:center;margin:0 0 8px">' +
-    (d.rolling ? "&nbsp;" : "Grab the dice to flick or shake them &middot; drag to move") +
+    (curdRollHint() ||
+      (d.rolling ? "&nbsp;" : "Grab the dice to flick or shake them &middot; drag to move")) +
     '</p>' +
     // Not tossable: swiping the felt itself does nothing. You throw dice by
     // having hold of them, the way you would off a table.
@@ -7189,6 +7330,8 @@ function diceStep(now) {
   }
   diceSim = null;
   d.rolling = false;
+  // Straight off the dice, before anybody has had a chance to read them out.
+  noteCurdRoll(d);
   setTimeout(function () { if (secret && secret.mode === "dice") render(); }, 300);
   // Read where they landed, then they walk back down to the band they are
   // thrown from. Dice that settle at the top of the felt have to be dragged the
@@ -8437,9 +8580,11 @@ app.addEventListener("click", function (e) {
     case "secretBack": stopWheelSound(true); secret.mode = "menu"; render(); break;
     case "flipCoin": flipCoin(); break;
     case "diceLess":
+      if (curdLocked()) break;
       if (secret.dice.count > 1) { secret.dice.count--; secret.dice.vals.pop(); render(); }
       break;
     case "diceMore":
+      if (curdLocked()) break;
       if (secret.dice.count < 6) {
         secret.dice.count++;
         secret.dice.vals.push(1 + Math.floor(Math.random() * 6));
