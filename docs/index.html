@@ -1459,7 +1459,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.3.4 · 9 Sep 17:59";
+var APP_VERSION = "v1.3.5 · 9 Sep 18:04";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. The arrow beside it goes and looks for a
@@ -6166,10 +6166,18 @@ function renderWheel() {
       '<button class="big raised" data-act="wheelKeep">Keep spinning</button>' +
       '<button class="big primary" data-act="wheelCloseYes">Close anyway</button></div></div>';
   } else {
-    // A watched wheel offers no way out until it has landed: joining a spin
-    // is joining it, and half a spin is worse than none. The spinner's own
-    // wheel keeps its Close, because they are the one who can call it off.
-    html += (watching && stage !== "done"
+    /*
+     * A watched wheel offers no way out until it has landed: joining a spin
+     * is joining it, and half a spin is worse than none. The spinner's own
+     * wheel keeps its Close, because they are the one who can call it off.
+     *
+     * Except with a partner still owed. The card has landed and the first name
+     * has been read out to the table, so backing out now is backing out
+     * knowing half the answer. The spin is the only way on, and it is right
+     * there.
+     */
+    var owesMate = stage === "cardDone" && wheel.card && needsMate(wheel.card.id);
+    html += (owesMate || (watching && stage !== "done")
       ? ""
       : '<button class="big quiet" data-act="closeWheel">' +
         (watching ? "Done" : stage === "done" ? "Done" : "Close") + "</button>") +
