@@ -1459,7 +1459,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.3.5 · 9 Sep 18:04";
+var APP_VERSION = "v1.3.7 · 9 Sep 18:10";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. The arrow beside it goes and looks for a
@@ -3506,9 +3506,18 @@ var IGNORES_EXEMPT = [
   11,  // Call Your Shot — the CTP decides it, and everyone is throwing for it
   28,  // Globetrotter Shit — the name putts behind the back for free, everyone else pays
   33,  // Lefty ON the Box — the name's offhand throw is free, everyone else's counts
-  60,  // The Curd! — the dice pick who gets the lid, so the spun name just rolls too
 ];
 function ignoresExempt(id) { return IGNORES_EXEMPT.indexOf(id) !== -1; }
+
+/*
+ * The other way about: the spun name is who it lands on, and the rest of the
+ * table walks. Nothing is being sat out, so a banner promising an exemption
+ * reads as the opposite of what the card underneath it says.
+ */
+var SHORT_STRAW = [
+  60,  // The Curd! — off the wheel the name simply gets the lid, no rolling
+];
+function shortStraw(id) { return SHORT_STRAW.indexOf(id) !== -1; }
 
 /* Cards that say the whole thing themselves — who was spun, who is in it, what
    each side does. No banner over them, no summing-up under them: just the card. */
@@ -3652,8 +3661,13 @@ function wheelWords(c, w) {
   if (t.indexOf("[spinner]") !== -1) named.push(spinner);
   var fill = {
     chooser: free ? spinner : landed,
+    // A free spin drew no name, so the phrase stands in for one. A card that
+    // hands its name the short straw is picking a victim rather than sparing
+    // anybody, and "the player you exempt" says the opposite of what it does.
     exempt: free
-      ? (w && w.spinner ? "the player " + spinner + " exempts" : "the player you exempt")
+      ? (shortStraw(c.id)
+        ? (w && w.spinner ? "the player " + spinner + " picks" : "the player you pick")
+        : (w && w.spinner ? "the player " + spinner + " exempts" : "the player you exempt"))
       : landed,
     // The partner off a team card's second spin, before it lands.
     mate: (w && w.mate) || "the second name",
@@ -6096,10 +6110,15 @@ function renderWheel() {
     // A few cards run on their own trigger and let nobody off, so once one of
     // them lands the name that was spun stops meaning anything.
     var noExempt = cardSettled && ignoresExempt(wheel.card.id);
+    // Named as the one it lands on. Not on a free spin: nobody was drawn, and
+    // the spinner picks who takes it.
+    var straw = cardSettled && !free && shortStraw(wheel.card.id);
     var lone = cardSettled && onlyExempt(wheel.card.id);
     var team = cardSettled && needsMate(wheel.card.id);
     var quiet = cardSettled && saysItAll(wheel.card.id);
-    if (!quiet) html += '<div class="exempt">' + (noExempt
+    if (!quiet) html += '<div class="exempt">' + (straw
+      ? esc(wheel.name) + " drew the short straw"
+      : noExempt
       ? "Nobody sits this one out"
       : team
         ? esc(wheel.name || "First name") + " &amp; " + esc(wheel.mate || "…")
