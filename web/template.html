@@ -6880,21 +6880,32 @@ function dieShake(g, x, y, now) {
   // Without telling those apart, the nudges that stack the dice latched the drag
   // as a shake for the rest of its life, and every flick after them went
   // nowhere until you let go and took hold again.
-  if (g.shaking && g.shakeY != null && g.shakeY - y > 44) {
+  // Raised from 44px. A rattle wanders upward all the time, and at 44 the shake
+  // kept dropping out mid-gesture — measured over a two-second shake, a hard one
+  // was rattling the dice twice where a gentle one managed fifteen times.
+  if (g.shaking && g.shakeY != null && g.shakeY - y > 60) {
     g.shaking = false; g.turns = []; g.shakeDir = 0;
     shakeQuiet(g);
   }
   if (g.shaking) shakeAlive(g);
-  if (Math.abs(x - (g.shakeX == null ? x : g.shakeX)) < 9) return;
+  if (Math.abs(x - (g.shakeX == null ? x : g.shakeX)) < 5) return;
   var dir = x > g.shakeX ? 1 : -1;
   g.shakeX = x;
   if (g.shakeDir && dir !== g.shakeDir) {
-    // A change of direction that also changed height is aim, not a rattle.
-    if (g.shakeY != null && Math.abs(y - g.shakeY) > 30) g.turns = [];
-    g.turns = (g.turns || []).filter(function (t) { return now - t < 900; });
+    /*
+     * A reversal that also travels a long way up or down is aim, not a rattle,
+     * and starts the count again. It has to be a long way: a hand shaking a
+     * phone wanders the whole time, and at 30px an ordinary wobble threw away
+     * every reversal counted so far — so the harder somebody shook, the less
+     * likely it was to catch.
+     */
+    if (g.shakeY != null && Math.abs(y - g.shakeY) > 90) g.turns = [];
+    g.turns = (g.turns || []).filter(function (t) { return now - t < 1200; });
     g.turns.push(now);
     g.shakeY = y;
-    if (g.turns.length >= 3) g.shaking = true;
+    // Two is a shake. Three was a sentence you had to finish before the dice
+    // would answer, and the window kept closing before you got there.
+    if (g.turns.length >= 2) g.shaking = true;
   }
   g.shakeDir = dir;
   if (!g.shaking) return;
