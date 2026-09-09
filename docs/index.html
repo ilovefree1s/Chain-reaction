@@ -666,6 +666,15 @@
   /* Picked up: brighter and out from under the others. The lift and the carrying
      are done on the element's transform by the drag itself, so this rule stays
      off transform entirely — it would fight the finger for it. */
+  /* Standing until the rest have been thrown: dimmed, and ringed so it reads
+     as put aside rather than as a die that has gone dark. */
+  .dicefield .die.set { opacity: 0.72; }
+  .dicefield .die.set::after {
+    content: ""; position: absolute; inset: -7px; border-radius: 16px;
+    border: 2px solid rgba(247, 148, 30, 0.75);
+    box-shadow: 0 0 10px rgba(247, 148, 30, 0.4);
+    pointer-events: none;
+  }
   .dicefield .die.held { z-index: 2; will-change: transform;
                          box-shadow: 0 8px 20px rgba(0, 0, 0, 0.6),
                                      0 0 18px rgba(77, 195, 255, 0.5); }
@@ -1470,7 +1479,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.3.15 · 9 Sep 18:37";
+var APP_VERSION = "v1.3.16 · 9 Sep 18:41";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. The arrow beside it goes and looks for a
@@ -3442,6 +3451,10 @@ function liveRoll(p) {
 /* Called the moment a throw settles, from the phone that threw it. */
 function noteCurdRoll(d) {
   if (!curdRoll || curdRoll.done || !state) return;
+  // One die at a time means a total is not a total until the last of them has
+  // landed. Announcing on the first would send the table a number half of
+  // which had not been thrown yet.
+  if (!allDiceSet(d)) return;
   var me = state.players[state.meIndex];
   if (!me || curdRoll.rolls[me.trim().toLowerCase()]) return;
   var total = d.vals.reduce(function (a, b) { return a + b; }, 0);
@@ -3471,6 +3484,7 @@ function openCurdDice() {
   secret.mode = "dice";
   secret.dice.count = 2;
   secret.dice.vals = [3, 4];
+  secret.dice.set = [];
   render();
 }
 /* Cards that are an announcement to the table rather than a hit on one person.
@@ -6599,7 +6613,7 @@ function openSecretWheel() {
     // The name wheel's slate.
     text: saved, rot: 0, name: null, spinning: false,
     // The dice tray and the card table ride along, fresh each visit.
-    dice: { count: 2, vals: [3, 4], rolling: false, pos: null },
+    dice: { count: 2, vals: [3, 4], rolling: false, pos: null, set: [] },
     coin: { face: "HEADS", flipping: false },
     cards: { deck: [], board: [], slots: [null, null, null, null, null] }
   };
@@ -6722,7 +6736,10 @@ var dieDrag = null;
    remembered by where it starts in the field's own pixels. */
 function dicePile(at, i, fb) {
   var out = [];
+  var d = secret && secret.dice;
   for (var k = 0; k < at.length; k++) {
+    // A die lying next to a set one picks up itself and nothing else.
+    if (!dieFree(d, k)) continue;
     var sx = at[k].x / 100 * fb.width, sy = at[k].y / 100 * fb.height;
     var dx = sx - at[i].x / 100 * fb.width;
     var dy = sy - at[i].y / 100 * fb.height;
@@ -6765,6 +6782,8 @@ app.addEventListener("pointerdown", function (e) {
     if (!fieldEl) return;
     var field = fieldEl.getBoundingClientRect();
     var i = +die.getAttribute("data-die");
+    // Set, with others still to throw: it stands, so it does not come up.
+    if (!dieFree(secret.dice, i)) return;
     var dieW = die.getBoundingClientRect().width || 74;
     // Half of the die AS HELD: it is scaled up while carried, and clamping to
     // its resting size let a corner of it hang over the edge of the felt.
@@ -6978,8 +6997,11 @@ function dieDragEnd() {
       m.el.style.top = at[m.i].y.toFixed(2) + "%";
     }
   });
+  // What was actually in the hand. A throw is no longer the whole tray, so it
+  // has to say which dice went up.
+  var inHand = g.pile.map(function (m) { return m.i; });
   // Already thrown, by crossing the line rather than by letting go.
-  if (g.launch != null) { rollDice(g.launch); return; }
+  if (g.launch != null) { rollDice(g.launch, inHand); return; }
   // A flick: upward, and still moving as it was let go. Out in the open felt it
   // has to be a real one, because carrying a die across the table and setting it
   // down must not throw the lot. Down in the throwing band the dice are there to
@@ -6989,7 +7011,7 @@ function dieDragEnd() {
   var nearLine = inThrowZone(g.y0) || inThrowZone(g.lastY);
   var needs = nearLine ? DIE_LOB : DIE_FLICK;
   if (dy <= (nearLine ? -16 : -COIN_THROW) && speed >= needs && dx < Math.abs(dy) * 1.6) {
-    rollDice(Math.max(0, (speed - needs) / (COIN_FAST - needs)));
+    rollDice(Math.max(0, (speed - needs) / (COIN_FAST - needs)), inHand);
     return;
   }
   // Nothing to redraw: the dice are already where this left them.
@@ -7093,6 +7115,16 @@ function dicePlaces(d) {
   return d.pos;
 }
 /*
+ * A die that has been rolled stands until the rest have been. Held on the tray
+ * so it survives a re-render, and cleared when the next throw starts a fresh
+ * round of them.
+ */
+function dieIsSet(d, i) { return !!d && !!d.set && d.set.indexOf(i) !== -1; }
+function allDiceSet(d) { return !!d && d.count > 0 && ((d.set && d.set.length) || 0) >= d.count; }
+/* Free to be thrown: not yet rolled, or every die has been and the next throw
+   is a new round. */
+function dieFree(d, i) { return allDiceSet(d) || !dieIsSet(d, i); }
+/*
  * Which number a die is showing, given how far it has been turned about each
  * axis. The faces sit at the six directions in the cube's own space; turning the
  * cube turns them with it, and whichever ends up pointing at the screen is the
@@ -7143,12 +7175,16 @@ function diceFieldHtml(d) {
     // transform. The resting left/top has to go, not be overridden: it is inline,
     // and no stylesheet rule can outrank that — the transform was landing on top
     // of it, so every throw was offset by wherever the die had been sitting.
-    var place = d.rolling ? 'left:0;top:0'
+    // Mid-throw only the dice actually thrown hand their placement to the
+    // simulation; the ones standing stay exactly where they landed.
+    var flying = d.rolling && (!diceSim || !diceSim.live || diceSim.live.indexOf(i) !== -1);
+    var place = flying ? 'left:0;top:0'
       : 'left:' + at[i].x.toFixed(2) + '%;top:' + at[i].y.toFixed(2) + '%';
     // Every face is always there, carrying its own number. Nothing rewrites pips
     // any more — the die is simply turned until the right side is toward you.
     var face = DIE_FACING[v] || DIE_FACING[1];
-    return '<div class="die" data-die="' + i + '" style="' + place + '">' +
+    return '<div class="die' + (dieIsSet(d, i) && !allDiceSet(d) ? " set" : "") +
+      '" data-die="' + i + '" style="' + place + '">' +
       '<div class="cube" style="transform:rotateX(' + face[0] + 'deg) rotateY(' +
       face[1] + 'deg)">' + dieFacesHtml() + '</div></div>';
   }).join("");
@@ -7223,9 +7259,18 @@ var DICE_ROLL_WAIT = 0.4;   // silence before the dice are heard to land
 var DIE_GRAVITY = 2600, DIE_BOUNCE = 0.42, DIE_FLOOR_DRAG = 0.82, DIE_AIR = 0.995;
 var diceSim = null;
 
-function rollDice(strength) {
+function rollDice(strength, which) {
   var d = secret && secret.dice;
   if (!d || d.rolling) return;
+  // Every die has stood: this throw starts them over.
+  if (!d.set || allDiceSet(d)) d.set = [];
+  var live = [];
+  for (var q = 0; q < d.count; q++) if (d.set.indexOf(q) === -1) live.push(q);
+  // Thrown from the hand, only what was in it — and never a die that stands.
+  if (which && which.length) {
+    live = live.filter(function (q) { return which.indexOf(q) !== -1; });
+  }
+  if (!live.length) return;
   if (typeof strength !== "number") strength = 0.4;
   strength = Math.max(0, Math.min(1, strength));
   d.rolling = true;
@@ -7250,7 +7295,8 @@ function rollDice(strength) {
   // start them off.
   var lift = 260 + 900 * strength;
   var bodies = [];
-  for (var i = 0; i < d.count; i++) {
+  for (var n = 0; n < live.length; n++) {
+    var i = live[n];
     bodies.push({
       x: at[i].x / 100 * fb.width, y: at[i].y / 100 * fb.height,
       vx: (Math.random() - 0.5) * (260 + 420 * strength),
@@ -7263,7 +7309,10 @@ function rollDice(strength) {
     });
   }
   diceSim = { bodies: bodies, field: fieldEl, w: fb.width, h: fb.height,
-              r: size / 2, reach: reach, last: 0, still: 0, raf: 0, d: d };
+              r: size / 2, reach: reach, last: 0, still: 0, raf: 0, d: d,
+              // Body n is die live[n]. They stopped being the same thing the
+              // moment a throw could be part of the tray rather than all of it.
+              live: live };
   diceSim.raf = requestAnimationFrame(diceStep);
 }
 
@@ -7349,7 +7398,7 @@ function diceStep(now) {
     b = bodies[i];
     var speed = Math.abs(b.vx) + Math.abs(b.vy);
     if (speed > 26) moving++;
-    var el = sim.field.querySelector('[data-die="' + i + '"]');
+    var el = sim.field.querySelector('[data-die="' + sim.live[i] + '"]');
     if (!el) continue;
     // It goes over at a rate set by how fast it is travelling, about two axes at
     // once, so no throw looks like the last one. Nothing is being swapped: the
@@ -7380,9 +7429,12 @@ function diceStep(now) {
   var padX = sim.r / sim.w * 100, padY = sim.r / sim.h * 100;
   var clampX = function (v) { return Math.max(padX, Math.min(100 - padX, v)); };
   var clampY = function (v) { return Math.max(padY, Math.min(100 - padY, v)); };
-  d.pos = bodies.map(function (x) {
-    return { x: clampX(x.x / sim.w * 100), y: clampY(x.y / sim.h * 100) };
+  // Only the thrown dice moved; the rest are where they were left.
+  var pos = dicePlaces(d).slice();
+  bodies.forEach(function (x, n) {
+    pos[sim.live[n]] = { x: clampX(x.x / sim.w * 100), y: clampY(x.y / sim.h * 100) };
   });
+  d.pos = pos;
   // Two dice clamped to the same corner land on the same spot and read as a
   // stack of one. Shove them apart in the field's own proportions — a percent
   // across a narrow felt is a much longer way than a percent up it — then put
@@ -7393,13 +7445,16 @@ function diceStep(now) {
   // never lands showing one face and then changes to another.
   var field = sim.field;
   field.classList.remove("rolling");
-  for (i = 0; i < d.count; i++) {
+  for (i = 0; i < bodies.length; i++) {
+    var die = sim.live[i];
     var b2 = bodies[i];
     var sx = Math.round(b2.rot / 90) * 90;
     var sy = Math.round(b2.tumble / 90) * 90;
     var sz = Math.round(b2.roll / 90) * 90;
-    d.vals[i] = faceToward(sx, sy, sz);
-    var settled = field.querySelector('[data-die="' + i + '"]');
+    d.vals[die] = faceToward(sx, sy, sz);
+    // Landed, and standing until the rest have had their turn.
+    if (d.set.indexOf(die) === -1) d.set.push(die);
+    var settled = field.querySelector('[data-die="' + die + '"]');
     var box = settled && settled.firstChild;
     if (box) {
       box.style.transform = "rotateZ(" + sx + "deg) rotateX(" + sy + "deg) rotateY(" + sz + "deg)";
@@ -8810,13 +8865,19 @@ app.addEventListener("click", function (e) {
     case "flipCoin": flipCoin(); break;
     case "diceLess":
       if (curdLocked()) break;
-      if (secret.dice.count > 1) { secret.dice.count--; secret.dice.vals.pop(); render(); }
+      if (secret.dice.count > 1) {
+        secret.dice.count--; secret.dice.vals.pop();
+        // A different number of dice is a different throw: nothing stands.
+        secret.dice.set = [];
+        render();
+      }
       break;
     case "diceMore":
       if (curdLocked()) break;
       if (secret.dice.count < 6) {
         secret.dice.count++;
         secret.dice.vals.push(1 + Math.floor(Math.random() * 6));
+        secret.dice.set = [];
         render();
       }
       break;
