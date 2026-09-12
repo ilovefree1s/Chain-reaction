@@ -1490,7 +1490,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.3.38 · 12 Sep 12:12";
+var APP_VERSION = "v1.3.41 · 12 Sep 12:27";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. The arrow beside it goes and looks for a
@@ -6728,6 +6728,9 @@ var DIE_FLICK = 0.55;
 /* What it takes down in the throwing band, where a die is in hand to be thrown
    rather than arranged: barely more than a lift. */
 var DIE_LOB = 0.12;
+/* Carried over the line slower than this (px/ms) the dice are rolled out of the
+   hand; faster, they are thrown. */
+var DIE_GENTLE = 0.8;
 var coinTouchY = null, coinDragEl = null;
 var coinLastY = 0, coinLastT = 0, coinSpeed = 0;
 /* Whether there is anything to throw right now, and what throwing it does. */
@@ -6856,8 +6859,8 @@ window.addEventListener("pointermove", function (e) {
     // is still a rattle.
     var below = !pastThrowLine(t.clientY);
     if (dieDrag.wasBelow && !below && !dieDrag.shaking && dieDrag.speed > 0) {
-      dieDrag.launch = Math.max(0.15,
-        Math.min(1, (dieDrag.speed - DIE_LOB) / (COIN_FAST - DIE_LOB)));
+      // Taken over slowly, the dice are rolled out of the hand; faster, thrown.
+      dieDrag.launch = dieDrag.speed < DIE_GENTLE ? "roll" : "throw";
       dieDragEnd();
       return;
     }
@@ -7032,7 +7035,7 @@ function dieDragEnd() {
   var nearLine = inThrowZone(g.y0) || inThrowZone(g.lastY);
   var needs = nearLine ? DIE_LOB : DIE_FLICK;
   if (dy <= (nearLine ? -16 : -COIN_THROW) && speed >= needs && dx < Math.abs(dy) * 1.6) {
-    rollDice(Math.max(0, (speed - needs) / (COIN_FAST - needs)), inHand);
+    rollDice("throw", inHand);
     return;
   }
   // Nothing to redraw: the dice are already where this left them.
@@ -7393,6 +7396,22 @@ function dieTurn(m, face) {
   var lay = m3mul(m, m3T(m3mul(m3rot(1, 0, 0, f[0]), m3rot(0, 1, 0, f[1]))));
   return Math.atan2(lay[3], lay[0]) * 180 / Math.PI;
 }
+/*
+ * An orientation picked evenly from every way a cube can be turned. Two random
+ * angles one after the other are not that: the faces on the second axis end up
+ * facing you more often, and over 810 dice fives and twos came up a quarter again
+ * as often as sixes and threes.
+ */
+function dieAnyTurn() {
+  var u1 = Math.random(), u2 = Math.random() * 2 * Math.PI, u3 = Math.random() * 2 * Math.PI;
+  var a = Math.sqrt(1 - u1), c = Math.sqrt(u1);
+  var x = a * Math.sin(u2), y = a * Math.cos(u2), z = c * Math.sin(u3), w = c * Math.cos(u3);
+  return [
+    1 - 2 * (y * y + z * z), 2 * (x * y - z * w), 2 * (x * z + y * w),
+    2 * (x * y + z * w), 1 - 2 * (x * x + z * z), 2 * (y * z - x * w),
+    2 * (x * z - y * w), 2 * (y * z + x * w), 1 - 2 * (x * x + y * y)
+  ];
+}
 
 /* Which way up a die has to be for a given number to face you. Opposite sides of
    a real die sum to seven, so naming three of them fixes the other three. */
@@ -7500,7 +7519,10 @@ function renderDiceGame() {
  */
 var DICE_SHAKE_LEN = 1.13, DICE_ROLL_AT = 1.13, DICE_ROLL_LEN = 0.62;
 var DICE_ROLL_WAIT = 0.4;   // silence before the dice are heard to land
-var DIE_FRICTION = 1100, DIE_BOUNCE = 0.42, DIE_FLOOR_DRAG = 0.82, DIE_AIR = 0.995;
+var DIE_FRICTION = 850, DIE_BOUNCE = 0.42, DIE_FLOOR_DRAG = 0.82, DIE_AIR = 0.995;
+/* The physics steps in fixed slices of time, however often the screen redraws;
+   a throw has landed once every die has been still for DIE_STILL_STEPS of them. */
+var DIE_STEP = 1 / 120, DIE_STILL_STEPS = 16;
 /*
  * Up and down. DIE_HOP_G pulls a die in the air back to the felt; DIE_HOP_BOUNCE
  * is how much of its fall it keeps on the way back up; under DIE_HOP_MIN it just
@@ -7511,7 +7533,20 @@ var DIE_FRICTION = 1100, DIE_BOUNCE = 0.42, DIE_FLOOR_DRAG = 0.82, DIE_AIR = 0.9
 var DIE_HOP_G = 9000, DIE_HOP_BOUNCE = 0.42, DIE_HOP_MIN = 120, DIE_HOP_SCALE = 0.0022;
 /* What a rolling die keeps each time it clacks down onto a new face. A cube does
    not roll far: each face it goes over onto takes a good part of what it had. */
-var DIE_CLACK = 0.85;
+var DIE_CLACK = 0.92;
+/*
+ * The two throws. lift is how fast it leaves the hand up the felt (px/s) and spread
+ * how much that varies; side is the sideways scatter; hop how fast it rises off the
+ * felt; turn how fast it goes over, as a multiple of rolling along at that speed;
+ * wobble a sideways tumble on top; twirl its spin on the felt (deg/s).
+ */
+var DIE_THROWS = {
+  // Carried slowly over the line: rolled out of the hand, low, going over a few
+  // times up the felt before it stops.
+  roll: { lift: 760, spread: 0.12, side: 160, hop: 240, turn: 1.0, wobble: 60, twirl: 180 },
+  // Flicked: thrown hard, off the felt, bouncing and tumbling, then rolling out.
+  throw: { lift: 1450, spread: 0.12, side: 520, hop: 1250, turn: 0.8, wobble: 180, twirl: 400 }
+};
 /* How fast the air takes a tumble away, per second. Without it a die turned over
    at full rate for as long as it was off the felt. */
 var DIE_TURN_DRAG = 1.0;
@@ -7525,13 +7560,15 @@ var DIE_TURN_DRAG = 1.0;
  */
 // A softer spring than it had: the last tip onto a face is slower and eases in,
 // so a die visibly winds down onto its number rather than snapping to it.
-var DIE_ROLL_FREE = 360, DIE_SETTLE = 90, DIE_TIP_K = 200, DIE_TIP_C = 17;
+// Rolls on down to a slower speed before it gives up and tips: stopped at 360, a
+// die went over about one face on the felt and settled; now it goes over about two.
+var DIE_ROLL_FREE = 300, DIE_SETTLE = 70, DIE_TIP_K = 200, DIE_TIP_C = 17;
 /* Dice meeting slower than this are resting against each other, not colliding:
    what each was carrying into the other is taken away rather than bounced. */
 var DIE_REST_CONTACT = 90;
 var diceSim = null;
 
-function rollDice(strength, which) {
+function rollDice(kind, which) {
   var d = secret && secret.dice;
   if (!d || d.rolling) return;
   // Every die has stood: this throw starts them over. Any still sitting in the
@@ -7559,8 +7596,10 @@ function rollDice(strength, which) {
   // Set before anything is drawn: the render below is the one that hands the
   // thrown dice to the simulation, and it has to know which those are.
   d.flying = live;
-  if (typeof strength !== "number") strength = 0.4;
-  strength = Math.max(0, Math.min(1, strength));
+  // Two throws, not a range of them: "roll" when the dice were carried slowly
+  // over the line, and anything else is thrown. Any force in between made every
+  // throw a little different and none of them tunable to look right.
+  var P = DIE_THROWS[kind === "roll" ? "roll" : "throw"];
   d.rolling = true;
   // A beat of nothing first: the dice are still leaving the hand when the throw
   // starts, and a landing that lands before they have gone anywhere is a noise
@@ -7582,33 +7621,32 @@ function rollDice(strength, which) {
   // through the edge of the screen on the way past.
   var reach = size * 0.708;
   var at = dicePlaces(d);
-  // Away from you and slightly outward, harder the harder it was flicked, and
-  // never all exactly alike — dice thrown from one hand do not leave it in
-  // formation. Fast enough on its own to carry: nothing pulls it up the felt
-  // any more, so a soft throw stops partway and a hard one reaches the far rail.
-  var lift = 520 + 900 * strength;
+  // Away from you and slightly outward, never all exactly alike — dice thrown from
+  // one hand do not leave it in formation.
+  var rate = 76.5 / size;
   var bodies = [];
   for (var n = 0; n < live.length; n++) {
     var i = live[n];
     var start = dieRest(d, i);
+    var vy0 = -P.lift * (1 - P.spread + Math.random() * 2 * P.spread);
+    var vx0 = (Math.random() - 0.5) * P.side;
     bodies.push({
       x: at[i].x / 100 * fb.width, y: at[i].y / 100 * fb.height,
-      vx: (Math.random() - 0.5) * (260 + 420 * strength),
-      vy: -lift * (0.8 + Math.random() * 0.4),
+      vx: vx0,
+      vy: vy0,
       rot: start.z,
       // Where its faces point: its turn on the felt as it lay, and a random start
       // through the faces, which is what keeps a soft throw from landing on the
       // face it left on.
-      m: m3mul(m3rot(0, 0, 1, start.z),
-        m3mul(m3rot(1, 0, 0, Math.random() * 360), m3rot(0, 1, 0, Math.random() * 360))),
+      m: m3mul(m3rot(0, 0, 1, start.z), dieAnyTurn()),
       // How it is turning, about the screen's own axes: mostly over and over the
       // way it was thrown, a little sideways, and a twirl.
-      wx: (Math.random() < 0.8 ? 1 : -1) * (250 + 350 * strength) * (0.7 + Math.random() * 0.6),
-      wy: (Math.random() - 0.5) * 2 * (175 + 250 * strength),
-      wz: (Math.random() - 0.5) * (350 + 450 * strength),
+      wx: -vy0 * rate * P.turn * (0.85 + Math.random() * 0.3),
+      wy: vx0 * rate + (Math.random() - 0.5) * P.wobble,
+      wz: (Math.random() - 0.5) * P.twirl,
       upFace: null,
       // It leaves the hand rising, to come down and bounce.
-      h: 0, vh: (720 + 700 * strength) * (0.85 + Math.random() * 0.3),
+      h: 0, vh: P.hop * (0.85 + Math.random() * 0.3),
       face: 0
     });
   }
@@ -7634,7 +7672,7 @@ function diceStep(now) {
   }
   // The first frame has no previous one to measure against, and a tab left in
   // the background hands back a gap of seconds — either would teleport them.
-  var dt = sim.last ? Math.min(0.032, (now - sim.last) / 1000) : 0.016;
+  var frameDt = sim.last ? Math.min(0.1, (now - sim.last) / 1000) : DIE_STEP;
   sim.last = now;
   // The walls are re-measured every frame, before anything is written. Measuring
   // once at the throw left the simulation playing in a world 15px wider than the
@@ -7642,7 +7680,21 @@ function diceStep(now) {
   // it — and dice were bouncing off walls that were not where the screen was.
   var fr = sim.field.getBoundingClientRect();
   if (fr.width > 0) { sim.w = fr.width; sim.h = fr.height; }
-  var b, i, j, bodies = sim.bodies, r = sim.r, w = sim.reach, moving = 0;
+  var b, i, j, bodies = sim.bodies, r = sim.r, w = sim.reach, moving;
+  /*
+   * The physics runs in fixed steps of DIE_STEP however often the screen redraws,
+   * and the dice are drawn once at the end of the frame. Stepped once a frame,
+   * several of its drags and turns were taken per frame rather than per second:
+   * the same throw went over more faces at 60 frames a second than at 120, and at
+   * 30 it never came to rest at all.
+   */
+  sim.acc = (sim.acc || 0) + frameDt;
+  var steps = 0;
+  while (sim.acc >= DIE_STEP && steps < 12) {
+  var dt = DIE_STEP;
+  sim.acc -= DIE_STEP;
+  steps++;
+  moving = 0;
 
   for (i = 0; i < bodies.length; i++) {
     b = bodies[i];
@@ -7752,8 +7804,8 @@ function diceStep(now) {
     if (b.y > sim.h - w) { b.y = sim.h - w; if (b.vy > 0) b.vy = -b.vy * DIE_BOUNCE; }
   }
 
-  // Turn each die, then draw it. Nothing is being swapped: the faces are all on
-  // the cube, and you see whichever one is turned toward you.
+  // Turn each die. Nothing is being swapped: the faces are all on the cube, and
+  // you see whichever one is turned toward you.
   for (i = 0; i < bodies.length; i++) {
     b = bodies[i];
     var speed = Math.abs(b.vx) + Math.abs(b.vy);
@@ -7773,7 +7825,7 @@ function diceStep(now) {
     if (wm > 0.001) b.m = m3fix(m3mul(m3rot(b.wx, b.wy, b.wz, wm * dt), b.m));
     var up = dieUp(b.m);
     // Each time it goes over onto a new face on the felt it clacks down, and the
-    // clack takes a good part of what it had: a rolling cube does not roll far.
+    // clack takes a part of what it had: a rolling cube does not roll far.
     if (onFelt && b.upFace != null && up.face !== b.upFace && speed > DIE_SETTLE) {
       b.vx *= DIE_CLACK; b.vy *= DIE_CLACK; b.wx *= DIE_CLACK; b.wy *= DIE_CLACK;
     }
@@ -7781,8 +7833,6 @@ function diceStep(now) {
     // Still sliding, or not yet flat and done rocking: either way it has not
     // landed, and reading it now would be reading a die on its edge.
     if (speed > 26 || !dieAtRest(b, up)) moving++;
-    var el = sim.field.querySelector('[data-die="' + sim.live[i] + '"]');
-    if (!el) continue;
     // Near enough flat and nearly stopped, it is drawn the way a die at rest is:
     // its turn on the felt put on the die, and clipped to rounded corners, so the
     // side faces stop poking out through them. Clipped once it is nearly flat,
@@ -7791,10 +7841,22 @@ function diceStep(now) {
     var swing = Math.max(Math.abs(b.wx), Math.abs(b.wy));
     if (!b.flat && onFelt && up.tilt < 6 && speed < DIE_SETTLE && swing < 300) b.flat = true;
     else if (b.flat && (up.tilt > 20 || speed > DIE_ROLL_FREE)) b.flat = false;
+    // Flat dice collide as the turned squares they are, at their turn.
+    if (b.flat) b.rot = dieTurn(b.m, up.face);
+  }
+  sim.still = moving ? 0 : sim.still + 1;
+  }
+  // A frame that fell far behind drops what it could not catch up on, rather than
+  // running a burst of steps that would jolt the dice forward.
+  if (steps >= 12) sim.acc = 0;
+
+  // Draw each die once, where the steps left it.
+  for (i = 0; i < bodies.length; i++) {
+    b = bodies[i];
+    var el = sim.field.querySelector('[data-die="' + sim.live[i] + '"]');
+    if (!el) continue;
     el.classList.toggle("flat", !!b.flat);
-    var turn = b.flat ? dieTurn(b.m, up.face) : 0;
-    // Flat dice collide as the turned squares they are, at this turn.
-    if (b.flat) b.rot = turn;
+    var turn = b.flat ? b.rot : 0;
     el.style.transform = "translate(" + b.x.toFixed(1) + "px, " + b.y.toFixed(1) +
       "px) translate(-50%, -50%)" + (b.flat ? " rotate(" + turn.toFixed(1) + "deg)" : "") +
       " scale(" + (diceScale(sim.d) * (1 + (b.h || 0) * DIE_HOP_SCALE)).toFixed(3) + ")";
@@ -7807,10 +7869,9 @@ function diceStep(now) {
     if (cube) cube.style.transform = m3css(b.flat ? m3mul(m3rot(0, 0, 1, -turn), b.m) : b.m);
   }
 
-  // Still for a few frames running: they have settled, wherever that turned out
-  // to be. The cap is only there so a pathological bounce cannot run forever.
-  sim.still = moving ? 0 : sim.still + 1;
-  if (sim.still < 8 && (now - (sim.began || (sim.began = now))) < 6000) {
+  // Still for long enough: they have settled, wherever that turned out to be. The
+  // cap is only there so a pathological bounce cannot run forever.
+  if (sim.still < DIE_STILL_STEPS && (now - (sim.began || (sim.began = now))) < 6000) {
     sim.raf = requestAnimationFrame(diceStep);
     return;
   }
