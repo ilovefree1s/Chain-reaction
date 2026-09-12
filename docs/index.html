@@ -1494,7 +1494,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.3.48 · 12 Sep 18:16";
+var APP_VERSION = "v1.3.49 · 12 Sep 18:22";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. The arrow beside it goes and looks for a
@@ -2177,7 +2177,20 @@ function liveOpen() {
       access_token: LIVE_KEY
     });
     l.hbTimer = setInterval(function () { liveRaw("phoenix", "heartbeat", {}); }, HEARTBEAT_MS);
-    l.sayTimer = setInterval(function () { liveHello(); liveRefresh(); }, HELLO_MS);
+    l.sayTimer = setInterval(function () {
+      // A socket can look open and be dead — a phone that swapped wifi for data,
+      // a connection that went quiet without closing — and everything sent down
+      // it goes nowhere, a pass included, while the phone in hand shows it sent.
+      // The server answers a heartbeat every time, so hearing nothing for longer
+      // than one says the line is gone: reopen now rather than find out later.
+      if (l.lastHeard && Date.now() - l.lastHeard > HEARTBEAT_MS + 10000) {
+        l.backoff = 1000;
+        liveRetry();
+        return;
+      }
+      liveHello();
+      liveRefresh();
+    }, HELLO_MS);
   };
 
   sock.onmessage = function (e) {
@@ -2191,6 +2204,7 @@ function liveOpen() {
       if (m.payload && m.payload.status === "ok" && !l.joined) {
         l.joined = true;
         liveHello();
+        l.catchUp = false;
         liveRefresh();
       }
       return;
@@ -2254,7 +2268,8 @@ function liveHello() {
     v: APP_VERSION,
     // Knows nobody yet — just joined or just reloaded. Whoever hears this
     // answers straight away instead of leaving it to the 15s heartbeat.
-    fresh: livePeers().length === 0,
+    // Or just back from a dropped connection, and behind on whatever moved.
+    fresh: livePeers().length === 0 || !!live.catchUp,
     name: (state ? state.players[state.meIndex] : settings.myName) || "",
     characterId: state && state.characters
       ? state.characters[state.meIndex]
@@ -2631,6 +2646,10 @@ function liveRetry() {
   clearInterval(l.hbTimer); clearInterval(l.sayTimer);
   clearTimeout(l.retryTimer);
   l.joined = false;
+  // Back in, it asks to be answered at once: whatever moved while it was out —
+  // the turn, above all — reaches it in one exchange, and anything it did while
+  // out reaches everyone else in its own hello.
+  l.catchUp = true;
   if (l.sock) {
     var dying = l.sock;
     l.sock = null;
