@@ -1494,7 +1494,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.3.50 · 12 Sep 18:24";
+var APP_VERSION = "v1.3.52 · 12 Sep 18:28";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. The arrow beside it goes and looks for a
@@ -2902,11 +2902,19 @@ function liveOrder(p) {
   // A plain order with no spin attached is somebody being caught up.
   if (Array.isArray(p.order)) { setup.teeBase = p.order.slice(); render(); return; }
   if (typeof p.pick !== "number" || typeof p.rot !== "number") return;
-  if (!orderWheel) openOrderWheel();
+  var hostNames = Array.isArray(p.names) &&
+    p.names.every(function (n) { return typeof n === "string"; }) ? p.names : null;
+  if (!orderWheel) openOrderWheel(hostNames);
   if (!orderWheel || !orderWheel.orders[p.pick]) return;
   // Only sane if this phone has the same players, and so the same 24 orders.
   if (p.n !== orderWheel.orders.length) return;
   if (orderWheel.spinning || orderWheel.at != null) return;
+  // Already open on this phone's own roster: made the host's before it turns, so
+  // its segments and where it stops read the host's names in the host's order.
+  if (hostNames && hostNames.length === orderWheel.names.length && seatsForNames(hostNames)) {
+    orderWheel.names = hostNames.slice();
+    render();
+  }
   // The wheel has to be sitting still on screen before it can be seen to turn,
   // so let the render it was just given actually land first.
   requestAnimationFrame(function () { runOrderSpin(p.pick, p.rot); });
@@ -4408,11 +4416,14 @@ function renderOrderDraw() {
   var theirs = live && !live.hosting;
   if (!orderWheel) return "";
 
+  // The wheel's own names \u2014 the host's, in the host's order, on a joiner \u2014 so
+  // every phone's segments and landing read the same.
+  var drawn = orderWheel.names || names;
   var labels = orderWheel.orders.map(function (o) {
-    return o.map(function (i) { return names[i].trim().slice(0, 3); }).join("\u00b7");
+    return o.map(function (i) { return drawn[i].trim().slice(0, 3); }).join("\u00b7");
   });
   var landed = orderWheel.at != null && !orderWheel.spinning
-    ? orderWheel.orders[orderWheel.at].map(function (i) { return names[i]; }) : null;
+    ? orderWheel.orders[orderWheel.at].map(function (i) { return drawn[i]; }) : null;
   return '<div class="label">First tee &middot; ' + labels.length + ' orders</div>' +
     '<p class="hint" style="text-align:center">' +
     (theirs ? 'The host is drawing the order.'
@@ -8425,11 +8436,31 @@ var orderWheel = null;
 /* Set when the wheel was opened by pressing Start, which is every time it opens
    on the host's phone — the round is mid-launch and resumes when it lands. */
 var orderThenStart = false;
-function openOrderWheel() {
-  var names = setup.names.slice(0, activeSeats()).filter(function (n) { return n.trim(); });
-  if (names.length < 2) return;
-  orderWheel = { orders: allOrders(names.length), rot: 0, spinning: false, at: null };
+/*
+ * [names] is the host's table in the host's order, when the spin came from the
+ * host. The landing travels as a number into the orders built over the names, and
+ * every phone lists the same people in its own order — read against this phone's
+ * own roster, the same number named a different order from the one the host's
+ * wheel stopped on, and that different order was the one this phone kept.
+ */
+function openOrderWheel(names) {
+  var own = setup.names.slice(0, activeSeats()).filter(function (n) { return n.trim(); });
+  if (own.length < 2) return;
+  var list = Array.isArray(names) && names.length === own.length ? names.slice() : own;
+  orderWheel = { names: list, orders: allOrders(list.length), rot: 0, spinning: false, at: null };
   render();
+}
+/* Names as this phone's own Setup seats, the numbering setup.teeBase is kept in.
+   Null unless every name has a seat. */
+function seatsForNames(list) {
+  var mine = setup.names.slice(0, activeSeats());
+  var seats = list.map(function (n) {
+    for (var i = 0; i < mine.length; i++) {
+      if (mine[i].trim() && mine[i].trim().toLowerCase() === String(n).trim().toLowerCase()) return i;
+    }
+    return -1;
+  });
+  return seats.indexOf(-1) === -1 ? seats : null;
 }
 /*
  * Turning the wheel. Split out from the press because the host is not the only
@@ -8450,8 +8481,12 @@ function runOrderSpin(pick, rot) {
     if (settled || orderWheel !== mine) return;
     settled = true;
     orderWheel.spinning = false;
-    // Where it stops is the order. There is no spinning it again.
-    setup.teeBase = orderWheel.orders[pick].slice();
+    // Where it stops is the order. There is no spinning it again. Kept as this
+    // phone's own seats, found by name: the wheel may be the host's table in the
+    // host's order. A name this phone has no seat for leaves it to the host's
+    // hello, which carries the draw as names.
+    var drawnSeats = seatsForNames(orderWheel.orders[pick].map(function (i) { return orderWheel.names[i]; }));
+    if (drawnSeats) setup.teeBase = drawnSeats;
     render();
     // Long enough to read what it landed on, then out of the way — the drawn
     // order stays on the setup screen underneath it either way.
@@ -8488,7 +8523,7 @@ function spinOrder() {
     (360 - (pick * seg + seg / 2)) + (Math.random() - 0.5) * 0.6 * seg;
   // Sent before it turns rather than after it lands, which is the difference
   // between the table watching the draw and being told about it.
-  if (live) liveCast("order", { pick: pick, rot: rot, n: n });
+  if (live) liveCast("order", { pick: pick, rot: rot, n: n, names: orderWheel.names });
   runOrderSpin(pick, rot);
 }
 
