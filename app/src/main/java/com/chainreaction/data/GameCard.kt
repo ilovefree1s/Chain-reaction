@@ -103,7 +103,7 @@ object CardDeck {
         GameCard(24, "After a hole", CardKind.SELF, "FIVE FOR YOU, YOU, AND YOU!", "Play after you birdie a hole nobody else birdied. Everyone else owes five dollars to the pot!"),
         GameCard(25, "After throw", CardKind.SELF, "Foot Wedge!", "Move your own lie up to 10 paces (30 ft) in any direction."),
         GameCard(26, "After throw", CardKind.SELF, "GAMBLE!", "Take a second chance at a putt you just missed. Make it and it was a free mulligan. Miss and the second stroke counts too — play whichever disc landed farthest away, then add +1 stroke after the hole ends."),
-        GameCard(27, "After all tee", CardKind.SELF, "I'll Have What He's Having", "After all tee shots, trade lies with an opponent of your choice."),
+        GameCard(27, "After all tee", CardKind.SELF, "I'll Have What He's Having", "After all tee shots, trade lies with an opponent of your choice. The player whose lie you take can join another player of their choice instead of switching with the person that played the card."),
         GameCard(28, "Before shot", CardKind.DUAL, "Globetrotter Shit", "On yourself: putt behind the back at no stroke cost. On another player: they putt behind the back and it counts as a normal stroke."),
         GameCard(29, "Before tee shot", CardKind.DUAL, "GOOD GUYS VS. BAD GUYS!", "Ask if anyone wants to team up this hole — take your pick. (If nobody says yes, you get 1 free mulligan this hole.) If you get a partner it's 2v2 for this hole, and cards hit both players on each team when played. Winners get a banked mulligan, losers take +1 extra stroke."),
         GameCard(30, "After throw", CardKind.SELF, "If the Basket Was There It Woulda Went In", "If you hit any metal and it doesn't go in, it counts as a made putt."),
