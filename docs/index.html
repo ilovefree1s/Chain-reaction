@@ -382,9 +382,11 @@
               margin-bottom: 4px; }
   .minitext { color: #A9B8D4; font-size: 13px; line-height: 1.35; display: -webkit-box;
               -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
-  .facemodal { display: flex; }
+  /* Clipped sideways: a card waiting just past the screen edge, or one thrown off
+     it, would otherwise widen the page and let it scroll. */
+  .facemodal { display: flex; overflow-x: hidden; }
   /* margin:auto centres the card cluster when it fits and stays scrollable when not */
-  .faceinner { width: 100%; max-width: 420px; margin: auto; }
+  .faceinner { width: 100%; max-width: 420px; margin: auto; position: relative; }
   /* Lit from behind in its own colour. Three shadows rather than one: a tight
      ring that reads as the edge glowing, a middle bloom, and a wide soft one
      that puts light on the black around the card. A single large shadow is a
@@ -414,10 +416,12 @@
   .faceslide.settling { transition: transform 180ms ease-out; }
   .faceslide.leaving { transition: transform 200ms ease-in, opacity 200ms ease-in;
                        opacity: 0; }
-  .faceslide.fromright { animation: facein-right 200ms ease-out; }
-  .faceslide.fromleft { animation: facein-left 200ms ease-out; }
-  @keyframes facein-right { from { transform: translateX(60%) rotate(6deg); opacity: 0; } }
-  @keyframes facein-left { from { transform: translateX(-60%) rotate(-6deg); opacity: 0; } }
+  /* The cards either side, waiting past the screen edges and brought over by the
+     drag. Laid over the card on show, and see-through to the thumb: the touch
+     belongs to the card being dragged. */
+  .facepeek { position: absolute; left: 0; width: 100%; z-index: 1; pointer-events: none; }
+  .facepeek.settling { transition: transform 180ms ease-out; }
+  .facepeek.arriving { transition: transform 200ms ease-out; }
   /* Discard and Close share a line: two ways out of the card, neither of them
      the thing you came to do, so they split the width Play does not need. */
   /* Well clear of the card. The tier glow reaches a long way past the edge —
@@ -1490,7 +1494,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.3.44 · 12 Sep 12:54";
+var APP_VERSION = "v1.3.46 · 12 Sep 13:02";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. The arrow beside it goes and looks for a
@@ -6022,17 +6026,11 @@ function cardFaceSvg(c) {
 function renderFaceModal() {
   var c = BY_ID[viewCard];
   var inHand = !viewOnly && state && state.hand.indexOf(c.id) !== -1;
-  // Its own painting if it has one, otherwise its tier's frame.
-  var pic = cardPicture(c);
   // A wheel alert opens the wheel wording, names filled in, exactly as the
   // spinner's screen shows it — the plain face would tell a different story.
-  var face = viewWords != null
-    ? cardHtml(c, false, viewWords)
-    : pic
-    // The words go in the bars the picture left for them, so the card says what
-    // the deck says rather than what it was painted saying.
-    ? artFaceHtml(c, pic.src, c.text, pic.slots)
-    : cardFaceSvg(c);
+  // Otherwise its own painting if it has one, else its tier's frame, with the
+  // words in the bars the picture left for them (see faceMarkup).
+  var face = viewWords != null ? cardHtml(c, false, viewWords) : faceMarkup(c);
 
   var acts = "";
   var closeBtn = '<button class="big quiet" data-act="closeView">Close</button>';
@@ -6117,13 +6115,11 @@ function renderFaceModal() {
       '<span data-act="nextCard"' + (at < state.hand.length - 1 ? "" : ' style="visibility:hidden"') + '>&rsaquo;</span>' +
       '</div>';
   }
-  // A swipe hands the next card a direction to arrive from; a chevron does not,
-  // so it renders with no entry animation and simply cuts.
-  var enter = faceEnterDir === 1 ? " fromright" : faceEnterDir === -1 ? " fromleft" : "";
-  faceEnterDir = 0;
+  // Nothing animates in: a swiped-to card came over during the swipe and is
+  // already in place when this draws, and a chevron simply cuts.
   return '<div class="modal facemodal"><div class="faceinner" style="' +
     rarityVars(rarityOf(c)) + '">' +
-    '<div class="faceslide' + enter + '">' + face + '</div>' + nav + acts +
+    '<div class="faceslide">' + face + '</div>' + nav + acts +
     (closeUsed
       ? ""
       : '<div class="facepair"><button class="big primary" data-act="closeView">' +
@@ -8841,7 +8837,7 @@ function syncButton(selector, enabled) {
 document.addEventListener("pointerdown", function () { syncMusic(); });
 
 var faceTouchX = null, faceTouchY = null, faceDragEl = null;
-var faceDragging = false, faceEnterDir = 0;
+var faceDragging = false;
 /* Release, not drag: one write and one preview per adjustment. */
 app.addEventListener("change", function (e) {
   if (e.target.hasAttribute("data-holes")) {
@@ -8869,10 +8865,15 @@ app.addEventListener("change", function (e) {
 });
 
 /* The enlarged card follows the thumb. Let go short of the throw distance and
-   it springs back; past it, it carries on off the edge and the next card slides
-   in behind it. The chevrons skip all of this on purpose — a tap has no
-   direction to honour, so it stays an instant cut. */
+   it springs back; past it, it carries on off the edge while the next card
+   comes over to take its place. The chevrons skip all of this on purpose — a
+   tap has no direction to honour, so it stays an instant cut. */
 var FACE_THROW = 60;
+/* How far the dragged card has to go, as a share of its width, before the card
+   it is uncovering starts over. It arrives as the drag reaches a whole width,
+   so the next card is on its way long before this one is gone — the old way,
+   this one left the screen entirely and only then did the next appear. */
+var FACE_PEEK_FROM = 0.3;
 function faceCanStep(dir) {
   if (viewCard == null || !state) return false;
   var at = state.hand.indexOf(viewCard);
@@ -8881,6 +8882,74 @@ function faceCanStep(dir) {
 function faceDragEnd() {
   faceTouchX = faceTouchY = faceDragEl = null;
   faceDragging = false;
+}
+/* A card's enlarged face, the same markup whether it is the one on show or one
+   waiting beside it — so the swap at the end of a swipe is not a visible change. */
+function faceMarkup(c) {
+  var pic = cardPicture(c);
+  return pic ? artFaceHtml(c, pic.src, c.text, pic.slots) : cardFaceSvg(c);
+}
+/* The cards either side of the one on show, laid out just past the screen edges
+   when a drag picks its axis — early, so a painting has started loading by the
+   time it is wanted. */
+function facePeeks(slide) {
+  var old = app.querySelectorAll(".facepeek");
+  for (var i = 0; i < old.length; i++) old[i].remove();
+  var at = state.hand.indexOf(viewCard);
+  [1, -1].forEach(function (dir) {
+    if (!faceCanStep(dir)) return;
+    var c = BY_ID[state.hand[at + dir]];
+    var peek = document.createElement("div");
+    peek.className = "facepeek";
+    peek.setAttribute("data-dir", dir);
+    peek.style.cssText = rarityVars(rarityOf(c)) + ";top:" + slide.offsetTop + "px";
+    // A drawn face names its gradients by id, and ids are page-wide: with two on
+    // screen, the waiting card's rim would take the colour of the one on show.
+    var tag = "-peek" + (dir > 0 ? "next" : "prev");
+    peek.innerHTML = faceMarkup(c)
+      .replace(/(\s)id="([^"]+)"/g, '$1id="$2' + tag + '"')
+      .replace(/url\(#([^)]+)\)/g, "url(#$1" + tag + ")")
+      .replace(/href="#([^"]+)"/g, 'href="#$1' + tag + '"');
+    slide.parentNode.appendChild(peek);
+  });
+  faceMovePeeks(slide, 0);
+}
+/* How far a waiting card leans, in degrees, easing upright as it comes over. */
+var FACE_PEEK_TILT = 12;
+/* Where a waiting card sits: its leaning outline, glow and all, just clear of the
+   screen edge on its own side. Measured leaning, because a tilt swings a tall
+   card's corner a long way back toward the middle — clear of the edge upright,
+   it still showed a sliver on screen before anyone had swiped. */
+function facePeekOff(slide, peek, dir) {
+  var a = FACE_PEEK_TILT * Math.PI / 180;
+  var reach = (peek.offsetWidth * Math.cos(a) + peek.offsetHeight * Math.sin(a)) / 2 + 24;
+  var centre = slide.parentNode.getBoundingClientRect().left + peek.offsetWidth / 2;
+  return dir > 0 ? window.innerWidth - centre + reach : -(centre + reach);
+}
+/* Bring the card being uncovered over as the drag goes on: nothing until the
+   dragged card is FACE_PEEK_FROM of its width across, all the way in at a whole
+   width. The card on the other side stays where it waits. */
+function faceMovePeeks(slide, dx) {
+  var w = slide.offsetWidth || 1;
+  var peeks = app.querySelectorAll(".facepeek");
+  for (var i = 0; i < peeks.length; i++) {
+    var dir = +peeks[i].getAttribute("data-dir");
+    var p = dx * dir < 0
+      ? Math.max(0, Math.min(1, (Math.abs(dx) / w - FACE_PEEK_FROM) / (1 - FACE_PEEK_FROM)))
+      : 0;
+    var x = facePeekOff(slide, peeks[i], dir) * (1 - p);
+    peeks[i].style.transform = "translateX(" + x.toFixed(1) + "px) rotate(" +
+      (dir * FACE_PEEK_TILT * (1 - p)).toFixed(2) + "deg)";
+  }
+}
+/* A drag let go short: the waiting cards go back out, and are cleared once there. */
+function faceDropPeeks(slide) {
+  var peeks = app.querySelectorAll(".facepeek");
+  for (var i = 0; i < peeks.length; i++) peeks[i].classList.add("settling");
+  faceMovePeeks(slide, 0);
+  setTimeout(function () {
+    for (var j = 0; j < peeks.length; j++) peeks[j].remove();
+  }, 200);
 }
 app.addEventListener("touchstart", function (e) {
   if (viewCard == null || e.touches.length !== 1) return;
@@ -8898,11 +8967,13 @@ app.addEventListener("touchmove", function (e) {
   if (!faceDragging) {
     if (Math.abs(dx) < 10 || Math.abs(dx) <= Math.abs(dy)) return;
     faceDragging = true;
-    faceDragEl.classList.remove("settling", "fromleft", "fromright");
+    faceDragEl.classList.remove("settling");
+    facePeeks(faceDragEl);
   }
   // Nothing to reach that way — the card gives a little and refuses.
   if (!faceCanStep(dx < 0 ? 1 : -1)) dx /= 4;
   faceDragEl.style.transform = "translateX(" + dx + "px) rotate(" + (dx / 26) + "deg)";
+  faceMovePeeks(faceDragEl, dx);
 }, { passive: true });
 app.addEventListener("touchend", function (e) {
   var el = faceDragEl, dragged = faceDragging;
@@ -8913,19 +8984,43 @@ app.addEventListener("touchend", function (e) {
   if (Math.abs(dx) < FACE_THROW || !faceCanStep(dir)) {
     el.classList.add("settling");
     el.style.transform = "";
+    faceDropPeeks(el);
     return;
   }
-  // Off the edge first, then the swap: rendering mid-flight would pop the next
-  // card in while this one is still moving.
-  faceEnterDir = dir;
+  // This card carries on off the edge while the one it uncovered finishes coming
+  // over. The swap waits for both and draws the new card where that one landed,
+  // so nothing pops in.
   el.classList.add("leaving");
   el.style.transform = "translateX(" + (dir === 1 ? "-120%" : "120%") +
     ") rotate(" + (dir === 1 ? -12 : 12) + "deg)";
-  setTimeout(function () { stepViewCard(dir); }, 200);
+  var peek = app.querySelector('.facepeek[data-dir="' + dir + '"]');
+  if (peek) {
+    void peek.offsetWidth; // glide on from wherever the drag left it
+    peek.classList.add("arriving");
+    peek.style.transform = "translateX(0px) rotate(0deg)";
+  }
+  setTimeout(function () {
+    var was = peek ? peek.getBoundingClientRect().top : null;
+    stepViewCard(dir);
+    // A card with more or fewer lines under it centres a little higher or lower
+    // than the one it replaced; ease it there rather than jumping.
+    var now = app.querySelector(".faceslide");
+    if (was == null || !now) return;
+    var dy = was - now.getBoundingClientRect().top;
+    if (Math.abs(dy) < 1) return;
+    now.style.transform = "translateY(" + dy.toFixed(1) + "px)";
+    void now.offsetWidth;
+    now.classList.add("settling");
+    now.style.transform = "";
+  }, 200);
 }, { passive: true });
 // Android cancels the stream when it claims the drag; put the card back.
 app.addEventListener("touchcancel", function () {
-  if (faceDragEl) { faceDragEl.classList.add("settling"); faceDragEl.style.transform = ""; }
+  if (faceDragEl) {
+    faceDragEl.classList.add("settling");
+    faceDragEl.style.transform = "";
+    faceDropPeeks(faceDragEl);
+  }
   faceDragEnd();
 }, { passive: true });
 
