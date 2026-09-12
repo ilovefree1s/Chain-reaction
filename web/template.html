@@ -7302,7 +7302,10 @@ function rollDice(strength, which) {
   var fieldEl = app.querySelector(".dicefield");
   if (!fieldEl) { d.rolling = false; d.flying = null; render(); return; }
   var fb = fieldEl.getBoundingClientRect();
-  var first = fieldEl.querySelector(".die");
+  // Measured off a die that is actually being thrown. The first die in the tray
+  // can be one already standing, drawn at half size, and a simulation sized off
+  // it put the walls half a die too close and let the real dice hang off the felt.
+  var first = fieldEl.querySelector('[data-die="' + live[0] + '"]') || fieldEl.querySelector(".die");
   var size = first ? first.getBoundingClientRect().width : 74;
   // A tumbling die is a square, and a square on its corner is wider than its
   // side: half its diagonal is what has to clear the wall, or it visibly cuts
@@ -7491,10 +7494,11 @@ function diceStep(now) {
     }
   }
   d.flying = null;
-  // Whatever just landed now stands, so it goes to the corner before anything
-  // is drawn — otherwise it is seen in the middle and then moved.
+  // Whatever just landed now stands, so its place is the corner — in the state
+  // only. The thrown dice still carry the simulation's transform here, and a
+  // resting left/top written on top of it offset them twice, clean off the
+  // felt, until the render below rebuilt them.
   parkSetDice(d);
-  placeDice(field, d);
   diceSim = null;
   d.rolling = false;
   // Straight off the dice, before anybody has had a chance to read them out.
