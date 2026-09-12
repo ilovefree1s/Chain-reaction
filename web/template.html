@@ -7271,7 +7271,7 @@ function tipTowardFace(b, key, wKey, drive, speed, dt) {
   // Rolling, the turn is drawn toward what the ground demands over a moment
   // rather than set to it outright, so a die coming down off a bounce keeps
   // some of the spin it had in the air.
-  w = carry * (w + (drive - w) * Math.min(1, 12 * dt)) + (1 - carry) * tipped;
+  w = carry * (w + (drive - w) * Math.min(1, 6 * dt)) + (1 - carry) * tipped;
   b[wKey] = w;
   b[key] = ang + w * dt;
 }
@@ -7457,6 +7457,9 @@ var DIE_FRICTION = 1100, DIE_BOUNCE = 0.42, DIE_FLOOR_DRAG = 0.82, DIE_AIR = 0.9
  * lands. DIE_HOP_SCALE is how much larger it is drawn per pixel of height.
  */
 var DIE_HOP_G = 3200, DIE_HOP_BOUNCE = 0.5, DIE_HOP_MIN = 60, DIE_HOP_SCALE = 0.0022;
+/* How fast the air takes a tumble away, per second. Without it a die turned over
+   at full rate for as long as it was off the felt. */
+var DIE_TURN_DRAG = 1.0;
 /*
  * How a die comes to rest on a face. Rolling fast it goes over edge after edge
  * with the ground it covers; below DIE_ROLL_FREE it starts running out of the
@@ -7465,7 +7468,9 @@ var DIE_HOP_G = 3200, DIE_HOP_BOUNCE = 0.5, DIE_HOP_MIN = 60, DIE_HOP_SCALE = 0.
  * pull is a damped spring in degrees: DIE_TIP_K how hard, DIE_TIP_C how fast the
  * rocking dies away. Speeds are the same |vx| + |vy| the simulation counts in.
  */
-var DIE_ROLL_FREE = 360, DIE_SETTLE = 90, DIE_TIP_K = 420, DIE_TIP_C = 22;
+// A softer spring than it had: the last tip onto a face is slower and eases in,
+// so a die visibly winds down onto its number rather than snapping to it.
+var DIE_ROLL_FREE = 360, DIE_SETTLE = 90, DIE_TIP_K = 200, DIE_TIP_C = 17;
 /* Dice meeting slower than this are resting against each other, not colliding:
    what each was carrying into the other is taken away rather than bounced. */
 var DIE_REST_CONTACT = 90;
@@ -7535,15 +7540,15 @@ function rollDice(strength, which) {
       x: at[i].x / 100 * fb.width, y: at[i].y / 100 * fb.height,
       vx: (Math.random() - 0.5) * (260 + 420 * strength),
       vy: -lift * (0.8 + Math.random() * 0.4),
-      rot: start.z, spin: (Math.random() - 0.5) * (700 + 900 * strength),
+      rot: start.z, spin: (Math.random() - 0.5) * (350 + 450 * strength),
       // The turn through its own faces, kept apart from the flat spin: one is
       // the die rotating on the felt, the other is it going over and over.
       // Still a random start through the faces: it is what keeps a soft throw
       // from landing near the face it left on. Only the flat turn carries over.
       tumble: Math.random() * 360, roll: Math.random() * 360,
       // It leaves the hand turning over at a rate of its own, and rising.
-      tw: (Math.random() < 0.5 ? -1 : 1) * (500 + 700 * strength) * (0.7 + Math.random() * 0.6),
-      rw: (Math.random() < 0.5 ? -1 : 1) * (350 + 500 * strength) * (0.7 + Math.random() * 0.6),
+      tw: (Math.random() < 0.5 ? -1 : 1) * (250 + 350 * strength) * (0.7 + Math.random() * 0.6),
+      rw: (Math.random() < 0.5 ? -1 : 1) * (175 + 250 * strength) * (0.7 + Math.random() * 0.6),
       h: 0, vh: (260 + 620 * strength) * (0.8 + Math.random() * 0.4),
       face: 0
     });
@@ -7592,9 +7597,11 @@ function diceStep(now) {
         if (impact > DIE_HOP_MIN) {
           b.vh = impact * DIE_HOP_BOUNCE;
           b.vx *= 0.86; b.vy *= 0.86;
-          b.tw = (b.tw || 0) * 0.8 + (Math.random() - 0.5) * impact * 1.6;
-          b.rw = (b.rw || 0) * 0.8 + (Math.random() - 0.5) * impact * 1.2;
-          b.spin += (Math.random() - 0.5) * impact * 0.8;
+          // A landing knocks the tumble about, but takes more off it than it adds:
+          // dice wind down bounce by bounce rather than spinning up off the felt.
+          b.tw = (b.tw || 0) * 0.7 + (Math.random() - 0.5) * impact * 0.8;
+          b.rw = (b.rw || 0) * 0.7 + (Math.random() - 0.5) * impact * 0.6;
+          b.spin += (Math.random() - 0.5) * impact * 0.4;
         } else {
           b.vh = 0;
         }
@@ -7664,7 +7671,7 @@ function diceStep(now) {
         var hit = -rel * 0.6;
         a.vx -= nx * hit; a.vy -= ny * hit;
         c.vx += nx * hit; c.vy += ny * hit;
-        a.spin -= hit * 2; c.spin += hit * 2;
+        a.spin -= hit; c.spin += hit;
       }
     }
   }
@@ -7692,11 +7699,14 @@ function diceStep(now) {
     // whichever one is turned toward you.
     if (b.h > 0.5) {
       // In the air it turns at whatever its last knock gave it, free of the felt.
-      b.tumble += (b.tw || 0) * dt;
-      b.roll += (b.rw || 0) * dt;
+      var ease = Math.exp(-DIE_TURN_DRAG * dt);
+      b.tw = (b.tw || 0) * ease;
+      b.rw = (b.rw || 0) * ease;
+      b.tumble += b.tw * dt;
+      b.roll += b.rw * dt;
     } else {
-      tipTowardFace(b, "tumble", "tw", speed * 0.8, speed, dt);
-      tipTowardFace(b, "roll", "rw", speed * 0.55, speed, dt);
+      tipTowardFace(b, "tumble", "tw", speed * 0.4, speed, dt);
+      tipTowardFace(b, "roll", "rw", speed * 0.3, speed, dt);
     }
     // Flat on the felt it stops twirling fast; only a die still rolling is free
     // to spin.
