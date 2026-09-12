@@ -645,6 +645,13 @@
   .dicefield { position: relative; flex: 1 1 auto; min-height: 300px;
                touch-action: none; perspective: 900px; }
   .dicefield .die { position: absolute; transform: translate(-50%, -50%); }
+  /* Where dice can land, faintly: a thin line round the felt they are thrown
+     across, so the edge a die bounces off is somewhere you can see. Drawn on a
+     layer of its own so it neither takes taps nor changes the felt’s size. */
+  .dicefield::before {
+    content: ""; position: absolute; inset: 2px; border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.16); pointer-events: none;
+  }
   /* The throwing area's near edge. Quiet enough to ignore, there enough to find. */
   .throwline {
     position: absolute; left: 7%; right: 7%; bottom: 50%; height: 0; z-index: 1;
@@ -740,6 +747,9 @@
      otherwise poke past the rounded front. Mid-throw it is turned, and its
      outline is not a rectangle any more, so nothing is clipped then. */
   .dicefield:not(.rolling) .die { border-radius: 13px; overflow: hidden; }
+  /* A die that has come down flat mid-throw is clipped the same way, so the side
+     faces stop poking out through its rounded corners while it rocks and sits. */
+  .dicefield .die.flat { border-radius: 13px; overflow: hidden; }
   /* Half of 74px out along each axis, which is what makes it a cube and not six
      sheets of paper in the same place. */
   .face.f1 { transform: translateZ(37px); }
@@ -6837,7 +6847,7 @@ window.addEventListener("pointermove", function (e) {
       g.ny = Math.max(edge, Math.min(f.height - edge, g.sy + dy));
       g.el.style.transform = "translate(-50%, -50%) translate(" +
         (g.nx - g.sx).toFixed(1) + "px, " + (g.ny - g.sy).toFixed(1) + "px) rotate(" +
-        (g.z || 0).toFixed(1) + "deg) scale(1.1)";
+        (g.z || 0).toFixed(1) + "deg) scale(" + (1.1 * diceScale(secret.dice)).toFixed(3) + ")";
     });
     // Carrying a die up over the line is the throw, finger or no finger. The
     // crossing is what counts, so a die resting up top can be nudged around all
@@ -7110,14 +7120,49 @@ var DIE_PIPS = {
 };
 /* Where the dice are lying, as percentages of the field so they keep their
    places on any screen. Unthrown, they wait in a row along the bottom. */
+/*
+ * Walks the given dice home, each to the slot on its own side of the felt. Die n
+ * used to take slot n wherever it had landed, so a die that came down on the
+ * right walked through the others to the left. The lowest-lying dice take the
+ * lowest row, then each row is filled left to right in the order the dice lie,
+ * so the paths run alongside each other instead of across.
+ */
+function sendHome(d, going, home) {
+  var slots = going.map(function (q) { return home[q]; });
+  var dice = going.map(function (q) { return { q: q, at: d.pos[q] || home[q] }; });
+  slots.sort(function (a, b) { return (b.y - a.y) || (a.x - b.x); });
+  dice.sort(function (a, b) { return (b.at.y - a.at.y) || (a.at.x - b.at.x); });
+  var k = 0;
+  while (k < slots.length) {
+    var rowY = slots[k].y, rowSlots = [], rowDice = [];
+    while (k < slots.length && Math.abs(slots[k].y - rowY) < 0.01) {
+      rowSlots.push(slots[k]); rowDice.push(dice[k]); k++;
+    }
+    rowSlots.sort(function (a, b) { return a.x - b.x; });
+    rowDice.sort(function (a, b) { return a.at.x - b.at.x; });
+    for (var m = 0; m < rowSlots.length; m++) {
+      d.pos[rowDice[m].q] = { x: rowSlots[m].x, y: rowSlots[m].y };
+    }
+  }
+}
 function diceHome(d) {
   var out = [];
   // Three to a row, stacked upward. Six dice will not fit across a phone in
   // one line — they would sit on top of each other before a throw.
   var cols = Math.min(3, d.count);
+  // Spaced for dice lying at any angle: a corner pointed at a corner needs twice
+  // the half-diagonal between centres, which is wider than a die. Measured
+  // against the felt itself, so a narrow phone squeezes the row rather than
+  // pushing its end dice off the edge; before the felt exists, a typical one.
+  var fe = app.querySelector(".dicefield");
+  var W = fe && fe.clientWidth ? fe.clientWidth : 360;
+  var H = fe && fe.clientHeight ? fe.clientHeight : 640;
+  var side = 74 * diceScale(d), clear = side * Math.SQRT2 + 3, reach = side * 0.708;
+  var stepX = cols > 1 ? Math.min(clear, (W - 2 * reach) / (cols - 1)) : 0;
+  var stepY = Math.max(clear, H * 0.17);
   for (var i = 0; i < d.count; i++) {
-    out.push({ x: 50 + ((i % cols) - (cols - 1) / 2) * 26,
-               y: 86 - Math.floor(i / cols) * 17 });
+    out.push({ x: 50 + ((i % cols) - (cols - 1) / 2) * (stepX / W * 100),
+               y: 86 - Math.floor(i / cols) * (stepY / H * 100) });
   }
   return out;
 }
@@ -7130,6 +7175,15 @@ function dicePlaces(d) {
  * so it survives a re-render, and cleared when the next throw starts a fresh
  * round of them.
  */
+/*
+ * How big the dice are drawn: full size up to three, then a tenth smaller for
+ * each die past three. Six full-size dice do not fit across a phone, and piled
+ * into a second row resting on the first they jammed against each other.
+ */
+function diceScale(d) {
+  var n = (d && d.count) || 1;
+  return n <= 3 ? 1 : Math.max(0.6, 1 - 0.1 * (n - 3));
+}
 function dieIsSet(d, i) { return !!d && !!d.set && d.set.indexOf(i) !== -1; }
 /*
  * Rolled dice wait in the bottom-left corner, stacking up the left edge in the
@@ -7141,11 +7195,38 @@ function parkSetDice(d) {
   // the walk home collects them. Only a round in progress parks anything new.
   if (!d || !d.set || !d.pos || allDiceSet(d)) return;
   d.parked = d.set.slice();
+  // Clear of the edge and of each other at whatever angle they lie: a half-size
+  // die's corner reaches its half-diagonal from the centre. Against the real
+  // felt, so a short phone does not stack them into each other.
+  var fe = app.querySelector(".dicefield");
+  var W = fe && fe.clientWidth ? fe.clientWidth : 360;
+  var H = fe && fe.clientHeight ? fe.clientHeight : 640;
+  var halfDiag = 37 * diceScale(d) * Math.SQRT2 / 2;
+  var parkX = Math.max(8, (halfDiag + 3) / W * 100);
+  var parkY = Math.min(92, 100 - (halfDiag + 3) / H * 100);
+  var parkStep = Math.max(10, (halfDiag * 2 + 3) / H * 100);
+  // Dice still to be thrown keep their places, and the stack climbs past any it
+  // would otherwise sit on: the home row's end die stands right in this corner
+  // until it has been thrown.
+  var standing = [];
+  for (var st = 0; st < d.count; st++) {
+    if (d.set.indexOf(st) === -1 && d.pos[st]) standing.push(d.pos[st]);
+  }
+  var clearPx = halfDiag + 74 * diceScale(d) * Math.SQRT2 / 2 + 3;
+  var cursor = parkY;
+  function blocked(y) {
+    return standing.some(function (p) {
+      var gx = (p.x - parkX) / 100 * W, gy = (p.y - y) / 100 * H;
+      return gx * gx + gy * gy < clearPx * clearPx;
+    });
+  }
   for (var k = 0; k < d.set.length; k++) {
     var i = d.set[k];
+    for (var guard = 0; guard < 40 && blocked(cursor); guard++) cursor -= parkStep;
     // Tucked into the corner and stacked close: at half size the old spacing
     // left a column of gaps down the side of the felt.
-    if (d.pos[i]) d.pos[i] = { x: 8, y: 92 - k * 10 };
+    if (d.pos[i]) d.pos[i] = { x: parkX, y: cursor };
+    cursor -= parkStep;
   }
 }
 function allDiceSet(d) { return !!d && d.count > 0 && ((d.set && d.set.length) || 0) >= d.count; }
@@ -7170,7 +7251,7 @@ function dieRest(d, i) {
   var small = !!d.parked && d.parked.indexOf(i) !== -1;
   return {
     x: x, y: y, z: z,
-    outer: "translate(-50%, -50%) rotate(" + z.toFixed(1) + "deg)" + (small ? " scale(0.5)" : ""),
+    outer: "translate(-50%, -50%) rotate(" + z.toFixed(1) + "deg) scale(" + (diceScale(d) * (small ? 0.5 : 1)).toFixed(3) + ")",
     cube: "rotateX(" + x + "deg) rotateY(" + y + "deg)"
   };
 }
@@ -7197,6 +7278,40 @@ function dieAtRest(b) {
   var or = b.roll - Math.round(b.roll / 90) * 90;
   return Math.abs(ot) < 0.8 && Math.abs(or) < 0.8 &&
     Math.abs(b.tw || 0) < 12 && Math.abs(b.rw || 0) < 12 && Math.abs(b.spin) < 20;
+}
+/* Half a turned square's width, measured along a direction. */
+function squareReach(deg, ax, ay, r) {
+  var t = deg * Math.PI / 180, cs = Math.cos(t), sn = Math.sin(t);
+  return r * (Math.abs(ax * cs + ay * sn) + Math.abs(ay * cs - ax * sn));
+}
+/*
+ * Whether two dice overlap, and the shallowest way to part them: a direction
+ * from a toward c, and how far. A die still tumbling has no settled outline,
+ * so it is a disc a die wide. Two lying flat are the squares they are, turned
+ * however they lie — a square's corner reaches well past a disc's edge, and at
+ * rest that corner was sitting on top of the next die.
+ */
+function diceContact(a, c, r) {
+  var dx = c.x - a.x, dy = c.y - a.y;
+  if (a.flat && c.flat) {
+    if (dx * dx + dy * dy >= 8 * r * r) return null; // past two half-diagonals
+    var best = null, rots = [a.rot, c.rot];
+    for (var k = 0; k < 4; k++) {
+      var t = rots[k >> 1] * Math.PI / 180;
+      var ax = k % 2 ? -Math.sin(t) : Math.cos(t), ay = k % 2 ? Math.cos(t) : Math.sin(t);
+      var sep = dx * ax + dy * ay;
+      var over = squareReach(a.rot, ax, ay, r) + squareReach(c.rot, ax, ay, r) - Math.abs(sep);
+      if (over <= 0) return null;
+      if (!best || over < best.depth) {
+        best = { nx: sep < 0 ? -ax : ax, ny: sep < 0 ? -ay : ay, depth: over };
+      }
+    }
+    return best;
+  }
+  var dist = Math.sqrt(dx * dx + dy * dy);
+  if (dist >= r * 2) return null;
+  if (dist < 0.01) { dx = 1; dy = 0; dist = 1; }
+  return { nx: dx / dist, ny: dy / dist, depth: r * 2 - dist };
 }
 /*
  * Which number a die is showing, given how far it has been turned about each
@@ -7308,16 +7423,17 @@ function renderDiceGame() {
 }
 /*
  * A throw is handed to a physics loop and left alone: the dice carry the speed
- * your flick gave them, fall under gravity, bounce off the walls and off each
- * other, and stop when they have nothing left. Nothing decides where they land.
+ * your flick gave them, are dragged by the felt, bounce off the walls and off
+ * each other, and stop when they have nothing left. Nothing decides where they
+ * land.
  *
- * Gravity pulls toward the top of the screen, because that is where the table
- * is: you throw the dice away from you and they settle against the far rail,
- * in sight and clear of the hand that threw them. Everything else about the
- * simulation is ordinary — the dice simply fall the other way.
+ * There is no pull toward any side of the screen. There used to be one toward
+ * the top, so every throw ended against the far rail; it made a die that had
+ * tipped flat carry on sliding uphill, which is not a thing dice on a table do.
+ * A throw now goes where the flick sends it and stops where the felt stops it.
  *
- * The numbers are in pixels and seconds, so gravity reads as gravity: 2600px/s²
- * is about right for a die a centimetre across on a phone.
+ * The numbers are in pixels and seconds. DIE_FRICTION is how hard the felt
+ * slows a die, in px/s².
  */
 /*
  * dice.mp3 is two sounds end to end: a rattle for the first 1.13 seconds, then
@@ -7331,7 +7447,7 @@ function renderDiceGame() {
  */
 var DICE_SHAKE_LEN = 1.13, DICE_ROLL_AT = 1.13, DICE_ROLL_LEN = 0.62;
 var DICE_ROLL_WAIT = 0.4;   // silence before the dice are heard to land
-var DIE_GRAVITY = 2600, DIE_BOUNCE = 0.42, DIE_FLOOR_DRAG = 0.82, DIE_AIR = 0.995;
+var DIE_FRICTION = 1100, DIE_BOUNCE = 0.42, DIE_FLOOR_DRAG = 0.82, DIE_AIR = 0.995;
 /*
  * How a die comes to rest on a face. Rolling fast it goes over edge after edge
  * with the ground it covers; below DIE_ROLL_FREE it starts running out of the
@@ -7341,6 +7457,9 @@ var DIE_GRAVITY = 2600, DIE_BOUNCE = 0.42, DIE_FLOOR_DRAG = 0.82, DIE_AIR = 0.99
  * rocking dies away. Speeds are the same |vx| + |vy| the simulation counts in.
  */
 var DIE_ROLL_FREE = 360, DIE_SETTLE = 90, DIE_TIP_K = 420, DIE_TIP_C = 22;
+/* Dice meeting slower than this are resting against each other, not colliding:
+   what each was carrying into the other is taken away rather than bounced. */
+var DIE_REST_CONTACT = 90;
 var diceSim = null;
 
 function rollDice(strength, which) {
@@ -7386,7 +7505,9 @@ function rollDice(strength, which) {
   // can be one already standing, drawn at half size, and a simulation sized off
   // it put the walls half a die too close and let the real dice hang off the felt.
   var first = fieldEl.querySelector('[data-die="' + live[0] + '"]') || fieldEl.querySelector(".die");
-  var size = first ? first.getBoundingClientRect().width : 74;
+  // The die's own width times the scale it is drawn at. Its on-screen box is no
+  // good for this any more: a die lying turned has a box up to 41% wider than it.
+  var size = (first ? first.offsetWidth : 74) * diceScale(d);
   // A tumbling die is a square, and a square on its corner is wider than its
   // side: half its diagonal is what has to clear the wall, or it visibly cuts
   // through the edge of the screen on the way past.
@@ -7394,9 +7515,9 @@ function rollDice(strength, which) {
   var at = dicePlaces(d);
   // Away from you and slightly outward, harder the harder it was flicked, and
   // never all exactly alike — dice thrown from one hand do not leave it in
-  // formation. Gravity is already pulling them up the felt, so this only has to
-  // start them off.
-  var lift = 260 + 900 * strength;
+  // formation. Fast enough on its own to carry: nothing pulls it up the felt
+  // any more, so a soft throw stops partway and a hard one reaches the far rail.
+  var lift = 740 + 1000 * strength;
   var bodies = [];
   for (var n = 0; n < live.length; n++) {
     var i = live[n];
@@ -7445,7 +7566,15 @@ function diceStep(now) {
 
   for (i = 0; i < bodies.length; i++) {
     b = bodies[i];
-    b.vy -= DIE_GRAVITY * dt; // toward the top, where the table is
+    // The felt drags it to a stop wherever it is, the same pull whichever way it
+    // is going. It used to be pulled toward the top of the screen as well, and a
+    // die that had tipped flat went on gliding up the felt as if it were
+    // running downhill.
+    var glide = Math.sqrt(b.vx * b.vx + b.vy * b.vy);
+    if (glide > 0) {
+      var slow = Math.min(glide, DIE_FRICTION * dt);
+      b.vx -= b.vx / glide * slow; b.vy -= b.vy / glide * slow;
+    }
     b.vx *= DIE_AIR; b.vy *= DIE_AIR;
     b.x += b.vx * dt; b.y += b.vy * dt;
     b.rot += b.spin * dt; b.spin *= 0.988;
@@ -7465,25 +7594,44 @@ function diceStep(now) {
     if (b.y > sim.h - w) { b.y = sim.h - w; b.vy = -Math.abs(b.vy) * DIE_BOUNCE; }
   }
 
-  // Dice against dice, treated as discs: push them apart, then swap what they
-  // were carrying along the line between them.
-  for (i = 0; i < bodies.length; i++) {
-    for (j = i + 1; j < bodies.length; j++) {
-      var a = bodies[i], c = bodies[j];
-      var dx = c.x - a.x, dy = c.y - a.y;
-      var dist = Math.sqrt(dx * dx + dy * dy);
-      var min = r * 2;
-      if (dist >= min) continue;
-      if (dist < 0.01) { dx = 1; dy = 0; dist = 1; }
-      var nx = dx / dist, ny = dy / dist, push = (min - dist) / 2;
-      a.x -= nx * push; a.y -= ny * push;
-      c.x += nx * push; c.y += ny * push;
-      var rel = (c.vx - a.vx) * nx + (c.vy - a.vy) * ny;
-      if (rel > 0) continue; // already parting
-      var hit = -rel * 0.6;
-      a.vx -= nx * hit; a.vy -= ny * hit;
-      c.vx += nx * hit; c.vy += ny * hit;
-      a.spin -= hit * 2; c.spin += hit * 2;
+  // Dice against dice: pushed apart, then what they were carrying swapped along
+  // the line between them. Pushed over three passes, because with several dice
+  // pressed together one pass parts two and leaves them sunk into a third.
+  // Speed is exchanged on the first pass only.
+  // Each push is held inside the walls straight away. Left to the wall pass
+  // afterwards, a die pushed into the wall was pushed back out into the one it
+  // had just been parted from, and the overlap was rebuilt before it was drawn.
+  for (var pass = 0; pass < 4; pass++) {
+    for (i = 0; i < bodies.length; i++) {
+      for (j = i + 1; j < bodies.length; j++) {
+        var a = bodies[i], c = bodies[j];
+        var hitAt = diceContact(a, c, r);
+        if (!hitAt) continue;
+        var nx = hitAt.nx, ny = hitAt.ny, push = hitAt.depth / 2;
+        a.x -= nx * push; a.y -= ny * push;
+        c.x += nx * push; c.y += ny * push;
+        a.x = Math.max(w, Math.min(sim.w - w, a.x)); a.y = Math.max(w, Math.min(sim.h - w, a.y));
+        c.x = Math.max(w, Math.min(sim.w - w, c.x)); c.y = Math.max(w, Math.min(sim.h - w, c.y));
+        if (pass) continue;
+        var rel = (c.vx - a.vx) * nx + (c.vy - a.vy) * ny;
+        if (rel > 0) continue; // already parting
+        if (-rel < DIE_REST_CONTACT) {
+          // Resting on each other, the way a die rests on the felt: whatever
+          // either was carrying into the other is taken away, and the rub of
+          // one on the other slows them. Bounced instead, a die lying on
+          // another under gravity was knocked back up every single frame.
+          var an = a.vx * nx + a.vy * ny, cn = c.vx * nx + c.vy * ny;
+          if (an > 0) { a.vx -= nx * an; a.vy -= ny * an; }
+          if (cn < 0) { c.vx -= nx * cn; c.vy -= ny * cn; }
+          a.vx *= DIE_FLOOR_DRAG; a.vy *= DIE_FLOOR_DRAG; a.spin *= 0.8;
+          c.vx *= DIE_FLOOR_DRAG; c.vy *= DIE_FLOOR_DRAG; c.spin *= 0.8;
+          continue;
+        }
+        var hit = -rel * 0.6;
+        a.vx -= nx * hit; a.vy -= ny * hit;
+        c.vx += nx * hit; c.vy += ny * hit;
+        a.spin -= hit * 2; c.spin += hit * 2;
+      }
     }
   }
 
@@ -7518,12 +7666,26 @@ function diceStep(now) {
     if (speed > 26 || !dieAtRest(b)) moving++;
     var el = sim.field.querySelector('[data-die="' + sim.live[i] + '"]');
     if (!el) continue;
+    // Near enough flat and nearly stopped, it is drawn the way a die at rest is:
+    // its turn on the felt put on the die, and clipped to rounded corners, so the
+    // side faces stop poking out through them. Two thresholds, so a die rocking
+    // about one of them does not flicker between the two.
+    var tilt = Math.max(Math.abs(b.tumble - Math.round(b.tumble / 90) * 90),
+                        Math.abs(b.roll - Math.round(b.roll / 90) * 90));
+    // Clipped once it is nearly flat, slow, and no longer swinging hard; let go if
+    // it is knocked well back up or set rolling again. Let go only at a large
+    // tilt, a die knocked into rolling stayed clipped while it rolled; clipped
+    // only once perfectly still, the corners showed for the end of every landing.
+    if (!b.flat && tilt < 6 && speed < DIE_SETTLE &&
+        Math.abs(b.tw || 0) < 300 && Math.abs(b.rw || 0) < 300) b.flat = true;
+    else if (b.flat && (tilt > 20 || speed > DIE_ROLL_FREE)) b.flat = false;
+    el.classList.toggle("flat", !!b.flat);
     el.style.transform = "translate(" + b.x.toFixed(1) + "px, " + b.y.toFixed(1) +
-      "px) translate(-50%, -50%)";
+      "px) translate(-50%, -50%)" + (b.flat ? " rotate(" + b.rot.toFixed(1) + "deg)" : "") + " scale(" + diceScale(sim.d).toFixed(3) + ")";
     var cube = el.firstChild;
     if (cube) {
-      cube.style.transform = "rotateZ(" + b.rot.toFixed(1) + "deg) rotateX(" +
-        b.tumble.toFixed(1) + "deg) rotateY(" + b.roll.toFixed(1) + "deg)";
+      cube.style.transform = (b.flat ? "" : "rotateZ(" + b.rot.toFixed(1) + "deg) ") +
+        "rotateX(" + b.tumble.toFixed(1) + "deg) rotateY(" + b.roll.toFixed(1) + "deg)";
     }
   }
 
@@ -7561,7 +7723,7 @@ function diceStep(now) {
     if (d.parked && d.parked.indexOf(i) !== -1) continue;
     looseAt.push(i); loose.push(d.pos[i]);
   }
-  spaceOut(loose, padX * 2.1, sim.h / sim.w, { x: padX, y: padY });
+  spaceOut(loose, padX * 2.1, sim.h / sim.w, { x: sim.reach / sim.w * 100, y: sim.reach / sim.h * 100 });
   looseAt.forEach(function (at, k) { d.pos[at] = loose[k]; });
   // The number is whatever it stopped on. Nothing is drawn for it afterwards:
   // the die rocks onto the nearest flat side and that side is read off it, so it
@@ -7588,8 +7750,13 @@ function diceStep(now) {
     if (d.set.indexOf(die) === -1) d.set.push(die);
     var settled = field.querySelector('[data-die="' + die + '"]');
     var box = settled && settled.firstChild;
-    if (box) {
-      box.style.transform = "rotateZ(" + lz.toFixed(1) + "deg) rotateX(" + lx + "deg) rotateY(" + ly + "deg)";
+    if (settled && box) {
+      // Drawn as a die at rest from this frame on, not only from the redraw: its
+      // turn on the felt on the die, clipped to rounded corners.
+      settled.classList.add("flat");
+      settled.style.transform = "translate(" + b2.x.toFixed(1) + "px, " + b2.y.toFixed(1) +
+        "px) translate(-50%, -50%) rotate(" + lz.toFixed(1) + "deg) scale(" + diceScale(d).toFixed(3) + ")";
+      box.style.transform = "rotateX(" + lx + "deg) rotateY(" + ly + "deg)";
     }
   }
   d.flying = null;
@@ -7617,10 +7784,12 @@ function diceStep(now) {
     // it belongs, and calling it home was the second half of the jumping.
     var home = diceHome(d);
     var over = allDiceSet(d);
+    var going = [];
     for (var q = 0; q < d.count; q++) {
       if (!over && d.parked && d.parked.indexOf(q) !== -1) continue;
-      d.pos[q] = home[q];
+      going.push(q);
     }
+    sendHome(d, going, home);
     // The round is over, so the corner empties: they grow as they walk home.
     if (over) d.parked = [];
     parkSetDice(d);
