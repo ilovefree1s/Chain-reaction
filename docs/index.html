@@ -1490,7 +1490,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.3.41 · 12 Sep 12:27";
+var APP_VERSION = "v1.3.42 · 12 Sep 12:33";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. The arrow beside it goes and looks for a
@@ -6834,7 +6834,14 @@ window.addEventListener("pointermove", function (e) {
   if (dieDrag) {
     var t = e, f = dieDrag.field, now = Date.now();
     var dt = now - dieDrag.lastT;
-    if (dt > 0) dieDrag.speed = (dieDrag.lastY - t.clientY) / dt; // upward is positive
+    if (dt > 0) {
+      dieDrag.speed = (dieDrag.lastY - t.clientY) / dt; // upward is positive
+      // Which way the hand is moving, smoothed over its last few moves so one
+      // jittery sample does not decide where a throw goes.
+      var lean = Math.min(1, dt / 60);
+      dieDrag.dirX = (dieDrag.dirX || 0) + ((t.clientX - dieDrag.lastX) / dt - (dieDrag.dirX || 0)) * lean;
+      dieDrag.dirY = (dieDrag.dirY || 0) + ((t.clientY - dieDrag.lastY) / dt - (dieDrag.dirY || 0)) * lean;
+    }
     dieDrag.lastX = t.clientX; dieDrag.lastY = t.clientY; dieDrag.lastT = now;
     var dx = t.clientX - dieDrag.x0, dy = t.clientY - dieDrag.y0;
     if (Math.abs(dx) > 6 || Math.abs(dy) > 6) dieDrag.moved = true;
@@ -7025,7 +7032,7 @@ function dieDragEnd() {
   // has to say which dice went up.
   var inHand = g.pile.map(function (m) { return m.i; });
   // Already thrown, by crossing the line rather than by letting go.
-  if (g.launch != null) { rollDice(g.launch, inHand); return; }
+  if (g.launch != null) { rollDice(g.launch, inHand, throwAim(g)); return; }
   // A flick: upward, and still moving as it was let go. Out in the open felt it
   // has to be a real one, because carrying a die across the table and setting it
   // down must not throw the lot. Down in the throwing band the dice are there to
@@ -7035,7 +7042,7 @@ function dieDragEnd() {
   var nearLine = inThrowZone(g.y0) || inThrowZone(g.lastY);
   var needs = nearLine ? DIE_LOB : DIE_FLICK;
   if (dy <= (nearLine ? -16 : -COIN_THROW) && speed >= needs && dx < Math.abs(dy) * 1.6) {
-    rollDice("throw", inHand);
+    rollDice("throw", inHand, throwAim(g));
     return;
   }
   // Nothing to redraw: the dice are already where this left them.
@@ -7568,7 +7575,21 @@ var DIE_ROLL_FREE = 300, DIE_SETTLE = 70, DIE_TIP_K = 200, DIE_TIP_C = 17;
 var DIE_REST_CONTACT = 90;
 var diceSim = null;
 
-function rollDice(kind, which) {
+/* How far either side of straight up a throw can be aimed, in degrees. */
+var DIE_AIM_MAX = 65;
+/*
+ * The way a throw goes, from the way the hand was moving as it threw: kept going
+ * up the felt, tipped toward whichever side the hand was heading, as far as
+ * DIE_AIM_MAX from straight up. A hand barely moving throws straight up.
+ */
+function throwAim(g) {
+  var x = (g && g.dirX) || 0, y = Math.min(0, (g && g.dirY) || 0);
+  if (Math.abs(x) + Math.abs(y) < 0.05) return { x: 0, y: -1 };
+  var ang = Math.atan2(x, -y) * 180 / Math.PI; // 0 is straight up, positive to the right
+  ang = Math.max(-DIE_AIM_MAX, Math.min(DIE_AIM_MAX, ang)) * Math.PI / 180;
+  return { x: Math.sin(ang), y: -Math.cos(ang) };
+}
+function rollDice(kind, which, aim) {
   var d = secret && secret.dice;
   if (!d || d.rolling) return;
   // Every die has stood: this throw starts them over. Any still sitting in the
@@ -7600,6 +7621,8 @@ function rollDice(kind, which) {
   // over the line, and anything else is thrown. Any force in between made every
   // throw a little different and none of them tunable to look right.
   var P = DIE_THROWS[kind === "roll" ? "roll" : "throw"];
+  // Which way up the felt it goes; straight up when nobody said.
+  var dir = aim && (aim.x || aim.y) ? aim : { x: 0, y: -1 };
   d.rolling = true;
   // A beat of nothing first: the dice are still leaving the hand when the throw
   // starts, and a landing that lands before they have gone anywhere is a noise
@@ -7628,8 +7651,12 @@ function rollDice(kind, which) {
   for (var n = 0; n < live.length; n++) {
     var i = live[n];
     var start = dieRest(d, i);
-    var vy0 = -P.lift * (1 - P.spread + Math.random() * 2 * P.spread);
-    var vx0 = (Math.random() - 0.5) * P.side;
+    // Along the way the hand was going, with the scatter across it.
+    var along = P.lift * (1 - P.spread + Math.random() * 2 * P.spread);
+    var across = (Math.random() - 0.5) * P.side;
+    var vx0 = dir.x * along - dir.y * across;
+    var vy0 = dir.y * along + dir.x * across;
+    var spinF = P.turn * (0.85 + Math.random() * 0.3);
     bodies.push({
       x: at[i].x / 100 * fb.width, y: at[i].y / 100 * fb.height,
       vx: vx0,
@@ -7641,8 +7668,8 @@ function rollDice(kind, which) {
       m: m3mul(m3rot(0, 0, 1, start.z), dieAnyTurn()),
       // How it is turning, about the screen's own axes: mostly over and over the
       // way it was thrown, a little sideways, and a twirl.
-      wx: -vy0 * rate * P.turn * (0.85 + Math.random() * 0.3),
-      wy: vx0 * rate + (Math.random() - 0.5) * P.wobble,
+      wx: -vy0 * rate * spinF,
+      wy: vx0 * rate * spinF + (Math.random() - 0.5) * P.wobble,
       wz: (Math.random() - 0.5) * P.twirl,
       upFace: null,
       // It leaves the hand rising, to come down and bounce.
