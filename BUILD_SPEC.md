@@ -200,7 +200,7 @@ Suggested palette: deep pine ground (`#0C1A14`), panels (`#132A21`), muted sage 
     { "id": 60, "timing": "Before all tee", "kind": "attack", "rarity": "uncommon", "name": "The Curd!", "text": "Everyone rolls 2 dice, including whoever played this card. The lowest roll uses the cottage cheese lid as their driver this hole. The card player wins ties." },
     { "id": 61, "timing": "Before shot", "kind": "attack", "rarity": "legendary", "name": "MIND IF I TAKE THIS ONE?", "text": "Take the next putt for an opponent. (No full send drivers.)" },
     { "id": 62, "timing": "Before shot", "kind": "attack", "rarity": "epic", "name": "It's an Offer You Can't Refuse!", "text": "Trade discs (or whatever you're about to throw) with the person of your choice! They can't say no." },
-    { "id": 63, "timing": "Before tee shot", "kind": "dual", "rarity": "epic", "name": "Birdie Time!", "text": "On another player: they must birdie this hole or take a double bogey. (No negative cards or negative wheel effects hit them.) On yourself: receive the immunity ↑ but you better birdie the hole or take a double bogey." }
+    { "id": 63, "timing": "Before tee shot", "kind": "dual", "rarity": "epic", "name": "Birdie Time!", "text": "On another player: they must birdie this hole OR take +2 after the hole. (No negative cards or negative wheel effects hit them.) On yourself: receive the immunity ↑ but you must birdie this hole OR take +2 after the hole." }
   ]
 }
 ```

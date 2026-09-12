@@ -139,7 +139,7 @@ object CardDeck {
         GameCard(60, "Before all tee", CardKind.ATTACK, "The Curd!", "Everyone rolls 2 dice, including whoever played this card. The lowest roll uses the cottage cheese lid as their driver this hole. The card player wins ties."),
         GameCard(61, "Before shot", CardKind.ATTACK, "MIND IF I TAKE THIS ONE?", "Take the next putt for an opponent. (No full send drivers.)"),
         GameCard(62, "Before shot", CardKind.ATTACK, "It's an Offer You Can't Refuse!", "Trade discs (or whatever you're about to throw) with the person of your choice! They can't say no."),
-        GameCard(63, "Before tee shot", CardKind.DUAL, "Birdie Time!", "On another player: they must birdie this hole or take a double bogey. (No negative cards or negative wheel effects hit them.) On yourself: receive the immunity ↑ but you better birdie the hole or take a double bogey."),
+        GameCard(63, "Before tee shot", CardKind.DUAL, "Birdie Time!", "On another player: they must birdie this hole OR take +2 after the hole. (No negative cards or negative wheel effects hit them.) On yourself: receive the immunity ↑ but you must birdie this hole OR take +2 after the hole."),
     )
 
     private val byId: Map<Int, GameCard> = ALL.associateBy { it.id }
