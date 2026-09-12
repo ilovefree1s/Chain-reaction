@@ -2904,7 +2904,9 @@ function livePrio(p) {
     passes: typeof p.passes === "number" ? p.passes : 0,
     hole: typeof p.hole === "number" ? p.hole : 0,
     seq: typeof p.seq === "number" ? p.seq : 0,
-    by: typeof p.by === "string" ? p.by : ""
+    by: typeof p.by === "string" ? p.by : "",
+    order: Array.isArray(p.order) && p.order.every(function (n) { return typeof n === "string"; })
+      ? p.order.slice() : null
   };
   // Another round's turn: an old game still open on somebody's phone.
   if (theirs.round !== (state.roundId || null)) return;
@@ -2914,6 +2916,7 @@ function livePrio(p) {
   state.prioHole = theirs.hole;
   state.prioSeq = theirs.seq;
   state.prioBy = theirs.by;
+  state.prioOrder = theirs.order;
   // A question asked about a turn this phone no longer holds is a question
   // about nothing, and would be waiting when the turn came back round.
   confirmPass = false;
@@ -4598,7 +4601,27 @@ function skinLine(s, h) {
  * last.
  */
 function playOrder(s) {
-  return s ? teeOrder(s, tableHole(s)) : [];
+  if (!s) return [];
+  var h = tableHole(s);
+  return carriedOrder(s, h) || teeOrder(s, h);
+}
+/*
+ * The order the turn walks on hole [h] as it arrived with the turn (see
+ * movePrio), or null for this phone to work it out. Carried rather than worked
+ * out on every phone because a phone that has not locked the last hole yet
+ * still has the order from before it — and a player holding the turn on it
+ * passed it down the wrong line.
+ */
+function carriedOrder(s, h) {
+  var names = s.prioOrder;
+  if (!Array.isArray(names) || (s.prioHole || 0) !== h || names.length !== s.players.length) return null;
+  var seats = names.map(function (n) {
+    for (var i = 0; i < s.players.length; i++) {
+      if (s.players[i].trim().toLowerCase() === String(n).trim().toLowerCase()) return i;
+    }
+    return -1;
+  });
+  return seats.indexOf(-1) === -1 ? seats : null;
 }
 /*
  * The hole the table is on, as far as the turn goes: the first hole this phone
@@ -5074,7 +5097,8 @@ function nextInLine(s) {
  */
 function prioStamp(s) {
   return { round: s.roundId || null, name: s.prio || null, passes: s.passes || 0,
-    hole: s.prioHole || 0, seq: s.prioSeq || 0, by: s.prioBy || "" };
+    hole: s.prioHole || 0, seq: s.prioSeq || 0, by: s.prioBy || "",
+    order: s.prioOrder || null };
 }
 /* Whether stamp [a] is newer than [b]: a later hole first, then more moves; two
    phones moving at the same moment settle on the same one of them everywhere. */
@@ -5083,11 +5107,21 @@ function stampNewer(a, b) {
   if (a.seq !== b.seq) return a.seq > b.seq;
   return a.by > b.by;
 }
-/* Every move of the turn goes through here: set, stamped, saved and cast. */
-function movePrio(s, name, passes, hole) {
+/*
+ * Every move of the turn goes through here: set, stamped, saved and cast. The
+ * order it walks travels with it — [order] when the move puts the table on a
+ * new hole (a lock, which has the scores to work it out), otherwise the order
+ * the hole already has.
+ */
+function movePrio(s, name, passes, hole, order) {
+  var at = Math.max(hole, s.prioHole || 0);
+  if (order) s.prioOrder = order.slice();
+  else if (!Array.isArray(s.prioOrder) || at !== (s.prioHole || 0)) {
+    s.prioOrder = teeOrder(s, at).map(function (i) { return s.players[i]; });
+  }
   s.prio = name;
   s.passes = passes;
-  s.prioHole = Math.max(hole, s.prioHole || 0);
+  s.prioHole = at;
   s.prioSeq = (s.prioSeq || 0) + 1;
   s.prioBy = String(MY_PEER_ID);
   save(s);
@@ -9426,7 +9460,8 @@ app.addEventListener("click", function (e) {
       // otherwise pull the turn back to the leader after the table had already
       // started passing.
       if ((s.prioHole || 0) < lockedHole + 1) {
-        movePrio(s, s.players[teeOrder(s, lockedHole + 1)[0]], 0, lockedHole + 1);
+        var lockOrder = teeOrder(s, lockedHole + 1).map(function (i) { return s.players[i]; });
+        movePrio(s, lockOrder[0], 0, lockedHole + 1, lockOrder);
       }
       settleDeals(s);
       releaseDeals(s);
