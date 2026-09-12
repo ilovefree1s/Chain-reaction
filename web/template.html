@@ -2261,6 +2261,8 @@ function liveHello() {
       : settings.myCharacter,
     handCount: state ? state.hand.length : null,
     locks: helloLocks(),
+    // Where the turn stands, stamped, so a phone that missed a pass catches up.
+    prio: state ? prioStamp(state) : null,
     // The host's table. Course and format are the host's call, so their hello
     // carries the choices — from the round once one is running, or the Setup
     // draft before that, so joiners watch the picks land as they're made.
@@ -2276,6 +2278,8 @@ function liveHello() {
           // And the tee draw, so a phone starting late tees off in the order
           // the wheel gave rather than quietly falling back to seat order.
           tee: state.teeBase ? state.teeBase.map(function (i) { return state.players[i]; }) : null,
+          // Which round, so joiners take the draw and the turn from this one only.
+          round: state.roundId || null,
           started: true }
       : { holes: setup.holes, pars: setupPars(), courseName: setup.courseName, mode: setup.mode,
           // The tee draw rides along too, so a phone that joined after the
@@ -2338,6 +2342,9 @@ function liveHear(p) {
   if (newcomer || p.fresh) liveHello();
   // A joiner's Setup follows the host's table as the choices land.
   adoptHostTable();
+  // Mid-round, the tee draw and the turn follow the table the same way.
+  adoptHostTee();
+  if (p.prio && typeof p.prio === "object") livePrio(p.prio);
   liveRefresh();
 }
 
@@ -2374,6 +2381,28 @@ function adoptHostTable() {
     });
     if (seats.length === mine.length && seats.indexOf(-1) === -1) setup.teeBase = seats;
   }
+}
+
+/* A phone whose round started without the draw — or with a different one — tees
+   in its own order while everyone else tees in the drawn one, and passes the
+   turn down a different line. The host's hello carries the draw all round, so a
+   round already under way takes it whenever it differs. */
+function adoptHostTee() {
+  if (!state) return;
+  var h = liveHostTable();
+  if (!h || !h.cfg || !h.cfg.started || !Array.isArray(h.cfg.tee)) return;
+  if ((typeof h.cfg.round === "string" ? h.cfg.round : null) !== (state.roundId || null)) return;
+  var seats = h.cfg.tee.map(function (n) {
+    for (var i = 0; i < state.players.length; i++) {
+      if (state.players[i].trim().toLowerCase() === String(n).trim().toLowerCase()) return i;
+    }
+    return -1;
+  });
+  if (seats.length !== state.players.length || seats.indexOf(-1) !== -1) return;
+  if (state.teeBase && state.teeBase.join() === seats.join()) return;
+  state.teeBase = seats;
+  save(state);
+  render();
 }
 
 /* Everyone heard from lately. Quiet phones are filtered, never removed — the
@@ -2847,8 +2876,6 @@ function liveUnspent(p) {
   if (state.tableLog.length !== before) { save(state); liveRefresh(); }
 }
 
-/* Priority moved on somebody else's phone. Whoever passed it is the authority on
-   where it went — there is only ever one holder, and only they can pass. */
 /* The host drew the tee order. Everyone takes it, so all four cards read the
    same on hole one. */
 function liveOrder(p) {
@@ -2866,12 +2893,27 @@ function liveOrder(p) {
   requestAnimationFrame(function () { runOrderSpin(p.pick, p.rot); });
 }
 
+/* The turn moved on somebody else's phone, or a hello says where it stands. The
+   newer stamp wins (see prioStamp): a pass this phone slept through arrives with
+   the next hello, and a late or repeated cast cannot pull the turn back. */
 function livePrio(p) {
-  if (!state || typeof p.name !== "string" || !p.name) return;
-  var laps = typeof p.passes === "number" ? p.passes : state.passes;
-  if (state.prio === p.name && state.passes === laps) return;
-  state.prio = p.name;
-  state.passes = laps;
+  if (!state || !p || typeof p.name !== "string" || !p.name) return;
+  var theirs = {
+    round: typeof p.round === "string" ? p.round : null,
+    name: p.name,
+    passes: typeof p.passes === "number" ? p.passes : 0,
+    hole: typeof p.hole === "number" ? p.hole : 0,
+    seq: typeof p.seq === "number" ? p.seq : 0,
+    by: typeof p.by === "string" ? p.by : ""
+  };
+  // Another round's turn: an old game still open on somebody's phone.
+  if (theirs.round !== (state.roundId || null)) return;
+  if (!stampNewer(theirs, prioStamp(state))) return;
+  state.prio = theirs.name;
+  state.passes = theirs.passes;
+  state.prioHole = theirs.hole;
+  state.prioSeq = theirs.seq;
+  state.prioBy = theirs.by;
   // A question asked about a turn this phone no longer holds is a question
   // about nothing, and would be waiting when the turn came back round.
   confirmPass = false;
@@ -3851,8 +3893,17 @@ function startRound() {
   }
   // Resolved against the seats as they finally sit, which for a lobby is
   // after the host's Start has re-dealt them.
-  commit(newRound(rNames, rMe, setup.holes, setupPars(), setup.courseName, rChars,
-    setup.mode, teeBaseFor(rNames)));
+  var round = newRound(rNames, rMe, setup.holes, setupPars(), setup.courseName, rChars,
+    setup.mode, teeBaseFor(rNames));
+  // Which round this is. The host names it and every joiner takes the host's
+  // name for it, so the turn and the tee draw heard from the table are only
+  // taken from this round — never from an old one still open on somebody's
+  // phone. Named before the commit, whose hello is the one joiners start from.
+  var hostTable = live && !live.hosting ? liveHostTable() : null;
+  round.roundId = live && !live.hosting
+    ? (hostTable && hostTable.cfg && typeof hostTable.cfg.round === "string" ? hostTable.cfg.round : null)
+    : eventId();
+  commit(round);
   // The room rides with the round: a reload rejoins it without asking.
   if (live) { state.liveCode = live.code; save(state); }
   screen = "round";
@@ -4547,7 +4598,18 @@ function skinLine(s, h) {
  * last.
  */
 function playOrder(s) {
-  return s ? teeOrder(s, s.currentHole) : [];
+  return s ? teeOrder(s, tableHole(s)) : [];
+}
+/*
+ * The hole the table is on, as far as the turn goes: the first hole this phone
+ * has not locked, or further if the turn heard from another phone has already
+ * moved on to the next one. Not the hole on screen — scrolling back to fix a
+ * score is not the table going back a hole.
+ */
+function tableHole(s) {
+  var open = s.locked.indexOf(false);
+  if (open < 0) open = s.holeCount - 1;
+  return Math.max(open, s.prioHole || 0);
 }
 /*
  * Every order four players could tee in — 24 of them, or 6 for three, 2 for two.
@@ -5001,6 +5063,37 @@ function nextInLine(s) {
   return s.players[order[0]];
 }
 
+/*
+ * The turn is moved on one phone and cast to the rest once — and a phone asleep
+ * in a pocket misses the cast and goes on showing the turn where it was. So
+ * every move is stamped: the hole it belongs to, a running count of moves, and
+ * the phone that made it. The stamp rides every hello as well as the cast, and
+ * a phone that hears a newer stamp than its own takes it, so one that missed a
+ * pass is right again within a hello. An older stamp — a late or repeated cast,
+ * a phone locking a hole the table has already moved on from — changes nothing.
+ */
+function prioStamp(s) {
+  return { round: s.roundId || null, name: s.prio || null, passes: s.passes || 0,
+    hole: s.prioHole || 0, seq: s.prioSeq || 0, by: s.prioBy || "" };
+}
+/* Whether stamp [a] is newer than [b]: a later hole first, then more moves; two
+   phones moving at the same moment settle on the same one of them everywhere. */
+function stampNewer(a, b) {
+  if (a.hole !== b.hole) return a.hole > b.hole;
+  if (a.seq !== b.seq) return a.seq > b.seq;
+  return a.by > b.by;
+}
+/* Every move of the turn goes through here: set, stamped, saved and cast. */
+function movePrio(s, name, passes, hole) {
+  s.prio = name;
+  s.passes = passes;
+  s.prioHole = Math.max(hole, s.prioHole || 0);
+  s.prioSeq = (s.prioSeq || 0) + 1;
+  s.prioBy = String(MY_PEER_ID);
+  save(s);
+  if (live) liveCast("prio", prioStamp(s));
+}
+
 /* Hands it to the next player in the order, wrapping past last back to first. */
 function passPrio(s) {
   var order = playOrder(s);
@@ -5009,10 +5102,7 @@ function passPrio(s) {
   for (var i = 0; i < order.length; i++) {
     if (s.players[order[i]] === who) { at = i; break; }
   }
-  s.prio = s.players[order[(at + 1) % order.length]];
-  s.passes = (s.passes || 0) + 1;
-  save(s);
-  if (live) liveCast("prio", { name: s.prio, passes: s.passes });
+  movePrio(s, s.players[order[(at + 1) % order.length]], (s.passes || 0) + 1, tableHole(s));
 }
 
 /*
@@ -6450,12 +6540,7 @@ function resolveCard(s, id, played, target) {
   // Played or discarded, an empty hand cannot hold the queue up.
   setTimeout(function () { if (state === s && autoPassIfEmpty(s)) render(); }, 0);
   // Something to answer: the lap starts again, from the leader.
-  if (played) {
-    s.passes = 0;
-    s.prio = s.players[playOrder(s)[0]];
-    save(s);
-    if (live) liveCast("prio", { name: s.prio, passes: 0 });
-  }
+  if (played) movePrio(s, s.players[playOrder(s)[0]], 0, tableHole(s));
   if (played && live) {
     liveCast("play", { name: s.players[s.meIndex], card: id, target: target || null });
   }
@@ -9333,11 +9418,16 @@ app.addEventListener("click", function (e) {
         s.dealt[lockedHole] = { owed: drawForHole(s, lockedHole), cards: [], due: true };
       }
       s.locked[lockedHole] = true;
-      // A fresh hole, a fresh order: whoever leads now acts first on it, and
-      // nobody has passed on it yet.
-      s.prio = s.players[playOrder(s)[0]];
-      s.passes = 0;
-      if (live) liveCast("prio", { name: s.prio, passes: 0 });
+      // A fresh hole, a fresh order: whoever leads the next hole acts first on
+      // it, and nobody has passed on it yet. Worked out for the hole being walked
+      // to, which counts the hole just locked — not the order still standing on
+      // the hole just finished, which handed the turn to whoever teed first
+      // there. And once a hole: every phone locks, and the last one to would
+      // otherwise pull the turn back to the leader after the table had already
+      // started passing.
+      if ((s.prioHole || 0) < lockedHole + 1) {
+        movePrio(s, s.players[teeOrder(s, lockedHole + 1)[0]], 0, lockedHole + 1);
+      }
       settleDeals(s);
       releaseDeals(s);
       s.currentHole = Math.min(s.holeCount - 1, s.currentHole + 1);
