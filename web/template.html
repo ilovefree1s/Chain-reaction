@@ -3486,6 +3486,7 @@ function openCurdDice() {
   secret.dice.count = 2;
   secret.dice.vals = [3, 4];
   secret.dice.set = [];
+  secret.dice.parked = [];
   render();
 }
 /* Cards that are an announcement to the table rather than a hit on one person.
@@ -6614,7 +6615,7 @@ function openSecretWheel() {
     // The name wheel's slate.
     text: saved, rot: 0, name: null, spinning: false,
     // The dice tray and the card table ride along, fresh each visit.
-    dice: { count: 2, vals: [3, 4], rolling: false, pos: null, set: [] },
+    dice: { count: 2, vals: [3, 4], rolling: false, pos: null, set: [], parked: [] },
     coin: { face: "HEADS", flipping: false },
     cards: { deck: [], board: [], slots: [null, null, null, null, null] }
   };
@@ -6803,6 +6804,8 @@ app.addEventListener("pointerdown", function (e) {
     dieDrag.pile.forEach(function (g) {
       var el = fieldEl.querySelector('[data-die="' + g.i + '"]');
       g.el = el;
+      // Picked up at the angle it was lying at, not squared up in the hand.
+      g.z = dieRest(secret.dice, g.i).z;
       if (el) el.classList.add("held");
     });
     return;
@@ -6833,7 +6836,8 @@ window.addEventListener("pointermove", function (e) {
       g.nx = Math.max(edge, Math.min(f.width - edge, g.sx + dx));
       g.ny = Math.max(edge, Math.min(f.height - edge, g.sy + dy));
       g.el.style.transform = "translate(-50%, -50%) translate(" +
-        (g.nx - g.sx).toFixed(1) + "px, " + (g.ny - g.sy).toFixed(1) + "px) scale(1.1)";
+        (g.nx - g.sx).toFixed(1) + "px, " + (g.ny - g.sy).toFixed(1) + "px) rotate(" +
+        (g.z || 0).toFixed(1) + "deg) scale(1.1)";
     });
     // Carrying a die up over the line is the throw, finger or no finger. The
     // crossing is what counts, so a die resting up top can be nudged around all
@@ -6956,8 +6960,14 @@ function dieShake(g, x, y, now) {
   if (!d) return;
   g.pile.forEach(function (m) {
     var was = d.vals[m.i];
+    // The turn it has on the felt, read before the number under it changes.
+    var prior = d.face && d.face[m.i];
+    var turned = prior && prior.v === was ? prior.z : 0;
     do { d.vals[m.i] = 1 + Math.floor(Math.random() * 6); } while (d.vals[m.i] === was);
     var face = DIE_FACING[d.vals[m.i]] || DIE_FACING[1];
+    // Squared to its new number, still turned the way it was on the felt.
+    if (!d.face) d.face = [];
+    d.face[m.i] = { v: d.vals[m.i], x: face[0], y: face[1], z: turned };
     var cube = m.el && m.el.firstChild;
     if (cube) {
       // A knock of a few degrees off square, so a shaken die looks rattled rather
@@ -6977,7 +6987,7 @@ function dieDragEnd() {
   // Whatever the hand was doing, it has stopped doing it.
   stopSlice(g.shakeSound);
   g.pile.forEach(function (m) {
-    if (m.el) { m.el.classList.remove("held"); m.el.style.transform = ""; }
+    if (m.el) { m.el.classList.remove("held"); m.el.style.transform = d ? dieRest(d, m.i).outer : ""; }
   });
   dieDrag = null;
   if (!d || d.rolling) { render(); return; }
@@ -7127,7 +7137,10 @@ function dieIsSet(d, i) { return !!d && !!d.set && d.set.indexOf(i) !== -1; }
  * thrown from, and out of the way of everything that shuffles the felt.
  */
 function parkSetDice(d) {
+  // A finished round leaves its parked dice where they are, still parked, until
+  // the walk home collects them. Only a round in progress parks anything new.
   if (!d || !d.set || !d.pos || allDiceSet(d)) return;
+  d.parked = d.set.slice();
   for (var k = 0; k < d.set.length; k++) {
     var i = d.set[k];
     // Tucked into the corner and stacked close: at half size the old spacing
@@ -7139,6 +7152,52 @@ function allDiceSet(d) { return !!d && d.count > 0 && ((d.set && d.set.length) |
 /* Free to be thrown: not yet rolled, or every die has been and the next throw
    is a new round. */
 function dieFree(d, i) { return allDiceSet(d) || !dieIsSet(d, i); }
+/*
+ * How a die at rest is drawn. Its turn on the felt goes on the die itself — a
+ * resting die is clipped square to round its corners, and a cube turned inside
+ * that square would lose its own corners to it — and the cube is tipped to the
+ * number. Kept exactly as it landed when it did land, so it is not squared up,
+ * or its pips given a quarter turn, the moment the throw is over.
+ */
+function dieRest(d, i) {
+  var v = d.vals[i];
+  var o = d.face && d.face[i];
+  var x, y, z;
+  if (o && o.v === v) { x = o.x; y = o.y; z = o.z; }
+  else { var f = DIE_FACING[v] || DIE_FACING[1]; x = f[0]; y = f[1]; z = 0; }
+  // Small while it sits in the corner — not merely while it is set, or the dice
+  // there grow to full size the instant the round ends, still in the corner.
+  var small = !!d.parked && d.parked.indexOf(i) !== -1;
+  return {
+    x: x, y: y, z: z,
+    outer: "translate(-50%, -50%) rotate(" + z.toFixed(1) + "deg)" + (small ? " scale(0.5)" : ""),
+    cube: "rotateX(" + x + "deg) rotateY(" + y + "deg)"
+  };
+}
+/*
+ * One axis of a tumble, as the die runs out of roll. Rolling freely it turns with
+ * the ground it covers; too slow to get over the next edge, it is pulled down onto
+ * the face it is nearest. In between the two are mixed, so there is no moment the
+ * die visibly changes its mind. Momentum can still carry it past the tipping
+ * point, and then the nearest face is the next one — which is how dice fall.
+ */
+function tipTowardFace(b, key, wKey, drive, speed, dt) {
+  var carry = Math.max(0, Math.min(1, (speed - DIE_SETTLE) / (DIE_ROLL_FREE - DIE_SETTLE)));
+  var ang = b[key];
+  var w = b[wKey] == null ? drive : b[wKey];
+  var off = ang - Math.round(ang / 90) * 90;
+  var tipped = w + (-DIE_TIP_K * off - DIE_TIP_C * w) * dt;
+  w = carry * drive + (1 - carry) * tipped;
+  b[wKey] = w;
+  b[key] = ang + w * dt;
+}
+/* Flat on a face, done rocking, and barely turning on the felt. */
+function dieAtRest(b) {
+  var ot = b.tumble - Math.round(b.tumble / 90) * 90;
+  var or = b.roll - Math.round(b.roll / 90) * 90;
+  return Math.abs(ot) < 0.8 && Math.abs(or) < 0.8 &&
+    Math.abs(b.tw || 0) < 12 && Math.abs(b.rw || 0) < 12 && Math.abs(b.spin) < 20;
+}
 /*
  * Which number a die is showing, given how far it has been turned about each
  * axis. The faces sit at the six directions in the cube's own space; turning the
@@ -7199,11 +7258,10 @@ function diceFieldHtml(d) {
       : 'left:' + at[i].x.toFixed(2) + '%;top:' + at[i].y.toFixed(2) + '%';
     // Every face is always there, carrying its own number. Nothing rewrites pips
     // any more — the die is simply turned until the right side is toward you.
-    var face = DIE_FACING[v] || DIE_FACING[1];
-    return '<div class="die' + (dieIsSet(d, i) && !allDiceSet(d) ? " set" : "") +
-      '" data-die="' + i + '" style="' + place + '">' +
-      '<div class="cube" style="transform:rotateX(' + face[0] + 'deg) rotateY(' +
-      face[1] + 'deg)">' + dieFacesHtml() + '</div></div>';
+    var rest = dieRest(d, i);
+    return '<div class="die' + (d.parked && d.parked.indexOf(i) !== -1 ? " set" : "") +
+      '" data-die="' + i + '" style="' + place + ';transform:' + rest.outer + '">' +
+      '<div class="cube" style="transform:' + rest.cube + '">' + dieFacesHtml() + '</div></div>';
   }).join("");
 }
 /* Where the table has got to, for whoever is looking at the tray. */
@@ -7274,13 +7332,35 @@ function renderDiceGame() {
 var DICE_SHAKE_LEN = 1.13, DICE_ROLL_AT = 1.13, DICE_ROLL_LEN = 0.62;
 var DICE_ROLL_WAIT = 0.4;   // silence before the dice are heard to land
 var DIE_GRAVITY = 2600, DIE_BOUNCE = 0.42, DIE_FLOOR_DRAG = 0.82, DIE_AIR = 0.995;
+/*
+ * How a die comes to rest on a face. Rolling fast it goes over edge after edge
+ * with the ground it covers; below DIE_ROLL_FREE it starts running out of the
+ * energy to get over the next one, and by DIE_SETTLE gravity has it — pulled
+ * down onto whichever face it is nearest, rocking a little before it sits. The
+ * pull is a damped spring in degrees: DIE_TIP_K how hard, DIE_TIP_C how fast the
+ * rocking dies away. Speeds are the same |vx| + |vy| the simulation counts in.
+ */
+var DIE_ROLL_FREE = 360, DIE_SETTLE = 90, DIE_TIP_K = 420, DIE_TIP_C = 22;
 var diceSim = null;
 
 function rollDice(strength, which) {
   var d = secret && secret.dice;
   if (!d || d.rolling) return;
-  // Every die has stood: this throw starts them over.
-  if (!d.set || allDiceSet(d)) d.set = [];
+  // Every die has stood: this throw starts them over. Any still sitting in the
+  // corner from the round just finished come home first — thrown from where
+  // they were parked they started jammed against each other and the wall, and
+  // the throw spent seconds prising them apart. A die in the hand is thrown
+  // from wherever the finger took it.
+  if (!d.set || allDiceSet(d)) {
+    if (d.parked && d.parked.length) {
+      var homeAt = diceHome(d), lay = dicePlaces(d);
+      d.parked.forEach(function (p) {
+        if (!which || which.indexOf(p) === -1) lay[p] = homeAt[p];
+      });
+    }
+    d.parked = [];
+    d.set = [];
+  }
   var live = [];
   for (var q = 0; q < d.count; q++) if (d.set.indexOf(q) === -1) live.push(q);
   // Thrown from the hand, only what was in it — and never a die that stands.
@@ -7320,14 +7400,17 @@ function rollDice(strength, which) {
   var bodies = [];
   for (var n = 0; n < live.length; n++) {
     var i = live[n];
+    var start = dieRest(d, i);
     bodies.push({
       x: at[i].x / 100 * fb.width, y: at[i].y / 100 * fb.height,
       vx: (Math.random() - 0.5) * (260 + 420 * strength),
       vy: -lift * (0.8 + Math.random() * 0.4),
-      rot: 0, spin: (Math.random() - 0.5) * (700 + 900 * strength),
+      rot: start.z, spin: (Math.random() - 0.5) * (700 + 900 * strength),
       // The turn through its own faces, kept apart from the flat spin: one is
       // the die rotating on the felt, the other is it going over and over.
-      tumble: Math.random() * 360, roll: Math.random() * 360,
+      // Still a random start through the faces: it is what keeps a soft throw
+      // from landing near the face it left on. Only the flat turn carries over.
+      tumble: Math.random() * 360, roll: Math.random() * 360, tw: null, rw: null,
       face: 0
     });
   }
@@ -7420,14 +7503,21 @@ function diceStep(now) {
   for (i = 0; i < bodies.length; i++) {
     b = bodies[i];
     var speed = Math.abs(b.vx) + Math.abs(b.vy);
-    if (speed > 26) moving++;
+    // It goes over at a rate set by how fast it is travelling, about two axes at
+    // once, so no throw looks like the last one — until it is too slow to get
+    // over the next edge, and tips down onto the face it is nearest instead.
+    // Nothing is being swapped: the faces are all on the cube, and you see
+    // whichever one is turned toward you.
+    tipTowardFace(b, "tumble", "tw", speed * 0.8, speed, dt);
+    tipTowardFace(b, "roll", "rw", speed * 0.55, speed, dt);
+    // Flat on the felt it stops twirling fast; only a die still rolling is free
+    // to spin.
+    if (speed < DIE_ROLL_FREE) b.spin *= 1 - Math.min(1, 8 * dt * (1 - speed / DIE_ROLL_FREE));
+    // Still sliding, or not yet flat and done rocking: either way it has not
+    // landed, and reading it now would be reading a die on its edge.
+    if (speed > 26 || !dieAtRest(b)) moving++;
     var el = sim.field.querySelector('[data-die="' + sim.live[i] + '"]');
     if (!el) continue;
-    // It goes over at a rate set by how fast it is travelling, about two axes at
-    // once, so no throw looks like the last one. Nothing is being swapped: the
-    // faces are all on the cube, and you see whichever one is turned toward you.
-    b.tumble += speed * 0.8 * dt;
-    b.roll += speed * 0.55 * dt;
     el.style.transform = "translate(" + b.x.toFixed(1) + "px, " + b.y.toFixed(1) +
       "px) translate(-50%, -50%)";
     var cube = el.firstChild;
@@ -7468,7 +7558,7 @@ function diceStep(now) {
   // thing parking them was for.
   var loose = [], looseAt = [];
   for (i = 0; i < d.count; i++) {
-    if (dieIsSet(d, i) && !allDiceSet(d)) continue;
+    if (d.parked && d.parked.indexOf(i) !== -1) continue;
     looseAt.push(i); loose.push(d.pos[i]);
   }
   spaceOut(loose, padX * 2.1, sim.h / sim.w, { x: padX, y: padY });
@@ -7477,20 +7567,29 @@ function diceStep(now) {
   // the die rocks onto the nearest flat side and that side is read off it, so it
   // never lands showing one face and then changes to another.
   var field = sim.field;
-  field.classList.remove("rolling");
+  // The rolling class stays on until the render below rebuilds the felt. Taking
+  // it off here switched the cube's transition back on as the last turn was
+  // written, and that transition is what animated a stopped die rolling itself
+  // onto its number.
   for (i = 0; i < bodies.length; i++) {
     var die = sim.live[i];
     var b2 = bodies[i];
-    var sx = Math.round(b2.rot / 90) * 90;
-    var sy = Math.round(b2.tumble / 90) * 90;
-    var sz = Math.round(b2.roll / 90) * 90;
-    d.vals[die] = faceToward(sx, sy, sz);
+    // Already flat — it tipped onto its face before it was counted as landed, so
+    // rounding here tidies under a degree. Its turn on the felt is left as it
+    // lies: a die does not come to rest squared to the table.
+    var lz = ((b2.rot % 360) + 360) % 360;
+    var lx = ((Math.round(b2.tumble / 90) * 90) % 360 + 360) % 360;
+    var ly = ((Math.round(b2.roll / 90) * 90) % 360 + 360) % 360;
+    d.vals[die] = faceToward(lz, lx, ly);
+    // The pose it came down in, so it is drawn that way from here on.
+    if (!d.face) d.face = [];
+    d.face[die] = { v: d.vals[die], x: lx, y: ly, z: lz };
     // Landed, and standing until the rest have had their turn.
     if (d.set.indexOf(die) === -1) d.set.push(die);
     var settled = field.querySelector('[data-die="' + die + '"]');
     var box = settled && settled.firstChild;
     if (box) {
-      box.style.transform = "rotateZ(" + sx + "deg) rotateX(" + sy + "deg) rotateY(" + sz + "deg)";
+      box.style.transform = "rotateZ(" + lz.toFixed(1) + "deg) rotateX(" + lx + "deg) rotateY(" + ly + "deg)";
     }
   }
   d.flying = null;
@@ -7517,10 +7616,13 @@ function diceStep(now) {
     // Home is for the dice still to be thrown. A standing die is already where
     // it belongs, and calling it home was the second half of the jumping.
     var home = diceHome(d);
+    var over = allDiceSet(d);
     for (var q = 0; q < d.count; q++) {
-      if (dieIsSet(d, q) && !allDiceSet(d)) continue;
+      if (!over && d.parked && d.parked.indexOf(q) !== -1) continue;
       d.pos[q] = home[q];
     }
+    // The round is over, so the corner empties: they grow as they walk home.
+    if (over) d.parked = [];
     parkSetDice(d);
     placeDice(f, d);
   }, 1000);
@@ -7535,9 +7637,14 @@ function placeDice(field, d) {
     if (!el) continue;
     el.style.left = at[i].x.toFixed(2) + "%";
     el.style.top = at[i].y.toFixed(2) + "%";
-    var face = DIE_FACING[d.vals[i]] || DIE_FACING[1];
+    var rest = dieRest(d, i);
+    // Dimmed exactly while parked. The walk home empties the corner without a
+    // redraw, so the class has to follow here, or the dice arrive home full size
+    // but still greyed out.
+    el.classList.toggle("set", !!(d.parked && d.parked.indexOf(i) !== -1));
+    el.style.transform = rest.outer;
     var cube = el.querySelector(".cube");
-    if (cube) cube.style.transform = "rotateX(" + face[0] + "deg) rotateY(" + face[1] + "deg)";
+    if (cube) cube.style.transform = rest.cube;
   }
 }
 
@@ -8914,7 +9021,7 @@ app.addEventListener("click", function (e) {
       if (secret.dice.count > 1) {
         secret.dice.count--; secret.dice.vals.pop();
         // A different number of dice is a different throw: nothing stands.
-        secret.dice.set = [];
+        secret.dice.set = []; secret.dice.parked = [];
         render();
       }
       break;
@@ -8923,7 +9030,7 @@ app.addEventListener("click", function (e) {
       if (secret.dice.count < 6) {
         secret.dice.count++;
         secret.dice.vals.push(1 + Math.floor(Math.random() * 6));
-        secret.dice.set = [];
+        secret.dice.set = []; secret.dice.parked = [];
         render();
       }
       break;
