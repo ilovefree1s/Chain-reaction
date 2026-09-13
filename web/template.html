@@ -8762,7 +8762,12 @@ function doTradeUp(s, a, b) {
   s.hand = s.hand.concat([got]);
   s.trades = ((s.trades || 0) + 1);
   tradeUp = null;
-  viewCard = null;
+  // What the trade bought comes up in full, the way a card opens from the hand:
+  // slipped quietly into the hand, it was a new tile to go hunting for.
+  viewCard = got;
+  viewWords = null;
+  viewOnly = false;
+  playTarget = null;
   commit(s);
   /* rarityVars gives the tier's colour and glow; --rare is then reaimed at the
      tier that was spent, so the banner runs from the old to the new. */
