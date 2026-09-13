@@ -85,7 +85,7 @@
   /* Mirrors the armed/dark states of the Android NeonBigButton. */
   .big.primary:disabled { background: var(--panel); color: #5E6C88;
                           border: 2px solid var(--edge); box-shadow: none; opacity: 1; }
-  .big.wheel { background: linear-gradient(180deg, #3FA9FF, #1E6FFF); color: #fff;
+  .big.wheel, .big.blue { background: linear-gradient(180deg, #3FA9FF, #1E6FFF); color: #fff;
                box-shadow: 0 0 16px rgba(30, 111, 255, 0.35); }
   .big.quiet { background: var(--panel); color: var(--sage); border: 2px solid var(--edge); }
   /* The painted banner IS the button — it already carries its own name and
@@ -98,6 +98,12 @@
   .wheelplate[disabled] img { filter: brightness(0.45) saturate(0.6); }
   /* For use *on* a panel, where .quiet would vanish into the background. */
   .big.raised { background: #0B1526; color: var(--sage); border: 2px solid var(--edge); }
+  /* Trade up climbs the tiers, so it wears all of them in order round its rim —
+     edged the way the trade banner is, dark inside. --sweep is set where the
+     button is drawn, from the tiers' own colours (see tierSweep). */
+  .big.tradeup { color: #F4F8FF; border: 3px solid transparent;
+                 background: linear-gradient(#0B1526, #0B1526) padding-box, var(--sweep) border-box;
+                 box-shadow: 0 0 14px rgba(185, 107, 255, 0.28); }
   .big.danger { background: var(--panel); color: var(--attack); border: 2px solid var(--edge); }
 
   .step {
@@ -1506,7 +1512,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.3.54 · 13 Sep 11:27";
+var APP_VERSION = "v1.3.55 · 13 Sep 11:50";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. The arrow beside it goes and looks for a
@@ -5235,7 +5241,7 @@ function playOrderStrip(s) {
       '<div class="row"><button class="big primary" data-act="passYes" style="margin:0">' +
       'Pass</button>' +
       '<button class="big quiet" data-act="passNo" style="margin:0">Keep it</button></div></div>'
-    : '<button class="big quiet" data-act="passPrio" style="margin:0 0 12px">' +
+    : '<button class="big blue" data-act="passPrio" style="margin:0 0 12px">' +
       'Pass priority &rsaquo;</button>';
   return '<div class="label">Card order &middot; ' +
     (open ? 'open to everyone' : 'same as the tee') + '</div>' +
@@ -8683,6 +8689,18 @@ var tradeUp = null;
  * refused — you changed your mind about which two, which is the likelier thing
  * to have meant.
  */
+/* Every tier's colour across one bar, common to legendary. Each holds its own
+   stretch and changes over in a short run, the way the trade banner shows its
+   two tiers — blended the whole way, the middle tiers went to mud. */
+function tierSweep() {
+  var tiers = DATA.rarities, n = tiers.length, run = 100 / n * 0.2, stops = [];
+  tiers.forEach(function (t, i) {
+    var from = i ? i / n * 100 + run : 0;
+    var to = i < n - 1 ? (i + 1) / n * 100 - run : 100;
+    stops.push(t.color + " " + from.toFixed(1) + "%", t.color + " " + to.toFixed(1) + "%");
+  });
+  return "linear-gradient(100deg, " + stops.join(", ") + ")";
+}
 function tradeBlock(s) {
   var left = tradesLeft(s);
   if (!tradeUp) {
@@ -8692,7 +8710,8 @@ function tradeBlock(s) {
     }
     return anyTradeUp(s)
       // The count rides the button: it is a thing being spent, not a feature.
-      ? '<button class="big raised" data-act="askTrade" style="margin:0 0 12px">' +
+      ? '<button class="big tradeup" data-act="askTrade" style="margin:0 0 12px;--sweep:' +
+        tierSweep() + '">' +
         'Trade up &middot; ' + left + ' left</button>'
       : '<p class="hint" style="margin:0 0 12px">Trade up needs 2 cards of the same ' +
         'rarity &mdash; they buy 1 card a rarity higher. ' + left + ' left this round.</p>';
