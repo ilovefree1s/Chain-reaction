@@ -2656,6 +2656,8 @@ function liveRefresh() {
   // is what a booked deal has been waiting for. This is the only place the
   // cards can arrive from somebody else's action, so it saves as well.
   if (state && releaseDeals(state)) { save(state); }
+  // The same moment the next hole's turn becomes known.
+  if (state) advancePrio(state);
   render();
 }
 
@@ -5079,6 +5081,7 @@ function prioOpen(s) {
   return !!s && (s.passes || 0) >= s.players.length;
 }
 function iHavePrio(s) {
+  if (prioWaiting(s)) return false;
   if (prioOpen(s)) return true;
   var who = prioHolder(s);
   return !who || who.trim().toLowerCase() === (s.players[s.meIndex] || "").trim().toLowerCase();
@@ -5115,6 +5118,9 @@ function beforeTee(c) {
 function canPlayNow(s, c) {
   if (!live || !s) return true;
   if (bypassesPrio(c)) return true;
+  // Between holes nobody holds the turn: the tee cards wait for the next
+  // hole's order, and the rest play freely as they would once everyone passed.
+  if (prioWaiting(s)) return !beforeTee(c);
   if (prioOpen(s)) return !beforeTee(c);
   return iHavePrio(s);
 }
@@ -5127,7 +5133,7 @@ function canPlayNow(s, c) {
  * else's emptiness is ours to notice.
  */
 function autoPassIfEmpty(s) {
-  if (!s || s.hand.length || prioOpen(s)) return false;
+  if (!s || s.hand.length || prioOpen(s) || prioWaiting(s)) return false;
   var who = prioHolder(s);
   if (!who || who.trim().toLowerCase() !== (s.players[s.meIndex] || "").trim().toLowerCase()) {
     return false;
@@ -5189,6 +5195,61 @@ function movePrio(s, name, passes, hole, order) {
   if (live) liveCast("prio", prioStamp(s));
 }
 
+/*
+ * The next hole's turn. Its order comes from everyone's score on the hole
+ * before, so it cannot be known until the whole table has locked that hole and
+ * the scorecards agree — the moment dealHeld lets the hole's cards go. Until
+ * then nobody holds the turn (see prioWaiting).
+ *
+ * Stamped the oldest a hole can be — no moves, no phone — so every phone that
+ * works it out lands on the identical stamp and they agree rather than race,
+ * and any pass or card on the hole since is newer than it.
+ */
+function startHolePrio(s, h) {
+  if ((s.prioHole || 0) >= h || h >= s.holeCount) return false;
+  var order = teeOrder(s, h).map(function (i) { return s.players[i]; });
+  s.prio = order[0];
+  s.passes = 0;
+  s.prioHole = h;
+  s.prioSeq = 0;
+  s.prioBy = "";
+  s.prioOrder = order;
+  save(s);
+  if (live) liveCast("prio", prioStamp(s));
+  return true;
+}
+/* Moves the turn on for every hole the table has finished. Offline a hole is
+   finished the moment it is locked. True when it moved. */
+function advancePrio(s) {
+  if (!s) return false;
+  var moved = false;
+  for (var guard = 0; guard < s.holeCount; guard++) {
+    var g = s.prioHole || 0;
+    if (g + 1 >= s.holeCount || !s.locked[g] || dealHeld(s, g)) break;
+    if (!startHolePrio(s, g + 1)) break;
+    moved = true;
+  }
+  return moved;
+}
+/* This phone has locked the hole the turn is on, and the turn has not moved on:
+   the table is still finishing it, and who leads the next hole is not known yet.
+   Nobody holds the turn meanwhile. */
+function prioWaiting(s) {
+  if (!live || !s) return false;
+  var g = s.prioHole || 0;
+  return g + 1 < s.holeCount && !!s.locked[g];
+}
+/* The phones at the table that have not locked hole [h] yet, by name. */
+function lateToLock(s, h) {
+  var late = [];
+  livePeers().forEach(function (pr) {
+    var nm = pr.name.trim().toLowerCase();
+    if (!s.players.some(function (n) { return n.trim().toLowerCase() === nm; })) return;
+    if (!pr.locks || !pr.locks[h]) late.push(pr.name);
+  });
+  return late;
+}
+
 /* Hands it to the next player in the order, wrapping past last back to first. */
 function passPrio(s) {
   var order = playOrder(s);
@@ -5197,7 +5258,7 @@ function passPrio(s) {
   for (var i = 0; i < order.length; i++) {
     if (s.players[order[i]] === who) { at = i; break; }
   }
-  movePrio(s, s.players[order[(at + 1) % order.length]], (s.passes || 0) + 1, tableHole(s));
+  movePrio(s, s.players[order[(at + 1) % order.length]], (s.passes || 0) + 1, s.prioHole || 0);
 }
 
 /*
@@ -5207,6 +5268,18 @@ function passPrio(s) {
  */
 function playOrderStrip(s) {
   if (!s || s.players.length < 2) return "";
+  // Between holes there is no order to show yet, only what it is waiting on.
+  if (prioWaiting(s)) {
+    var g = s.prioHole || 0, late = lateToLock(s, g);
+    return '<div class="label">Card order &middot; hole ' + (g + 2) + '</div>' +
+      '<p class="hint">' + (scoreDisputes(s, g).length
+        ? 'The scorecards disagree on hole ' + (g + 1) + '. The order for hole ' + (g + 2) +
+          ' is set once they match.'
+        : late.length
+        ? 'Waiting on ' + esc(joinNames(late)) + ' to lock hole ' + (g + 1) +
+          '. The order for hole ' + (g + 2) + ' comes from everyone\'s score.'
+        : 'Waiting on the table to lock hole ' + (g + 1) + '.') + '</p>';
+  }
   var order = playOrder(s);
   var open = prioOpen(s);
   var up = prioHolder(s);
@@ -6270,10 +6343,14 @@ function renderFaceModal() {
       var waiting = !canPlayNow(state, c);
       // Two different refusals: waiting your turn is a delay, a tee-pad card
       // after the drives are away is not coming back this hole.
-      var teedOff = waiting && prioOpen(state);
+      // And between holes a third: nobody's turn until the scores are all in.
+      var lockWait = waiting && prioWaiting(state);
+      var teedOff = waiting && !lockWait && prioOpen(state);
       acts = '<div class="acts" style="margin-top:14px">' +
         (heldAt != null
           ? '<button class="big primary" disabled>Held</button>'
+          : lockWait
+          ? '<button class="big primary" disabled>Waiting on scores</button>'
           : teedOff
           ? '<button class="big primary" disabled>Too late this hole</button>'
           : waiting
@@ -6282,7 +6359,10 @@ function renderFaceModal() {
         '</div>' +
         // Whether the card can be played is a matter of turn; getting rid of
         // it is not, and is done over the hand rather than on the card.
-        (teedOff
+        (lockWait
+          ? '<p class="hint" style="text-align:center;margin:2px 0 10px">' +
+            'The next hole\'s order is set once everyone locks their scores.</p>'
+          : teedOff
           ? '<p class="hint" style="text-align:center;margin:2px 0 10px">' +
             'Everyone passed and the tee shots are away. This one waits for the next hole.</p>'
           : waiting
@@ -6642,7 +6722,9 @@ function resolveCard(s, id, played, target) {
   // Played or discarded, an empty hand cannot hold the queue up.
   setTimeout(function () { if (state === s && autoPassIfEmpty(s)) render(); }, 0);
   // Something to answer: the lap starts again, from the leader.
-  if (played) movePrio(s, s.players[playOrder(s)[0]], 0, tableHole(s));
+  // Not between holes, though: that would start the next hole's turn before the
+  // table has finished scoring the last.
+  if (played && !prioWaiting(s)) movePrio(s, s.players[playOrder(s)[0]], 0, s.prioHole || 0);
   if (played && live) {
     liveCast("play", { name: s.players[s.meIndex], card: id, target: target || null });
   }
@@ -8891,12 +8973,7 @@ function pendingDeal(s) {
     if (scoreDisputes(s, h).length) {
       return { hole: h, owed: rec.owed, why: "the scorecards disagree on it." };
     }
-    var late = [];
-    livePeers().forEach(function (pr) {
-      var nm = pr.name.trim().toLowerCase();
-      if (!s.players.some(function (n) { return n.trim().toLowerCase() === nm; })) return;
-      if (!pr.locks || !pr.locks[h]) late.push(pr.name);
-    });
+    var late = lateToLock(s, h);
     return {
       hole: h, owed: rec.owed,
       why: late.length
@@ -9680,17 +9757,10 @@ app.addEventListener("click", function (e) {
         s.dealt[lockedHole] = { owed: drawForHole(s, lockedHole), cards: [], due: true };
       }
       s.locked[lockedHole] = true;
-      // A fresh hole, a fresh order: whoever leads the next hole acts first on
-      // it, and nobody has passed on it yet. Worked out for the hole being walked
-      // to, which counts the hole just locked — not the order still standing on
-      // the hole just finished, which handed the turn to whoever teed first
-      // there. And once a hole: every phone locks, and the last one to would
-      // otherwise pull the turn back to the leader after the table had already
-      // started passing.
-      if ((s.prioHole || 0) < lockedHole + 1) {
-        var lockOrder = teeOrder(s, lockedHole + 1).map(function (i) { return s.players[i]; });
-        movePrio(s, lockOrder[0], 0, lockedHole + 1, lockOrder);
-      }
+      // A fresh hole, a fresh order — but only once the whole table has locked
+      // this one and the scorecards agree, since the order comes from everyone's
+      // score on it. This lock may be the last the table was waiting for.
+      advancePrio(s);
       settleDeals(s);
       releaseDeals(s);
       s.currentHole = Math.min(s.holeCount - 1, s.currentHole + 1);
