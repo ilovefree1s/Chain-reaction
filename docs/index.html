@@ -104,6 +104,9 @@
   .big.tradeup { color: #F4F8FF; border: 5px solid transparent;
                  background: linear-gradient(#0B1526, #0B1526) padding-box, var(--sweep) border-box;
                  box-shadow: 0 0 14px rgba(185, 107, 255, 0.28); }
+  /* Waiting on the second pick it keeps its colours: the hint above it says what
+     it needs, and a grey button read as trading up being switched off. */
+  .big.tradeup:disabled { opacity: 1; }
   .big.danger { background: var(--panel); color: var(--attack); border: 2px solid var(--edge); }
 
   .step {
@@ -1512,7 +1515,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.3.56 · 13 Sep 11:53";
+var APP_VERSION = "v1.3.57 · 13 Sep 11:57";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. The arrow beside it goes and looks for a
@@ -8731,8 +8734,8 @@ function tradeBlock(s) {
       : 'Two <b style="color:' + tier.color + '">' + esc(tier.id) + '</b> for one ' +
         '<b style="color:' + up.color + '">' + esc(up.id) + '</b>.') + '</p>' +
     '<div class="acts" style="margin:0 0 12px">' +
-    '<button class="big primary" data-act="doTrade"' + (ready ? "" : " disabled") +
-    '>Trade up</button>' +
+    '<button class="big tradeup" data-act="doTrade" style="--sweep:' + tierSweep() + '"' +
+    (ready ? "" : " disabled") + '>Trade up</button>' +
     '<button class="big quiet" data-act="cancelTrade">Never mind</button></div>';
 }
 /*
