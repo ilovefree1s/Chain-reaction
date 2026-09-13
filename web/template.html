@@ -1102,8 +1102,20 @@
   nav {
     position: fixed; left: 0; right: 0; bottom: 0; display: flex; background: var(--panel);
     padding-bottom: env(safe-area-inset-bottom);
-    border-top: 1px solid var(--edge);
+    border-top: 1px solid var(--edge); z-index: 6;
   }
+  /* A round-screen tab's page. A swipe moves it by left, not by a transform: a
+     transform would make it the frame the Score page's fixed hole strip is
+     placed against, and the strip would leave the foot of the screen. */
+  .tabslide { position: relative; touch-action: pan-y; }
+  .tabslide.tabmoving { transition: left 200ms ease-out; }
+  /* The tab being swiped to, laid out beside the page being dragged — under the
+     tab bar and the hole strip, over nothing else, and glass to the thumb. */
+  .tabpeek { position: fixed; bottom: 0; z-index: 4; pointer-events: none; }
+  .tabpeek.tabmoving { transition: transform 200ms ease-out; }
+  .tabpeek .holestrip { display: none; }
+  /* Mid-swipe the page hangs off the side; it must not widen the page with it. */
+  #app.tabswiping { overflow-x: clip; }
   /* UDisc-style hole strip riding above the tab bar on the Score screen:
      a swipeable row of hole chips, tap one to jump. */
   .holestrip { position: fixed; left: 0; right: 0;
@@ -4232,10 +4244,19 @@ function setupPars() { return setup.pars.slice(0, setup.holes); }
 
 var app = document.getElementById("app");
 
+/* A round-screen tab's page. Its own function so a swipe can lay out the tab
+   next door exactly as that tab will draw. */
+function tabHtml(t) {
+  // No title: the Score screen's own header already says which hole and par.
+  if (t === "score") return (roundComplete(state) && !showScorecard) ? renderResults() : renderScore();
+  return t === "hand" ? renderHand() : renderRoundRules();
+}
+
 function render() {
   // Mid-drag on the card table nothing repaints — a hello landing during a
   // drag would swap the element out from under the finger. The drop renders.
-  if (tDrag) return;
+  // The same goes for a page being swiped between tabs.
+  if (tDrag || (tabDrag && tabDrag.on)) return;
   var html;
   // The hole strip's swipe position survives re-renders (hellos repaint every
   // few seconds); only an actual hole change recenters it.
@@ -4263,11 +4284,10 @@ function render() {
   } else if (screen === "settings") {
     html = renderSettings(); // draws its own neon header
   } else {
-    // No title: the Score screen's own header already says which hole and par.
-    var scoreTab = (roundComplete(state) && !showScorecard) ? renderResults() : renderScore();
     // The course you're on. The hole and par live in the Score screen's own header.
+    // The tab's page sits in a wrapper of its own, which is what a swipe moves.
     html = backBar(state.courseName || "") +
-      (tab === "score" ? scoreTab : tab === "hand" ? renderHand() : renderRoundRules()) +
+      '<div class="tabslide">' + tabHtml(tab) + '</div>' +
       renderNav();
   }
   if (viewCard != null) html += renderFaceModal();
@@ -9197,6 +9217,129 @@ app.addEventListener("touchcancel", function () {
   faceDragEnd();
 }, { passive: true });
 
+/* ---------- swiping between tabs ----------
+   Across the round screen a swipe walks the tabs in the bar's order — Score,
+   Hand, Rules — the way a swipe walks the enlarged cards. The page rides the
+   thumb with the tab it is heading for attached to its edge, so the next page is
+   on screen the whole way over rather than arriving once this one has gone.
+   Past a quarter of the width, or flicked, it carries on; short of that it
+   springs back. At either end of the row it gives a little and refuses. */
+var TAB_ORDER = ["score", "hand", "rules"];
+var TAB_THROW = 0.25, TAB_FLICK = 0.5; // share of the width; px per ms
+var tabDrag = null, tabSwipedAt = 0;
+
+/* Changing tab, by the bar or by a swipe. */
+function setTab(t) {
+  tab = t;
+  // The Rules tab opens on the format being played; reading the other is a tap away.
+  if (tab === "rules" && state) rulesMode = state.mode;
+  render();
+}
+/* Whether a touch here may start a swipe: the round screen with nothing open over
+   it, and not on something that moves sideways already or sits fixed. */
+function tabSwipeFrom(target) {
+  if (screen !== "round" || !state || viewCard != null || peekEl) return false;
+  if (app.querySelector(".modal")) return false;
+  return !(target.closest && target.closest(".holestrip, nav, .alerts, input, textarea, select"));
+}
+/* The page to [dx], and the tab it is heading for alongside it. */
+function tabDragTo(d, dx) {
+  var dir = dx < 0 ? 1 : -1;
+  var next = TAB_ORDER[TAB_ORDER.indexOf(tab) + dir];
+  if (!next) dx /= 4;
+  if (dir !== d.dir) {
+    if (d.peek) d.peek.remove();
+    d.peek = null;
+    d.dir = dir;
+    if (next) {
+      d.peek = document.createElement("div");
+      d.peek.className = "tabpeek";
+      d.peek.style.cssText = "left:" + d.left + "px;width:" + d.width + "px;top:" + d.top + "px";
+      d.peek.innerHTML = tabHtml(next);
+      app.appendChild(d.peek);
+    }
+  }
+  d.el.style.left = dx + "px";
+  if (d.peek) d.peek.style.transform = "translateX(" + (dir * window.innerWidth + dx) + "px)";
+  // The hole strip belongs to the Score page but stays put at the foot of the
+  // screen, so it fades as its page goes.
+  var strip = d.el.querySelector(".holestrip");
+  if (strip) strip.style.opacity = Math.max(0, 1 - Math.abs(dx) / (window.innerWidth / 2)).toFixed(2);
+}
+app.addEventListener("touchstart", function (e) {
+  tabDrag = null;
+  if (e.touches.length !== 1 || !tabSwipeFrom(e.target)) return;
+  var el = app.querySelector(".tabslide");
+  if (!el) return;
+  var r = el.getBoundingClientRect();
+  // Scrolled down past the page's top, the tab next door shows from its own top.
+  tabDrag = { x: e.touches[0].clientX, y: e.touches[0].clientY, el: el, on: false,
+              left: r.left, width: r.width, top: Math.max(0, r.top),
+              raw: 0, dir: 0, peek: null, t: Date.now(), vx: 0 };
+}, { passive: true });
+app.addEventListener("touchmove", function (e) {
+  var d = tabDrag;
+  if (!d || e.touches.length !== 1) return;
+  var dx = e.touches[0].clientX - d.x, dy = e.touches[0].clientY - d.y;
+  if (!d.on) {
+    // Mostly up and down is the page scrolling: leave the rest of the touch alone.
+    if (Math.abs(dy) > 10 && Math.abs(dy) >= Math.abs(dx)) { tabDrag = null; return; }
+    if (Math.abs(dx) < 10) return;
+    d.on = true;
+    app.classList.add("tabswiping");
+    peekHide();
+  }
+  // Sideways it is ours, and the page must not scroll under the thumb as well.
+  if (e.cancelable) e.preventDefault();
+  var now = Date.now();
+  if (now > d.t) { d.vx = d.vx * 0.5 + (dx - d.raw) / (now - d.t) * 0.5; d.t = now; }
+  d.raw = dx;
+  tabDragTo(d, dx);
+}, { passive: false });
+/* Letting go: on to the next tab, or back to this one. */
+function tabLetGo(allowed) {
+  var d = tabDrag;
+  tabDrag = null;
+  if (!d || !d.on) return;
+  tabSwipedAt = Date.now();
+  var w = window.innerWidth, dir = d.dir;
+  var next = TAB_ORDER[TAB_ORDER.indexOf(tab) + dir];
+  var el = d.el, peek = d.peek, strip = el.querySelector(".holestrip");
+  var go = allowed && !!next && !!peek &&
+    (Math.abs(d.raw) > w * TAB_THROW || (Math.abs(d.vx) > TAB_FLICK && d.vx * d.raw > 0));
+  el.classList.add("tabmoving");
+  if (peek) peek.classList.add("tabmoving");
+  void el.offsetWidth; // glide on from wherever the thumb left it
+  if (!go) {
+    el.style.left = "0px";
+    if (peek) peek.style.transform = "translateX(" + (dir * w) + "px)";
+    if (strip) strip.style.opacity = "";
+    setTimeout(function () {
+      if (peek) peek.remove();
+      app.classList.remove("tabswiping");
+      // Whatever wanted to repaint during the drag waited for it.
+      render();
+    }, 200);
+    return;
+  }
+  el.style.left = (-dir * w) + "px";
+  peek.style.transform = "translateX(0px)";
+  if (strip) strip.style.opacity = "0";
+  setTimeout(function () {
+    var landed = peek.getBoundingClientRect().top;
+    app.classList.remove("tabswiping");
+    setTab(next);
+    // Drawn where the page that came over was, so the swap is not a jump.
+    var now = app.querySelector(".tabslide");
+    if (now) {
+      var off = now.getBoundingClientRect().top - landed;
+      if (Math.abs(off) > 1) window.scrollBy(0, off);
+    }
+  }, 200);
+}
+app.addEventListener("touchend", function () { tabLetGo(true); }, { passive: true });
+app.addEventListener("touchcancel", function () { tabLetGo(false); }, { passive: true });
+
 /* Press-and-hold on a card tile — the spin-cost picker or the hand itself —
    peeks at the full card; letting go puts it away. A quick tap still does
    what it always did (pick, or open the face) — the hold eats its own click. */
@@ -9292,6 +9435,8 @@ app.addEventListener("contextmenu", function (e) {
 app.addEventListener("click", function (e) {
   // The release that ends a peek is not a pick.
   if (peekAte) { peekAte = false; return; }
+  // Nor is the release that ends a swipe between tabs.
+  if (Date.now() - tabSwipedAt < 400) return;
   var el = e.target.closest("[data-act]");
   if (!el) return;
   var act = el.getAttribute("data-act");
@@ -9434,10 +9579,7 @@ app.addEventListener("click", function (e) {
       render(); break;
 
     case "tab":
-      tab = el.getAttribute("data-t");
-      // The Rules tab opens on the format being played; reading the other is a tap away.
-      if (tab === "rules" && state) rulesMode = state.mode;
-      render();
+      setTab(el.getAttribute("data-t"));
       // Counted after the render, so the page is its full height by the time
       // the third tap asks how far down the bottom is.
       if (tab === "rules") rulesTapJump();
