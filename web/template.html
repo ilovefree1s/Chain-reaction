@@ -5987,9 +5987,16 @@ function renderNav() {
   return "<nav>" + tabs.map(function (t) {
     var badge = t[0] === "hand" && state.owed > 0
       ? '<span class="badge">' + state.owed + "</span>" : "";
-    // The live hand count rides the HAND plate's corner.
-    var count = t[0] === "hand" && art.hand
-      ? '<span class="imgct">' + state.hand.length + "/" + DATA.handCap + '</span>' : "";
+    // The live hand count rides the HAND plate's corner, and where you stand the
+    // SCORE plate's — to par, or in skins what you have taken.
+    var count = !art[t[0]] ? ""
+      : t[0] === "hand"
+      ? '<span class="imgct">' + state.hand.length + "/" + DATA.handCap + '</span>'
+      : t[0] === "score"
+      ? '<span class="imgct">' + (isSkins(state)
+          ? plural(skinsFor(state, state.meIndex), "skin")
+          : fmtRel(relFor(state, state.meIndex))) + '</span>'
+      : "";
     if (art[t[0]]) {
       return '<button class="imgtab' + (tab === t[0] ? " on" : "") + '" data-act="tab" data-t="' + t[0] + '">' +
         '<span class="imgwrap"><img src="' + art[t[0]] + '" alt="' + t[1] + '">' + count + badge + '</span></button>';
