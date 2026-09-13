@@ -2973,6 +2973,8 @@ function livePrio(p) {
   // about nothing, and would be waiting when the turn came back round.
   confirmPass = false;
   save(state);
+  // The pass that just arrived may have been the last one.
+  noteTeeOff(state);
   // It has just landed on us and there may be nothing to do with it.
   autoPassIfEmpty(state);
   liveRefresh();
@@ -5193,6 +5195,26 @@ function movePrio(s, name, passes, hole, order) {
   s.prioBy = String(MY_PEER_ID);
   save(s);
   if (live) liveCast("prio", prioStamp(s));
+  noteTeeOff(s);
+}
+/*
+ * The whole table has passed: nothing left to wait on, and the drives can go.
+ * Every phone says so with the chains, which reach whoever has wandered off to
+ * their bag as well as whoever is watching the screen.
+ *
+ * Once a hole. A card played later in it restarts the lap, and the table passing
+ * round again after the drives are away is not a second tee-off. Kept on the
+ * round, so a reload does not announce it again.
+ */
+function noteTeeOff(s) {
+  if (!live || !s || !prioOpen(s) || prioWaiting(s)) return;
+  var h = s.prioHole || 0;
+  if (s.teeOffNoted === h) return;
+  s.teeOffNoted = h;
+  save(s);
+  localNote("Everyone passed priority on hole " + (h + 1) + ". Tee off!", "Tee off");
+  playMenuSound(sfxVolume());
+  try { if (navigator.vibrate) navigator.vibrate([120, 60, 320]); } catch (e) { /* banner only */ }
 }
 
 /*
