@@ -1515,7 +1515,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.3.59 · 13 Sep 12:06";
+var APP_VERSION = "v1.3.60 · 13 Sep 12:08";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. The arrow beside it goes and looks for a
@@ -8769,12 +8769,8 @@ function doTradeUp(s, a, b) {
   s.hand = s.hand.concat([got]);
   s.trades = ((s.trades || 0) + 1);
   tradeUp = null;
-  // What the trade bought comes up in full, the way a card opens from the hand:
-  // slipped quietly into the hand, it was a new tile to go hunting for.
-  viewCard = got;
-  viewWords = null;
-  viewOnly = false;
-  playTarget = null;
+  // The banner says what came back; the card waits in the hand, not over it.
+  viewCard = null;
   commit(s);
   /* rarityVars gives the tier's colour and glow; --rare is then reaimed at the
      tier that was spent, so the banner runs from the old to the new. */
