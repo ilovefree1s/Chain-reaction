@@ -1517,7 +1517,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.3.70 · 14 Sep 14:53";
+var APP_VERSION = "v1.3.71 · 14 Sep 15:44";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. The arrow beside it goes and looks for a
@@ -7832,11 +7832,13 @@ var DICE_SHAKE_LEN = 1.13, DICE_ROLL_AT = 1.13, DICE_ROLL_LEN = 0.62;
 var DICE_ROLL_WAIT = 0.4;   // silence before the dice are heard to land
 // Light air, so a die tumbles and bounces freely while it is up: DIE_AIR is taken
 // every physics step, 120 a second, and 0.995 was losing half a throw's speed
-// each second to the air alone. The felt and the walls are what stop it. Made
-// slick as well, a die rolled on like a ball — off the far wall and most of the
-// way back down to the hand. A cube hits the wall and drops, and goes over a few
-// times on the felt and sits.
-var DIE_FRICTION = 600, DIE_BOUNCE = 0.18, DIE_FLOOR_DRAG = 0.82, DIE_AIR = 0.9997;
+// each second to the air alone. Light felt too, now that throws leave the hand
+// slowly enough to spend their movement on the felt rather than slamming into the
+// far wall: thrown at speed across a felt this size, a die hit the wall inside a
+// fraction of a second and the whole throw played like fast-forward. The wall
+// gives back a little of a hit, and the clack onto each face (DIE_CLACK) is what
+// keeps a die from rolling on like a ball.
+var DIE_FRICTION = 180, DIE_BOUNCE = 0.30, DIE_FLOOR_DRAG = 0.82, DIE_AIR = 0.9997;
 /* The physics steps in fixed slices of time, however often the screen redraws;
    a throw has landed once every die has been still for DIE_STILL_STEPS of them. */
 var DIE_STEP = 1 / 120, DIE_STILL_STEPS = 16;
@@ -7847,13 +7849,14 @@ var DIE_STEP = 1 / 120, DIE_STILL_STEPS = 16;
  */
 // Quicker and lower than it was: gravity a fourteenth of its size at this scale
 // had every bounce hanging in the air. Felt gives back less of a fall than that.
-// Bouncier than it once was, down to smaller hops before it just lands: a flick
-// comes down about three times. At 0.58 it came down four or five and read as
-// too bouncy.
-var DIE_HOP_G = 9000, DIE_HOP_BOUNCE = 0.5, DIE_HOP_MIN = 75, DIE_HOP_SCALE = 0.0022;
+// Gravity softer than 9000, which made every hop a quick snap and, with fast
+// throws, read as a throw in fast motion; still well above the 3200 that had
+// bounces hanging in the air. Paired with slower throws, a flick comes down about
+// five times at a pace that looks like dice rather than a speeded-up film of them.
+var DIE_HOP_G = 4000, DIE_HOP_BOUNCE = 0.6, DIE_HOP_MIN = 55, DIE_HOP_SCALE = 0.0022;
 /* What a rolling die keeps each time it clacks down onto a new face. A cube does
    not roll far: each face it goes over onto takes a good part of what it had. */
-var DIE_CLACK = 0.90;
+var DIE_CLACK = 0.95;
 /*
  * The two throws. lift is how fast it leaves the hand up the felt (px/s) and spread
  * how much that varies; side is the sideways scatter; hop how fast it rises off the
@@ -7863,9 +7866,11 @@ var DIE_CLACK = 0.90;
 var DIE_THROWS = {
   // Carried slowly over the line: rolled out of the hand, low, going over a few
   // times up the felt before it stops.
-  roll: { lift: 1150, spread: 0.12, side: 200, hop: 480, turn: 1.3, wobble: 160, twirl: 360 },
+  roll: { lift: 520, spread: 0.12, side: 200, hop: 380, turn: 1.0, wobble: 110, twirl: 240 },
   // Flicked: thrown hard, off the felt, bouncing and tumbling, then rolling out.
-  throw: { lift: 1950, spread: 0.12, side: 600, hop: 1650, turn: 1.3, wobble: 420, twirl: 700 }
+  // Hard for a felt the size of a phone: at 1950 it crossed the whole felt in
+  // under half a second and spun three times a second.
+  throw: { lift: 750, spread: 0.12, side: 600, hop: 1150, turn: 1.0, wobble: 240, twirl: 380 }
 };
 /* How fast the air takes a tumble away, per second. Without it a die turned over
    at full rate for as long as it was off the felt. */
@@ -7882,7 +7887,7 @@ var DIE_TURN_DRAG = 0.25;
 // so a die visibly winds down onto its number rather than snapping to it.
 // Rolls on down to a slower speed before it gives up and tips: stopped at 360, a
 // die went over about one face on the felt and settled; now it goes over about two.
-var DIE_ROLL_FREE = 150, DIE_SETTLE = 45, DIE_TIP_K = 200, DIE_TIP_C = 17;
+var DIE_ROLL_FREE = 120, DIE_SETTLE = 45, DIE_TIP_K = 200, DIE_TIP_C = 17;
 /* Dice meeting slower than this are resting against each other, not colliding:
    what each was carrying into the other is taken away rather than bounced. */
 var DIE_REST_CONTACT = 90;
