@@ -92,7 +92,7 @@ object CardDeck {
         GameCard(13, "After card", CardKind.REACT, "Change Is Good", "Hijack a card as it's played and re-aim it at the player of your choice — including the player who played it. Doesn't work on legendary cards."),
         GameCard(14, "Before shot", CardKind.ATTACK, "CHRIS SPECIAL!", "Force an opponent to throw a tomahawk on the upcoming drive or approach."),
         GameCard(15, "Before shot", CardKind.ATTACK, "Close 'Em", "Force an opponent to take the next putt with their eyes closed."),
-        GameCard(16, "Before tee shot", CardKind.ATTACK, "Code Words!", "An opponent can't say \"yes\" or \"no\" this hole. 1 stroke penalty every time they do. ANY variation of the words yes or no counts."),
+        GameCard(16, "Before tee shot", CardKind.ATTACK, "Code Words!", "An opponent can't say \"yes\" or \"no\" this hole. 1 stroke penalty every time they do. ANY variation of the words yes or no counts. (Once their disc is in the basket the hole is over.)"),
         GameCard(17, "Before tee shot", CardKind.ATTACK, "Jomez Commentator", "Another player has to announce every shot you take this hole like they are a commentator. If they forget one, they take +1 stroke."),
         GameCard(18, "Before tee shot", CardKind.ATTACK, "Dealer's Choice!", "Pick the discs every player tees off with this hole. (From their own bag.)"),
         GameCard(19, "Before tee shot", CardKind.DUAL, "Do Not Pass Go", "On another player: whoever has the shortest drive on this hole gets no free mulligan to bank while everyone else does. On yourself: play after everyone tees — if you have the shortest drive, throw your 2nd shot with the person that had the farthest drive."),
