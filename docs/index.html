@@ -1517,7 +1517,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.3.63 · 13 Sep 12:30";
+var APP_VERSION = "v1.3.64 · 14 Sep 14:29";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. The arrow beside it goes and looks for a
@@ -2055,8 +2055,10 @@ var memorySettings = null;
 
 /** Quiet enough not to startle a group standing round a tee pad. */
 var DEFAULT_SFX_VOLUME = 0.4;
-/** Music sits well under the table talk, not over it. */
-var DEFAULT_MUSIC_VOLUME = 0.03;
+/** Music starts off: it is there for whoever turns it up. */
+var DEFAULT_MUSIC_VOLUME = 0;
+/** What the default used to be — a volume nobody chose, so not one to keep. */
+var OLD_DEFAULT_MUSIC_VOLUME = 0.03;
 
 function defaultSettings() {
   return { myName: "", myCharacter: null,
@@ -2076,7 +2078,10 @@ function migrateSettings(s) {
     myName: players[me] || "",
     myCharacter: chars[me] != null ? chars[me] : null,
     sfxVolume: typeof s.sfxVolume === "number" ? s.sfxVolume : DEFAULT_SFX_VOLUME,
-    musicVolume: typeof s.musicVolume === "number" ? s.musicVolume : DEFAULT_MUSIC_VOLUME,
+    // A phone still on the old default was never set by anyone, so it takes the
+    // new one; a volume somebody picked is kept.
+    musicVolume: typeof s.musicVolume === "number" && s.musicVolume !== OLD_DEFAULT_MUSIC_VOLUME
+      ? s.musicVolume : DEFAULT_MUSIC_VOLUME,
   };
 }
 
