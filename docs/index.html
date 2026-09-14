@@ -1517,7 +1517,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.3.67 · 14 Sep 14:37";
+var APP_VERSION = "v1.3.68 · 14 Sep 14:44";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. The arrow beside it goes and looks for a
@@ -7827,11 +7827,13 @@ function renderDiceGame() {
  */
 var DICE_SHAKE_LEN = 1.13, DICE_ROLL_AT = 1.13, DICE_ROLL_LEN = 0.62;
 var DICE_ROLL_WAIT = 0.4;   // silence before the dice are heard to land
-// Friction and air a good deal lighter than they were: the dice looked right but
-// had stopped in about a second, having gone over barely once. DIE_AIR is taken
-// every physics step, 120 a second, so even 0.995 was losing half a throw's
-// speed each second to the air alone.
-var DIE_FRICTION = 240, DIE_BOUNCE = 0.42, DIE_FLOOR_DRAG = 0.82, DIE_AIR = 0.9997;
+// Light air, so a die tumbles and bounces freely while it is up: DIE_AIR is taken
+// every physics step, 120 a second, and 0.995 was losing half a throw's speed
+// each second to the air alone. The felt and the walls are what stop it. Made
+// slick as well, a die rolled on like a ball — off the far wall and most of the
+// way back down to the hand. A cube hits the wall and drops, and goes over a few
+// times on the felt and sits.
+var DIE_FRICTION = 600, DIE_BOUNCE = 0.18, DIE_FLOOR_DRAG = 0.82, DIE_AIR = 0.9997;
 /* The physics steps in fixed slices of time, however often the screen redraws;
    a throw has landed once every die has been still for DIE_STILL_STEPS of them. */
 var DIE_STEP = 1 / 120, DIE_STILL_STEPS = 16;
@@ -7848,7 +7850,7 @@ var DIE_STEP = 1 / 120, DIE_STILL_STEPS = 16;
 var DIE_HOP_G = 9000, DIE_HOP_BOUNCE = 0.5, DIE_HOP_MIN = 75, DIE_HOP_SCALE = 0.0022;
 /* What a rolling die keeps each time it clacks down onto a new face. A cube does
    not roll far: each face it goes over onto takes a good part of what it had. */
-var DIE_CLACK = 0.98;
+var DIE_CLACK = 0.90;
 /*
  * The two throws. lift is how fast it leaves the hand up the felt (px/s) and spread
  * how much that varies; side is the sideways scatter; hop how fast it rises off the
