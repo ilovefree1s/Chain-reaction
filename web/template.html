@@ -2070,7 +2070,16 @@ function defaultSettings() {
  * rather than throwing it away and making the user retype it.
  */
 function migrateSettings(s) {
-  if (!s || typeof s.myName === "string") return s;
+  if (!s) return s;
+  if (typeof s.myName === "string") {
+    // Music used to start at 3%. A phone still sitting there never chose it, so it
+    // takes the new default, once — marked, so somebody who later picks 3% keeps it.
+    if (s.musicV !== 2) {
+      if (s.musicVolume === OLD_DEFAULT_MUSIC_VOLUME) s.musicVolume = DEFAULT_MUSIC_VOLUME;
+      s.musicV = 2;
+    }
+    return s;
+  }
   var me = s.meIndex || 0;
   var players = s.players || [];
   var chars = s.characters || [];

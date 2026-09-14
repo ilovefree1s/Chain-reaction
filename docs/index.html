@@ -1517,7 +1517,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.3.64 · 14 Sep 14:29";
+var APP_VERSION = "v1.3.65 · 14 Sep 14:30";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. The arrow beside it goes and looks for a
@@ -2070,7 +2070,16 @@ function defaultSettings() {
  * rather than throwing it away and making the user retype it.
  */
 function migrateSettings(s) {
-  if (!s || typeof s.myName === "string") return s;
+  if (!s) return s;
+  if (typeof s.myName === "string") {
+    // Music used to start at 3%. A phone still sitting there never chose it, so it
+    // takes the new default, once — marked, so somebody who later picks 3% keeps it.
+    if (s.musicV !== 2) {
+      if (s.musicVolume === OLD_DEFAULT_MUSIC_VOLUME) s.musicVolume = DEFAULT_MUSIC_VOLUME;
+      s.musicV = 2;
+    }
+    return s;
+  }
   var me = s.meIndex || 0;
   var players = s.players || [];
   var chars = s.characters || [];
