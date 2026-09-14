@@ -1517,7 +1517,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.3.66 · 14 Sep 14:35";
+var APP_VERSION = "v1.3.67 · 14 Sep 14:37";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. The arrow beside it goes and looks for a
@@ -7842,9 +7842,10 @@ var DIE_STEP = 1 / 120, DIE_STILL_STEPS = 16;
  */
 // Quicker and lower than it was: gravity a fourteenth of its size at this scale
 // had every bounce hanging in the air. Felt gives back less of a fall than that.
-// Bouncier than it was, and down to smaller hops before it just lands: a throw
-// comes down four or five times rather than twice.
-var DIE_HOP_G = 9000, DIE_HOP_BOUNCE = 0.58, DIE_HOP_MIN = 55, DIE_HOP_SCALE = 0.0022;
+// Bouncier than it once was, down to smaller hops before it just lands: a flick
+// comes down about three times. At 0.58 it came down four or five and read as
+// too bouncy.
+var DIE_HOP_G = 9000, DIE_HOP_BOUNCE = 0.5, DIE_HOP_MIN = 75, DIE_HOP_SCALE = 0.0022;
 /* What a rolling die keeps each time it clacks down onto a new face. A cube does
    not roll far: each face it goes over onto takes a good part of what it had. */
 var DIE_CLACK = 0.98;
@@ -7857,9 +7858,9 @@ var DIE_CLACK = 0.98;
 var DIE_THROWS = {
   // Carried slowly over the line: rolled out of the hand, low, going over a few
   // times up the felt before it stops.
-  roll: { lift: 1150, spread: 0.12, side: 200, hop: 600, turn: 1.3, wobble: 160, twirl: 360 },
+  roll: { lift: 1150, spread: 0.12, side: 200, hop: 480, turn: 1.3, wobble: 160, twirl: 360 },
   // Flicked: thrown hard, off the felt, bouncing and tumbling, then rolling out.
-  throw: { lift: 1950, spread: 0.12, side: 600, hop: 1900, turn: 1.3, wobble: 420, twirl: 700 }
+  throw: { lift: 1950, spread: 0.12, side: 600, hop: 1650, turn: 1.3, wobble: 420, twirl: 700 }
 };
 /* How fast the air takes a tumble away, per second. Without it a die turned over
    at full rate for as long as it was off the felt. */
