@@ -118,7 +118,7 @@ Suggested palette: deep pine ground (`#0C1A14`), panels (`#132A21`), muted sage 
   "wheelCost": 2,
   "freeSpinCard": 22,
   "wheelExcludes": [1, 3, 5, 6, 12, 13, 19, 20, 21, 22, 23, 24, 31, 34, 36, 38, 42, 43, 52, 55, 56, 61, 62, 63],
-  "wheelOnly": [],
+  "wheelOnly": [64],
   "rarities": [
     { "id": "common",    "color": "#E6ECF5", "weight": 86 },
     { "id": "uncommon",  "color": "#47D97F", "weight": 58 },
@@ -200,7 +200,8 @@ Suggested palette: deep pine ground (`#0C1A14`), panels (`#132A21`), muted sage 
     { "id": 60, "timing": "Before all tee", "kind": "attack", "rarity": "uncommon", "name": "The Curd!", "text": "Everyone rolls 2 dice, including whoever played this card. The lowest roll uses the cottage cheese lid as their driver this hole. The card player wins ties." },
     { "id": 61, "timing": "Before shot", "kind": "attack", "rarity": "legendary", "name": "MIND IF I TAKE THIS ONE?", "text": "Take the next putt for an opponent. (No full send drivers.)" },
     { "id": 62, "timing": "Before shot", "kind": "attack", "rarity": "epic", "name": "It's an Offer You Can't Refuse!", "text": "Trade discs (or whatever you're about to throw) with the person of your choice! They can't say no." },
-    { "id": 63, "timing": "Before tee shot", "kind": "dual", "rarity": "epic", "name": "Birdie Time!", "text": "On another player: they must birdie this hole OR take +2 after the hole. (No negative cards or negative wheel effects hit them.) On yourself: receive the immunity ↑ but you must birdie this hole OR take +2 after the hole." }
+    { "id": 63, "timing": "Before tee shot", "kind": "dual", "rarity": "epic", "name": "Birdie Time!", "text": "On another player: they must birdie this hole OR take +2 after the hole. (No negative cards or negative wheel effects hit them.) On yourself: receive the immunity ↑ but you must birdie this hole OR take +2 after the hole." },
+    { "id": 64, "timing": "Any time", "kind": "group", "rarity": "common", "name": "Everyone Draws!", "text": "Everyone but the exempt player draws a card." }
   ]
 }
 ```

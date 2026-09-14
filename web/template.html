@@ -2859,6 +2859,8 @@ function liveWheel(p) {
     save(state);
   }
   mirrorWaiting = null;
+  // A wheel that deals cards deals this phone its own, as it hears the result.
+  if (state) wheelDraws(state, c.id, p.free ? null : (typeof p.exempt === "string" ? p.exempt : null));
   // The beater is a question before it is an instruction: who wrecks it?
   if (c.id === BEATER) openBeaterBid(liveAlerts[liveAlerts.length - 1]);
   // The mirrored wheel has said everything it has to say. It stays a moment so
@@ -3691,8 +3693,32 @@ function ignoresExempt(id) { return IGNORES_EXEMPT.indexOf(id) !== -1; }
  */
 var SHORT_STRAW = [
   60,  // The Curd! — off the wheel the name simply gets the lid, no rolling
+  64,  // Everyone Draws! — the name is the one left without a card
 ];
 function shortStraw(id) { return SHORT_STRAW.indexOf(id) !== -1; }
+
+/*
+ * Everyone Draws!, the wheel's own: every phone but the spun player's draws a
+ * card into its own hand the moment the wheel settles — the spinner's when it
+ * lands, the rest as they hear it. A free spin names nobody, so everyone draws.
+ * A full hand is owed the card instead, drawn once there is room. Found by name,
+ * the way the wolf is.
+ */
+var EVERYONE_DRAWS = (CARDS.filter(function (c) { return c.name === "Everyone Draws!"; })[0] || {}).id;
+function wheelDraws(s, cardId, exempt) {
+  if (!s || EVERYONE_DRAWS == null || cardId !== EVERYONE_DRAWS) return;
+  var me = (s.players[s.meIndex] || "").trim().toLowerCase();
+  if (exempt && exempt.trim().toLowerCase() === me) return;
+  var before = s.hand.length;
+  s.owed = (s.owed || 0) + 1;
+  while (s.owed > 0 && !handIsFull(s) && (s.deck.length || s.discard.length)) drawOne(s);
+  save(s);
+  var got = s.hand.length > before ? BY_ID[s.hand[s.hand.length - 1]] : null;
+  localNote(got
+    ? "You drew " + got.name + "."
+    : "Your hand is full, so the card is owed. Trade up or play one to make room.",
+    "Everyone Draws!");
+}
 
 /* Cards that say the whole thing themselves — who was spun, who is in it, what
    each side does. No banner over them, no summing-up under them: just the card. */
@@ -3727,6 +3753,7 @@ function mateLabels() {
 }
 
 var WHEEL_TEXT = {
+  64: "Everyone but [exempt] draws a card.",
   2:  "Everyone but [exempt] straddle putts every putt once they get inside C2.",
 
   4:  "Everyone but [exempt] has to throw a mini for their next drive or putt ([chooser] chooses which player does which). Minis that fall through the basket count as a make.",
@@ -6884,6 +6911,10 @@ function spinWheel(kind) {
         (state.wheelUsed || []).indexOf(wheel.card.id) === -1) {
       state.wheelUsed = (state.wheelUsed || []).concat([wheel.card.id]);
       save(state);
+    }
+    // A wheel that deals cards deals this phone its own.
+    if (wheel.stage === "done" && state && wheel.card) {
+      wheelDraws(state, wheel.card.id, wheel.free ? null : wheel.name);
     }
     // Settled for good: tell the table what the wheel decided.
     if (wheel.stage === "done" && live) {

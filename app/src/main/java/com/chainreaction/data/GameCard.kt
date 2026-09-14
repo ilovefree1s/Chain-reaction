@@ -60,7 +60,7 @@ object Rules {
     val WHEEL_EXCLUDES = setOf(1, 3, 5, 6, 12, 13, 19, 20, 21, 22, 23, 24, 31, 34, 36, 38, 42, 43, 52, 55, 56, 61, 62, 63)
 
     /** Cards that live on the wheel alone — never shuffled into a deck. */
-    val WHEEL_ONLY = setOf(57)
+    val WHEEL_ONLY = setOf(64)
 
     /** Display order for the rules reference. */
     val TIMINGS = listOf(
@@ -140,6 +140,7 @@ object CardDeck {
         GameCard(61, "Before shot", CardKind.ATTACK, "MIND IF I TAKE THIS ONE?", "Take the next putt for an opponent. (No full send drivers.)"),
         GameCard(62, "Before shot", CardKind.ATTACK, "It's an Offer You Can't Refuse!", "Trade discs (or whatever you're about to throw) with the person of your choice! They can't say no."),
         GameCard(63, "Before tee shot", CardKind.DUAL, "Birdie Time!", "On another player: they must birdie this hole OR take +2 after the hole. (No negative cards or negative wheel effects hit them.) On yourself: receive the immunity ↑ but you must birdie this hole OR take +2 after the hole."),
+        GameCard(64, "Any time", CardKind.GROUP, "Everyone Draws!", "Everyone but the exempt player draws a card."),
     )
 
     private val byId: Map<Int, GameCard> = ALL.associateBy { it.id }
