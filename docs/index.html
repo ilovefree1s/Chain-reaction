@@ -1517,7 +1517,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.3.68 · 14 Sep 14:44";
+var APP_VERSION = "v1.3.70 · 14 Sep 14:53";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. The arrow beside it goes and looks for a
@@ -4329,6 +4329,9 @@ function render() {
   if (wheelPay) html += renderWheelCost();
   html += renderAlerts(); // rides over everything, on every screen
   app.innerHTML = html;
+  // A throw in the air when the page repaints: its dice are put straight back
+  // where they are, rather than waiting a frame drawn from the felt's corner.
+  if (diceSim) drawDiceSim(diceSim);
   fitMetaLines();
   fitArtWords();
   // The faces are carried in the page but still arrive after the first paint.
@@ -7995,7 +7998,49 @@ function rollDice(kind, which, aim) {
               // Body n is die live[n]. They stopped being the same thing the
               // moment a throw could be part of the tray rather than all of it.
               live: live };
+  // Drawn where they start before the browser paints: the render above left the
+  // thrown dice at the felt's corner for the simulation to place, and waiting for
+  // its first frame could show them there for one.
+  drawDiceSim(diceSim);
   diceSim.raf = requestAnimationFrame(diceStep);
+}
+
+/*
+ * The felt a throw is being drawn on. Looked up again whenever the one it had has
+ * left the page: anything that repaints mid-throw — a phone at the table checking
+ * in, a turn passed, a banner fading — builds a new felt, and a simulation still
+ * writing to the old one moved dice nobody could see. The dice on screen sat
+ * frozen, a flying one drawn from the felt's top-left corner, until the throw
+ * ended and they jumped to where it had landed.
+ */
+function simField(sim) {
+  if (!sim.field.isConnected) {
+    var fresh = app.querySelector(".dicefield");
+    if (fresh) sim.field = fresh;
+  }
+  return sim.field;
+}
+/* Each thrown die where the simulation has it. Run every frame, and straight after
+   any repaint during a throw, so a rebuilt felt never shows a die out of place. */
+function drawDiceSim(sim) {
+  var field = simField(sim);
+  for (var i = 0; i < sim.bodies.length; i++) {
+    var b = sim.bodies[i];
+    var el = field.querySelector('[data-die="' + sim.live[i] + '"]');
+    if (!el) continue;
+    el.classList.toggle("flat", !!b.flat);
+    var turn = b.flat ? b.rot : 0;
+    el.style.transform = "translate(" + b.x.toFixed(1) + "px, " + b.y.toFixed(1) +
+      "px) translate(-50%, -50%)" + (b.flat ? " rotate(" + turn.toFixed(1) + "deg)" : "") +
+      " scale(" + (diceScale(sim.d) * (1 + (b.h || 0) * DIE_HOP_SCALE)).toFixed(3) + ")";
+    // Off the felt it is nearer the eye, and its shadow falls further from it.
+    el.style.filter = b.h > 0.5
+      ? "drop-shadow(0 " + (5 + b.h * 0.14).toFixed(1) + "px " + (9 + b.h * 0.12).toFixed(1) +
+        "px rgba(0, 0, 0, " + Math.max(0.22, 0.45 - b.h * 0.0012).toFixed(2) + "))"
+      : "";
+    var cube = el.firstChild;
+    if (cube) cube.style.transform = m3css(b.flat ? m3mul(m3rot(0, 0, 1, -turn), b.m) : b.m);
+  }
 }
 
 function diceStep(now) {
@@ -8015,7 +8060,7 @@ function diceStep(now) {
   // once at the throw left the simulation playing in a world 15px wider than the
   // felt actually was — the layout settles a moment after the render that starts
   // it — and dice were bouncing off walls that were not where the screen was.
-  var fr = sim.field.getBoundingClientRect();
+  var fr = simField(sim).getBoundingClientRect();
   if (fr.width > 0) { sim.w = fr.width; sim.h = fr.height; }
   var b, i, j, bodies = sim.bodies, r = sim.r, w = sim.reach, moving;
   /*
@@ -8188,23 +8233,7 @@ function diceStep(now) {
   if (steps >= 12) sim.acc = 0;
 
   // Draw each die once, where the steps left it.
-  for (i = 0; i < bodies.length; i++) {
-    b = bodies[i];
-    var el = sim.field.querySelector('[data-die="' + sim.live[i] + '"]');
-    if (!el) continue;
-    el.classList.toggle("flat", !!b.flat);
-    var turn = b.flat ? b.rot : 0;
-    el.style.transform = "translate(" + b.x.toFixed(1) + "px, " + b.y.toFixed(1) +
-      "px) translate(-50%, -50%)" + (b.flat ? " rotate(" + turn.toFixed(1) + "deg)" : "") +
-      " scale(" + (diceScale(sim.d) * (1 + (b.h || 0) * DIE_HOP_SCALE)).toFixed(3) + ")";
-    // Off the felt it is nearer the eye, and its shadow falls further from it.
-    el.style.filter = b.h > 0.5
-      ? "drop-shadow(0 " + (5 + b.h * 0.14).toFixed(1) + "px " + (9 + b.h * 0.12).toFixed(1) +
-        "px rgba(0, 0, 0, " + Math.max(0.22, 0.45 - b.h * 0.0012).toFixed(2) + "))"
-      : "";
-    var cube = el.firstChild;
-    if (cube) cube.style.transform = m3css(b.flat ? m3mul(m3rot(0, 0, 1, -turn), b.m) : b.m);
-  }
+  drawDiceSim(sim);
 
   // Still for long enough: they have settled, wherever that turned out to be. The
   // cap is only there so a pathological bounce cannot run forever.
