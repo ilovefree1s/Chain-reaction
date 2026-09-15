@@ -107,6 +107,11 @@
   /* Waiting on the second pick it keeps its colours: the hint above it says what
      it needs, and a grey button read as trading up being switched off. */
   .big.tradeup:disabled { opacity: 1; }
+  /* The little line above a card's words on cards that need priority to play:
+     smaller than the rules, in the table's orange, so it reads as a note. Sized
+     in em, so on a painted face it shrinks with the words the fitter sizes. */
+  .prionote { font-size: 0.72em; font-weight: 800; letter-spacing: 0.04em;
+              color: #FF8A1E; margin: 0 0 0.45em; text-transform: uppercase; }
   .big.danger { background: var(--panel); color: var(--attack); border: 2px solid var(--edge); }
 
   .step {
@@ -1454,8 +1459,9 @@ function artFaceHtml(c, art, words, slots) {
     fill(slots.timing, "arttiming", c.id + ":t", esc(c.timing.toUpperCase()), c.timing) +
     fill(slots.title, "arttitle", c.id + ":n", esc(c.name), c.name) +
     fill(slots.text, "", c.id + ":w",
+      prioNoteHtml(c) +
       cardHalves(words).map(function (h) { return "<p>" + esc(h) + "</p>"; }).join(""),
-      words) +
+      (prioOnly(c) ? PRIO_NOTE + " " : "") + words) +
     fill(slots.kind, "artkind", c.id + ":k", esc(c.kind.toUpperCase()), c.kind) +
     "</div>";
 }
@@ -1517,7 +1523,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.3.83 · 15 Sep 16:56";
+var APP_VERSION = "v1.3.84 · 15 Sep 17:02";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. The arrow beside it goes and looks for a
@@ -5144,6 +5150,15 @@ function bypassesPrio(c) { return !!c && c.kind === "react"; }
 function spinsWheel(c) {
   return !!c && c.name === "GAMBLE WHEEL!!";
 }
+/* Cards that can only be played while holding priority — refused once the table
+   has passed — and so carry a note saying so above their words. */
+function prioOnly(c) {
+  return spinsWheel(c) || beforeAllTee(c);
+}
+var PRIO_NOTE = "Must be played while holding priority";
+function prioNoteHtml(c) {
+  return prioOnly(c) ? '<p class="prionote">' + PRIO_NOTE + '</p>' : "";
+}
 /* The cards that set up every tee shot at once; the table passing ends them. */
 function beforeAllTee(c) {
   return !!c && c.timing === "Before all tee";
@@ -5875,7 +5890,9 @@ function cardHtml(c, withActions, altText, browse) {
     (wheelOnlyCard(c.id)
       ? '<span class="tag timing" style="color:#FF8A1E;border-color:rgba(255,138,30,.55)">wheel only</span>'
       : "") + '</div>' +
-    '<h3>' + esc(c.name) + '</h3><p>' +
+    '<h3>' + esc(c.name) + '</h3>' +
+    // The priority note is about the card, not the wheel's wording of it.
+    (altText ? "" : prioNoteHtml(c)) + '<p>' +
     cardHalves(words).map(esc).join('</p><p>') + '</p>' + acts +
     '</div></div>';
 }
