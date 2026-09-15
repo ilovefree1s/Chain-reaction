@@ -2941,10 +2941,12 @@ function liveDispute(p) {
   if (withWho) {
     var me = ((state ? state.players[state.meIndex] : settings.myName) || "").trim().toLowerCase();
     if (withWho !== me) return;
-    localNote(who + " has a dispute with you. Head to the gamble games.", "Dispute");
+    localNote(who + " has a dispute with you. Tap to open the gamble games.", "Dispute");
   } else {
-    localNote(who + " wants to settle a dispute. Head to the gamble games.", "Dispute");
+    localNote(who + " wants to settle a dispute. Tap to open the gamble games.", "Dispute");
   }
+  // Tapped, this banner is the way in.
+  liveAlerts[liveAlerts.length - 1].games = true;
   playMenuSound(sfxVolume());
   try { if (navigator.vibrate) navigator.vibrate([120, 60, 120]); } catch (e) { /* banner only */ }
   liveRefresh();
@@ -10330,6 +10332,8 @@ app.addEventListener("click", function (e) {
         render();
         break;
       }
+      // A dispute banner opens the gamble games, same as the button that sent it.
+      if (hit && hit.games) { openSecretWheel(); break; }
       // Straight to the game the card is asking for, if it asks for one.
       if (hit && hit.card != null && ALERT_GAME[hit.card] && !hit.wheel) {
         openSecretWheel();
