@@ -1523,7 +1523,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.3.93 · 15 Sep 18:09";
+var APP_VERSION = "v1.3.94 · 15 Sep 18:14";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. The arrow beside it goes and looks for a
@@ -9027,16 +9027,25 @@ function rarityRank(c) {
  * thing at a table of three as at a table of four. With only two players there is
  * no next-to-last worth the name — that would be the leader.
  */
+/*
+ * Players level on the card stand level here too. A place is how many players
+ * are strictly ahead, so tied players share the better of the places between
+ * them: a whole table level is everyone in first, and two tied for last are
+ * both third. Read off the sorted order instead, a tie was broken by where the
+ * names sat on the scorecard, and on a level table whoever was listed last drew
+ * with last place's luck.
+ */
 function drawLuck(s, who) {
   var luck = DATA.drawLuck || {};
-  var order = standings(s), n = order.length;
-  if (order[n - 1] === who) return luck.last || 1;
-  if (n >= 3 && order[n - 2] === who) return luck.nextToLast || 1;
+  var n = s.players.length, cmp = standingCmp(s), ahead = 0;
+  for (var i = 0; i < n; i++) if (i !== who && cmp(i, who) < 0) ahead++;
+  if (ahead === n - 1) return luck.last || 1;
+  if (n >= 3 && ahead === n - 2) return luck.nextToLast || 1;
   // Third from the bottom is second place at a full table, and only there: with
   // three players that is the leader, who is not owed anything. Barely a boost,
   // deliberately — second is still winning, and the whole point of this is that
   // it belongs to whoever is having the bad round.
-  if (n >= 4 && order[n - 3] === who) return luck.midTable || 1;
+  if (n >= 4 && ahead === n - 3) return luck.midTable || 1;
   return 1;
 }
 /* One card out of what is left, by weight. The deck is a bag, not a stack: which
