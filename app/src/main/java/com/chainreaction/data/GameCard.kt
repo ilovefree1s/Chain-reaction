@@ -108,7 +108,7 @@ object CardDeck {
         GameCard(30, "After throw", CardKind.SELF, "If the Basket Was There It Woulda Went In", "If you hit any metal and it doesn't go in, it counts as a made putt."),
         GameCard(31, "After all tee", CardKind.ATTACK, "I'm In Control", "You decide who plays whose tee shots. More than one player can be sent to the same lie."),
         GameCard(32, "Before tee shot", CardKind.ATTACK, "It's Like a Stranger Is Doing It!", "Force an opponent to take the upcoming drive with their off hand."),
-        GameCard(34, "After a hole", CardKind.DUAL, "Me and You", "On yourself: take the best score made on the hole. On another player: they take the worst score made on the hole."),
+        GameCard(34, "After a hole", CardKind.DUAL, "Me and You", "On yourself: tie whoever took the best score made on this hole. On another player: they tie the worst score made on the hole."),
         GameCard(35, "Before tee shot", CardKind.SELF, "My Tee Pad Is Over Here!", "Take up to 10 steps off the regular tee pad and put a disc down to mark a new tee pad for yourself. You must pick 1 player to join you — anyone but whoever is in 1st."),
         GameCard(36, "After card", CardKind.REACT, "No Way", "Cancel any card just played except a legendary. That card goes to the discard pile."),
         GameCard(37, "Before tee shot", CardKind.ATTACK, "New mando on this hole, bud.", "Choose a reasonable object the target player must pass on a side you specify."),
