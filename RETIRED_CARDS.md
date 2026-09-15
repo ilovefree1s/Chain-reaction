@@ -14,9 +14,39 @@ free for it.
    `app/src/main/java/com/chainreaction/data/GameCard.kt`, in id order (and into
    `WHEEL_EXCLUDES` / `WHEEL_ONLY` if listed below).
 3. Put its **Wheel wording** back into `WHEEL_TEXT` in `web/template.html`, and
-   the id back into any **Wheel lists** named below (`IGNORES_EXEMPT`,
-   `SHORT_STRAW`, `SAYS_IT_ALL`, `ONLY_EXEMPT`, `TEAM_CARDS`).
+   the id back into any **Lists** named below (`IGNORES_EXEMPT`, `SHORT_STRAW`,
+   `SAYS_IT_ALL`, `ONLY_EXEMPT`, `TEAM_CARDS`, `PLAY_ON_ALL`).
 4. `node web/build.js`, then check the card in the library and on the wheel.
+
+---
+
+## 24 · FIVE FOR YOU, YOU, AND YOU!
+
+Retired 2026-09-15 (v1.3.87). Was: common, self, After a hole, off the wheel.
+
+**Spec entry** (`BUILD_SPEC.md`, `cards`):
+
+```json
+    { "id": 24, "timing": "After a hole", "kind": "self", "name": "FIVE FOR YOU, YOU, AND YOU!", "text": "Play after you birdie a hole nobody else birdied. Everyone else owes five dollars to the pot!" },
+```
+
+No `rarity` field: it drew as common by default. In `wheelExcludes` (add 24
+back there). Not in `wheelOnly`.
+
+**Android entry** (`GameCard.kt`, `ALL`), and add 24 back to `WHEEL_EXCLUDES`:
+
+```kotlin
+        GameCard(24, "After a hole", CardKind.SELF, "FIVE FOR YOU, YOU, AND YOU!", "Play after you birdie a hole nobody else birdied. Everyone else owes five dollars to the pot!"),
+```
+
+**Wheel wording:** none (it was never on the wheel).
+
+**Lists** (`web/template.html`):
+
+```js
+// in PLAY_ON_ALL, between 19 and 31
+  24, // FIVE FOR YOU, YOU, AND YOU! — everyone else pays the ace pot
+```
 
 ---
 

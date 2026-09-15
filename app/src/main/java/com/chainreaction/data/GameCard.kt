@@ -57,7 +57,7 @@ object Rules {
     // The house blacklist: reaction cards plus everything too situational,
     // too group-shaped or too slow to land as a wheel result — and the Double
     // Wheel itself, so the wheel can never demand another wheel.
-    val WHEEL_EXCLUDES = setOf(1, 3, 5, 6, 12, 13, 19, 20, 21, 22, 23, 24, 31, 34, 36, 38, 42, 43, 52, 55, 56, 61, 62, 63)
+    val WHEEL_EXCLUDES = setOf(1, 3, 5, 6, 12, 13, 19, 20, 21, 22, 23, 31, 34, 36, 38, 42, 43, 52, 55, 56, 61, 62, 63)
 
     /** Cards that live on the wheel alone — never shuffled into a deck. */
     val WHEEL_ONLY = setOf(64)
@@ -100,7 +100,6 @@ object CardDeck {
         GameCard(21, "After throw", CardKind.SELF, "Don't Nice Me!", "If any player says any form of \"nice\" as your disc is in flight and it hits a tree, you can move to where your disc landed and throw again for a free stroke."),
         GameCard(22, "Before tee shot", CardKind.GROUP, "GAMBLE WHEEL!!", "Free spin on the GAMBLE WHEEL!! The name doesn't matter — you choose who gets the benefit or the punishment."),
         GameCard(23, "Before shot", CardKind.ATTACK, "Easily Distracted?", "Everyone can do anything they want to distract a player while they are putting, but CANNOT touch the player or the disc being putted."),
-        GameCard(24, "After a hole", CardKind.SELF, "FIVE FOR YOU, YOU, AND YOU!", "Play after you birdie a hole nobody else birdied. Everyone else owes five dollars to the pot!"),
         GameCard(25, "After throw", CardKind.SELF, "Foot Wedge!", "Move your own lie up to 10 paces (30 ft) in any direction."),
         GameCard(26, "After throw", CardKind.SELF, "GAMBLE!", "Take a second chance at a putt you just missed. Make it and it was a free mulligan. Miss and the second stroke counts too — play whichever disc landed farthest away, then add +1 stroke after the hole ends."),
         GameCard(27, "After all tee", CardKind.SELF, "I'll Have What He's Having", "After all tee shots, trade lies with an opponent of your choice. The player whose lie you take can join another player of their choice instead of switching with the person that played the card."),
