@@ -5139,6 +5139,11 @@ function iHavePrio(s) {
 function bypassesPrio(c) { return !!c && c.kind === "react"; }
 /* Cards that only make sense while the group is still on the pad: once the
    drives are away there is no tee shot left to play them before. */
+/* A card whose whole effect is a spin on the wheel. Found by name, the way the
+   wolf is. */
+function spinsWheel(c) {
+  return !!c && c.name === "GAMBLE WHEEL!!";
+}
 function beforeTee(c) {
   return !!c && /^Before (tee shot|all tee)$/.test(c.timing);
 }
@@ -5152,8 +5157,9 @@ function beforeTee(c) {
  *
  * Once the whole table has passed, the throwing has started. There are no
  * turns left to be out of, so anything that answers what is happening out
- * there can be played by anyone at any time — but the tee-pad cards are done,
- * because the tee shots are.
+ * there can be played by anyone at any time — tee cards as well, so a player hit
+ * by a card has a way to answer it. Not a spin, though: the wheel belongs to the
+ * priority phase, and GAMBLE WHEEL!! waits for the next hole.
  *
  * Reactions sit outside both halves. A card that answers another card cannot
  * wait for a turn, or it is not answering anything.
@@ -5168,7 +5174,10 @@ function canPlayNow(s, c) {
   // Between holes nobody holds the turn: the tee cards wait for the next
   // hole's order, and the rest play freely as they would once everyone passed.
   if (prioWaiting(s)) return !beforeTee(c);
-  if (prioOpen(s)) return !beforeTee(c);
+  // Once the whole table has passed, priority is over and anything goes — tee
+  // cards included, or a player hit by a card has no way to answer it. Except a
+  // spin: the wheel belongs to the priority phase, and GAMBLE WHEEL!! is a spin.
+  if (prioOpen(s)) return !spinsWheel(c);
   return iHavePrio(s);
 }
 /*
@@ -6406,8 +6415,8 @@ function renderFaceModal() {
       // it — so it is claimed, and the standalone copy is left off.
       closeUsed = true;
       var waiting = !canPlayNow(state, c);
-      // Two different refusals: waiting your turn is a delay, a tee-pad card
-      // after the drives are away is not coming back this hole.
+      // Two different refusals: waiting your turn is a delay, a spin once the
+      // table has passed is not coming back this hole.
       // And between holes a third: nobody's turn until the scores are all in.
       var lockWait = waiting && prioWaiting(state);
       var teedOff = waiting && !lockWait && prioOpen(state);
@@ -6417,7 +6426,7 @@ function renderFaceModal() {
           : lockWait
           ? '<button class="big primary" disabled>Waiting on scores</button>'
           : teedOff
-          ? '<button class="big primary" disabled>Too late this hole</button>'
+          ? '<button class="big primary" disabled>Wheel\'s shut this hole</button>'
           : waiting
           ? '<button class="big primary" disabled>Not your turn</button>'
           : '<button class="big primary" data-act="playCard" data-i="' + c.id + '">Play</button>') +
@@ -6429,7 +6438,7 @@ function renderFaceModal() {
             'The next hole\'s order is set once everyone locks their scores.</p>'
           : teedOff
           ? '<p class="hint" style="text-align:center;margin:2px 0 10px">' +
-            'Everyone passed and the tee shots are away. This one waits for the next hole.</p>'
+            'Everyone passed, so the wheel is shut for this hole. It opens again when the scores go in.</p>'
           : waiting
           ? '<p class="hint" style="text-align:center;margin:2px 0 10px">' +
             esc(prioHolder(state)) + ' has priority. Yours when they pass.</p>'
