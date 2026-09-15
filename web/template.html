@@ -2319,6 +2319,9 @@ function liveHello() {
       ? state.characters[state.meIndex]
       : settings.myCharacter,
     handCount: state ? state.hand.length : null,
+    // Which round this phone is in, so the table only compares cards, locks and
+    // hands with phones in the same one.
+    round: state ? (state.roundId || null) : null,
     locks: helloLocks(),
     // Where the turn stands, stamped, so a phone that missed a pass catches up.
     prio: state ? prioStamp(state) : null,
@@ -2393,6 +2396,7 @@ function liveHear(p) {
     locks: (p.locks && typeof p.locks === "object") ? p.locks : null,
     hosting: !!p.hosting,
     cfg: (p.cfg && typeof p.cfg === "object") ? p.cfg : null,
+    round: typeof p.round === "string" ? p.round : null,
     at: Date.now()
   };
   // A host answered — the join search is over, stop the give-up clock.
@@ -2401,6 +2405,9 @@ function liveHear(p) {
   if (newcomer || p.fresh) liveHello();
   // A joiner's Setup follows the host's table as the choices land.
   adoptHostTable();
+  // Still in an old round while the host has started a new one with us in it:
+  // leave the old one and join, before anything below reads the old round.
+  joinHostsNewRound();
   // Mid-round, the tee draw and the turn follow the table the same way.
   adoptHostTee();
   if (p.prio && typeof p.prio === "object") livePrio(p.prio);
@@ -2440,6 +2447,36 @@ function adoptHostTable() {
     });
     if (seats.length === mine.length && seats.indexOf(-1) === -1) setup.teeBase = seats;
   }
+}
+
+/*
+ * A phone still in an unfinished round when the host starts a new one. A saved
+ * round that was live rejoins the lobby by itself, and a phone holding a round
+ * never took the host's new one — so it sat in the lobby playing the old round:
+ * its own tee order, its own turn, deaf to the new round's, with its old locks
+ * mixed into everyone else's.
+ *
+ * When the host's round is started, is a different round, and has this phone's
+ * player in it, the old round is let go and the phone joins the new one the way
+ * any joiner does. A host's round without this player in it is not our table,
+ * and the old round is left alone.
+ */
+function joinHostsNewRound() {
+  if (!state || !live || live.hosting) return;
+  var h = liveHostTable();
+  if (!h || !h.cfg || !h.cfg.started || typeof h.cfg.round !== "string") return;
+  if (h.cfg.round === (state.roundId || null)) return;
+  var me = (settings.myName || "").trim().toLowerCase();
+  if (!me || !(h.cfg.order || []).some(function (n) { return String(n).trim().toLowerCase() === me; })) return;
+  clearSaved();
+  state = null;
+  viewCard = null; wheel = null; tradeUp = null; playTarget = null; confirmDiscard = null;
+  wheelPay = null; pileOpen = false; showScorecard = false; tab = "score";
+  setup = freshSetup();
+  screen = "setup";
+  startIfHostHas();
+  localNote((h.name || "The host") + " started a new round, so you've been moved into it.", "New round");
+  render();
 }
 
 /* A phone whose round started without the draw — or with a different one — tees
@@ -2532,6 +2569,18 @@ function liveSeat(peer, id) {
   if (id && live) live.seated[id] = name;
 }
 
+/*
+ * The phones in the same round as [s]. There is one lobby, so a phone still
+ * holding an old round — somebody who never finished the last one — sits in it
+ * too, and its hellos carry that round's locks under the same names. Counted
+ * alongside, its old scores read as scorecards disagreeing, its locked holes as
+ * the table having finished holes it had not, and its hand as a player's hand.
+ */
+function roundPeers(s) {
+  var mine = s && s.roundId ? s.roundId : null;
+  return livePeers().filter(function (p) { return (p.round || null) === mine; });
+}
+
 /* What [p] is holding: yours from the round in front of you — known whether or
    not the phones are linked — and everyone else's self-reported, which needs
    the lobby. Matching is by name, the only key both sides share. */
@@ -2539,7 +2588,7 @@ function handCountFor(s, p) {
   if (p === s.meIndex) return s.hand.length;
   if (!live) return null;
   var name = s.players[p].trim().toLowerCase();
-  var peers = livePeers();
+  var peers = roundPeers(s);
   for (var i = 0; i < peers.length; i++) {
     if (peers[i].name.trim().toLowerCase() === name) return peers[i].handCount;
   }
@@ -2579,7 +2628,7 @@ function unsettledReason(s) {
     return "The scorecards still disagree. Sort that out first &mdash; it is on the scorecard.";
   }
   var waiting = [];
-  livePeers().forEach(function (peer) {
+  roundPeers(s).forEach(function (peer) {
     var seated = s.players.some(function (n) {
       return n.trim().toLowerCase() === peer.name.trim().toLowerCase();
     });
@@ -2596,7 +2645,7 @@ function unsettledReason(s) {
 function scoreDisputes(s, h) {
   var out = [];
   if (!live || !s.locked[h]) return out;
-  livePeers().forEach(function (peer) {
+  roundPeers(s).forEach(function (peer) {
     var theirs = peer.locks && peer.locks[h];
     if (!theirs) return;
     s.players.forEach(function (name, i) {
@@ -2621,7 +2670,7 @@ function dealHeld(s, h) {
   if (!live) return false;
   if (!s.locked[h]) return true; // mid-fix — settlement is pending
   if (scoreDisputes(s, h).length) return true;
-  var peers = livePeers();
+  var peers = roundPeers(s);
   for (var i = 0; i < peers.length; i++) {
     var pname = peers[i].name.trim().toLowerCase();
     var seated = s.players.some(function (n) {
@@ -5346,7 +5395,7 @@ function prioWaiting(s) {
 /* The phones at the table that have not locked hole [h] yet, by name. */
 function lateToLock(s, h) {
   var late = [];
-  livePeers().forEach(function (pr) {
+  roundPeers(s).forEach(function (pr) {
     var nm = pr.name.trim().toLowerCase();
     if (!s.players.some(function (n) { return n.trim().toLowerCase() === nm; })) return;
     if (!pr.locks || !pr.locks[h]) late.push(pr.name);
