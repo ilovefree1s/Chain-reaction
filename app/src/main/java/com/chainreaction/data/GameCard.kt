@@ -122,7 +122,7 @@ object CardDeck {
         GameCard(45, "Before shot", CardKind.DUAL, "Shoe Golf", "On yourself: putt with your own shoe at no stroke cost. On another player: they putt with a shoe and it still counts as a stroke. If they refuse to take their shoe off, they take +1 stroke after the hole."),
         GameCard(46, "Before shot", CardKind.ATTACK, "Forehand only!", "Force an opponent to throw a forehand on the upcoming drive or approach."),
         GameCard(47, "Before shot", CardKind.DUAL, "That's Definitely a Gimme", "Pick up a putt as a gimme, as long as it's inside C1 — you definitely woulda made it. The player in last place gets one too. If 2 players are tied for last, they can flip a coin or roll dice to see who gets it."),
-        GameCard(48, "Before tee shot", CardKind.ATTACK, "Too Many Choices", "Pick 2 discs out of 1 person's bag. They choose 1 to tee off with."),
+        GameCard(48, "Before tee shot", CardKind.ATTACK, "Too Many Choices", "Pick 2 discs out of 1 person's bag. They choose 1 to tee off with. (Not the TILT or the beater.)"),
         GameCard(49, "Before tee shot", CardKind.SELF, "Tree Insurance", "Play before your tee shot. If you hit a tree, take a free mulligan."),
         GameCard(50, "Before shot", CardKind.ATTACK, "Trust Me Bro", "Give another player advice for their tee shot. They have to follow it as best they can. (Somewhat reasonable advice — don't tell them something like throw it backwards.)"),
         GameCard(51, "Before shot", CardKind.ATTACK, "Turbo Time", "Once all opponents get inside C1, they have to turbo putt their first putt."),
