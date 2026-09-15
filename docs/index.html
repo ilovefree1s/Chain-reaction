@@ -1517,7 +1517,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.3.79 · 14 Sep 16:28";
+var APP_VERSION = "v1.3.80 · 14 Sep 23:11";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. The arrow beside it goes and looks for a
@@ -5121,7 +5121,8 @@ function prioHolder(s) {
  * discussing and started throwing.
  *
  * Counted since the last card was played rather than per hole: a card played
- * mid-lap is a new thing to answer, and the queue starts again from the leader.
+ * mid-lap is a new thing to answer, and the table gets a fresh lap to answer it
+ * (see prioAfterPlay for who it starts with).
  */
 function prioOpen(s) {
   return !!s && (s.passes || 0) >= s.players.length;
@@ -5188,6 +5189,27 @@ function autoPassIfEmpty(s) {
   localNote("Nothing in hand, so your turn passed on by itself. " +
     "It comes back when the hole is scored and you draw.", "Passed for you");
   return true;
+}
+/*
+ * Who holds the turn once a card lands; the lap starts over, so the whole table
+ * gets to answer it. Played by whoever held the turn, it moves on to the next
+ * player as a pass would. Sending it back to whoever tees first handed the
+ * players who had already passed a second go before the one next in line had a
+ * first. Played out of turn — a reaction — whoever held the turn keeps it.
+ * Played after the table had passed all the way round, the next player after
+ * whoever played it.
+ */
+function prioAfterPlay(s, player) {
+  var order = playOrder(s);
+  var holder = prioHolder(s);
+  var me = String(player || "").trim().toLowerCase();
+  if (!prioOpen(s) && holder && holder.trim().toLowerCase() !== me) return holder;
+  for (var i = 0; i < order.length; i++) {
+    if (s.players[order[i]].trim().toLowerCase() === me) {
+      return s.players[order[(i + 1) % order.length]];
+    }
+  }
+  return s.players[order[0]];
 }
 /* Who priority goes to next — the same walk passPrio takes, without taking it. */
 function nextInLine(s) {
@@ -6787,10 +6809,11 @@ function resolveCard(s, id, played, target) {
   // business beyond the hand count, which the commit's hello just carried.
   // Played or discarded, an empty hand cannot hold the queue up.
   setTimeout(function () { if (state === s && autoPassIfEmpty(s)) render(); }, 0);
-  // Something to answer: the lap starts again, from the leader.
+  // Something to answer: a fresh lap, starting with the player after whoever
+  // played it (or still with the holder, for a card played out of turn).
   // Not between holes, though: that would start the next hole's turn before the
   // table has finished scoring the last.
-  if (played && !prioWaiting(s)) movePrio(s, s.players[playOrder(s)[0]], 0, s.prioHole || 0);
+  if (played && !prioWaiting(s)) movePrio(s, prioAfterPlay(s, s.players[s.meIndex]), 0, s.prioHole || 0);
   if (played && live) {
     liveCast("play", { name: s.players[s.meIndex], card: id, target: target || null });
   }
