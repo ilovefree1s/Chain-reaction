@@ -1231,22 +1231,18 @@
               width: 0; height: 0; border: 12px solid transparent; border-bottom: none;
               border-top: 20px solid var(--self); z-index: 1;
               filter: drop-shadow(0 0 6px rgba(255, 138, 30, 0.8)); }
-  /* Who picks the game, decided the way a slot machine decides: one name lit at
-     a time, hopping faster than you can follow and slowing to a stop. Sits
-     above the four games, because it is the question you ask before them. */
-  .sgpick { width: min(100%, 420px); margin: 0 auto 14px; }
-  .picknames { display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
-               margin-bottom: 10px; }
-  .pickname { border: 2px solid var(--edge); border-radius: 12px; padding: 9px 8px;
-              background: rgba(6, 12, 24, 0.72); text-align: center;
-              font-size: 15px; font-weight: 700; color: var(--sage);
-              overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  /* The one under the light. Bright enough to be read across a tee pad. */
-  .pickname.lit { color: #fff; border-color: #FF8A1E;
-                  background: rgba(247, 121, 30, 0.28);
-                  box-shadow: 0 0 18px rgba(247, 148, 30, 0.55); }
-  .sgpick .exempt { font-size: 20px; margin: 0 0 10px; }
+  /* Which game settles it, decided the way a slot machine decides: the light
+     runs over the four games, faster than you can follow, and slows to a stop
+     on one of them. Nobody picks, so nobody argues about the picking. */
+  .sgpick { width: min(100%, 420px); margin: 0 auto 12px; }
+  .sgpick .exempt { font-size: 22px; margin: 0 0 10px; }
   .sgpick .big { margin-bottom: 0; }
+  /* Under the light the others go dark, so the one lit is the only bright thing
+     on the screen — and stays that way once it has landed. */
+  .sgstack.running .sgplate { filter: brightness(0.3) saturate(0.5); }
+  .sgstack .sgplate.lit { filter: none; border-radius: 14px;
+                          box-shadow: 0 0 0 3px #FF8A1E,
+                                      0 0 24px rgba(247, 148, 30, 0.75); }
   /* Nothing else is tappable while the light is running: a game opened mid-run
      would take the answer off the screen with it. */
   .sgmenu .sgstack.held { pointer-events: none; }
@@ -1552,7 +1548,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.3.113 · 15 Sep 19:38";
+var APP_VERSION = "v1.3.114 · 15 Sep 19:41";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. The arrow beside it goes and looks for a
@@ -7113,9 +7109,9 @@ function openSecretWheel() {
     // The dice tray and the card table ride along, fresh each visit.
     dice: { count: 2, vals: [3, 4], rolling: false, pos: null, set: [], parked: [] },
     coin: { face: "HEADS", flipping: false },
-    // Who picks which game settles it. Fresh each visit: last argument's
-    // answer is nothing to do with this one.
-    pick: { names: [], lit: -1, spinning: false, winner: null },
+    // Which game settles it. Fresh each visit: last argument's answer is
+    // nothing to do with this one.
+    pick: { lit: -1, spinning: false, winner: null },
     cards: { deck: [], board: [], slots: [null, null, null, null, null] }
   };
   render();
@@ -7164,9 +7160,11 @@ function renderSecret() {
   // All four are painted on one sheet with generous gaps between them, so each
   // plate is a window onto its own box, measured off an alpha scan of
   // secretbuttons.png rather than guessed at.
-  var stack = SG_PLATES.map(function (p) {
+  var lit = secret.pick ? secret.pick.lit : -1;
+  var stack = SG_PLATES.map(function (p, i) {
     var b = p[1];
-    return '<div class="sgplate" data-act="' + p[0] + '" style="aspect-ratio:' +
+    return '<div class="sgplate' + (i === lit ? " lit" : "") +
+      '" data-act="' + p[0] + '" style="aspect-ratio:' +
       b[2] + '/' + b[3] + '">' +
       '<img src="' + SG_BUTTONS + '" alt="" draggable="false" style="' +
       'width:' + (100 * SG_SHEET / b[2]).toFixed(3) + '%;' +
@@ -7177,8 +7175,8 @@ function renderSecret() {
     '<button class="sgback" data-act="closeSecret">&lsaquo;&nbsp;&nbsp;Back</button>' +
     '<div class="label">Secret gamble games</div>' +
     pickBlockHtml() +
-    '<div class="sgstack' + (secret.pick && secret.pick.spinning ? " held" : "") + '">' +
-    stack + '</div></div>';
+    '<div class="sgstack' + (secret.pick && secret.pick.spinning ? " held" : "") +
+    (lit >= 0 ? " running" : "") + '">' + stack + '</div></div>';
 }
 
 /* ---- coin: one coin, two sides, nothing to configure ---- */
@@ -8966,27 +8964,14 @@ function spinSecret() {
  */
 /* Five seconds of light, the first hops this fast and the last this slow. */
 var PICK_MS = 5000, PICK_FIRST = 55, PICK_LAST = 430;
-/* The table, as the light sees it: everyone in the round, in tee order. */
-function pickNames() {
-  if (!state || !state.players) return [];
-  return state.players.filter(function (n) { return n && n.trim(); });
-}
+/* The four games as the light names them, in the order the plates are drawn. */
+var SG_NAMES = ["The name wheel", "Dice", "Cards", "Coin"];
 function pickBlockHtml() {
-  var names = pickNames();
-  // Nothing to decide with one name, and nothing to decide off the menu where
-  // there is no round at all.
-  if (names.length < 2) return "";
   var p = (secret && secret.pick) || {};
   return '<div class="sgpick">' +
-    '<div class="picknames">' +
-    names.map(function (nm, i) {
-      return '<div class="pickname' + (p.lit === i ? " lit" : "") +
-        '" data-lit="' + i + '">' + esc(nm) + '</div>';
-    }).join("") + '</div>' +
-    (p.winner && !p.spinning
-      ? '<div class="exempt">' + esc(p.winner) + ' picks the game</div>' : "") +
+    (p.winner && !p.spinning ? '<div class="exempt">' + esc(p.winner) + '</div>' : "") +
     '<button class="big wheel" data-act="pickWho"' + (p.spinning ? " disabled" : "") + '>' +
-    (p.winner && !p.spinning ? "Again" : "Who picks the game?") + '</button>' +
+    (p.winner && !p.spinning ? "Again" : "Pick the game for us") + '</button>' +
     '</div>';
 }
 /*
@@ -8996,17 +8981,14 @@ function pickBlockHtml() {
  */
 function spinPick() {
   if (!secret || !secret.pick || secret.pick.spinning) return;
-  var names = pickNames();
-  if (names.length < 2) return;
   var p = secret.pick;
-  p.names = names.slice();
   p.winner = null;
   p.spinning = true;
-  // How many names the light passes. Random, so where it stops is too — and
-  // wide enough a range that every seat is reachable.
+  // How many games the light passes. Random, so where it stops is too — and
+  // wide enough a range that every game is reachable.
   var hops = 24 + Math.floor(Math.random() * 12);
   // When each hop happens: walk the five seconds and mark every time the eased
-  // distance rolls over into the next name.
+  // distance rolls over into the next game.
   var times = [], last = 0, steps = Math.round(PICK_MS / 4);
   for (var i = 1; i <= steps; i++) {
     var at = i / steps;
@@ -9018,7 +9000,7 @@ function spinPick() {
   // The beep rides the light, one per hop. With no beep to play there is still
   // the wheel's click track, scheduled the way a spin's is.
   if (!pickAudio) startWheelSound(sfxVolume(), times);
-  var mine = secret, n = names.length;
+  var mine = secret, n = SG_PLATES.length;
   times.forEach(function (t, k) {
     setTimeout(function () {
       // Closed, or a round started underneath it: the light goes out with it.
@@ -9027,7 +9009,7 @@ function spinPick() {
       playClip(pickAudio, sfxVolume(), 0.12);
       mine.pick.lit = (k + 1) % n;
       // The light moves on its own, without rebuilding the menu under it.
-      var cells = app.querySelectorAll(".pickname");
+      var cells = app.querySelectorAll(".sgplate");
       for (var c = 0; c < cells.length; c++) {
         cells[c].classList.toggle("lit", c === mine.pick.lit);
       }
@@ -9037,7 +9019,7 @@ function spinPick() {
     if (secret !== mine || !mine.pick.spinning) return;
     mine.pick.spinning = false;
     mine.pick.lit = times.length % n;
-    mine.pick.winner = names[mine.pick.lit];
+    mine.pick.winner = SG_NAMES[mine.pick.lit];
     // The sound that answers the beeping: that's the one, go and pick.
     if (pickedAudio) playClip(pickedAudio, sfxVolume());
     else playMenuSound(sfxVolume());
