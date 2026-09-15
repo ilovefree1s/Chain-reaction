@@ -214,6 +214,10 @@ const drawSound = copyAudio("draw.wav");
 const diceSound = copyAudio("dice.mp3");
 const coinSound = copyAudio("coin.mp3");
 const shuffleSound = copyAudio("shuffle.wav");
+// The light that picks who chooses the game: a beep per name, and the one that
+// answers when it stops.
+const pickSound = copyAudio("gamblegamesbeep.mp3");
+const pickedSound = copyAudio("gameselected.mp3");
 // The soundtrack, played back to back on the menu-side screens only.
 const musicTracks = [
   copyAudio("discgolferbeeotch.mp3"),
@@ -411,6 +415,8 @@ const template = fs.readFileSync(path.join(__dirname, "template.html"), "utf8");
   "__DICE_SOUND__",
   "__COIN_SOUND__",
   "__SHUFFLE_SOUND__",
+  "__PICK_SOUND__",
+  "__PICKED_SOUND__",
 ].forEach((token) => {
   if (!template.includes(token)) {
     console.error(`template.html is missing the ${token} placeholder`);
@@ -448,6 +454,8 @@ const html = template
   .replace("__DICE_SOUND__", diceSound)
   .replace("__COIN_SOUND__", coinSound)
   .replace("__SHUFFLE_SOUND__", shuffleSound)
+  .replace("__PICK_SOUND__", pickSound)
+  .replace("__PICKED_SOUND__", pickedSound)
   .replace("/*__MUSIC_TRACKS__*/", JSON.stringify(musicTracks))
   .replace("__APP_VERSION__", versionLabel)
   ;
