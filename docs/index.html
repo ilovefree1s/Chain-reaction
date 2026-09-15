@@ -1523,7 +1523,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.3.104 · 15 Sep 19:08";
+var APP_VERSION = "v1.3.105 · 15 Sep 19:11";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. The arrow beside it goes and looks for a
@@ -2471,7 +2471,7 @@ function joinHostsNewRound() {
   clearSaved();
   state = null;
   viewCard = null; wheel = null; tradeUp = null; playTarget = null; confirmDiscard = null;
-  wheelPay = null; pileOpen = false; showScorecard = false; tab = "score";
+  wheelPay = null; pileOpen = false; showScorecard = false; tab = "score"; disputePick = false;
   setup = freshSetup();
   screen = "setup";
   startIfHostHas();
@@ -2932,12 +2932,19 @@ function liveWheel(p) {
   liveRefresh();
 }
 
-/* Somebody tapped Settle a dispute. The rules send any argument to the gamble
-   games, and an argument is never one phone's business — so every other phone
-   hears who is calling for one, with the chains and a buzz. */
+/* Somebody tapped Settle a dispute and named who it's with. Only that player's
+   phone hears it, with the chains and a buzz; everyone else is left alone. A
+   call with no name on it (an older phone) still reaches the whole table. */
 function liveDispute(p) {
   var who = typeof p.name === "string" && p.name.trim() ? p.name.trim() : "Someone";
-  localNote(who + " wants to settle a dispute. Head to the gamble games.", "Dispute");
+  var withWho = typeof p.with === "string" ? p.with.trim().toLowerCase() : "";
+  if (withWho) {
+    var me = ((state ? state.players[state.meIndex] : settings.myName) || "").trim().toLowerCase();
+    if (withWho !== me) return;
+    localNote(who + " has a dispute with you. Head to the gamble games.", "Dispute");
+  } else {
+    localNote(who + " wants to settle a dispute. Head to the gamble games.", "Dispute");
+  }
   playMenuSound(sfxVolume());
   try { if (navigator.vibrate) navigator.vibrate([120, 60, 120]); } catch (e) { /* banner only */ }
   liveRefresh();
@@ -4298,6 +4305,7 @@ var setup = freshSetup();
 var wheel = null;
 var confirmDiscard = null; // card id awaiting a discard confirmation
 var playTarget = null; // card id awaiting the name of whoever it lands on
+var disputePick = false; // Settle a dispute is asking who the argument is with
 var viewCard = null; // card id enlarged to its full face
 var viewWords = null; // replaces the face's words — a wheel alert opens the wheel wording
 // A face opened from an alert is somebody else's moment: no Play, no Discard,
@@ -6039,9 +6047,20 @@ function renderRoundRules() {
     'Tap RULES 3&times; to end the round early.</p>' +
     // The rules say an argument goes to the coin. This is the way there —
     // at the top, because a table mid-argument is not going to scroll.
-    '<button class="big raised" data-act="dispute">Settle a dispute</button>' +
-    '<p class="hint" style="text-align:center;margin:-6px 0 16px">' +
-    'Coin, dice, wheel or cards &mdash; the app has no opinion.</p>' +
+    // First it asks who the argument is with: only that player is called over.
+    (disputePick
+      ? '<div class="panel" style="margin-bottom:16px">' +
+        '<p class="confirmq" style="text-align:center;margin-top:0">Dispute with&hellip;</p>' +
+        state.players.map(function (name, i) {
+          return (i === state.meIndex || !name.trim()) ? "" :
+            '<button class="big primary" data-act="disputeWith" data-t="' + esc(name) + '">' +
+            esc(name) + "</button>";
+        }).join("") +
+        '<button class="big quiet" data-act="disputeCancel" style="margin-bottom:0">Cancel</button>' +
+        '</div>'
+      : '<button class="big raised" data-act="dispute">Settle a dispute</button>' +
+        '<p class="hint" style="text-align:center;margin:-6px 0 16px">' +
+        'Coin, dice, wheel or cards &mdash; the app has no opinion.</p>') +
     renderLiveSection() + renderHouseRules() + renderCardLibrary() +
     '<div style="height:16px"></div>' +
     // Not repeated when it is already up top — one question, in one place.
@@ -10162,9 +10181,21 @@ app.addEventListener("click", function (e) {
     // Straight to the games, from inside the round. Closing them puts the
     // round back exactly as it was — the overlay never touched it.
     case "dispute":
-      // The rest of the table hears who is calling for one.
-      if (live) liveCast("dispute", { name: (state ? state.players[state.meIndex] : settings.myName) || "" });
+      // Who it's with comes first. A phone with nobody else on it has nobody
+      // to name, so it goes straight to the games.
+      if (state && state.players.some(function (n, i) { return i !== state.meIndex && n.trim(); })) {
+        disputePick = true; render(); break;
+      }
       openSecretWheel(); break;
+    // Only the player named hears it — the rest of the table stays out of it.
+    case "disputeWith":
+      disputePick = false;
+      if (live) liveCast("dispute", {
+        name: (state ? state.players[state.meIndex] : settings.myName) || "",
+        with: el.dataset.t || ""
+      });
+      openSecretWheel(); break;
+    case "disputeCancel": disputePick = false; render(); break;
     case "closeSecret": stopWheelSound(true); secret = null; render(); break;
     // Closing mid-spin takes the sound with it — and the heads-up banner off
     // everyone else's phone, when no result ever announced itself.
