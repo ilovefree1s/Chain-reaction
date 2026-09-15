@@ -1548,7 +1548,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.3.114 · 15 Sep 19:41";
+var APP_VERSION = "v1.3.116 · 15 Sep 19:52";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. The arrow beside it goes and looks for a
@@ -2304,6 +2304,7 @@ function liveOpen() {
     if (m.payload.event === "roll") liveRoll(p);
     if (m.payload.event === "bye") liveBye(p);
     if (m.payload.event === "dispute") liveDispute(p);
+    if (m.payload.event === "game") livePickGame(p);
   };
 
   sock.onclose = function () {
@@ -2976,11 +2977,31 @@ function liveDispute(p) {
   } else {
     localNote(who + " wants to settle a dispute. Tap to open the gamble games.", "Dispute");
   }
+  // Their argument, their roll: this phone watches the games light up rather
+  // than running its own.
+  disputeCall = { by: who };
+  if (secret && secret.pick) secret.pick = { lit: -1, spinning: false, winner: null };
   // Tapped, this banner is the way in.
   liveAlerts[liveAlerts.length - 1].games = true;
   playMenuSound(sfxVolume());
   try { if (navigator.vibrate) navigator.vibrate([120, 60, 120]); } catch (e) { /* banner only */ }
   liveRefresh();
+}
+
+/* The caller rolled for the game. Every phone in the argument runs that same
+   roll — opening the games first if this one is not already in them, which is
+   the whole point of being brought in. */
+function livePickGame(p) {
+  if (!p || typeof p.hops !== "number" || !(p.hops > 0)) return;
+  if (!secret) openSecretWheel();
+  if (!secret) return;
+  // The light is on the menu, so that is where a phone being shown it belongs.
+  secret.mode = "menu";
+  if (secret.pick && secret.pick.spinning) return;
+  secret.pick = { lit: -1, spinning: false, winner: null };
+  render();
+  // The plates have to be on screen before they can be seen to light up.
+  requestAnimationFrame(function () { runPick(p.hops); });
 }
 
 /* Back to a table of one: the chairs the lobby filled empty out. */
@@ -4339,6 +4360,10 @@ var wheel = null;
 var confirmDiscard = null; // card id awaiting a discard confirmation
 var playTarget = null; // card id awaiting the name of whoever it lands on
 var disputePick = false; // Settle a dispute is asking who the argument is with
+/* Who called the argument that is being settled, as { by: name }. The caller
+   rolls for the game and every phone in it watches that one roll — nobody has
+   to agree about whose spin counts. Null when nobody has called one. */
+var disputeCall = null;
 var viewCard = null; // card id enlarged to its full face
 var viewWords = null; // replaces the face's words — a wheel alert opens the wheel wording
 // A face opened from an alert is somebody else's moment: no Play, no Discard,
@@ -8966,13 +8991,27 @@ function spinSecret() {
 var PICK_MS = 5000, PICK_FIRST = 55, PICK_LAST = 430;
 /* The four games as the light names them, in the order the plates are drawn. */
 var SG_NAMES = ["The name wheel", "Dice", "Cards", "Coin"];
+/* Whose button it is. An argument names the player who called it and only their
+   phone rolls; with nobody having called one, the games are just the games and
+   any phone may. */
+function myPickToRoll() {
+  if (!disputeCall || !disputeCall.by) return true;
+  var me = ((state && state.players ? state.players[state.meIndex] : settings.myName) || "");
+  return disputeCall.by.trim().toLowerCase() === me.trim().toLowerCase();
+}
 function pickBlockHtml() {
   var p = (secret && secret.pick) || {};
+  var mine = myPickToRoll();
   return '<div class="sgpick">' +
     (p.winner && !p.spinning ? '<div class="exempt">' + esc(p.winner) + '</div>' : "") +
-    '<button class="big wheel" data-act="pickWho"' + (p.spinning ? " disabled" : "") + '>' +
-    (p.winner && !p.spinning ? "Again" : "Pick the game for us") + '</button>' +
-    '</div>';
+    '<button class="big wheel" data-act="pickWho"' +
+    (p.spinning || !mine ? " disabled" : "") + '>' +
+    (!mine
+      ? (p.winner && !p.spinning
+          ? esc(disputeCall.by) + " rolled it"
+          : "Waiting on " + esc(disputeCall.by))
+      : p.winner && !p.spinning ? "Again" : "Pick the game for us") +
+    '</button></div>';
 }
 /*
  * The run itself. Hop times come off the wheel's own easing curve, so the light
@@ -8981,12 +9020,27 @@ function pickBlockHtml() {
  */
 function spinPick() {
   if (!secret || !secret.pick || secret.pick.spinning) return;
-  var p = secret.pick;
-  p.winner = null;
-  p.spinning = true;
+  // Somebody else called the argument: it is their roll, and this phone is
+  // here to watch it.
+  if (!myPickToRoll()) return;
   // How many games the light passes. Random, so where it stops is too — and
   // wide enough a range that every game is reachable.
   var hops = 24 + Math.floor(Math.random() * 12);
+  // Sent before the light moves, so the table watches the one run instead of
+  // being told the answer after the fact — the tee order wheel's own deal.
+  if (live) liveCast("game", { hops: hops });
+  runPick(hops);
+}
+/*
+ * The run itself, and the reason it can be shared: the hop count decides
+ * everything that follows, so the same number lights the same games in the same
+ * beat and lands on the same one, on every phone in the argument.
+ */
+function runPick(hops) {
+  if (!secret || !secret.pick || secret.pick.spinning) return;
+  var p = secret.pick;
+  p.winner = null;
+  p.spinning = true;
   // When each hop happens: walk the five seconds and mark every time the eased
   // distance rolls over into the next game.
   var times = [], last = 0, steps = Math.round(PICK_MS / 4);
@@ -8997,6 +9051,11 @@ function spinPick() {
   }
   if (!times.length) times = [0];
   render();
+  // The games go dark for the run itself rather than from whatever render comes
+  // along next: the light is moved by hand below, so the class that dims around
+  // it goes on by hand too.
+  var dim = app.querySelector(".sgstack");
+  if (dim) dim.classList.add("running");
   // The beep rides the light, one per hop. With no beep to play there is still
   // the wheel's click track, scheduled the way a spin's is.
   if (!pickAudio) startWheelSound(sfxVolume(), times);
@@ -10309,13 +10368,14 @@ app.addEventListener("click", function (e) {
       }
       openSecretWheel(); break;
     // Only the player named hears it — the rest of the table stays out of it.
-    case "disputeWith":
+    case "disputeWith": {
       disputePick = false;
-      if (live) liveCast("dispute", {
-        name: (state ? state.players[state.meIndex] : settings.myName) || "",
-        with: el.dataset.t || ""
-      });
+      var caller = (state ? state.players[state.meIndex] : settings.myName) || "";
+      // Called it, so this is the phone that rolls for the game.
+      disputeCall = { by: caller };
+      if (live) liveCast("dispute", { name: caller, with: el.dataset.t || "" });
       openSecretWheel(); break;
+    }
     case "disputeCancel": disputePick = false; render(); break;
     case "closeSecret": stopWheelSound(true); secret = null; render(); break;
     // Closing mid-spin takes the sound with it — and the heads-up banner off
