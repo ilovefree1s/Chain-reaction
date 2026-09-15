@@ -2272,6 +2272,7 @@ function liveOpen() {
     if (m.payload.event === "bid") liveBid(p);
     if (m.payload.event === "roll") liveRoll(p);
     if (m.payload.event === "bye") liveBye(p);
+    if (m.payload.event === "dispute") liveDispute(p);
   };
 
   sock.onclose = function () {
@@ -2879,6 +2880,17 @@ function liveWheel(p) {
   // LONE WOLF! howls on every phone; everything else gets the usual rattle.
   if (c.id === LONE_WOLF) playWolfSound(sfxVolume()); else playMenuSound(sfxVolume());
   try { if (navigator.vibrate) navigator.vibrate([120, 60, 120, 60, 320]); } catch (e) { /* banner only */ }
+  liveRefresh();
+}
+
+/* Somebody tapped Settle a dispute. The rules send any argument to the gamble
+   games, and an argument is never one phone's business — so every other phone
+   hears who is calling for one, with the chains and a buzz. */
+function liveDispute(p) {
+  var who = typeof p.name === "string" && p.name.trim() ? p.name.trim() : "Someone";
+  localNote(who + " wants to settle a dispute. Head to the gamble games.", "Dispute");
+  playMenuSound(sfxVolume());
+  try { if (navigator.vibrate) navigator.vibrate([120, 60, 120]); } catch (e) { /* banner only */ }
   liveRefresh();
 }
 
@@ -10100,7 +10112,10 @@ app.addEventListener("click", function (e) {
       render(); break;
     // Straight to the games, from inside the round. Closing them puts the
     // round back exactly as it was — the overlay never touched it.
-    case "dispute": openSecretWheel(); break;
+    case "dispute":
+      // The rest of the table hears who is calling for one.
+      if (live) liveCast("dispute", { name: (state ? state.players[state.meIndex] : settings.myName) || "" });
+      openSecretWheel(); break;
     case "closeSecret": stopWheelSound(true); secret = null; render(); break;
     // Closing mid-spin takes the sound with it — and the heads-up banner off
     // everyone else's phone, when no result ever announced itself.
