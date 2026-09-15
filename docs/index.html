@@ -450,6 +450,9 @@
   .card .acts button { flex: 1; margin: 0; }
 
   .hint { color: var(--sage); margin: 0 0 12px; }
+  /* A hint that has to actually be read: white and heavier than the grey around
+     it, because a table that has been handed a phone skims past sage text. */
+  .hint .read { color: #fff; font-weight: 700; }
 
   /* A fresh card the table hasn't locked yet: in hand, visible, not yet playable. */
   .heldtag { font-size: 10px; font-weight: 900; letter-spacing: 2px; color: #FF8A1E;
@@ -1523,7 +1526,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.3.109 · 15 Sep 19:24";
+var APP_VERSION = "v1.3.110 · 15 Sep 19:25";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. The arrow beside it goes and looks for a
@@ -7941,8 +7944,8 @@ function renderDiceGame() {
     '<p class="hint" style="text-align:center;margin:0 0 8px">' +
     (curdRollHint() ||
       (d.rolling ? "&nbsp;" : "Grab the dice to flick or shake them &middot; drag to move" +
-        '<br>Roll one die at a time, or drag one die on top of another to ' +
-        'stack them and roll more than one')) +
+        '<br><span class="read">Roll one die at a time, or drag one die on top ' +
+        'of another to stack them and roll more than one</span>')) +
     '</p>' +
     // Not tossable: swiping the felt itself does nothing. You throw dice by
     // having hold of them, the way you would off a table.
