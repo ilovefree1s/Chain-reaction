@@ -119,6 +119,7 @@ Suggested palette: deep pine ground (`#0C1A14`), panels (`#132A21`), muted sage 
   "freeSpinCard": 22,
   "wheelExcludes": [1, 3, 5, 6, 12, 13, 19, 20, 21, 22, 23, 24, 31, 34, 36, 38, 42, 43, 52, 55, 56, 61, 62, 63],
   "wheelOnly": [64],
+  "retired": [33],
   "rarities": [
     { "id": "common",    "color": "#E6ECF5", "weight": 86 },
     { "id": "uncommon",  "color": "#47D97F", "weight": 58 },
@@ -170,7 +171,6 @@ Suggested palette: deep pine ground (`#0C1A14`), panels (`#132A21`), muted sage 
     { "id": 30, "timing": "After throw", "kind": "self", "rarity": "rare", "name": "If the Basket Was There It Woulda Went In", "text": "If you hit any metal and it doesn't go in, it counts as a made putt." },
     { "id": 31, "timing": "After all tee", "kind": "attack", "rarity": "legendary", "name": "I'm In Control", "text": "You decide who plays whose tee shots. More than one player can be sent to the same lie." },
     { "id": 32, "timing": "Before tee shot", "kind": "attack", "rarity": "uncommon", "name": "It's Like a Stranger Is Doing It!", "text": "Force an opponent to take the upcoming drive with their off hand." },
-    { "id": 33, "timing": "Before tee shot", "kind": "dual", "name": "Lefty ON the Box", "text": "Your first throw off the box is with your offhand, for free — that's throw 0. The player in last place gets it too. If 2 players are tied for last, they can flip a coin or roll dice to see who gets it." },
     { "id": 34, "timing": "After a hole", "kind": "dual", "rarity": "epic", "name": "Me and You", "text": "On yourself: take the best score made on the hole. On another player: they take the worst score made on the hole." },
     { "id": 35, "timing": "Before tee shot", "kind": "self", "rarity": "uncommon", "name": "My Tee Pad Is Over Here!", "text": "Take up to 10 steps off the regular tee pad and put a disc down to mark a new tee pad for yourself. You must pick 1 player to join you — anyone but whoever is in 1st." },
     { "id": 36, "timing": "After card", "kind": "react", "rarity": "rare", "name": "No Way", "text": "Cancel any card just played except a legendary. That card goes to the discard pile." },

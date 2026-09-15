@@ -36,14 +36,28 @@ const data = JSON.parse(match[1]);
 // ---- sanity checks, so a bad edit fails here and not on a course ----
 const problems = [];
 
-// Ids must run 1..N with no gaps — the deck size is whatever the spec says it is,
-// so adding a card is an edit to one file rather than a hunt for hardcoded counts.
+// Ids are whole numbers from 1 up, each used once, and the deck size is whatever
+// the spec says it is — adding a card is an edit to one file rather than a hunt
+// for hardcoded counts. A gap is allowed only for a card retired on purpose,
+// listed in "retired" and kept whole in RETIRED_CARDS.md: a card that goes
+// missing by accident still fails here, and an id is never handed to a
+// different card, since the lists and the art are all keyed by it.
 const ids = data.cards.map((c) => c.id);
-const expected = Array.from({ length: data.cards.length }, (_, i) => i + 1);
-const missing = expected.filter((i) => !ids.includes(i));
-if (missing.length) {
-  problems.push(`card ids must run 1-${data.cards.length}; missing: ${missing.join(", ")}`);
+const retired = data.retired || [];
+ids.forEach((id) => {
+  if (!Number.isInteger(id) || id < 1) problems.push(`card id ${id} is not a whole number from 1 up`);
+});
+const topId = Math.max(0, ...ids, ...retired);
+const missing = [];
+for (let i = 1; i <= topId; i++) {
+  if (!ids.includes(i) && !retired.includes(i)) missing.push(i);
 }
+if (missing.length) {
+  problems.push(`card ids missing: ${missing.join(", ")} — put the card back, or list it in "retired"`);
+}
+retired.forEach((id) => {
+  if (ids.includes(id)) problems.push(`card ${id} is listed as retired but is still in the cards`);
+});
 if (new Set(ids).size !== ids.length) problems.push("duplicate card ids");
 
 const kinds = new Set(["attack", "self", "dual", "react", "group", "sabotage"]);
