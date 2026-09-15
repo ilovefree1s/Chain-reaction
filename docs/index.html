@@ -1523,7 +1523,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.3.106 · 15 Sep 19:14";
+var APP_VERSION = "v1.3.107 · 15 Sep 19:16";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. The arrow beside it goes and looks for a
@@ -6058,6 +6058,8 @@ function renderRoundRules() {
             '<button class="big primary" data-act="disputeWith" data-t="' + esc(name) + '">' +
             esc(name) + "</button>";
         }).join("") +
+        // No name: the whole table hears it and any of them can tap in.
+        '<button class="big raised" data-act="disputeWith">All players</button>' +
         '<button class="big quiet" data-act="disputeCancel" style="margin-bottom:0">Cancel</button>' +
         '</div>'
       : '<button class="big raised" data-act="dispute">Settle a dispute</button>' +

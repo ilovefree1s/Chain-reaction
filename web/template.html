@@ -6058,6 +6058,8 @@ function renderRoundRules() {
             '<button class="big primary" data-act="disputeWith" data-t="' + esc(name) + '">' +
             esc(name) + "</button>";
         }).join("") +
+        // No name: the whole table hears it and any of them can tap in.
+        '<button class="big raised" data-act="disputeWith">All players</button>' +
         '<button class="big quiet" data-act="disputeCancel" style="margin-bottom:0">Cancel</button>' +
         '</div>'
       : '<button class="big raised" data-act="dispute">Settle a dispute</button>' +
