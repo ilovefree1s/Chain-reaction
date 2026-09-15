@@ -4055,6 +4055,28 @@ function startIfHostHas() {
   var h = liveHostTable();
   if (!h || !h.cfg || !h.cfg.started) return false;
   if (!(h.cfg.order && h.cfg.order.length)) return false;
+  /*
+   * Named in the host's round, or it is not this phone's round to start. A
+   * phone that taps Join while a game is already going is not in that game,
+   * and it was being handed one anyway: its own roster, a fresh hand, no
+   * scores — and stamped with the host's round, so its locks and hand count
+   * landed in everybody else's table. Lobbies are formed before a round.
+   */
+  var me = (settings.myName || "").trim().toLowerCase();
+  var named = !!me && (h.cfg.order || []).some(function (n) {
+    return String(n).trim().toLowerCase() === me;
+  });
+  if (!named) {
+    // Once, not every fifteen seconds: the lobby is answering, it simply has
+    // nothing to deal this phone.
+    if (!live.toldStarted) {
+      live.toldStarted = true;
+      localNote((h.name || "The host") + "'s round is already going, and you're not in it. " +
+        "They'll need to start a new one to deal you in.", "Lobby");
+      render();
+    }
+    return false;
+  }
   // Take the host's table one last time on the way in. Not every hello arrives
   // through the path that adopts it — the heartbeat one does not — and starting
   // without the draw quietly tees the hole off in seat order instead.
