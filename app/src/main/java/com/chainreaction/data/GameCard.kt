@@ -105,7 +105,7 @@ object CardDeck {
         GameCard(27, "After all tee", CardKind.SELF, "I'll Have What He's Having", "After all tee shots, trade lies with an opponent of your choice. The player whose lie you take can join another player of their choice instead of switching with the person that played the card."),
         GameCard(28, "Before shot", CardKind.DUAL, "Globetrotter Shit", "On yourself: putt behind the back at no stroke cost. On another player: they putt behind the back and it counts as a normal stroke."),
         GameCard(29, "Before tee shot", CardKind.DUAL, "GOOD GUYS VS. BAD GUYS!", "Ask if anyone wants to team up this hole — take your pick. (If nobody says yes, you get 1 free mulligan this hole.) If you get a partner it's 2v2 for this hole, and cards hit both players on each team when played. Winners get a banked mulligan, losers take +1 extra stroke."),
-        GameCard(30, "After throw", CardKind.SELF, "If the Basket Was There It Woulda Went In", "If you hit any metal and it doesn't go in, it counts as a made putt."),
+        GameCard(30, "After throw", CardKind.SELF, "If the Basket Was There It Woulda Went In", "If you hit any metal on the basket and it doesn't go in, it counts as in anyway."),
         GameCard(31, "After all tee", CardKind.ATTACK, "I'm In Control", "You decide who plays whose tee shots. More than one player can be sent to the same lie."),
         GameCard(32, "Before tee shot", CardKind.ATTACK, "It's Like a Stranger Is Doing It!", "Force an opponent to take the upcoming drive with their off hand."),
         GameCard(34, "After a hole", CardKind.DUAL, "Me and You", "On yourself: tie whoever took the best score made on this hole. On another player: they tie the worst score made on the hole."),
