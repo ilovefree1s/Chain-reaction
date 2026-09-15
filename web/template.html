@@ -7943,9 +7943,8 @@ function renderDiceGame() {
        it closes itself. */
     '<p class="hint" style="text-align:center;margin:0 0 8px">' +
     (curdRollHint() ||
-      (d.rolling ? "&nbsp;" : "Grab the dice to flick or shake them &middot; drag to move" +
-        '<br><span class="read">Roll one die at a time, or drag one die on top ' +
-        'of another to stack them and roll more than one</span>')) +
+      (d.rolling ? "&nbsp;" : '<span class="read">Roll one die at a time, or drag one die ' +
+        'on top of another to stack them and roll more than one</span>')) +
     '</p>' +
     // Not tossable: swiping the felt itself does nothing. You throw dice by
     // having hold of them, the way you would off a table.
@@ -7954,7 +7953,12 @@ function renderDiceGame() {
     // a die to land on. Hidden while they are in the air; there is nothing to
     // throw mid-throw.
     (d.rolling ? "" : '<div class="throwline"><span>Easy throw below here</span></div>') +
-    diceFieldHtml(d) + '</div></div>';
+    diceFieldHtml(d) + '</div>' +
+    // Under the dice, where a hand that has just picked one up is already
+    // looking. The line above the felt is the one that has to be read first.
+    '<p class="hint" style="text-align:center;margin:8px 0 0">' +
+    (d.rolling ? "&nbsp;" : "Grab the dice to flick or shake them") + '</p>' +
+    '</div>';
 }
 /*
  * A throw is handed to a physics loop and left alone: the dice carry the speed
