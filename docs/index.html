@@ -682,6 +682,25 @@
     white-space: nowrap; font-size: 11px; font-weight: 900; letter-spacing: 2px;
     text-transform: uppercase; color: rgba(77, 195, 255, 0.45);
   }
+  /* How the dice are handled, asked for rather than printed on the felt: the
+     tray is a table, and a table does not carry its own instructions. Over the
+     felt rather than above it, so opening it doesn't shrink the throwing
+     space and shuffle the dice around. */
+  .dicehow { background: none; border: 0; padding: 0; font: inherit;
+             color: #4DC3FF; font-weight: 900; text-decoration: underline; }
+  .dicehelp {
+    position: absolute; inset: 0; z-index: 3; overflow-y: auto;
+    /* The felt takes every gesture for the dice; this one has to scroll. */
+    touch-action: pan-y;
+    background: rgba(6, 12, 24, 0.94); border-radius: 14px;
+    padding: 14px; text-align: left;
+  }
+  .dicehelp h4 { margin: 0 0 10px; font-size: 13px; letter-spacing: 2px;
+                 text-transform: uppercase; color: #4DC3FF; }
+  .dicehelp p { margin: 0 0 10px; font-size: 14px; color: var(--off);
+                line-height: 1.45; }
+  .dicehelp b { color: #fff; }
+  .dicehelp .big { margin: 4px 0 0; min-height: 42px; font-size: 15px; }
   /* Thrown, they cross the felt in the time between two tumbles. */
   /* Mid-throw the simulation writes each die's transform every frame, so nothing
      eases: an easing would be the browser arguing with the physics about where
@@ -1523,7 +1542,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.3.107 · 15 Sep 19:16";
+var APP_VERSION = "v1.3.108 · 15 Sep 19:21";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. The arrow beside it goes and looks for a
@@ -7940,7 +7959,8 @@ function renderDiceGame() {
        it closes itself. */
     '<p class="hint" style="text-align:center;margin:0 0 8px">' +
     (curdRollHint() ||
-      (d.rolling ? "&nbsp;" : "Grab the dice to flick or shake them &middot; drag to move")) +
+      (d.rolling ? "&nbsp;" : "Grab the dice to flick or shake them &middot; drag to move" +
+        ' &middot; <button class="dicehow" data-act="diceHelp">How?</button>')) +
     '</p>' +
     // Not tossable: swiping the felt itself does nothing. You throw dice by
     // having hold of them, the way you would off a table.
@@ -7949,7 +7969,33 @@ function renderDiceGame() {
     // a die to land on. Hidden while they are in the air; there is nothing to
     // throw mid-throw.
     (d.rolling ? "" : '<div class="throwline"><span>Easy throw below here</span></div>') +
-    diceFieldHtml(d) + '</div></div>';
+    diceFieldHtml(d) + diceHelpHtml(d) + '</div></div>';
+}
+
+/* What the felt won't tell you on its own. Written as a hand doing it, because
+   every one of these is a thing you do with your thumb rather than a button. */
+function diceHelpHtml(d) {
+  if (!d.help) return "";
+  return '<div class="dicehelp">' +
+    '<h4>How to roll</h4>' +
+    '<p><b>All at once.</b> Drag a die on top of another and let go &mdash; ' +
+    'stack the whole set in one spot. Grabbing any die in a pile picks up ' +
+    'everything touching it, so the lot comes up in your hand together.</p>' +
+    '<p><b>Throw them.</b> Carry them up over the dashed line. Taken over ' +
+    'slowly they roll out of your hand; fast, they are thrown hard. A flick ' +
+    'upward throws them too &mdash; below the line a small lift is enough, ' +
+    'out in the open felt it takes a real one.</p>' +
+    '<p><b>Shake them.</b> Hold them and wiggle side to side. They rattle and ' +
+    'change numbers where they are, and shaking never throws them.</p>' +
+    '<p><b>Just move them.</b> Drag and let go without crossing the line. ' +
+    'Numbers stay as they are.</p>' +
+    '<p><b>One at a time.</b> Throw a die on its own and it stands dimmed in ' +
+    'the corner while the rest have their turn. Once every die has been ' +
+    'thrown, the next throw is a fresh round with all of them.</p>' +
+    '<p>The total rides up by the Back button, and &minus; / + set how many ' +
+    'dice are on the felt, 1 to 6.</p>' +
+    '<button class="big quiet" data-act="diceHelpClose">Got it</button>' +
+    '</div>';
 }
 /*
  * A throw is handed to a physics loop and left alone: the dice carry the speed
@@ -10169,6 +10215,10 @@ app.addEventListener("click", function (e) {
         render();
       }
       break;
+    // Asked for from the tray, and it stays open until it is closed: reading it
+    // with one hand and trying it with the other is the point.
+    case "diceHelp": secret.dice.help = true; render(); break;
+    case "diceHelpClose": secret.dice.help = false; render(); break;
     case "shuffleCards":
       secret.cards.deck = freshDeck52(); secret.cards.board = [];
       secret.cards.slots = [null, null, null, null, null];
