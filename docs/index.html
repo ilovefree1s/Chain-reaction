@@ -1517,7 +1517,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.3.82 · 15 Sep 16:53";
+var APP_VERSION = "v1.3.83 · 15 Sep 16:56";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. The arrow beside it goes and looks for a
@@ -5144,6 +5144,10 @@ function bypassesPrio(c) { return !!c && c.kind === "react"; }
 function spinsWheel(c) {
   return !!c && c.name === "GAMBLE WHEEL!!";
 }
+/* The cards that set up every tee shot at once; the table passing ends them. */
+function beforeAllTee(c) {
+  return !!c && c.timing === "Before all tee";
+}
 function beforeTee(c) {
   return !!c && /^Before (tee shot|all tee)$/.test(c.timing);
 }
@@ -5157,9 +5161,10 @@ function beforeTee(c) {
  *
  * Once the whole table has passed, the throwing has started. There are no
  * turns left to be out of, so anything that answers what is happening out
- * there can be played by anyone at any time — tee cards as well, so a player hit
- * by a card has a way to answer it. Not a spin, though: the wheel belongs to the
- * priority phase, and GAMBLE WHEEL!! waits for the next hole.
+ * there can be played by anyone at any time — tee-shot cards as well, so a player
+ * hit by a card has a way to answer it. Not a spin, though: the wheel belongs to
+ * the priority phase, and GAMBLE WHEEL!! waits for the next hole. Nor the Before
+ * all tee cards, which set up the whole table's tee shots before anyone throws.
  *
  * Reactions sit outside both halves. A card that answers another card cannot
  * wait for a turn, or it is not answering anything.
@@ -5174,10 +5179,12 @@ function canPlayNow(s, c) {
   // Between holes nobody holds the turn: the tee cards wait for the next
   // hole's order, and the rest play freely as they would once everyone passed.
   if (prioWaiting(s)) return !beforeTee(c);
-  // Once the whole table has passed, priority is over and anything goes — tee
-  // cards included, or a player hit by a card has no way to answer it. Except a
-  // spin: the wheel belongs to the priority phase, and GAMBLE WHEEL!! is a spin.
-  if (prioOpen(s)) return !spinsWheel(c);
+  // Once the whole table has passed, priority is over and nearly anything goes —
+  // tee-shot cards included, or a player hit by a card has no way to answer it.
+  // Two exceptions: a spin, because the wheel belongs to the priority phase, and
+  // the Before all tee cards, which set up the whole table's tee shots and are
+  // over the moment the table has passed.
+  if (prioOpen(s)) return !spinsWheel(c) && !beforeAllTee(c);
   return iHavePrio(s);
 }
 /*
@@ -6426,7 +6433,8 @@ function renderFaceModal() {
           : lockWait
           ? '<button class="big primary" disabled>Waiting on scores</button>'
           : teedOff
-          ? '<button class="big primary" disabled>Wheel\'s shut this hole</button>'
+          ? '<button class="big primary" disabled>' +
+            (spinsWheel(c) ? 'Wheel\'s shut this hole' : 'Too late this hole') + '</button>'
           : waiting
           ? '<button class="big primary" disabled>Not your turn</button>'
           : '<button class="big primary" data-act="playCard" data-i="' + c.id + '">Play</button>') +
@@ -6438,7 +6446,10 @@ function renderFaceModal() {
             'The next hole\'s order is set once everyone locks their scores.</p>'
           : teedOff
           ? '<p class="hint" style="text-align:center;margin:2px 0 10px">' +
-            'Everyone passed, so the wheel is shut for this hole. It opens again when the scores go in.</p>'
+            (spinsWheel(c)
+              ? 'Everyone passed, so the wheel is shut for this hole. It opens again when the scores go in.'
+              : 'Everyone passed. Before all tee cards have to be played before anyone tees off, so this one waits for the next hole.') +
+            '</p>'
           : waiting
           ? '<p class="hint" style="text-align:center;margin:2px 0 10px">' +
             esc(prioHolder(state)) + ' has priority. Yours when they pass.</p>'
