@@ -676,6 +676,13 @@
     border: 1px solid rgba(255, 255, 255, 0.16); pointer-events: none;
   }
   /* The throwing area's near edge. Quiet enough to ignore, there enough to find. */
+  /* Sits on the felt itself, along the bottom edge, under the dice where a hand
+     reaching for them already is. Untouchable, so it never eats a grab aimed at
+     a die resting on top of it. */
+  .dicegrab {
+    position: absolute; left: 0; right: 0; bottom: 6px; z-index: 1;
+    margin: 0; text-align: center; font-size: 14px; pointer-events: none;
+  }
   .throwline {
     position: absolute; left: 7%; right: 7%; bottom: 50%; height: 0; z-index: 1;
     border-top: 2px dashed rgba(77, 195, 255, 0.3); pointer-events: none;
@@ -7953,12 +7960,11 @@ function renderDiceGame() {
     // a die to land on. Hidden while they are in the air; there is nothing to
     // throw mid-throw.
     (d.rolling ? "" : '<div class="throwline"><span>Easy throw below here</span></div>') +
-    diceFieldHtml(d) + '</div>' +
-    // Under the dice, where a hand that has just picked one up is already
-    // looking. The line above the felt is the one that has to be read first.
-    '<p class="hint" style="text-align:center;margin:8px 0 0">' +
-    (d.rolling ? "&nbsp;" : "Grab the dice to flick or shake them") + '</p>' +
-    '</div>';
+    diceFieldHtml(d) +
+    // On the felt, along its bottom edge under the dice. The line above the
+    // felt is the one that has to be read first.
+    (d.rolling ? "" : '<p class="hint dicegrab">Grab the dice to flick or shake them</p>') +
+    '</div></div>';
 }
 /*
  * A throw is handed to a physics loop and left alone: the dice carry the speed
