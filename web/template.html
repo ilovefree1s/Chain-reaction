@@ -568,6 +568,22 @@
                             linear-gradient(100deg, #4DC3FF, #1E6FFF) border-box;
                 box-shadow: 0 6px 24px rgba(0, 0, 0, .55), 0 0 18px rgba(77, 195, 255, .45); }
   .alert.join .onwho { color: #4DC3FF; }
+  /*
+   * A banner that waits to be tapped says so by turning: the same blue and
+   * orange, swept round the rim clockwise instead of sitting still across it.
+   * An angle has to be registered as one for it to animate at all — a plain
+   * custom property is a string, and strings jump rather than sweep. Where
+   * that registration is not supported the rim simply holds still, which is
+   * what it used to do anyway.
+   */
+  @property --rim { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
+  .alert.waiting {
+    background: linear-gradient(#070B14, #070B14) padding-box,
+                conic-gradient(from var(--rim), #1E6FFF, #3FA9FF 25%, #FF8A1E 50%,
+                               #3FA9FF 75%, #1E6FFF) border-box;
+    animation: rimspin 2.6s linear infinite;
+  }
+  @keyframes rimspin { to { --rim: 360deg; } }
   @keyframes alertpulse {
     from { box-shadow: 0 6px 24px rgba(0, 0, 0, .55), 0 0 10px rgba(247, 148, 30, .35); }
     to   { box-shadow: 0 6px 24px rgba(0, 0, 0, .55), 0 0 26px rgba(247, 148, 30, .7); }
@@ -3042,8 +3058,10 @@ function liveDispute(p) {
     disputeCall.party = p.who.map(function (n) { return String(n).trim(); });
   }
   if (secret && secret.pick) secret.pick = { lit: -1, spinning: false, winner: null };
-  // Tapped, this banner is the way in.
+  // Tapped, this banner is the way in — and it waits to be tapped rather than
+  // fading out on somebody who was looking at their hand.
   liveAlerts[liveAlerts.length - 1].games = true;
+  liveAlerts[liveAlerts.length - 1].waiting = true;
   playMenuSound(sfxVolume());
   try { if (navigator.vibrate) navigator.vibrate([120, 60, 120]); } catch (e) { /* banner only */ }
   liveRefresh();
@@ -3270,7 +3288,17 @@ function localNote(text, head, tint) {
   var same = liveAlerts.filter(function (a) { return a.note && a.head === title; });
   while (same.length >= NOTE_STACK) pushNoteOut(same.shift().eid);
   liveAlerts.push({ eid: eid, note: text, head: title, tint: tint || null });
-  setTimeout(function () { dropAlert(eid); }, ALERT_FADE_MS);
+  /*
+   * Most notes say their piece and go. One marked [waiting] stays up until
+   * somebody deals with it — an argument being called is not something to
+   * miss because you were looking at your hand for eight seconds.
+   */
+  setTimeout(function () {
+    var mine = liveAlerts.filter(function (a) { return a.eid === eid; })[0];
+    if (mine && mine.waiting) return;
+    dropAlert(eid);
+  }, ALERT_FADE_MS);
+  return eid;
 }
 
 /* Sends one banner up and off the top, then takes it out of the list. Marked
@@ -3475,6 +3503,7 @@ function renderAlerts() {
   return '<div class="alerts">' + liveAlerts.map(function (a) {
     if (a.note) {
       return '<div class="alert' + (a.leaving ? " leaving" : "") +
+        (a.waiting ? " waiting" : "") +
         (a.tint ? " tinted trade" : "") + '"' +
         (a.tint ? ' style="' + a.tint + '"' : "") +
         ' data-act="alertTap" data-eid="' + esc(a.eid) + '">' +
