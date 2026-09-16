@@ -2357,6 +2357,7 @@ function liveOpen() {
     if (m.payload.event === "coin") liveCoin(p);
     if (m.payload.event === "namewheel") liveSecretWheel(p);
     if (m.payload.event === "dice") liveDice(p);
+    if (m.payload.event === "settled") liveSettled(p);
   };
 
   sock.onclose = function () {
@@ -7782,6 +7783,11 @@ function runFlip(landed, strength) {
     c.face = landed;
     c.flipping = false;
     render();
+    // Flipped to settle something: that is the answer, so say it and go.
+    if (disputeCall) {
+      settleDispute((disputeCall.by ? disputeCall.by + "'s coin" : "The coin") +
+        " came down " + landed + ".");
+    }
   }, ms);
 }
 /*
@@ -7842,6 +7848,8 @@ function announceDiceWinner(d) {
     d.said = true;
     d.winner = who[0] + " wins with " + best;
     localNote(who[0] + " wins the roll with " + best + ".", "Dice");
+    // The table is told, and the argument's phones head back to their hands.
+    settleDispute(who[0] + " won the roll-off with " + best + ".");
   } else {
     d.winner = sayNames(who) + " tied on " + best + " — roll again";
     localNote(sayNames(who) + " tied on " + best + ". Roll again.", "Dice");
@@ -7893,6 +7901,57 @@ function liveDice(p) {
   recordDiceRoll(d, p.by, p.total);
   announceDiceWinner(d);
   render();
+}
+
+/*
+ * The argument has an answer.
+ *
+ * Everybody playing hears it, not just the two who were arguing — the rest of
+ * the table has been standing there waiting on it. And the phones that were in
+ * the games are put back into their own hand a beat later, because a settled
+ * argument has nothing left for them in there.
+ *
+ * The beat is so the answer is seen where it happened: the winning total, the
+ * coin's face, the name the wheel stopped on.
+ */
+var SETTLED_MS = 1500;
+function settleDispute(text) {
+  if (!text || !disputeCall) return;
+  var party = disputeSeats().map(function (n) { return String(n).trim(); });
+  /*
+   * Only the phone that called it announces. A dice winner is worked out on
+   * every phone in the argument from the same totals, so without this the table
+   * would be told the same thing three times over.
+   */
+  if (live && iDeal()) liveCast("settled", { text: text, party: party });
+  leaveGamesAfterSettle(party);
+}
+/* Out of the games and back to the round — for a phone that was in it. */
+function leaveGamesAfterSettle(party) {
+  var me = ((state && state.players ? state.players[state.meIndex] : settings.myName) || "")
+    .trim().toLowerCase();
+  var mine = !party || !party.length || (!!me && party.some(function (n) {
+    return String(n).trim().toLowerCase() === me;
+  }));
+  if (!mine) return;
+  setTimeout(function () {
+    if (!secret) return;
+    stopWheelSound(true);
+    secret = null;
+    // Settled, so the next argument starts from nothing.
+    disputeCall = null;
+    if (state) { screen = "round"; tab = "hand"; }
+    render();
+  }, SETTLED_MS);
+}
+/* The answer, on every phone at the table. */
+function liveSettled(p) {
+  if (!p || typeof p.text !== "string" || !p.text.trim()) return;
+  localNote(p.text.trim(), "Settled");
+  playMenuSound(sfxVolume());
+  try { if (navigator.vibrate) navigator.vibrate(90); } catch (e) { /* banner only */ }
+  leaveGamesAfterSettle(Array.isArray(p.party) ? p.party : null);
+  liveRefresh();
 }
 
 /* The host's name wheel, turning on everybody else's phone: their list, their
@@ -9469,6 +9528,10 @@ function runSecretSpin(pick, target) {
     settled = true;
     secret.spinning = false;
     render();
+    // Spun to settle something: the name it stopped on is the answer.
+    if (disputeCall && secret.name) {
+      settleDispute("The wheel landed on " + secret.name + ".");
+    }
   }
   el.addEventListener("transitionend", settle, { once: true });
   setTimeout(settle, SPIN_MS + 300);
