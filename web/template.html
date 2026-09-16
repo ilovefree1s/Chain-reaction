@@ -1973,13 +1973,22 @@ function primeWheelSound() {
  * heard, so anything nearer than 24ms to the previous click is dropped — the
  * blur is a blur, not a wall of sound.
  */
-function segmentCrossings(fromDeg, toDeg, segments) {
+/*
+ * [from] is how far through the spin the listener is joining, 0 unless somebody
+ * opened the wheel mid-turn. The walk then covers only what is left of the
+ * curve, and the times come back relative to now — the same boundaries the
+ * spinner already heard go past are not played again.
+ */
+function segmentCrossings(fromDeg, toDeg, segments, from) {
   var segDeg = 360 / segments, delta = toDeg - fromDeg, raw = [];
-  var steps = Math.round(SPIN_MS / 2), lastSeg = Math.floor(fromDeg / segDeg);
+  var start = from > 0 && from < 1 ? from : 0;
+  var span = SPIN_MS * (1 - start);
+  var steps = Math.max(1, Math.round(span / 2));
+  var lastSeg = Math.floor((fromDeg + delta * easeOut(start)) / segDeg);
   for (var i = 1; i <= steps; i++) {
-    var at = i / steps;
+    var at = start + (1 - start) * (i / steps);
     var seg = Math.floor((fromDeg + delta * easeOut(at)) / segDeg);
-    if (seg !== lastSeg) { lastSeg = seg; raw.push(at * SPIN_MS / 1000); }
+    if (seg !== lastSeg) { lastSeg = seg; raw.push((at - start) * SPIN_MS / 1000); }
   }
   if (raw.length < 2) return raw;
   // While boundaries fly past faster than distinct clicks can be heard, the
@@ -5888,13 +5897,15 @@ function spinEase(t) {
 }
 
 /*
- * Picks a spin up in the middle of it: the angle it is passing through right
- * now, and the rest of the way in the time it has left.
+ * Picks a spin up in the middle of it, on the same curve the spinner is
+ * watching: the wheel is handed the whole turn as an animation and then had its
+ * clock wound forward to where the spin has actually got to.
  *
- * The remainder is run out linearly rather than on the original curve. By the
- * time anyone can join, the wheel is deep into the slow end of that curve and
- * nearly straight anyway — and a second easing applied to what is left would
- * put a fresh slow-down in the middle of a turn that is already slowing.
+ * The remainder used to be run out linearly, on the reasoning that the tail of
+ * the curve is nearly straight. It is not — cubic-bezier(.12,.8,.08,1) is still
+ * travelling at halfway — so a latecomer watched the wheel hold one speed and
+ * then stop dead. Winding an animation's clock forward costs nothing and is the
+ * same motion, to the frame, as every other phone.
  */
 function joinMidSpin(kind, w, elapsed) {
   var left = SPIN_MS - elapsed;
@@ -5924,14 +5935,36 @@ function joinMidSpin(kind, w, elapsed) {
     }
     el.classList.remove("go");
     el.style.transition = "none";
-    el.style.transform = "rotate(" + soFar.toFixed(1) + "deg)";
-    el.getBoundingClientRect();
-    el.style.transition = "transform " + left + "ms linear";
-    startWheelSound(sfxVolume(), segmentCrossings(soFar, w.rot, w.n || 8));
-    requestAnimationFrame(function () {
-      var now = document.getElementById(id);
-      if (now && now.isConnected) now.style.transform = "rotate(" + w.rot + "deg)";
-    });
+    /*
+     * The rattle takes the same tail: the boundaries still to come, timed off
+     * the original curve, rather than the whole spin recomputed as if this were
+     * its beginning. Otherwise the clicks slow down on a schedule of their own
+     * while the wheel slows on the spinner's.
+     */
+    startWheelSound(sfxVolume(), segmentCrossings(0, w.rot, w.n || 8, elapsed / SPIN_MS));
+    if (el.animate) {
+      /*
+       * The whole turn, handed over as one animation and then wound forward to
+       * where the spin has got to. fill: "forwards" holds the landing when it
+       * ends, so there is nothing to write back afterwards.
+       */
+      var run = el.animate(
+        [{ transform: "rotate(0deg)" }, { transform: "rotate(" + w.rot + "deg)" }],
+        { duration: SPIN_MS, easing: "cubic-bezier(" + SPIN_EASE.join(",") + ")",
+          fill: "forwards" }
+      );
+      try { run.currentTime = elapsed; } catch (e) { /* plays from the top */ }
+    } else {
+      // No animation clock to wind: the old straight run-out, which is at least
+      // the right landing at roughly the right time.
+      el.style.transform = "rotate(" + soFar.toFixed(1) + "deg)";
+      el.getBoundingClientRect();
+      el.style.transition = "transform " + left + "ms linear";
+      requestAnimationFrame(function () {
+        var now = document.getElementById(id);
+        if (now && now.isConnected) now.style.transform = "rotate(" + w.rot + "deg)";
+      });
+    }
     setTimeout(function () {
       if (wheel !== mine) return;
       mine.spinning = false;
