@@ -987,6 +987,10 @@
   /* With seats laid out, the middle lifts off centre: the four corners need the
      room, and the deck sits under the lower-left one. */
   .slotrow.withseats { top: 46%; }
+  /* The hand, read out under the five in the middle. */
+  .cardswin { position: absolute; left: 0; right: 0; top: calc(46% + 56px); z-index: 2;
+              padding: 0 12px; text-align: center; color: var(--self);
+              font-size: 18px; font-weight: 900; text-shadow: 0 2px 8px #000; }
   .slot .slotcard { width: 100%; height: 100%; cursor: pointer; }
   .slotcard img { width: 100%; height: 100%; display: block; border-radius: 6px; }
   .slotcard .tcorner { font-size: 15px; top: 3px; left: 5px; }
@@ -1597,7 +1601,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.3.137 · 15 Sep 21:26";
+var APP_VERSION = "v1.3.138 · 15 Sep 21:33";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. The arrow beside it goes and looks for a
@@ -9099,6 +9103,137 @@ var COIN_FACES = "assets/coinfaces.png";
 var COIN_HEADS = [10, 4, 869, 859], COIN_TAILS = [893, 4, 869, 859];
 var CARD_SUITS = ["♠", "♥", "♦", "♣"];
 var CARD_RANKS = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"];
+/*
+ * ---- who won the hand ----
+ *
+ * Two cards each and five in the middle, best five of the seven. The app can
+ * read that off the table, so it does: an argument settled by cards should not
+ * also be an argument about whose two pair is bigger.
+ *
+ * A card id carries its rank in id % 13 (0 is the ace) and its suit above that.
+ * Poker wants the ace high — and low as well, for the five-high straight.
+ */
+function cardValue(id) { var r = id % 13; return r === 0 ? 14 : r + 1; }
+function cardSuit(id) { return Math.floor(id / 13); }
+/* Scores one five-card hand as [category, tie-breakers...], bigger is better,
+   compared left to right. */
+function score5(ids) {
+  var vals = ids.map(cardValue).sort(function (a, b) { return b - a; });
+  var suits = ids.map(cardSuit);
+  var flush = suits.every(function (s) { return s === suits[0]; });
+  var count = {};
+  vals.forEach(function (v) { count[v] = (count[v] || 0) + 1; });
+  // Sorted by how many of a value there are, then by the value: the shape of
+  // the hand falls straight out of the first group or two.
+  var groups = Object.keys(count).map(Number).map(function (v) {
+    return { v: v, n: count[v] };
+  }).sort(function (a, b) { return b.n - a.n || b.v - a.v; });
+  var singles = groups.filter(function (g) { return g.n === 1; })
+    .map(function (g) { return g.v; });
+  var uniq = groups.map(function (g) { return g.v; }).sort(function (a, b) { return b - a; });
+  var high = 0;
+  if (uniq.length === 5) {
+    if (uniq[0] - uniq[4] === 4) high = uniq[0];
+    // The wheel: ace, two, three, four, five, and the ace plays low.
+    else if (uniq[0] === 14 && uniq[1] === 5 && uniq[4] === 2) high = 5;
+  }
+  if (flush && high) return [8, high];
+  if (groups[0].n === 4) return [7, groups[0].v, groups[1].v];
+  if (groups[0].n === 3 && groups[1] && groups[1].n === 2) return [6, groups[0].v, groups[1].v];
+  if (flush) return [5].concat(vals);
+  if (high) return [4, high];
+  if (groups[0].n === 3) return [3, groups[0].v].concat(singles);
+  if (groups[0].n === 2 && groups[1] && groups[1].n === 2) {
+    return [2, groups[0].v, groups[1].v, singles[0]];
+  }
+  if (groups[0].n === 2) return [1, groups[0].v].concat(singles);
+  return [0].concat(vals);
+}
+function cmpScore(x, y) {
+  var n = Math.max(x.length, y.length);
+  for (var i = 0; i < n; i++) {
+    var a = x[i] || 0, b = y[i] || 0;
+    if (a !== b) return a < b ? -1 : 1;
+  }
+  return 0;
+}
+/* The best five of however many are in front of a player. Twenty-one hands for
+   seven cards: small enough to just try them all. */
+function bestHand(ids) {
+  var best = null;
+  for (var a = 0; a < ids.length - 4; a++) {
+    for (var b = a + 1; b < ids.length - 3; b++) {
+      for (var c = b + 1; c < ids.length - 2; c++) {
+        for (var d = c + 1; d < ids.length - 1; d++) {
+          for (var e = d + 1; e < ids.length; e++) {
+            var s = score5([ids[a], ids[b], ids[c], ids[d], ids[e]]);
+            if (!best || cmpScore(s, best) > 0) best = s;
+          }
+        }
+      }
+    }
+  }
+  return best;
+}
+var HAND_MANY = { 2: "twos", 3: "threes", 4: "fours", 5: "fives", 6: "sixes", 7: "sevens",
+                  8: "eights", 9: "nines", 10: "tens", 11: "jacks", 12: "queens",
+                  13: "kings", 14: "aces" };
+var HAND_ONE = { 2: "two", 3: "three", 4: "four", 5: "five", 6: "six", 7: "seven", 8: "eight",
+                 9: "nine", 10: "ten", 11: "jack", 12: "queen", 13: "king", 14: "ace" };
+function handName(s) {
+  if (!s) return "";
+  switch (s[0]) {
+    case 8: return s[1] === 14 ? "a royal flush" : "a straight flush, " + HAND_ONE[s[1]] + " high";
+    case 7: return "four " + HAND_MANY[s[1]];
+    case 6: return "a full house, " + HAND_MANY[s[1]] + " over " + HAND_MANY[s[2]];
+    case 5: return "a flush, " + HAND_ONE[s[1]] + " high";
+    case 4: return "a straight, " + HAND_ONE[s[1]] + " high";
+    case 3: return "three " + HAND_MANY[s[1]];
+    case 2: return "two pair, " + HAND_MANY[s[1]] + " and " + HAND_MANY[s[2]];
+    case 1: return "a pair of " + HAND_MANY[s[1]];
+    default: return HAND_ONE[s[1]] + " high";
+  }
+}
+/*
+ * Who has it, once there is a hand to read: everybody dealt their two, and all
+ * five in the middle turned over. Turning them over is the moment the table
+ * finds out, so nothing is announced before the last one is face up.
+ */
+function cardsWinner(c) {
+  var seats = disputeSeats();
+  if (!c || !seats.length) return null;
+  var mid = (c.slots || []).filter(function (s) { return s && s.up; })
+    .map(function (s) { return s.id; });
+  if (mid.length < 5) return null;
+  var rows = [];
+  for (var i = 0; i < seats.length; i++) {
+    var h = (c.hands || [])[i];
+    if (!h || h.length < 2 || h[0] == null || h[1] == null) return null;
+    rows.push({ name: seats[i], score: bestHand([h[0], h[1]].concat(mid)) });
+  }
+  rows.sort(function (a, b) { return cmpScore(b.score, a.score); });
+  var top = rows.filter(function (r) { return cmpScore(r.score, rows[0].score) === 0; });
+  return { names: top.map(function (r) { return r.name; }), hand: handName(rows[0].score) };
+}
+/* Said once, on every phone, and the table is told by the one that dealt. */
+function announceCardsWinner(c) {
+  if (!c || c.said) return;
+  var win = cardsWinner(c);
+  if (!win) return;
+  c.said = true;
+  if (win.names.length === 1) {
+    c.winner = win.names[0] + " wins with " + win.hand;
+    localNote(win.names[0] + " wins with " + win.hand + ".", "Cards");
+    settleDispute(win.names[0] + " won the hand with " + win.hand + ".");
+  } else {
+    // Two identical hands split it, which is an answer of its own.
+    c.winner = sayNames(win.names) + " split it with " + win.hand;
+    localNote(sayNames(win.names) + " split it with " + win.hand + ".", "Cards");
+    settleDispute(sayNames(win.names) + " split the hand with " + win.hand + ".");
+  }
+  render();
+}
+
 function freshDeck52() {
   var ids = [];
   for (var i = 0; i < 52; i++) ids.push(i);
@@ -9247,6 +9382,8 @@ function renderCardsGame() {
     seatHtml +
     '<div class="slotrow' + (c.marks === false ? '' : ' marked') +
     (seats.length ? ' withseats' : '') + '">' + slots + '</div>' +
+    // Whose hand it is, once all five in the middle are face up.
+    (c.winner ? '<div class="cardswin">' + esc(c.winner) + '</div>' : "") +
     cards + '</div>';
 }
 
@@ -9362,6 +9499,9 @@ function runDeal(c, plan) {
   c.hands = [];
   c.slots = [null, null, null, null, null];
   c.board = [];
+  // A fresh deal has no hand to read yet.
+  c.winner = null;
+  c.said = false;
   var steps = [];
   (plan.hands || []).forEach(function (pair, i) {
     (pair || []).forEach(function (id, k) {
@@ -9397,13 +9537,14 @@ function liveCards(p) {
   if (p.clear) {
     c.deck = freshDeck52(); c.board = []; c.hands = [];
     c.slots = [null, null, null, null, null];
+    c.winner = null; c.said = false;
     playClip(shuffleAudio, sfxVolume(), 0.7, 1.49);
     render();
     return;
   }
   if (typeof p.flip === "number") {
     var s = c.slots[p.flip];
-    if (s) { s.up = !s.up; render(); }
+    if (s) { s.up = !s.up; render(); announceCardsWinner(c); }
     return;
   }
   if (p.deal) runDeal(c, p.deal);
@@ -10997,6 +11138,8 @@ app.addEventListener("click", function (e) {
         // Turned over on one phone is turned over on all of them.
         if (live) liveCast("cards", partyPayload({ flip: n }));
         render();
+        // That may have been the last one face up, and so the hand.
+        announceCardsWinner(secret.cards);
       }
       break;
     case "secretBack": stopWheelSound(true); secret.mode = "menu"; render(); break;
@@ -11023,6 +11166,8 @@ app.addEventListener("click", function (e) {
       secret.cards.deck = freshDeck52(); secret.cards.board = [];
       secret.cards.slots = [null, null, null, null, null];
       secret.cards.hands = [];
+      secret.cards.winner = null;
+      secret.cards.said = false;
       // Swept on one phone is swept on all of them.
       if (live) liveCast("cards", partyPayload({ clear: true }));
       // The riffle runs a second and a half and the last half of it is the
