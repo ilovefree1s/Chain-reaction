@@ -578,6 +578,8 @@
    */
   @property --rim { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
   .alert.waiting {
+    /* Nothing in the right-hand column to leave room for. */
+    padding-right: 14px;
     background: linear-gradient(#070B14, #070B14) padding-box,
                 conic-gradient(from var(--rim), #1E6FFF, #3FA9FF 25%, #FF8A1E 50%,
                                #3FA9FF 75%, #1E6FFF) border-box;
@@ -3264,6 +3266,18 @@ function dropAlert(eid) {
   if (liveAlerts.length !== before) liveRefresh();
 }
 
+/*
+ * An argument's banner has no × and never times out: the only things that take
+ * it down are the player tapping it, and the games it points at opening by
+ * themselves — which is what the caller pressing Spin does to every phone in
+ * the argument. Either way it has been answered rather than dismissed.
+ */
+function dropWaitingNotes() {
+  var before = liveAlerts.length;
+  liveAlerts = liveAlerts.filter(function (a) { return !a.waiting; });
+  if (liveAlerts.length !== before) liveRefresh();
+}
+
 /* This phone talking to its own player — a corrected deal, not a broadcast.
    Same banner, quiet style, fades on its own. */
 var noteN = 0;
@@ -3507,7 +3521,8 @@ function renderAlerts() {
         (a.tint ? " tinted trade" : "") + '"' +
         (a.tint ? ' style="' + a.tint + '"' : "") +
         ' data-act="alertTap" data-eid="' + esc(a.eid) + '">' +
-        alertX(a.eid) +
+        // No way out of an argument's banner: it is answered, not dismissed.
+        (a.waiting ? "" : alertX(a.eid)) +
         '<div class="who">' + esc(a.head || "Deal corrected") + '</div>' +
         '<div class="what" style="font-size:' + (a.tint ? 19 : 16) + 'px;white-space:pre-line">' +
         esc(a.note) + '</div></div>';
@@ -7930,6 +7945,7 @@ function liveDice(p) {
     if (!disputeCall) disputeCall = { by: "", with: "" };
     disputeCall.party = p.who.map(function (n) { return String(n).trim(); });
   }
+  dropWaitingNotes();
   if (!secret) openSecretWheel();
   if (!secret) return;
   if (secret.mode !== "dice") openSecretGame("dice");
@@ -9129,6 +9145,8 @@ function inParty(p) {
  */
 function adoptParty(p) {
   if (!inParty(p)) return false;
+  // The games the banner was pointing at are opening: it has done its job.
+  dropWaitingNotes();
   if (!p || !Array.isArray(p.who) || !p.who.length) return true;
   var by = typeof p.by === "string" && p.by.trim() ? p.by.trim() : null;
   if (!disputeCall) disputeCall = { by: by || "the host", with: "" };
@@ -9177,11 +9195,16 @@ function renderCardsGame() {
   }).join("");
   return '<div class="modal cardtable sgscreen" id="cardtable">' +
     '<button class="sgback" data-act="secretBack">&lsaquo;&nbsp;&nbsp;Back</button>' +
-    '<div class="tbar">' +
-    '<button class="tswitch' + (c.marks === false ? '' : ' on') + '" data-act="slotMarks"' +
-    ' aria-pressed="' + (c.marks === false ? 'false' : 'true') + '">' +
-    '<span class="track"><span class="knob"></span></span>Hold em</button>' +
-    '<button class="big raised" data-act="shuffleCards">Shuffle all</button></div>' +
+    // The table's two controls belong to the phone holding the deck. On anyone
+    // else's they were two things to press that would sweep or re-deal a table
+    // that is not theirs to sweep.
+    (iDeal()
+      ? '<div class="tbar">' +
+        '<button class="tswitch' + (c.marks === false ? '' : ' on') + '" data-act="slotMarks"' +
+        ' aria-pressed="' + (c.marks === false ? 'false' : 'true') + '">' +
+        '<span class="track"><span class="knob"></span></span>Hold em</button>' +
+        '<button class="big raised" data-act="shuffleCards">Shuffle all</button></div>'
+      : "") +
     // The deck belongs to the phone that deals, and to nobody else.
     (iDeal()
       ? '<div class="tdeck' + (c.deck.length ? "" : " empty") + '" id="tdeck">' +
