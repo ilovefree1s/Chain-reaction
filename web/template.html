@@ -2416,6 +2416,10 @@ function liveHear(p) {
     if (theirs < mine || (theirs === mine && p.id < MY_PEER_ID)) {
       live.hosting = false;
       live.hostSince = null;
+      // Stood down for good: a reload must not walk back in claiming the chair.
+      if (state && state.liveHost) {
+        delete state.liveHost; delete state.liveHostSince; save(state);
+      }
       localNote((typeof p.name === "string" && p.name ? p.name : "Someone") +
         " was already hosting — you're at their table.", "Lobby");
     }
@@ -4149,7 +4153,19 @@ function startRound() {
     : eventId();
   commit(round);
   // The room rides with the round: a reload rejoins it without asking.
-  if (live) { state.liveCode = live.code; save(state); }
+  if (live) {
+    state.liveCode = live.code;
+    /*
+     * Whose chair this phone sat in, saved with the round. A reload mid-round
+     * used to come home as a plain joiner, which left the table with nobody
+     * advertising it. The original claim rides along too: the earliest claim
+     * wins the chair, so a fresh timestamp on the way back in would lose it to
+     * whoever picked it up while this phone was away.
+     */
+    if (live.hosting) { state.liveHost = true; state.liveHostSince = live.hostSince || 0; }
+    else { delete state.liveHost; delete state.liveHostSince; }
+    save(state);
+  }
   screen = "round";
   render();
 }
@@ -10478,7 +10494,13 @@ app.addEventListener("click", function (e) {
           render();
         }, 30000);
       }
-      if (s) { s.liveCode = LIVE_ROOM; commit(s); } else render();
+      if (s) {
+        s.liveCode = LIVE_ROOM;
+        // A chair taken up mid-round is remembered the way Start remembers one.
+        if (live.hosting) { s.liveHost = true; s.liveHostSince = live.hostSince || 0; }
+        else { delete s.liveHost; delete s.liveHostSince; }
+        commit(s);
+      } else render();
       break;
     case "askLeave": confirmLeave = true; render(); break;
     case "leaveNo": confirmLeave = false; render(); break;
@@ -10496,7 +10518,7 @@ app.addEventListener("click", function (e) {
         });
       }
       liveDisconnect();
-      if (s) { delete s.liveCode; commit(s); }
+      if (s) { delete s.liveCode; delete s.liveHost; delete s.liveHostSince; commit(s); }
       else {
         // Leaving a lobby that never started empties the chairs the lobby
         // filled: back to just you. The course and format picks survive.
@@ -10578,7 +10600,21 @@ app.addEventListener("click", function (e) {
 /* A round marked live rejoins the lobby by itself — a reloaded page is back in
    the room before anyone notices. LIVE_ROOM, not the stored value: rounds saved
    in the room-code era carry an old code, and there is only one lobby now. */
-if (state && state.liveCode) liveConnect(LIVE_ROOM);
+if (state && state.liveCode) {
+  liveConnect(LIVE_ROOM);
+  /*
+   * The host's chair comes back with the host. Rejoining as a joiner meant the
+   * round carried on with nothing advertising it, so a phone tapping Host
+   * walked into an empty lobby instead of being told the game was already
+   * going. Claimed with the timestamp the chair was first taken at, so it is
+   * this phone's chair again and anyone who picked it up in the meantime
+   * stands down on the next hello.
+   */
+  if (state.liveHost && live) {
+    live.hosting = true;
+    live.hostSince = typeof state.liveHostSince === "number" ? state.liveHostSince : 0;
+  }
+}
 
 /* Decoded now, so the first spin of the round starts on the beat. */
 primeWheelSound();
