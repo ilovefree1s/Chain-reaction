@@ -1579,7 +1579,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.3.131 · 15 Sep 21:03";
+var APP_VERSION = "v1.3.133 · 15 Sep 21:09";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. The arrow beside it goes and looks for a
@@ -7275,7 +7275,10 @@ function secretWheelHtml() {
   return '<div class="wheelptr"></div>' +
     (labels.length >= 2
       ? wheelSvg("wheel-secret", labels, secret.rot, null, 14)
-      : '<p class="hint" style="text-align:center;padding-top:40%">Type at least 2 names below &mdash; one per line.</p>');
+      // Nothing to type into on a watching phone, so it is not told to type.
+      : iDeal()
+        ? '<p class="hint" style="text-align:center;padding-top:40%">Type at least 2 names below &mdash; one per line.</p>'
+        : "");
 }
 
 function renderSecret() {
@@ -7290,15 +7293,19 @@ function renderSecret() {
       '<div class="wheelbox" id="secretwheelbox">' + secretWheelHtml() + '</div>' +
       '<div class="exempt" id="secretResult">' +
       (secret.name && !secret.spinning ? esc(secret.name) : "") + '</div>' +
-      // One phone types the list and spins it; the rest are here to watch.
-      '<button class="big wheel" data-act="spinSecret"' +
-      (labels.length >= 2 && iDeal() ? "" : " disabled") + '>' +
-      (iDeal() ? "Spin"
-        : "Waiting on " + esc(disputeCall && disputeCall.by ? disputeCall.by : "the host")) +
-      '</button>' +
-      '<textarea id="secretnames" class="secretbox" rows="6" spellcheck="false" ' +
-      (iDeal() ? "" : "readonly ") +
-      'placeholder="One name per line">' + esc(secret.text || "") + '</textarea></div>';
+      /*
+       * One phone owns the list: the one whose argument this is. The others get
+       * the wheel and nothing to press — a box they cannot type in and a button
+       * they cannot press are just two things to wonder about.
+       */
+      (iDeal()
+        ? '<button class="big wheel" data-act="spinSecret"' +
+          (labels.length >= 2 ? "" : " disabled") + '>Spin</button>' +
+          '<textarea id="secretnames" class="secretbox" rows="6" spellcheck="false" ' +
+          'placeholder="One name per line">' + esc(secret.text || "") + '</textarea>'
+        : '<p class="hint" style="text-align:center;margin-top:14px">' +
+          'Waiting for all wheel choices to be entered</p>') +
+      '</div>';
   }
   // The landing: four side games, one door out — the whole cluster rides the
   // bottom of the screen, where a thumb already is after five quick taps.
@@ -9102,7 +9109,12 @@ function adoptParty(p) {
 }
 function iDeal() {
   if (disputeCall && disputeCall.by) return myPickToRoll();
-  if (live && !live.hosting) return false;
+  /*
+   * No argument called, so these are not an argument's games — they are a
+   * wheel, a coin, some dice and a deck of cards, and they belong to whoever
+   * opened them. Answering "not yours" here left a joined phone looking at a
+   * name wheel it could not type into.
+   */
   return true;
 }
 function renderCardsGame() {
