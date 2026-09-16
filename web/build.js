@@ -532,9 +532,21 @@ const STAMP = "__asset-stamp__";
  */
 async function fill(name, urls) {
   const cache = await caches.open(name);
-  const have = await cache.keys();
-  if (have.length >= urls.length) return;
-  await cache.addAll(urls);
+  /*
+   * cache: "reload" on every one of them, and never addAll.
+   *
+   * addAll fetches through the browser's HTTP cache, and GitHub Pages serves
+   * the page with max-age=600 — so an install that ran inside ten minutes of a
+   * push could store a page that was already out of date, and then serve it
+   * forever. That is exactly what "the banner says there's an update, I tap it,
+   * nothing happens" looks like from the outside.
+   */
+  await Promise.all(urls.map(async (url) => {
+    try {
+      const res = await fetch(url, { cache: "reload" });
+      if (res && res.ok) await cache.put(url, res.clone());
+    } catch (e) { /* the launch that needs it falls through to the network */ }
+  }));
 }
 
 /*
@@ -655,15 +667,20 @@ self.addEventListener("fetch", (event) => {
       caches.match("index.html").then((hit) => {
         if (hit) {
           /*
-           * Read now, replaced for next time. cache: "no-store" goes past the
-           * browser's HTTP cache as well as ours — Pages serves the page with
-           * max-age=600, and without it this copy can be ten minutes stale.
+           * Read now, replaced for next time — under the same key it was read
+           * from. Storing it against the request URL instead meant the copy the
+           * next launch reads was never the copy this one replaced, so a page
+           * cached stale stayed stale however many times it was reloaded. It
+           * also kept a separate copy per query string, which is litter.
+           *
+           * cache: "no-store" goes past the browser's HTTP cache as well as
+           * ours: Pages serves the page with max-age=600.
            */
           event.waitUntil(
-            fetch(event.request, { cache: "no-store" })
+            fetch("index.html", { cache: "no-store" })
               .then((res) => {
                 if (!res || !res.ok) return null;
-                return caches.open(PAGE_CACHE).then((c) => c.put(event.request, res.clone()));
+                return caches.open(PAGE_CACHE).then((c) => c.put("index.html", res.clone()));
               })
               .catch(() => null),
           );
@@ -673,7 +690,7 @@ self.addEventListener("fetch", (event) => {
         return fetch(event.request, { cache: "no-store" })
           .then((res) => {
             const copy = res.clone();
-            caches.open(PAGE_CACHE).then((c) => c.put(event.request, copy)).catch(() => {});
+            caches.open(PAGE_CACHE).then((c) => c.put("index.html", copy)).catch(() => {});
             return res;
           })
           .catch(() => caches.match(event.request));

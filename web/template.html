@@ -1617,7 +1617,24 @@ function checkForUpdate() {
   function finish(found) {
     if (done) return;
     done = true;
-    if (found) { location.reload(); return; }
+    /*
+     * Found one, so this button is the way out of a stuck phone: the stored page
+     * goes in the bin before the reload, and the reload is then answered off
+     * the network. A page cached wrong is the one thing a plain reload cannot
+     * fix, because the reload is served by the very copy that is wrong.
+     */
+    if (found) {
+      if (!window.caches || !caches.keys) { location.reload(); return; }
+      caches.keys()
+        .then(function (names) {
+          return Promise.all(names
+            .filter(function (n) { return n.indexOf("chainreaction-page-") === 0; })
+            .map(function (n) { return caches.delete(n); }));
+        })
+        .catch(function () { /* the reload is worth trying either way */ })
+        .then(function () { location.reload(); });
+      return;
+    }
     updating = false;
     localNote("You are on the newest version.", "Up to date");
     render();
