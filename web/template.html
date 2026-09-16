@@ -7162,6 +7162,20 @@ function spinWheel(kind) {
 var SECRET_KEY = "chainreaction.secretNames";
 var secret = null;
 
+/* Into one of the four games — from a tap on its plate, or from the light
+   landing on it. Either way it arrives set up the way that plate's own button
+   used to set it up. */
+function openSecretGame(mode) {
+  if (!secret) return;
+  if (mode === "dice" && !diceSim) secret.dice.rolling = false;
+  if (mode === "cards" && !secret.cards.deck.length && !secret.cards.board.length &&
+      !secret.cards.slots.some(function (x) { return x; })) {
+    secret.cards.deck = freshDeck52();
+  }
+  secret.mode = mode;
+  render();
+}
+
 function openSecretWheel() {
   var saved = "";
   try { saved = localStorage.getItem(SECRET_KEY) || ""; } catch (e) { /* memory only */ }
@@ -9027,8 +9041,10 @@ function spinSecret() {
  */
 /* Five seconds of light, the first hops this fast and the last this slow. */
 var PICK_MS = 5000, PICK_FIRST = 55, PICK_LAST = 430;
-/* The four games as the light names them, in the order the plates are drawn. */
+/* The four games as the light names them, in the order the plates are drawn,
+   and the screen each one opens. */
 var SG_NAMES = ["The name wheel", "Dice", "Cards", "Coin"];
+var SG_MODES = ["wheel", "dice", "cards", "coin"];
 /* Whose button it is. An argument names the player who called it and only their
    phone rolls; with nobody having called one, the games are just the games and
    any phone may. */
@@ -9122,6 +9138,19 @@ function runPick(hops) {
     else playMenuSound(sfxVolume());
     try { if (navigator.vibrate) navigator.vibrate(90); } catch (e) { /* light only */ }
     render();
+    /*
+     * A second to read it, then every phone in the argument is in the game it
+     * landed on. The light has already answered the question — leaving four
+     * people on the menu afterwards only means four taps on the same plate.
+     */
+    var landed = mine.pick.lit;
+    setTimeout(function () {
+      // Closed it, or set it running again: the answer this was opening for is
+      // not the one on screen any more.
+      if (secret !== mine || mine.pick.spinning || mine.pick.lit !== landed) return;
+      if (secret.mode !== "menu") return;
+      openSecretGame(SG_MODES[landed]);
+    }, 1000);
   }, Math.round(times[times.length - 1] * 1000) + 120);
 }
 
@@ -10347,18 +10376,10 @@ app.addEventListener("click", function (e) {
     case "spinSecret": spinSecret(); break;
     // Who chooses how the argument gets settled.
     case "pickWho": spinPick(); break;
-    case "secretWheel": secret.mode = "wheel"; render(); break;
-    case "secretDice":
-      secret.mode = "dice";
-      if (!diceSim) secret.dice.rolling = false;
-      render(); break;
-    case "secretCoin": secret.mode = "coin"; render(); break;
-    case "secretCards":
-      if (!secret.cards.deck.length && !secret.cards.board.length &&
-          !secret.cards.slots.some(function (x) { return x; })) {
-        secret.cards.deck = freshDeck52();
-      }
-      secret.mode = "cards"; render(); break;
+    case "secretWheel": openSecretGame("wheel"); break;
+    case "secretDice": openSecretGame("dice"); break;
+    case "secretCoin": openSecretGame("coin"); break;
+    case "secretCards": openSecretGame("cards"); break;
     case "slotFlip":
       var slotc = secret.cards.slots[n];
       if (slotc) { slotc.up = !slotc.up; render(); }
