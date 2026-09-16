@@ -929,6 +929,29 @@
                   transform: rotate(180deg); }
   .tmid { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
           font-size: 42px; line-height: 1; }
+  /*
+   * A seat per player in the argument, one to a corner, each with its name and
+   * two card lines of its own. The dealer's deck holds the bottom-left corner,
+   * so the lower two seats sit above it rather than under it.
+   */
+  .seat { position: absolute; width: 132px; z-index: 1; }
+  .seat.tl { left: 12px; top: calc(env(safe-area-inset-top) + 52px); }
+  .seat.tr { right: 12px; top: calc(env(safe-area-inset-top) + 52px); }
+  .seat.bl { left: 12px; bottom: calc(env(safe-area-inset-bottom) + 152px); }
+  .seat.br { right: 12px; bottom: calc(env(safe-area-inset-bottom) + 152px); }
+  .seatname { font-size: 13px; font-weight: 900; letter-spacing: 1px;
+              text-transform: uppercase; color: #FF8A1E; margin-bottom: 4px;
+              white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .seat.tr .seatname, .seat.br .seatname { text-align: right; }
+  .seatcards { display: flex; gap: 6px; }
+  .seat.tr .seatcards, .seat.br .seatcards { justify-content: flex-end; }
+  .seatslot { width: 60px; height: 84px; box-sizing: border-box; border-radius: 8px;
+              border: 2px dashed rgba(77, 195, 255, 0.45); flex: 0 0 auto; }
+  .seatslot .seatcard { width: 100%; height: 100%; }
+  .seatcard img { width: 100%; height: 100%; display: block; border-radius: 6px; }
+  .seatcard .tcorner { font-size: 14px; top: 3px; left: 5px; }
+  .seatcard .tcorner.flip { top: auto; left: auto; bottom: 3px; right: 5px; }
+  .seatcard .tmid { font-size: 28px; }
   /* Five card-sized cut-outs across the middle of the felt. */
   .slotrow { position: absolute; left: 0; right: 0; top: 50%; transform: translateY(-50%);
              display: flex; justify-content: center; gap: 8px; }
@@ -938,6 +961,9 @@
   .slot { width: 64px; height: 90px; box-sizing: border-box; border-radius: 8px;
           border: 2px dashed transparent; flex: 0 0 auto; }
   .slotrow.marked .slot { border-color: rgba(77, 195, 255, 0.45); }
+  /* With seats laid out, the middle lifts off centre: the four corners need the
+     room, and the deck sits under the lower-left one. */
+  .slotrow.withseats { top: 46%; }
   .slot .slotcard { width: 100%; height: 100%; cursor: pointer; }
   .slotcard img { width: 100%; height: 100%; display: block; border-radius: 6px; }
   .slotcard .tcorner { font-size: 15px; top: 3px; left: 5px; }
@@ -2305,6 +2331,7 @@ function liveOpen() {
     if (m.payload.event === "bye") liveBye(p);
     if (m.payload.event === "dispute") liveDispute(p);
     if (m.payload.event === "game") livePickGame(p);
+    if (m.payload.event === "cards") liveCards(p);
   };
 
   sock.onclose = function () {
@@ -2983,7 +3010,7 @@ function liveDispute(p) {
   }
   // Their argument, their roll: this phone watches the games light up rather
   // than running its own.
-  disputeCall = { by: who };
+  disputeCall = { by: who, with: typeof p.with === "string" ? p.with.trim() : "" };
   if (secret && secret.pick) secret.pick = { lit: -1, spinning: false, winner: null };
   // Tapped, this banner is the way in.
   liveAlerts[liveAlerts.length - 1].games = true;
@@ -7189,7 +7216,7 @@ function openSecretWheel() {
     // Which game settles it. Fresh each visit: last argument's answer is
     // nothing to do with this one.
     pick: { lit: -1, spinning: false, winner: null },
-    cards: { deck: [], board: [], slots: [null, null, null, null, null] }
+    cards: { deck: [], board: [], slots: [null, null, null, null, null], hands: [] }
   };
   render();
 }
@@ -8713,8 +8740,50 @@ function tcardFace(id) {
     '<span class="tmid">' + suit + '</span>' +
     '<span class="tcorner flip">' + CARD_RANKS[id % 13] + '</span></div>';
 }
+/*
+ * Who has a seat at the card table: the two in the argument, or the whole table
+ * when it was called on everyone. Four at most — there are four corners.
+ */
+function disputeSeats() {
+  var names = [];
+  if (disputeCall && disputeCall.by) {
+    if (disputeCall.with) names = [disputeCall.by, disputeCall.with];
+    else if (state && state.players) names = state.players.slice();
+    else names = [disputeCall.by];
+  } else if (state && state.players) {
+    names = state.players.slice();
+  }
+  return names.filter(function (n) { return n && String(n).trim(); }).slice(0, 4);
+}
+/*
+ * One deck, on one phone. Whoever called the argument deals it; with nobody
+ * having called one it is the host's deck, and on a phone playing by itself,
+ * its own. Everybody else gets the table without a deck on it — four phones
+ * dealing four different hands is the argument all over again.
+ */
+function iDeal() {
+  if (disputeCall && disputeCall.by) return myPickToRoll();
+  if (live && !live.hosting) return false;
+  return true;
+}
 function renderCardsGame() {
   var c = secret.cards;
+  var seats = disputeSeats();
+  // A name, and two card lines under it, in each corner.
+  var seatHtml = seats.map(function (nm, i) {
+    var hand = (c.hands && c.hands[i]) || null;
+    var corner = ["tl", "tr", "bl", "br"][i];
+    return '<div class="seat ' + corner + '">' +
+      '<div class="seatname">' + esc(nm) + '</div>' +
+      '<div class="seatcards">' +
+      [0, 1].map(function (k) {
+        var id = hand && hand.length > k ? hand[k] : null;
+        // Face up: the whole point is that everyone can see them.
+        return '<div class="seatslot">' +
+          (id != null ? '<div class="seatcard">' + tcardFace(id) + '</div>' : "") +
+          '</div>';
+      }).join("") + '</div></div>';
+  }).join("");
   var cards = c.board.map(function (b) {
     return '<div class="tcard" data-tc="' + b.id + '" style="left:' + b.x + 'px;top:' + b.y + 'px">' +
       (b.up ? tcardFace(b.id) : tcardBackHtml()) + '</div>';
@@ -8733,10 +8802,15 @@ function renderCardsGame() {
     ' aria-pressed="' + (c.marks === false ? 'false' : 'true') + '">' +
     '<span class="track"><span class="knob"></span></span>Hold em</button>' +
     '<button class="big raised" data-act="shuffleCards">Shuffle all</button></div>' +
-    '<div class="tdeck' + (c.deck.length ? "" : " empty") + '" id="tdeck">' +
-    tcardBackHtml() +
-    '<span class="tcount">' + c.deck.length + '</span></div>' +
-    '<div class="slotrow' + (c.marks === false ? '' : ' marked') + '">' + slots + '</div>' +
+    // The deck belongs to the phone that deals, and to nobody else.
+    (iDeal()
+      ? '<div class="tdeck' + (c.deck.length ? "" : " empty") + '" id="tdeck">' +
+        tcardBackHtml() +
+        '<span class="tcount">' + c.deck.length + '</span></div>'
+      : "") +
+    seatHtml +
+    '<div class="slotrow' + (c.marks === false ? '' : ' marked') +
+    (seats.length ? ' withseats' : '') + '">' + slots + '</div>' +
     cards + '</div>';
 }
 
@@ -8810,6 +8884,25 @@ function overDeck(el) {
  */
 function dealRow(c) {
   if (c.marks === false) return;
+  // One deck, one dealer: a phone without the deck has nothing to tap anyway.
+  if (!iDeal()) return;
+  var seats = disputeSeats();
+  /*
+   * Seats at the table means a whole deal: two to everybody in the argument and
+   * the five in the middle, off one tap. Worked out here and sent before a card
+   * lands, so every phone lays out the same table rather than its own.
+   */
+  if (seats.length) {
+    var need = seats.length * 2 + 5;
+    if (c.deck.length < need) c.deck = freshDeck52();
+    var plan = { hands: [], slots: [] }, at = 0;
+    seats.forEach(function () { plan.hands.push([c.deck[at++], c.deck[at++]]); });
+    for (var s = 0; s < 5; s++) plan.slots.push(c.deck[at++]);
+    c.deck = c.deck.slice(at);
+    if (live) liveCast("cards", { deal: plan, deck: c.deck.length });
+    runDeal(c, plan);
+    return;
+  }
   var open = [];
   (c.slots || []).forEach(function (s, i) { if (!s) open.push(i); });
   (function step() {
@@ -8823,6 +8916,60 @@ function dealRow(c) {
     render();
     if (open.length && c.deck.length) setTimeout(step, 120);
   })();
+}
+/*
+ * Laying the planned deal out, a beat between cards so it reads as dealing:
+ * round the seats first, then the five in the middle. Runs the same on the
+ * dealer's phone and on everyone else's, off the same plan.
+ */
+function runDeal(c, plan) {
+  c.hands = [];
+  c.slots = [null, null, null, null, null];
+  c.board = [];
+  var steps = [];
+  (plan.hands || []).forEach(function (pair, i) {
+    (pair || []).forEach(function (id, k) {
+      steps.push(function () {
+        if (!c.hands[i]) c.hands[i] = [];
+        c.hands[i][k] = id;
+      });
+    });
+  });
+  (plan.slots || []).forEach(function (id, i) {
+    // Face down in the middle, turned over by a tap when the table wants them.
+    steps.push(function () { c.slots[i] = { id: id, up: false }; });
+  });
+  (function step() {
+    if (!secret || secret.mode !== "cards" || secret.cards !== c) return;
+    if (!steps.length) return;
+    steps.shift()();
+    playClip(drawAudio, sfxVolume());
+    render();
+    if (steps.length) setTimeout(step, 120);
+  })();
+}
+/* The dealer's table, arriving on everybody else's phone: the same deal, the
+   same flip, the same clean sweep. */
+function liveCards(p) {
+  if (!p) return;
+  if (!secret) openSecretWheel();
+  if (!secret) return;
+  if (secret.mode !== "cards") openSecretGame("cards");
+  var c = secret.cards;
+  if (typeof p.deck === "number") c.deck = c.deck.slice(0, Math.max(0, p.deck));
+  if (p.clear) {
+    c.deck = freshDeck52(); c.board = []; c.hands = [];
+    c.slots = [null, null, null, null, null];
+    playClip(shuffleAudio, sfxVolume(), 0.7, 1.49);
+    render();
+    return;
+  }
+  if (typeof p.flip === "number") {
+    var s = c.slots[p.flip];
+    if (s) { s.up = !s.up; render(); }
+    return;
+  }
+  if (p.deal) runDeal(c, p.deal);
 }
 function tableDrop(cancelled) {
   if (!tDrag) return;
@@ -10382,7 +10529,12 @@ app.addEventListener("click", function (e) {
     case "secretCards": openSecretGame("cards"); break;
     case "slotFlip":
       var slotc = secret.cards.slots[n];
-      if (slotc) { slotc.up = !slotc.up; render(); }
+      if (slotc) {
+        slotc.up = !slotc.up;
+        // Turned over on one phone is turned over on all of them.
+        if (live) liveCast("cards", { flip: n });
+        render();
+      }
       break;
     case "secretBack": stopWheelSound(true); secret.mode = "menu"; render(); break;
     case "flipCoin": flipCoin(); break;
@@ -10407,6 +10559,9 @@ app.addEventListener("click", function (e) {
     case "shuffleCards":
       secret.cards.deck = freshDeck52(); secret.cards.board = [];
       secret.cards.slots = [null, null, null, null, null];
+      secret.cards.hands = [];
+      // Swept on one phone is swept on all of them.
+      if (live) liveCast("cards", { clear: true });
       // The riffle runs a second and a half and the last half of it is the
       // cards settling, which nobody waits around for. The first 1.04s of it,
       // hurried along so the whole thing is over in 0.7 — a shuffle is a flick
@@ -10430,8 +10585,9 @@ app.addEventListener("click", function (e) {
     case "disputeWith": {
       disputePick = false;
       var caller = (state ? state.players[state.meIndex] : settings.myName) || "";
-      // Called it, so this is the phone that rolls for the game.
-      disputeCall = { by: caller };
+      // Called it, so this is the phone that rolls for the game — and who it is
+      // with, so the card table knows whose seats to lay out.
+      disputeCall = { by: caller, with: el.dataset.t || "" };
       if (live) liveCast("dispute", { name: caller, with: el.dataset.t || "" });
       openSecretWheel(); break;
     }
