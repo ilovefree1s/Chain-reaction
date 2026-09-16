@@ -1574,7 +1574,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.3.122 · 15 Sep 20:22";
+var APP_VERSION = "v1.3.123 · 15 Sep 20:31";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. The arrow beside it goes and looks for a
@@ -2334,6 +2334,7 @@ function liveOpen() {
     if (m.payload.event === "cards") liveCards(p);
     if (m.payload.event === "coin") liveCoin(p);
     if (m.payload.event === "namewheel") liveSecretWheel(p);
+    if (m.payload.event === "dice") liveDice(p);
   };
 
   sock.onclose = function () {
@@ -3775,6 +3776,10 @@ function openCurdDice() {
   secret.dice.vals = [3, 4];
   secret.dice.set = [];
   secret.dice.parked = [];
+  // The card's roll is the table's, not one phone's: whatever an argument left
+  // locked has nothing to do with it.
+  secret.dice.locked = false;
+  secret.dice.by = "";
   render();
 }
 /* Cards that are an announcement to the table rather than a hit on one person.
@@ -7341,7 +7346,12 @@ function tossTarget() {
   if (!secret) return null;
   // Only the phone that flips can flip: a watcher's swipe has nothing to throw.
   if (secret.mode === "coin" && !secret.coin.flipping) return iDeal() ? flipCoin : null;
-  if (secret.mode === "dice" && !secret.dice.rolling) return rollDice;
+  // The tray answers one phone, and only until it has been thrown. The Curd's
+  // own roll is every player's to make, so it ignores both.
+  if (secret.mode === "dice" && !secret.dice.rolling) {
+    if (curdLocked()) return rollDice;
+    return iDeal() && !secret.dice.locked ? rollDice : null;
+  }
   return null;
 }
 /*
@@ -7746,6 +7756,46 @@ function runFlip(landed, strength) {
     render();
   }, ms);
 }
+/*
+ * The throw, once it has stood: the numbers go out to the table and the tray
+ * locks. Nobody can throw again — not the thrower, not anyone watching — so the
+ * argument is settled by the roll that happened rather than the best of three.
+ *
+ * The physics are not sent, only the result. Four phones cannot be made to
+ * tumble identical dice, and watching somebody else's dice roll on your screen
+ * was never the point: the number is.
+ */
+function shareDiceRoll(d) {
+  // The Curd's table-wide roll announces itself its own way.
+  if (curdLocked() || !d || !allDiceSet(d)) return;
+  d.locked = true;
+  d.by = (state && state.players ? state.players[state.meIndex] : settings.myName) || "";
+  if (live) liveCast("dice", { vals: d.vals.slice(), by: d.by });
+}
+/* The thrower's numbers, landing on everybody else's phone: the same dice, the
+   same total, and a tray nobody can throw again. */
+function liveDice(p) {
+  if (!p || !Array.isArray(p.vals) || !p.vals.length || p.vals.length > 6) return;
+  if (!p.vals.every(function (v) { return typeof v === "number" && v >= 1 && v <= 6; })) return;
+  if (!secret) openSecretWheel();
+  if (!secret) return;
+  if (secret.mode !== "dice") openSecretGame("dice");
+  var d = secret.dice;
+  d.rolling = false;
+  d.count = p.vals.length;
+  d.vals = p.vals.slice();
+  // Squared up to their numbers: this phone never saw them land, so there is no
+  // pose to keep.
+  d.face = null;
+  d.pos = null;
+  d.parked = [];
+  d.set = [];
+  for (var i = 0; i < d.count; i++) d.set.push(i);
+  d.locked = true;
+  d.by = typeof p.by === "string" ? p.by : "";
+  render();
+}
+
 /* The host's name wheel, turning on everybody else's phone: their list, their
    landing, their rotation. */
 function liveSecretWheel(p) {
@@ -8130,18 +8180,27 @@ function renderDiceGame() {
     // Opposite Back, on its own line, out of the felt the dice need.
     '<div class="dicesteps">' +
     '<button class="step" data-act="diceLess"' +
-      (d.count <= 1 || d.rolling || curdLocked() ? " disabled" : "") + '>&minus;</button>' +
+      (d.count <= 1 || d.rolling || curdLocked() || d.locked || !iDeal() ? " disabled" : "") +
+      '>&minus;</button>' +
     '<div class="dicecount">' + d.count + (d.count === 1 ? " die" : " dice") + '</div>' +
     '<button class="step" data-act="diceMore"' +
-      (d.count >= 6 || d.rolling || curdLocked() ? " disabled" : "") + '>+</button></div>' +
+      (d.count >= 6 || d.rolling || curdLocked() || d.locked || !iDeal() ? " disabled" : "") +
+      '>+</button></div>' +
     /* Rolling for the lid, the tray says where the table has got to: your own
        total once it has landed, and who has still to throw. Without it the
        last three players are sitting in a dice tray with nothing to say when
        it closes itself. */
     '<p class="hint" style="text-align:center;margin:0 0 8px">' +
     (curdRollHint() ||
-      (d.rolling ? "&nbsp;" : '<span class="read">Roll one die at a time, or drag one die ' +
-        'on top of another to stack them and roll more than one</span>')) +
+      (d.rolling ? "&nbsp;"
+        // Thrown: the number, and whose throw it was. There is no second one.
+        : d.locked
+          ? '<span class="read">' + (d.by ? esc(d.by) + " rolled " + total : "Rolled " + total) +
+            '</span><br>One roll only'
+        : !iDeal()
+          ? "Waiting on " + esc(disputeCall && disputeCall.by ? disputeCall.by : "the host")
+        : '<span class="read">Roll one die at a time, or drag one die ' +
+          'on top of another to stack them and roll more than one</span>')) +
     '</p>' +
     // Not tossable: swiping the felt itself does nothing. You throw dice by
     // having hold of them, the way you would off a table.
@@ -8153,7 +8212,9 @@ function renderDiceGame() {
     diceFieldHtml(d) +
     // On the felt, along its bottom edge under the dice. The line above the
     // felt is the one that has to be read first.
-    (d.rolling ? "" : '<p class="hint dicegrab">Grab the dice to flick or shake them</p>') +
+    // Only on the tray that can actually be thrown.
+    (d.rolling || d.locked || !(curdLocked() || iDeal()) ? ""
+      : '<p class="hint dicegrab">Grab the dice to flick or shake them</p>') +
     '</div></div>';
 }
 /*
@@ -8267,6 +8328,15 @@ function throwAim(g) {
 function rollDice(kind, which, aim) {
   var d = secret && secret.dice;
   if (!d || d.rolling) return;
+  /*
+   * One phone throws and it throws once. The Curd is the exception and always
+   * was: that card has the whole table rolling for the lid on their own phone,
+   * so it keeps its own rules.
+   */
+  if (!curdLocked()) {
+    if (!iDeal()) return;
+    if (d.locked) return;
+  }
   // Every die has stood: this throw starts them over. Any still sitting in the
   // corner from the round just finished come home first — thrown from where
   // they were parked they started jammed against each other and the wall, and
@@ -8678,6 +8748,7 @@ function diceStep(now) {
   d.rolling = false;
   // Straight off the dice, before anybody has had a chance to read them out.
   noteCurdRoll(d);
+  shareDiceRoll(d);
   setTimeout(function () { if (secret && secret.mode === "dice") render(); }, 300);
   // Read where they landed, then they walk back down to the band they are
   // thrown from. Dice that settle at the top of the felt have to be dragged the
@@ -9318,6 +9389,9 @@ function runPick(hops) {
   var p = secret.pick;
   p.winner = null;
   p.spinning = true;
+  // A fresh argument gets a fresh throw, whatever the last one left behind.
+  secret.dice.locked = false;
+  secret.dice.by = "";
   // When each hop happens: walk the five seconds and mark every time the eased
   // distance rolls over into the next game.
   var times = [], last = 0, steps = Math.round(PICK_MS / 4);
