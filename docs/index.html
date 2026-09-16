@@ -1574,7 +1574,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.3.121 · 15 Sep 20:17";
+var APP_VERSION = "v1.3.122 · 15 Sep 20:22";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. The arrow beside it goes and looks for a
@@ -2333,6 +2333,7 @@ function liveOpen() {
     if (m.payload.event === "game") livePickGame(p);
     if (m.payload.event === "cards") liveCards(p);
     if (m.payload.event === "coin") liveCoin(p);
+    if (m.payload.event === "namewheel") liveSecretWheel(p);
   };
 
   sock.onclose = function () {
@@ -7255,9 +7256,14 @@ function renderSecret() {
       '<div class="wheelbox" id="secretwheelbox">' + secretWheelHtml() + '</div>' +
       '<div class="exempt" id="secretResult">' +
       (secret.name && !secret.spinning ? esc(secret.name) : "") + '</div>' +
+      // One phone types the list and spins it; the rest are here to watch.
       '<button class="big wheel" data-act="spinSecret"' +
-      (labels.length >= 2 ? "" : " disabled") + '>Spin</button>' +
+      (labels.length >= 2 && iDeal() ? "" : " disabled") + '>' +
+      (iDeal() ? "Spin"
+        : "Waiting on " + esc(disputeCall && disputeCall.by ? disputeCall.by : "the host")) +
+      '</button>' +
       '<textarea id="secretnames" class="secretbox" rows="6" spellcheck="false" ' +
+      (iDeal() ? "" : "readonly ") +
       'placeholder="One name per line">' + esc(secret.text || "") + '</textarea></div>';
   }
   // The landing: four side games, one door out — the whole cluster rides the
@@ -7740,6 +7746,24 @@ function runFlip(landed, strength) {
     render();
   }, ms);
 }
+/* The host's name wheel, turning on everybody else's phone: their list, their
+   landing, their rotation. */
+function liveSecretWheel(p) {
+  if (!p || typeof p.pick !== "number" || typeof p.rot !== "number") return;
+  if (!Array.isArray(p.names) || p.names.length < 2) return;
+  if (!p.names.every(function (n) { return typeof n === "string"; })) return;
+  if (!secret) openSecretWheel();
+  if (!secret) return;
+  if (secret.mode !== "wheel") openSecretGame("wheel");
+  if (secret.spinning) return;
+  // The host's list, so this wheel is cut into the same segments as theirs.
+  secret.text = p.names.join("\n");
+  secret.name = null;
+  render();
+  // The wheel has to be on screen, sitting still, before it can be seen to turn.
+  requestAnimationFrame(function () { runSecretSpin(p.pick, p.rot); });
+}
+
 /* The flipper's coin, landing on everybody else's phone. */
 function liveCoin(p) {
   if (!p || (p.face !== "HEADS" && p.face !== "TAILS")) return;
@@ -9179,14 +9203,18 @@ function spinOrder() {
   runOrderSpin(pick, rot);
 }
 
+/*
+ * One wheel, spun once. The phone that called the argument types the list and
+ * presses Spin; the names, the landing and the rotation go out before it turns,
+ * so the others watch the same wheel stop in the same place on their own screen
+ * instead of taking somebody's word for it.
+ */
 function spinSecret() {
   if (!secret || secret.spinning) return;
+  if (!iDeal()) return;
   var entries = secretEntries(), labels = secretLabels();
-  var el = document.getElementById("wheel-secret");
-  if (!el || labels.length < 2) return;
-  secret.spinning = true;
+  if (labels.length < 2) return;
   var p = Math.floor(Math.random() * entries.length);
-  secret.name = entries[p];
   // A doubled list owns two opposite segments — land on either.
   var idx = labels.length > entries.length
     ? p + entries.length * (Math.random() < 0.5 ? 0 : 1) : p;
@@ -9195,6 +9223,20 @@ function spinSecret() {
   var fromRot = secret.rot;
   var target = fromRot - (fromRot % 360) + 5 * 360 +
     (360 - (idx * seg + seg / 2)) + (Math.random() - 0.5) * 0.6 * seg;
+  if (live) liveCast("namewheel", { names: entries.slice(), pick: p, rot: target });
+  runSecretSpin(p, target);
+}
+/* The turn itself, identical wherever it runs: the same list cut into the same
+   segments, stopped at the same angle. */
+function runSecretSpin(pick, target) {
+  if (!secret || secret.spinning) return;
+  var entries = secretEntries(), labels = secretLabels();
+  var el = document.getElementById("wheel-secret");
+  if (!el || labels.length < 2 || !entries.length) return;
+  secret.spinning = true;
+  secret.name = entries[((pick % entries.length) + entries.length) % entries.length];
+  var n = labels.length;
+  var fromRot = secret.rot;
   secret.rot = target;
   var btn = document.querySelector('[data-act="spinSecret"]');
   if (btn) btn.style.visibility = "hidden";
@@ -10766,6 +10808,8 @@ app.addEventListener("click", function (e) {
         render();
         break;
       }
+      // The new-build banner: tapping it IS the reload it is offering.
+      if (hit && hit.reload) { location.reload(); break; }
       // A dispute banner opens the gamble games, same as the button that sent it.
       if (hit && hit.games) { openSecretWheel(); break; }
       // Straight to the game the card is asking for, if it asks for one.
@@ -10854,6 +10898,18 @@ warmClips();
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", function () {
     navigator.serviceWorker.register("sw.js").catch(function () { /* offline is a bonus */ });
+  });
+  /*
+   * The page is served out of the cache so it opens at once, and the new build
+   * arrives behind it. When one does, the worker says so — this is the offer to
+   * take it, tappable, rather than a reload that yanks the screen away from
+   * somebody mid-hole.
+   */
+  navigator.serviceWorker.addEventListener("message", function (e) {
+    if (!e.data || e.data.type !== "newbuild") return;
+    localNote("A newer version is ready. Tap here to load it.", "Update");
+    liveAlerts[liveAlerts.length - 1].reload = true;
+    render();
   });
 }
 </script>
