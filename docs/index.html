@@ -987,10 +987,28 @@
   /* With seats laid out, the middle lifts off centre: the four corners need the
      room, and the deck sits under the lower-left one. */
   .slotrow.withseats { top: 46%; }
-  /* The hand, read out under the five in the middle. */
-  .cardswin { position: absolute; left: 0; right: 0; top: calc(46% + 56px); z-index: 2;
-              padding: 0 12px; text-align: center; color: var(--self);
-              font-size: 18px; font-weight: 900; text-shadow: 0 2px 8px #000; }
+  /*
+   * The hand and its clock, as one block under the five in the middle.
+   *
+   * Both were placed against the cards at fixed distances, and neither could
+   * hold: the winner's name wraps to two lines on a narrow screen, so the
+   * clock landed on the words, and pushing the clock down far enough to clear
+   * them put it through the lower two seats. Stacked in one box, the clock
+   * always follows however many lines the name took.
+   */
+  .cardsread { position: absolute; left: 12px; right: 12px; top: calc(46% + 52px);
+               z-index: 3; text-align: center; }
+  .cardshold { display: flex; align-items: center; justify-content: center; gap: 10px;
+               margin-top: 6px; }
+  .cardshold .holdnum { font-size: 26px; font-weight: 900; line-height: 1;
+                        color: var(--self); text-shadow: 0 2px 8px #000; }
+  .cardshold .holdsay { font-size: 10px; font-weight: 900; letter-spacing: 2px;
+                        text-transform: uppercase; color: var(--sage); }
+  .cardshold .big { margin: 0; min-height: 38px; font-size: 13px; width: auto;
+                    padding: 0 16px; }
+  /* The hand itself, the first line of that block. */
+  .cardswin { color: var(--self); font-size: 18px; font-weight: 900; line-height: 1.2;
+              text-shadow: 0 2px 8px #000; }
   .slot .slotcard { width: 100%; height: 100%; cursor: pointer; }
   .slotcard img { width: 100%; height: 100%; display: block; border-radius: 6px; }
   .slotcard .tcorner { font-size: 15px; top: 3px; left: 5px; }
@@ -1601,7 +1619,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.3.139 · 15 Sep 21:43";
+var APP_VERSION = "v1.3.143 · 15 Sep 21:53";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. The arrow beside it goes and looks for a
@@ -8015,6 +8033,14 @@ function settleDispute(text) {
   if (live && iDeal()) liveCast("settled", { text: text, party: party });
   leaveGamesAfterSettle(party);
 }
+/*
+ * The card table is read rather than glanced at — four hands and five in the
+ * middle take longer to take in than a coin's face — so it holds, with the
+ * count where everyone can see it and the way out underneath.
+ */
+var CARDS_HOLD_MS = 10000;
+var settleTick = null;
+
 /* Out of the games and back to the round — for a phone that was in it. */
 function leaveGamesAfterSettle(party) {
   var me = ((state && state.players ? state.players[state.meIndex] : settings.myName) || "")
@@ -8023,15 +8049,35 @@ function leaveGamesAfterSettle(party) {
     return String(n).trim().toLowerCase() === me;
   }));
   if (!mine) return;
-  setTimeout(function () {
-    if (!secret) return;
-    stopWheelSound(true);
-    secret = null;
-    // Settled, so the next argument starts from nothing.
-    disputeCall = null;
-    if (state) { screen = "round"; tab = "hand"; }
+  if (secret && secret.mode === "cards") { holdCardsTable(); return; }
+  setTimeout(backToHand, SETTLED_MS);
+}
+/* Ten seconds on the table, counted down on screen. The button is the same
+   thing, sooner. */
+function holdCardsTable() {
+  var c = secret && secret.cards;
+  if (!c || settleTick) return;
+  c.left = Math.round(CARDS_HOLD_MS / 1000);
+  var mine = secret;
+  settleTick = setInterval(function () {
+    if (secret !== mine || !secret.cards) {
+      clearInterval(settleTick); settleTick = null; return;
+    }
+    secret.cards.left -= 1;
+    if (secret.cards.left <= 0) { backToHand(); return; }
     render();
-  }, SETTLED_MS);
+  }, 1000);
+  render();
+}
+function backToHand() {
+  if (settleTick) { clearInterval(settleTick); settleTick = null; }
+  if (!secret) return;
+  stopWheelSound(true);
+  secret = null;
+  // Settled, so the next argument starts from nothing.
+  disputeCall = null;
+  if (state) { screen = "round"; tab = "hand"; }
+  render();
 }
 /* The answer, on every phone at the table. */
 function liveSettled(p) {
@@ -9382,8 +9428,20 @@ function renderCardsGame() {
     seatHtml +
     '<div class="slotrow' + (c.marks === false ? '' : ' marked') +
     (seats.length ? ' withseats' : '') + '">' + slots + '</div>' +
-    // Whose hand it is, once all five in the middle are face up.
-    (c.winner ? '<div class="cardswin">' + esc(c.winner) + '</div>' : "") +
+    // Whose hand it is, and how long before the table hands itself back: one
+    // block, so the clock follows the words however many lines they take.
+    (c.winner || c.left > 0
+      ? '<div class="cardsread">' +
+        (c.winner ? '<div class="cardswin">' + esc(c.winner) + '</div>' : "") +
+        (c.left > 0
+          ? '<div class="cardshold">' +
+            '<div class="holdnum">' + c.left + '</div>' +
+            '<div class="holdsay">second' + (c.left === 1 ? "" : "s") + '</div>' +
+            '<button class="big quiet" data-act="backToHand">Return to hand</button>' +
+            '</div>'
+          : "") +
+        '</div>'
+      : "") +
     cards + '</div>';
 }
 
@@ -9499,9 +9557,11 @@ function runDeal(c, plan) {
   c.hands = [];
   c.slots = [null, null, null, null, null];
   c.board = [];
-  // A fresh deal has no hand to read yet.
+  // A fresh deal has no hand to read yet, and no clock running on the last one.
   c.winner = null;
   c.said = false;
+  c.left = 0;
+  if (settleTick) { clearInterval(settleTick); settleTick = null; }
   var steps = [];
   (plan.hands || []).forEach(function (pair, i) {
     (pair || []).forEach(function (id, k) {
@@ -9537,7 +9597,8 @@ function liveCards(p) {
   if (p.clear) {
     c.deck = freshDeck52(); c.board = []; c.hands = [];
     c.slots = [null, null, null, null, null];
-    c.winner = null; c.said = false;
+    c.winner = null; c.said = false; c.left = 0;
+    if (settleTick) { clearInterval(settleTick); settleTick = null; }
     playClip(shuffleAudio, sfxVolume(), 0.7, 1.49);
     render();
     return;
@@ -11147,6 +11208,8 @@ app.addEventListener("click", function (e) {
       }
       break;
     case "secretBack": stopWheelSound(true); secret.mode = "menu"; render(); break;
+    // Done looking: the countdown had the same errand.
+    case "backToHand": backToHand(); break;
     case "flipCoin": flipCoin(); break;
     case "diceLess":
       if (curdLocked()) break;
@@ -11172,6 +11235,8 @@ app.addEventListener("click", function (e) {
       secret.cards.hands = [];
       secret.cards.winner = null;
       secret.cards.said = false;
+      secret.cards.left = 0;
+      if (settleTick) { clearInterval(settleTick); settleTick = null; }
       // Swept on one phone is swept on all of them.
       if (live) liveCast("cards", partyPayload({ clear: true }));
       // The riffle runs a second and a half and the last half of it is the
