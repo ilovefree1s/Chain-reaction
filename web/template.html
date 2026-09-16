@@ -11044,11 +11044,30 @@ if ("serviceWorker" in navigator) {
    * take it, tappable, rather than a reload that yanks the screen away from
    * somebody mid-hole.
    */
-  navigator.serviceWorker.addEventListener("message", function (e) {
-    if (!e.data || e.data.type !== "newbuild") return;
+  /* Said once, however many ways the news arrives. */
+  var toldNewBuild = false;
+  function offerNewBuild() {
+    if (toldNewBuild) return;
+    toldNewBuild = true;
     localNote("A newer version is ready. Tap here to load it.", "Update");
     liveAlerts[liveAlerts.length - 1].reload = true;
     render();
+  }
+  navigator.serviceWorker.addEventListener("message", function (e) {
+    if (!e.data || e.data.type !== "newbuild") return;
+    offerNewBuild();
+  });
+  /*
+   * And the same news the other way round, because the message can be sent
+   * before this page is listening: a build small enough to install in a blink
+   * activates while the page is still parsing, and its message reaches nobody.
+   * A worker taking control of a page that already had one IS a new build.
+   * Guarded on the controller this page started with, so a first install — no
+   * controller, then one — says nothing.
+   */
+  var hadController = !!navigator.serviceWorker.controller;
+  navigator.serviceWorker.addEventListener("controllerchange", function () {
+    if (hadController) offerNewBuild();
   });
 }
 </script>

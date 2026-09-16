@@ -585,11 +585,23 @@ async function fillAssets() {
   }));
 }
 
+/*
+ * The page first, and nothing waits on the pictures.
+ *
+ * Installing used to hold activation until all fifty-odd assets had been
+ * checked — sixty megabytes of artwork and music. On a phone with course signal
+ * that can outlast the app: close it before the sweep finishes and the new
+ * worker never takes over, so the phone keeps serving the build it already had
+ * and looks like it will not update. The page is 600 KB; it is the only thing
+ * an update actually needs.
+ *
+ * So the assets are swept alongside rather than in front of it, and whatever
+ * the sweep does not reach is fetched from the network on demand and picked up
+ * by the next install.
+ */
 self.addEventListener("install", (event) => {
-  event.waitUntil(
-    Promise.all([fill(PAGE_CACHE, PAGE_FILES), fillAssets()])
-      .then(() => self.skipWaiting()),
-  );
+  event.waitUntil(fill(PAGE_CACHE, PAGE_FILES).then(() => self.skipWaiting()));
+  event.waitUntil(fillAssets().catch(() => null));
 });
 
 self.addEventListener("activate", (event) => {
