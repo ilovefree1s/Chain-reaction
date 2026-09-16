@@ -679,6 +679,11 @@
   /* Sits on the felt itself, along the bottom edge, under the dice where a hand
      reaching for them already is. Untouchable, so it never eats a grab aimed at
      a die resting on top of it. */
+  /* Everybody's total, side by side, until the last throw is in. */
+  .dicetally { text-align: center; margin: 0 0 6px; font-size: 15px; }
+  .dicetally .who { color: var(--sage); }
+  .dicetally b { color: #fff; font-weight: 900; }
+  .dicewin { font-size: 20px; margin: 0 0 8px; }
   .dicegrab {
     position: absolute; left: 0; right: 0; bottom: 6px; z-index: 1;
     margin: 0; text-align: center; font-size: 14px; pointer-events: none;
@@ -3776,10 +3781,11 @@ function openCurdDice() {
   secret.dice.vals = [3, 4];
   secret.dice.set = [];
   secret.dice.parked = [];
-  // The card's roll is the table's, not one phone's: whatever an argument left
-  // locked has nothing to do with it.
-  secret.dice.locked = false;
-  secret.dice.by = "";
+  // The card's roll is the table's, not an argument's: whatever the last one
+  // left on the scoreboard has nothing to do with it.
+  secret.dice.tally = {};
+  secret.dice.winner = null;
+  secret.dice.said = false;
   render();
 }
 /* Cards that are an announcement to the table rather than a hit on one person.
@@ -7346,11 +7352,11 @@ function tossTarget() {
   if (!secret) return null;
   // Only the phone that flips can flip: a watcher's swipe has nothing to throw.
   if (secret.mode === "coin" && !secret.coin.flipping) return iDeal() ? flipCoin : null;
-  // The tray answers one phone, and only until it has been thrown. The Curd's
-  // own roll is every player's to make, so it ignores both.
+  // The tray answers a phone that still has a throw to make. The Curd's own
+  // roll is every player's, so it ignores the argument's bookkeeping.
   if (secret.mode === "dice" && !secret.dice.rolling) {
     if (curdLocked()) return rollDice;
-    return iDeal() && !secret.dice.locked ? rollDice : null;
+    return myDiceTurn(secret.dice) ? rollDice : null;
   }
   return null;
 }
@@ -7757,42 +7763,92 @@ function runFlip(landed, strength) {
   }, ms);
 }
 /*
- * The throw, once it has stood: the numbers go out to the table and the tray
- * locks. Nobody can throw again — not the thrower, not anyone watching — so the
- * argument is settled by the roll that happened rather than the best of three.
+ * Rolling to settle an argument: everybody in it throws once, on their own
+ * phone, and every total stays on the screen until the last of them is in.
+ * Then the highest wins and every phone says so.
  *
- * The physics are not sent, only the result. Four phones cannot be made to
- * tumble identical dice, and watching somebody else's dice roll on your screen
- * was never the point: the number is.
+ * Totals are sent, not physics. Four phones cannot be made to tumble identical
+ * dice, and watching somebody else's dice roll was never the point — their
+ * number is.
  */
+/*
+ * Who is rolling, and only when somebody called an argument. The tray is also
+ * just a tray — opened mid-round to settle nothing in particular — and that one
+ * belongs to whoever picked it up, for as many throws as they like.
+ */
+function diceSeats() { return disputeCall && disputeCall.by ? disputeSeats() : []; }
+function diceKey(name) { return String(name || "").trim().toLowerCase(); }
+function recordDiceRoll(d, name, total) {
+  if (!d.tally) d.tally = {};
+  d.tally[diceKey(name)] = { name: String(name).trim(), total: total };
+}
+/* Whose throw is still to come. */
+function diceWaiting(d) {
+  var t = (d && d.tally) || {};
+  return diceSeats().filter(function (n) { return !t[diceKey(n)]; });
+}
+function diceAllIn(d) {
+  var seats = diceSeats();
+  return seats.length > 0 && diceWaiting(d).length === 0;
+}
+/* Is this phone's throw still owed? Outside an argument the tray is just a
+   tray, and anybody may roll it as often as they like. */
+function myDiceTurn(d) {
+  var seats = diceSeats();
+  if (!seats.length) return true;
+  var me = diceKey((state && state.players ? state.players[state.meIndex] : settings.myName) || "");
+  if (!me || !seats.some(function (n) { return diceKey(n) === me; })) return false;
+  return !(d && d.tally && d.tally[me]);
+}
+/*
+ * The last throw is in, so the roll has an answer. Worked out on each phone
+ * from the same totals rather than sent, so there is nothing to disagree with.
+ * A tie settles nothing: exactly those players throw again.
+ */
+function announceDiceWinner(d) {
+  if (!d || d.said || !diceAllIn(d)) return;
+  var t = d.tally, best = -1, who = [];
+  Object.keys(t).forEach(function (k) {
+    if (t[k].total > best) { best = t[k].total; who = [t[k].name]; }
+    else if (t[k].total === best) who.push(t[k].name);
+  });
+  if (who.length === 1) {
+    d.said = true;
+    d.winner = who[0] + " wins with " + best;
+    localNote(who[0] + " wins the roll with " + best + ".", "Dice");
+  } else {
+    d.winner = sayNames(who) + " tied on " + best + " — roll again";
+    localNote(sayNames(who) + " tied on " + best + ". Roll again.", "Dice");
+    // Only the tied throws are taken back; everyone else's number stands.
+    who.forEach(function (n) { delete d.tally[diceKey(n)]; });
+  }
+  if (pickedAudio) playClip(pickedAudio, sfxVolume());
+  else playMenuSound(sfxVolume());
+  try { if (navigator.vibrate) navigator.vibrate(90); } catch (e) { /* banner only */ }
+  render();
+}
 function shareDiceRoll(d) {
   // The Curd's table-wide roll announces itself its own way.
   if (curdLocked() || !d || !allDiceSet(d)) return;
-  d.locked = true;
-  d.by = (state && state.players ? state.players[state.meIndex] : settings.myName) || "";
-  if (live) liveCast("dice", { vals: d.vals.slice(), by: d.by });
+  if (!diceSeats().length) return;
+  var me = (state && state.players ? state.players[state.meIndex] : settings.myName) || "";
+  if (!diceKey(me) || (d.tally && d.tally[diceKey(me)])) return;
+  var total = d.vals.reduce(function (a, b) { return a + b; }, 0);
+  recordDiceRoll(d, me, total);
+  if (live) liveCast("dice", { by: me, total: total });
+  announceDiceWinner(d);
+  render();
 }
-/* The thrower's numbers, landing on everybody else's phone: the same dice, the
-   same total, and a tray nobody can throw again. */
+/* Somebody else's total, onto this phone's scoreboard. Their dice stay on their
+   own felt — what travels is the number. */
 function liveDice(p) {
-  if (!p || !Array.isArray(p.vals) || !p.vals.length || p.vals.length > 6) return;
-  if (!p.vals.every(function (v) { return typeof v === "number" && v >= 1 && v <= 6; })) return;
+  if (!p || typeof p.total !== "number" || typeof p.by !== "string" || !p.by.trim()) return;
   if (!secret) openSecretWheel();
   if (!secret) return;
   if (secret.mode !== "dice") openSecretGame("dice");
   var d = secret.dice;
-  d.rolling = false;
-  d.count = p.vals.length;
-  d.vals = p.vals.slice();
-  // Squared up to their numbers: this phone never saw them land, so there is no
-  // pose to keep.
-  d.face = null;
-  d.pos = null;
-  d.parked = [];
-  d.set = [];
-  for (var i = 0; i < d.count; i++) d.set.push(i);
-  d.locked = true;
-  d.by = typeof p.by === "string" ? p.by : "";
+  recordDiceRoll(d, p.by, p.total);
+  announceDiceWinner(d);
   render();
 }
 
@@ -8172,6 +8228,7 @@ function curdRollHint() {
 function renderDiceGame() {
   var d = secret.dice;
   var total = d.vals.reduce(function (a, b) { return a + b; }, 0);
+  var seats = diceSeats(), tally = d.tally || {}, waiting = diceWaiting(d);
   return '<div class="modal sgscreen sgdice">' +
     '<button class="sgback" data-act="secretBack">&lsaquo;&nbsp;&nbsp;Back</button>' +
     // The total rides the Back button's line, the way the coin's call does.
@@ -8180,25 +8237,35 @@ function renderDiceGame() {
     // Opposite Back, on its own line, out of the felt the dice need.
     '<div class="dicesteps">' +
     '<button class="step" data-act="diceLess"' +
-      (d.count <= 1 || d.rolling || curdLocked() || d.locked || !iDeal() ? " disabled" : "") +
+      (d.count <= 1 || d.rolling || curdLocked() || !myDiceTurn(d) ? " disabled" : "") +
       '>&minus;</button>' +
     '<div class="dicecount">' + d.count + (d.count === 1 ? " die" : " dice") + '</div>' +
     '<button class="step" data-act="diceMore"' +
-      (d.count >= 6 || d.rolling || curdLocked() || d.locked || !iDeal() ? " disabled" : "") +
+      (d.count >= 6 || d.rolling || curdLocked() || !myDiceTurn(d) ? " disabled" : "") +
       '>+</button></div>' +
     /* Rolling for the lid, the tray says where the table has got to: your own
        total once it has landed, and who has still to throw. Without it the
        last three players are sitting in a dice tray with nothing to say when
        it closes itself. */
+    // Every total in the argument, kept up until the last throw is in, and then
+    // the answer under them.
+    (seats.length
+      ? '<p class="hint dicetally">' + seats.map(function (nm) {
+          var e = tally[diceKey(nm)];
+          return '<span class="who">' + esc(nm) + '</span> ' +
+            (e ? '<b>' + e.total + '</b>' : '&mdash;');
+        }).join(' &nbsp;&middot;&nbsp; ') + '</p>' +
+        (d.winner ? '<div class="exempt dicewin">' + esc(d.winner) + '</div>' : "")
+      : "") +
     '<p class="hint" style="text-align:center;margin:0 0 8px">' +
     (curdRollHint() ||
       (d.rolling ? "&nbsp;"
-        // Thrown: the number, and whose throw it was. There is no second one.
-        : d.locked
-          ? '<span class="read">' + (d.by ? esc(d.by) + " rolled " + total : "Rolled " + total) +
-            '</span><br>One roll only'
-        : !iDeal()
-          ? "Waiting on " + esc(disputeCall && disputeCall.by ? disputeCall.by : "the host")
+        : seats.length
+          ? (myDiceTurn(d)
+              ? '<span class="read">Your roll &mdash; one each</span>'
+              : waiting.length
+                ? "Waiting on " + esc(sayNames(waiting))
+                : "&nbsp;")
         : '<span class="read">Roll one die at a time, or drag one die ' +
           'on top of another to stack them and roll more than one</span>')) +
     '</p>' +
@@ -8213,7 +8280,7 @@ function renderDiceGame() {
     // On the felt, along its bottom edge under the dice. The line above the
     // felt is the one that has to be read first.
     // Only on the tray that can actually be thrown.
-    (d.rolling || d.locked || !(curdLocked() || iDeal()) ? ""
+    (d.rolling || !(curdLocked() || myDiceTurn(d)) ? ""
       : '<p class="hint dicegrab">Grab the dice to flick or shake them</p>') +
     '</div></div>';
 }
@@ -8329,14 +8396,11 @@ function rollDice(kind, which, aim) {
   var d = secret && secret.dice;
   if (!d || d.rolling) return;
   /*
-   * One phone throws and it throws once. The Curd is the exception and always
-   * was: that card has the whole table rolling for the lid on their own phone,
-   * so it keeps its own rules.
+   * In an argument, everybody in it throws — once each, on their own phone.
+   * The Curd is untouched: that card has the whole table rolling for the lid
+   * and keeps its own rules.
    */
-  if (!curdLocked()) {
-    if (!iDeal()) return;
-    if (d.locked) return;
-  }
+  if (!curdLocked() && !myDiceTurn(d)) return;
   // Every die has stood: this throw starts them over. Any still sitting in the
   // corner from the round just finished come home first — thrown from where
   // they were parked they started jammed against each other and the wall, and
@@ -9389,9 +9453,10 @@ function runPick(hops) {
   var p = secret.pick;
   p.winner = null;
   p.spinning = true;
-  // A fresh argument gets a fresh throw, whatever the last one left behind.
-  secret.dice.locked = false;
-  secret.dice.by = "";
+  // A fresh argument gets a fresh set of throws, whatever the last one left.
+  secret.dice.tally = {};
+  secret.dice.winner = null;
+  secret.dice.said = false;
   // When each hop happens: walk the five seconds and mark every time the eased
   // distance rolls over into the next game.
   var times = [], last = 0, steps = Math.round(PICK_MS / 4);
