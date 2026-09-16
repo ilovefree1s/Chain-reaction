@@ -3036,6 +3036,10 @@ function liveDispute(p) {
   // Their argument, their roll: this phone watches the games light up rather
   // than running its own.
   disputeCall = { by: who, with: typeof p.with === "string" ? p.with.trim() : "" };
+  // The caller's own list of who is in it, so every phone seats the same table.
+  if (Array.isArray(p.who) && p.who.length) {
+    disputeCall.party = p.who.map(function (n) { return String(n).trim(); });
+  }
   if (secret && secret.pick) secret.pick = { lit: -1, spinning: false, winner: null };
   // Tapped, this banner is the way in.
   liveAlerts[liveAlerts.length - 1].games = true;
@@ -3049,6 +3053,7 @@ function liveDispute(p) {
    the whole point of being brought in. */
 function livePickGame(p) {
   if (!p || typeof p.hops !== "number" || !(p.hops > 0)) return;
+  if (!adoptParty(p)) return;
   if (!secret) openSecretWheel();
   if (!secret) return;
   // The light is on the menu, so that is where a phone being shown it belongs.
@@ -7742,7 +7747,7 @@ function flipCoin(strength) {
   if (typeof strength !== "number") strength = 0.4;
   strength = Math.max(0, Math.min(1, strength));
   var landed = Math.random() < 0.5 ? "HEADS" : "TAILS";
-  if (live) liveCast("coin", { face: landed, strength: strength });
+  if (live) liveCast("coin", partyPayload({ face: landed, strength: strength }));
   runFlip(landed, strength);
 }
 /* The flip itself, run the same way on every phone: the face it comes down on
@@ -7793,7 +7798,11 @@ function runFlip(landed, strength) {
  * just a tray — opened mid-round to settle nothing in particular — and that one
  * belongs to whoever picked it up, for as many throws as they like.
  */
-function diceSeats() { return disputeCall && disputeCall.by ? disputeSeats() : []; }
+function diceSeats() {
+  var named = disputeCall &&
+    (disputeCall.by || ((disputeCall.party || []).length > 0));
+  return named ? disputeSeats() : [];
+}
 function diceKey(name) { return String(name || "").trim().toLowerCase(); }
 function recordDiceRoll(d, name, total) {
   if (!d.tally) d.tally = {};
@@ -7852,7 +7861,14 @@ function shareDiceRoll(d) {
   if (!diceKey(me) || (d.tally && d.tally[diceKey(me)])) return;
   var total = d.vals.reduce(function (a, b) { return a + b; }, 0);
   recordDiceRoll(d, me, total);
-  if (live) liveCast("dice", { by: me, total: total });
+  // [by] on a roll is the thrower, not whoever called the argument, so the
+  // party rides along beside it rather than through partyPayload.
+  if (live) {
+    liveCast("dice", {
+      by: me, total: total,
+      who: diceSeats().map(function (n) { return String(n).trim(); })
+    });
+  }
   announceDiceWinner(d);
   render();
 }
@@ -7860,6 +7876,16 @@ function shareDiceRoll(d) {
    own felt — what travels is the number. */
 function liveDice(p) {
   if (!p || typeof p.total !== "number" || typeof p.by !== "string" || !p.by.trim()) return;
+  if (!inParty(p)) return;
+  /*
+   * The party, taken without claiming the caller: on a roll [by] is whoever
+   * threw it. A phone that never saw the argument called still needs the same
+   * scoreboard as everybody else.
+   */
+  if (Array.isArray(p.who) && p.who.length) {
+    if (!disputeCall) disputeCall = { by: "", with: "" };
+    disputeCall.party = p.who.map(function (n) { return String(n).trim(); });
+  }
   if (!secret) openSecretWheel();
   if (!secret) return;
   if (secret.mode !== "dice") openSecretGame("dice");
@@ -7875,6 +7901,7 @@ function liveSecretWheel(p) {
   if (!p || typeof p.pick !== "number" || typeof p.rot !== "number") return;
   if (!Array.isArray(p.names) || p.names.length < 2) return;
   if (!p.names.every(function (n) { return typeof n === "string"; })) return;
+  if (!adoptParty(p)) return;
   if (!secret) openSecretWheel();
   if (!secret) return;
   if (secret.mode !== "wheel") openSecretGame("wheel");
@@ -7890,6 +7917,7 @@ function liveSecretWheel(p) {
 /* The flipper's coin, landing on everybody else's phone. */
 function liveCoin(p) {
   if (!p || (p.face !== "HEADS" && p.face !== "TAILS")) return;
+  if (!adoptParty(p)) return;
   if (!secret) openSecretWheel();
   if (!secret) return;
   if (secret.mode !== "coin") openSecretGame("coin");
@@ -8956,6 +8984,11 @@ function tcardFace(id) {
  */
 function disputeSeats() {
   var names = [];
+  // Named by whoever called it, and carried by every cast the games make, so
+  // four phones lay out the same table whatever each of them heard.
+  if (disputeCall && Array.isArray(disputeCall.party) && disputeCall.party.length) {
+    return disputeCall.party.filter(function (n) { return n && String(n).trim(); }).slice(0, 4);
+  }
   if (disputeCall && disputeCall.by) {
     if (disputeCall.with) names = [disputeCall.by, disputeCall.with];
     else if (state && state.players) names = state.players.slice();
@@ -8971,6 +9004,43 @@ function disputeSeats() {
  * its own. Everybody else gets the table without a deck on it — four phones
  * dealing four different hands is the argument all over again.
  */
+/*
+ * An argument is between the players in it, and its games are nobody else's
+ * business. Every cast the gamble games make carries the party, because the
+ * events themselves open the games on whatever phone hears them — a dispute
+ * with one player was pulling the whole table into the wheel.
+ */
+function partyPayload(p) {
+  p = p || {};
+  p.who = disputeSeats().map(function (n) { return String(n).trim(); });
+  p.by = (disputeCall && disputeCall.by) ||
+    ((state && state.players ? state.players[state.meIndex] : settings.myName) || "");
+  return p;
+}
+/* Is this phone one of them? An event with no party named came from a build
+   that did not send one, and is taken as the whole table, as it behaved then. */
+function inParty(p) {
+  if (!p || !Array.isArray(p.who) || !p.who.length) return true;
+  var me = ((state && state.players ? state.players[state.meIndex] : settings.myName) || "")
+    .trim().toLowerCase();
+  if (!me) return false;
+  return p.who.some(function (n) { return String(n).trim().toLowerCase() === me; });
+}
+/*
+ * In it, and told so by the event itself. A phone can be in an argument without
+ * having seen it called — a banner missed, a phone that reconnected — and the
+ * party on the event is what makes its seats and its "waiting on" line read the
+ * same as everybody else's.
+ */
+function adoptParty(p) {
+  if (!inParty(p)) return false;
+  if (!p || !Array.isArray(p.who) || !p.who.length) return true;
+  var by = typeof p.by === "string" && p.by.trim() ? p.by.trim() : null;
+  if (!disputeCall) disputeCall = { by: by || "the host", with: "" };
+  if (by && !disputeCall.by) disputeCall.by = by;
+  disputeCall.party = p.who.map(function (n) { return String(n).trim(); });
+  return true;
+}
 function iDeal() {
   if (disputeCall && disputeCall.by) return myPickToRoll();
   if (live && !live.hosting) return false;
@@ -9109,7 +9179,7 @@ function dealRow(c) {
     seats.forEach(function () { plan.hands.push([c.deck[at++], c.deck[at++]]); });
     for (var s = 0; s < 5; s++) plan.slots.push(c.deck[at++]);
     c.deck = c.deck.slice(at);
-    if (live) liveCast("cards", { deal: plan, deck: c.deck.length });
+    if (live) liveCast("cards", partyPayload({ deal: plan, deck: c.deck.length }));
     runDeal(c, plan);
     return;
   }
@@ -9162,6 +9232,7 @@ function runDeal(c, plan) {
    same flip, the same clean sweep. */
 function liveCards(p) {
   if (!p) return;
+  if (!adoptParty(p)) return;
   if (!secret) openSecretWheel();
   if (!secret) return;
   if (secret.mode !== "cards") openSecretGame("cards");
@@ -9375,7 +9446,7 @@ function spinSecret() {
   var fromRot = secret.rot;
   var target = fromRot - (fromRot % 360) + 5 * 360 +
     (360 - (idx * seg + seg / 2)) + (Math.random() - 0.5) * 0.6 * seg;
-  if (live) liveCast("namewheel", { names: entries.slice(), pick: p, rot: target });
+  if (live) liveCast("namewheel", partyPayload({ names: entries.slice(), pick: p, rot: target }));
   runSecretSpin(p, target);
 }
 /* The turn itself, identical wherever it runs: the same list cut into the same
@@ -9457,7 +9528,7 @@ function spinPick() {
   var hops = 24 + Math.floor(Math.random() * 12);
   // Sent before the light moves, so the table watches the one run instead of
   // being told the answer after the fact — the tee order wheel's own deal.
-  if (live) liveCast("game", { hops: hops });
+  if (live) liveCast("game", partyPayload({ hops: hops }));
   runPick(hops);
 }
 /*
@@ -10764,7 +10835,7 @@ app.addEventListener("click", function (e) {
       if (slotc) {
         slotc.up = !slotc.up;
         // Turned over on one phone is turned over on all of them.
-        if (live) liveCast("cards", { flip: n });
+        if (live) liveCast("cards", partyPayload({ flip: n }));
         render();
       }
       break;
@@ -10793,7 +10864,7 @@ app.addEventListener("click", function (e) {
       secret.cards.slots = [null, null, null, null, null];
       secret.cards.hands = [];
       // Swept on one phone is swept on all of them.
-      if (live) liveCast("cards", { clear: true });
+      if (live) liveCast("cards", partyPayload({ clear: true }));
       // The riffle runs a second and a half and the last half of it is the
       // cards settling, which nobody waits around for. The first 1.04s of it,
       // hurried along so the whole thing is over in 0.7 — a shuffle is a flick
@@ -10820,7 +10891,12 @@ app.addEventListener("click", function (e) {
       // Called it, so this is the phone that rolls for the game — and who it is
       // with, so the card table knows whose seats to lay out.
       disputeCall = { by: caller, with: el.dataset.t || "" };
-      if (live) liveCast("dispute", { name: caller, with: el.dataset.t || "" });
+      // Settled now and sent with everything after it: the players this is
+      // between, and nobody else.
+      disputeCall.party = disputeSeats();
+      if (live) liveCast("dispute", {
+        name: caller, with: el.dataset.t || "", who: disputeCall.party
+      });
       openSecretWheel(); break;
     }
     case "disputeCancel": disputePick = false; render(); break;
