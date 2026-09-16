@@ -2332,6 +2332,7 @@ function liveOpen() {
     if (m.payload.event === "dispute") liveDispute(p);
     if (m.payload.event === "game") livePickGame(p);
     if (m.payload.event === "cards") liveCards(p);
+    if (m.payload.event === "coin") liveCoin(p);
   };
 
   sock.onclose = function () {
@@ -7295,7 +7296,10 @@ function renderCoinGame() {
     // Nothing on this screen says what to do, so it says it — a gesture with no
     // button left behind has to announce itself.
     '<p class="hint" style="text-align:center;margin:0 0 10px">' +
-    (c.flipping ? "&nbsp;" : "Swipe the coin up to flip it") + '</p>' +
+    (c.flipping ? "&nbsp;"
+      : iDeal() ? "Swipe the coin up to flip it"
+      : "Waiting on " + esc(disputeCall && disputeCall.by ? disputeCall.by : "the host")) +
+    '</p>' +
     // Mid-flip the face swaps every tick like the dice faces do, so the spin is
     // the coin actually turning rather than a placeholder standing in for it.
     '<div class="coinbox tossable' + (c.flipping ? " tossing" : "") + '">' +
@@ -7329,7 +7333,8 @@ var coinLastY = 0, coinLastT = 0, coinSpeed = 0;
 /* Whether there is anything to throw right now, and what throwing it does. */
 function tossTarget() {
   if (!secret) return null;
-  if (secret.mode === "coin" && !secret.coin.flipping) return flipCoin;
+  // Only the phone that flips can flip: a watcher's swipe has nothing to throw.
+  if (secret.mode === "coin" && !secret.coin.flipping) return iDeal() ? flipCoin : null;
   if (secret.mode === "dice" && !secret.dice.rolling) return rollDice;
   return null;
 }
@@ -7685,7 +7690,25 @@ function coinFaceStyle(img, box) { img.style.cssText = coinFaceCss(box); }
    it, so [strength] (0 to 1) sizes the arc. Flight time goes with height — a coin
    that clears the screen and comes back in the same beat as a lob reads as two
    different weights of coin. */
+/*
+ * One coin, on one phone. Whoever called the argument flips it and the call
+ * goes out before the coin lands, so four screens watch the one flip and read
+ * the same face off it — two phones flipping their own would be the argument
+ * all over again.
+ */
 function flipCoin(strength) {
+  var c = secret && secret.coin;
+  if (!c || c.flipping) return;
+  if (!iDeal()) return;
+  if (typeof strength !== "number") strength = 0.4;
+  strength = Math.max(0, Math.min(1, strength));
+  var landed = Math.random() < 0.5 ? "HEADS" : "TAILS";
+  if (live) liveCast("coin", { face: landed, strength: strength });
+  runFlip(landed, strength);
+}
+/* The flip itself, run the same way on every phone: the face it comes down on
+   is decided before it leaves the hand, so nothing is read off a tumble. */
+function runFlip(landed, strength) {
   var c = secret && secret.coin;
   if (!c || c.flipping) return;
   if (typeof strength !== "number") strength = 0.4;
@@ -7710,9 +7733,20 @@ function flipCoin(strength) {
   setTimeout(function () {
     clearInterval(iv);
     if (!secret || secret.mode !== "coin") return;
+    // The call it was always going to come down on, not wherever the tumble
+    // happened to stop.
+    c.face = landed;
     c.flipping = false;
     render();
   }, ms);
+}
+/* The flipper's coin, landing on everybody else's phone. */
+function liveCoin(p) {
+  if (!p || (p.face !== "HEADS" && p.face !== "TAILS")) return;
+  if (!secret) openSecretWheel();
+  if (!secret) return;
+  if (secret.mode !== "coin") openSecretGame("coin");
+  runFlip(p.face, typeof p.strength === "number" ? p.strength : 0.4);
 }
 
 /* ---- dice: a tray of 1-6 dice, rolled together ---- */
