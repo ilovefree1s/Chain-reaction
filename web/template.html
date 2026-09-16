@@ -11520,10 +11520,31 @@ if ("serviceWorker" in navigator) {
     liveAlerts[liveAlerts.length - 1].reload = true;
     render();
   }
+  /* Only when it is genuinely a different build from the one on screen. A
+     worker can be replaced by one carrying the very same build — a CDN edge
+     answering with a copy its neighbour had already moved past — and telling
+     somebody they are behind when they are not is worse than saying nothing. */
+  function newBuildIs(v) {
+    return typeof v === "string" && v.trim() && v.trim() !== APP_VERSION;
+  }
   navigator.serviceWorker.addEventListener("message", function (e) {
-    if (!e.data || e.data.type !== "newbuild") return;
-    offerNewBuild();
+    if (!e.data) return;
+    if (e.data.type === "newbuild" && newBuildIs(e.data.build)) offerNewBuild();
+    if (e.data.type === "build" && newBuildIs(e.data.build)) offerNewBuild();
   });
+  /* Asks whoever is in charge which build they are, over a channel of its own
+     so the answer cannot be mistaken for anything else. */
+  function askWorkerBuild() {
+    var c = navigator.serviceWorker.controller;
+    if (!c || typeof MessageChannel !== "function") return;
+    try {
+      var ch = new MessageChannel();
+      ch.port1.onmessage = function (e) {
+        if (e.data && e.data.type === "build" && newBuildIs(e.data.build)) offerNewBuild();
+      };
+      c.postMessage({ type: "build?" }, [ch.port2]);
+    } catch (err) { /* no answer, no banner */ }
+  }
   /*
    * And the same news the other way round, because the message can be sent
    * before this page is listening: a build small enough to install in a blink
@@ -11534,7 +11555,8 @@ if ("serviceWorker" in navigator) {
    */
   var hadController = !!navigator.serviceWorker.controller;
   navigator.serviceWorker.addEventListener("controllerchange", function () {
-    if (hadController) offerNewBuild();
+    // Being taken over is not news on its own — ask what build took over.
+    if (hadController) askWorkerBuild();
   });
 }
 </script>
