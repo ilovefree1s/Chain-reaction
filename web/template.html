@@ -3765,13 +3765,22 @@ function curdRollId(by) {
    nobody to broadcast to and nothing to wait for. */
 function startCurdRoll(by) {
   if (!live || !state) return false;
-  curdRoll = { id: curdRollId(by), by: by, rolls: {}, done: false };
+  /*
+   * [round] counts the throws for the lid — 0 for everybody, 1 and up for the
+   * players still tied. [contest] is who is still in it (null: the whole
+   * table). [early] holds re-rolls that arrived before this phone had worked
+   * the tie out, until it has.
+   */
+  curdRoll = { id: curdRollId(by), by: by, rolls: {}, done: false,
+               round: 0, contest: null, early: {} };
   return true;
 }
 /* Whose roll is still outstanding. */
 function curdWaiting() {
   if (!curdRoll || curdRoll.done || !state) return [];
-  return state.players.filter(function (n) {
+  // After a tie only the tied are still rolling; everyone else's number stands.
+  var who = curdRoll.contest || state.players;
+  return who.filter(function (n) {
     return n && !curdRoll.rolls[n.trim().toLowerCase()];
   });
 }
@@ -3802,8 +3811,17 @@ function sayCurdRoll(name, total) {
  */
 function finishCurdRoll() {
   if (!curdRoll || curdRoll.done) return;
-  curdRoll.done = true;
-  var all = Object.keys(curdRoll.rolls).map(function (k) { return curdRoll.rolls[k]; });
+  /*
+   * Only the players still in it are compared. After a tie, somebody who was
+   * never in the tie must not be handed the lid because the tied pair both
+   * re-rolled higher than the number they threw the first time round.
+   */
+  var inIt = curdRoll.contest
+    ? curdRoll.contest.map(function (n) { return n.trim().toLowerCase(); })
+    : null;
+  var all = Object.keys(curdRoll.rolls)
+    .filter(function (k) { return !inIt || inIt.indexOf(k) !== -1; })
+    .map(function (k) { return curdRoll.rolls[k]; });
   all.sort(function (a, b) { return a.total - b.total; });
   var low = all[0].total;
   var tied = all.filter(function (r) { return r.total === low; })
@@ -3821,13 +3839,33 @@ function finishCurdRoll() {
   }
   // Lowest first, so whoever has the lid is the line under the heading.
   var lines = all.map(function (r) { return r.name + "  \u00B7  " + r.total; });
-  // Said out loud, rather than left to be worked out from the column above it.
-  lines.push(lost.length > 1
-    ? "TIED LOWEST: " + sayNames(lost) + " on " + low + "."
-    : "LOSER: " + lost[0] + " \u2014 cottage cheese lid this hole.");
   if (spared) {
     lines.push(curdRoll.by + " also rolled " + low + " but played the card, so they are out of it.");
   }
+  /*
+   * A tie for the lid settles nothing, so exactly the tied throw again \u2014 and
+   * only them. The card player is never among them: they step out of any tie
+   * above, as the card says. Every phone works this out from the same totals,
+   * so every phone arrives at the same re-roll.
+   */
+  if (lost.length > 1) {
+    curdRoll.round += 1;
+    curdRoll.contest = lost.slice();
+    lost.forEach(function (n) { delete curdRoll.rolls[n.trim().toLowerCase()]; });
+    lines.push("TIED LOWEST: " + sayNames(lost) + " on " + low + " \u2014 roll again.");
+    localNote(lines.join("\n"), "The Curd!");
+    // A tied player goes back to the dice; everyone else stays where they are.
+    var me = myRoundName();
+    if (lost.some(function (n) { return n.trim().toLowerCase() === me; })) openCurdDice();
+    // A re-roll that reached this phone before it got here counts now.
+    var early = (curdRoll.early || {})[curdRoll.round] || {};
+    Object.keys(early).forEach(function (k) { sayCurdRoll(early[k].name, early[k].total); });
+    render();
+    return;
+  }
+  curdRoll.done = true;
+  // Said out loud, rather than left to be worked out from the column above it.
+  lines.push("LOSER: " + lost[0] + " \u2014 cottage cheese lid this hole.");
   localNote(lines.join("\n"), "The Curd!");
   setTimeout(function () {
     if (secret && secret.mode === "dice") { stopWheelSound(true); secret = null; }
@@ -3839,7 +3877,23 @@ function finishCurdRoll() {
 /* Heard from another phone. */
 function liveRoll(p) {
   if (!curdRoll || p.id !== curdRoll.id) return;
-  if (typeof p.name === "string" && typeof p.total === "number") sayCurdRoll(p.name, p.total);
+  if (typeof p.name !== "string" || typeof p.total !== "number") return;
+  var r = typeof p.round === "number" ? p.round : 0;
+  /*
+   * A re-roll for a round this phone has not reached — it is still waiting on
+   * a first throw, so it has not seen the tie yet — is held until it has. Taken
+   * now, it would count as that player's first roll, and the phone would then
+   * wait forever for a re-roll that had already come.
+   */
+  if (r > curdRoll.round) {
+    if (!curdRoll.early) curdRoll.early = {};
+    if (!curdRoll.early[r]) curdRoll.early[r] = {};
+    curdRoll.early[r][p.name.trim().toLowerCase()] = { name: p.name, total: p.total };
+    return;
+  }
+  // A throw from a round already settled is old news.
+  if (r < curdRoll.round) return;
+  sayCurdRoll(p.name, p.total);
 }
 /* Called the moment a throw settles, from the phone that threw it. */
 function noteCurdRoll(d) {
@@ -3851,7 +3905,7 @@ function noteCurdRoll(d) {
   var me = state.players[state.meIndex];
   if (!me || curdRoll.rolls[me.trim().toLowerCase()]) return;
   var total = d.vals.reduce(function (a, b) { return a + b; }, 0);
-  liveCast("roll", { id: curdRoll.id, name: me, total: total });
+  liveCast("roll", { id: curdRoll.id, name: me, total: total, round: curdRoll.round });
   sayCurdRoll(me, total);
   /*
    * Your throw was the only thing you were in there for, so back to your hand
@@ -3862,6 +3916,11 @@ function noteCurdRoll(d) {
    * away as they settle.
    */
   setTimeout(function () {
+    // Tied in the meantime and sent back to the dice: stay for the re-roll.
+    var mine = myRoundName();
+    if (curdRoll && !curdRoll.done && curdWaiting().some(function (n) {
+      return n.trim().toLowerCase() === mine;
+    })) return;
     if (secret && secret.mode === "dice") { stopWheelSound(true); secret = null; }
     screen = "round";
     tab = "hand";
@@ -8460,7 +8519,12 @@ function curdRollHint() {
   var mine = curdRoll.rolls[myRoundName()];
   var left = curdWaiting();
   if (curdRoll.done || !left.length) return "Everybody has rolled.";
-  return (mine ? "You rolled " + mine.total + ". " : "The Curd! &mdash; roll 2. ") +
+  // Tied and owed another throw: say that, not the opening instruction again.
+  var again = curdRoll.round > 0 && !mine &&
+    left.some(function (n) { return n.trim().toLowerCase() === myRoundName(); });
+  return (mine ? "You rolled " + mine.total + ". "
+      : again ? "Tied lowest &mdash; roll again. "
+      : "The Curd! &mdash; roll 2. ") +
     "Waiting on " + esc(sayNames(left)) + ".";
 }
 
