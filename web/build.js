@@ -218,11 +218,13 @@ const shuffleSound = copyAudio("shuffle.wav");
 // answers when it stops.
 const pickSound = copyAudio("gamblegamesbeep.mp3");
 const pickedSound = copyAudio("gameselected.mp3");
-// The soundtrack, played back to back on the menu-side screens only.
+/*
+ * The soundtrack, played back to back on the menu-side screens only. Empty
+ * while the new track is being written: the player takes whatever is listed
+ * here, so no entries means no music and nothing to turn down.
+ */
 const musicTracks = [
-  copyAudio("discgolferbeeotch.mp3"),
-  copyAudio("dischoarderblues.mp3"),
-  copyAudio("chainsofglory.mp3"),
+  // copyAudio("thenewone.mp3"),
 ].filter(Boolean);
 
 // ---- card faces: card_01 .. one per card, dropped into the Android drawables ----
