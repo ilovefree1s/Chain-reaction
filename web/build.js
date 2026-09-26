@@ -219,12 +219,12 @@ const shuffleSound = copyAudio("shuffle.wav");
 const pickSound = copyAudio("gamblegamesbeep.mp3");
 const pickedSound = copyAudio("gameselected.mp3");
 /*
- * The soundtrack, played back to back on the menu-side screens only. Empty
- * while the new track is being written: the player takes whatever is listed
- * here, so no entries means no music and nothing to turn down.
+ * The soundtrack, played back to back on the menu-side screens only. One song
+ * now, so it loops; the player takes whatever is listed here, and an empty
+ * list would simply mean no music.
  */
 const musicTracks = [
-  // copyAudio("thenewone.mp3"),
+  copyAudio("chainreaction.mp3"),
 ].filter(Boolean);
 
 // ---- card faces: card_01 .. one per card, dropped into the Android drawables ----

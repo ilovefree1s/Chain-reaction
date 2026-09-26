@@ -1619,7 +1619,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.3.148 · 26 Sep 10:41";
+var APP_VERSION = "v1.3.149 · 26 Sep 11:28";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. The arrow beside it goes and looks for a
@@ -1722,7 +1722,7 @@ var menuAudio = MENU_SOUND ? new Audio(MENU_SOUND) : null;
  * cards reference. Leaving those screens pauses it in place; coming back picks
  * the song up where it left off.
  */
-var MUSIC_TRACKS = [];
+var MUSIC_TRACKS = ["assets/chainreaction.mp3"];
 var MUSIC_SCREENS = ["menu", "settings", "cards"];
 var musicEl = null, musicIdx = 0;
 
