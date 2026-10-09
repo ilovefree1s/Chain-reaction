@@ -55,11 +55,10 @@ private const val BUTTONS_HEIGHT_FRACTION = 0.40f
  * brightness) rather than eyeballed. Boundaries fall at the midpoints between buttons
  * so every tap lands on the nearest one.
  */
-// Measured off the sheet's actual pixels (per-row alpha scan of mainbuttons.png):
-// buttons sit at 13.4-31.0, 32.7-49.9, 51.4-68.6 and 70.3-87.0 percent of its
-// height. Boundaries split the gaps at their midpoints so every tap snaps to
-// the nearest button with no dead zones.
-/** The painted buttons span 5.1-94.5% of the sheet's width, centred. */
+// Measured off the old painted button sheet's pixels: buttons sat at 13.4-31.0,
+// 32.7-49.9, 51.4-68.6 and 70.3-87.0 percent of its height. Boundaries split the
+// gaps at their midpoints so every tap snaps to the nearest button.
+/** The buttons span 5.1-94.5% of the sheet's width, centred. */
 private const val BUTTON_WIDTH_FRACTION = 0.895f
 
 private val BUTTON_BANDS = listOf(
@@ -187,27 +186,29 @@ fun MenuScreen(
                     .width(sheetWidth)
                     .height(sheetHeight),
             ) {
-                Image(
-                    painter = painterResource(R.drawable.mainbuttons),
-                    contentDescription = null,
-                    contentScale = ContentScale.Fit,
-                    modifier = Modifier.fillMaxSize(),
-                )
-                // Invisible tap targets tiled over the painted buttons — clamped
-                // to the paint's width too (the buttons span 5-94.5% of the sheet).
+                // The painted button sheet is gone (the web game draws its own
+                // menu now), so each band is a plain labelled button in its place.
                 Column(
                     Modifier.fillMaxSize(),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     val actions = listOf(onPlay, onCards, onRules, onSettings)
+                    val labels = listOf("PLAY", "CARDS", "RULES", "SETTINGS")
                     Spacer(Modifier.weight(BUTTON_BANDS.first().first))
                     BUTTON_BANDS.forEachIndexed { i, (top, bottom) ->
                         Box(
                             Modifier
                                 .fillMaxWidth(BUTTON_WIDTH_FRACTION)
                                 .weight(bottom - top)
+                                .padding(vertical = 4.dp)
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(NeonBg.copy(alpha = 0.88f))
+                                .border(2.dp, NeonOrange, RoundedCornerShape(12.dp))
                                 .clickable(onClick = actions[i]),
-                        )
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Text(labels[i], color = NeonOrange, fontSize = 20.sp, fontWeight = FontWeight.Black)
+                        }
                     }
                     Spacer(Modifier.weight(1f - BUTTON_BANDS.last().second))
                 }

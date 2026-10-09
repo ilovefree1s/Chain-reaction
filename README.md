@@ -114,11 +114,10 @@ buckets means the wrong one can win.
 
 The photo is drawn full-width and top-anchored so the logo is never cropped, and `moregrass.png`
 carries on below it — pulled up over the photo's bottom edge with its own top edge masked out,
-which cross-fades the join rather than butting the two images together. The button sheet
-(`mainbuttons.png`) is transparent and sits over the bottom 40%, with four invisible tap targets
-tiled over the painted buttons; their positions were measured off the artwork's pixels. Because
-the labels are painted in, Play reads "Play" even mid-round — it still resumes rather than
-starting fresh. Swapping in new artwork is a straight file replace.
+which cross-fades the join rather than butting the two images together. The four menu buttons
+sit over the bottom 40% as plain labelled buttons; the painted button sheet they used to be tiled
+over is gone, since the web game now draws its own menu. Play reads "Play" even mid-round — it
+still resumes rather than starting fresh.
 
 Once every hole is locked the Score tab is replaced by a **results screen** — winner declared,
 then final standings with each player's score to par and how far back they finished. Ties are
