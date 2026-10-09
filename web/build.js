@@ -189,7 +189,6 @@ const iconImage = copyArt("chainreactionicon.png", "icon.png");
 const hubLogo = copyArt("blue4theboys.png", "hublogo.png");
 // The FOR THE BOYS banner riding under the title on the menu.
 const ftbImage = copyArt("fortheboys.png", "fortheboys.png");
-const cardBack = copyArt("cardbacks.png", "cardback.png");
 const sgBackground = copyArt("sgbackground.png", "sgbg.png");
 const sgButtons = copyArt("secretbuttons.png", "sgbuttons.png");
 // The coin itself, both faces struck on one sheet.
@@ -397,7 +396,6 @@ const template = fs.readFileSync(path.join(__dirname, "template.html"), "utf8");
   "__GRASS_IMAGE__",
   "__HUB_LOGO__",
   "__FTB_IMAGE__",
-  "__CARD_BACK__",
   "__SG_BACKGROUND__",
   "__SG_BUTTONS__",
   "__COIN_FACES__",
@@ -431,7 +429,6 @@ const html = template
   .replace("__GRASS_IMAGE__", grassImage)
   .replace("__HUB_LOGO__", hubLogo)
   .replace("__FTB_IMAGE__", ftbImage)
-  .replace("__CARD_BACK__", cardBack)
   .replace("__SG_BACKGROUND__", sgBackground)
   .replace("__SG_BUTTONS__", sgButtons)
   .replace("__COIN_FACES__", coinFaces)

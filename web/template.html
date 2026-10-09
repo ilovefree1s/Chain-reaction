@@ -1043,9 +1043,9 @@
     bottom: calc(env(safe-area-inset-bottom) + 14px);
     width: 84px; height: 118px;
   }
-  .tdeck img, .tdeck .tface { width: 100%; height: 100%; display: block; border-radius: 8px;
+  .tdeck .cbsvg, .tdeck .tface { width: 100%; height: 100%; display: block; border-radius: 8px;
     box-shadow: 2px 2px 0 #0A1322, 4px 4px 0 #0A1322, 0 10px 16px rgba(0, 0, 0, 0.5); }
-  .tdeck.empty img, .tdeck.empty .tface { opacity: 0.25; }
+  .tdeck.empty .cbsvg, .tdeck.empty .tface { opacity: 0.25; }
   .tcount {
     position: absolute; right: -10px; top: -10px; z-index: 1;
     background: #F7941E; color: #10182A;
@@ -1053,7 +1053,7 @@
   }
   /* Cards on the felt — face down until tapped over. */
   .tcard { position: absolute; width: 78px; height: 109px; border-radius: 8px; }
-  .tcard img { width: 100%; height: 100%; display: block; border-radius: 8px;
+  .tcard .cbsvg { width: 100%; height: 100%; display: block; border-radius: 8px;
     box-shadow: 0 6px 12px rgba(0, 0, 0, 0.5); }
   .tface {
     position: relative; width: 100%; height: 100%;
@@ -1125,7 +1125,7 @@
   .cardswin { color: var(--self); font-size: 18px; font-weight: 900; line-height: 1.2;
               text-shadow: 0 2px 8px #000; }
   .slot .slotcard { width: 100%; height: 100%; cursor: pointer; }
-  .slotcard img { width: 100%; height: 100%; display: block; border-radius: 6px; }
+  .slotcard .cbsvg { width: 100%; height: 100%; display: block; border-radius: 6px; }
   .slotcard .tcorner { font-size: 15px; top: 3px; left: 5px; }
   .slotcard .tcorner.flip { top: auto; left: auto; bottom: 3px; right: 5px; }
   .slotcard .tmid { font-size: 32px; }
@@ -9691,7 +9691,6 @@ function spaceOut(pos, gap, ratio, pad) {
 }
 
 /* ---- cards: one standard 52-card deck, drawn down and reshuffled on demand ---- */
-var CARD_BACK = "__CARD_BACK__";
 var SG_BUTTONS = "__SG_BUTTONS__";
 /* The four games, painted two by two on one 1254px square, each with its own box
    inside it: left, top, width, height in the sheet's own pixels. Measured by
@@ -9851,10 +9850,18 @@ function freshDeck52() {
 /* The card table: the deck sits there, cards get dragged off the top and land
    wherever they're dropped, face down. A tap turns a card over. Everything
    below the two buttons is open felt. */
+/* The table's card back is the drawn CHAIN REACTION back, drawn once as a hidden
+   symbol at start-up (cardBackSymbol) and pointed at by every face-down card —
+   a full deck of 52 shares the one drawing rather than carrying 52 copies. */
 function tcardBackHtml() {
-  return CARD_BACK
-    ? '<img src="' + CARD_BACK + '" alt="" draggable="false">'
-    : '<div class="tface">&#9733;</div>';
+  return '<svg class="cbsvg" viewBox="0 0 70 100" preserveAspectRatio="none" aria-hidden="true">' +
+    '<use href="#cardbacksym"/></svg>';
+}
+function cardBackSymbol() {
+  var art = cardBackArt("tb");
+  var inner = art.slice(art.indexOf(">") + 1, art.lastIndexOf("</svg>"));
+  return '<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>' +
+    '<symbol id="cardbacksym" viewBox="0 0 70 100">' + inner + "</symbol></defs></svg>";
 }
 function tcardFace(id) {
   var suit = CARD_SUITS[Math.floor(id / 13)];
@@ -12056,6 +12063,8 @@ function fitViewport() {
 }
 window.addEventListener("resize", fitViewport);
 fitViewport();
+// Outside #app, so the card table's backs can point at it across re-renders.
+document.body.insertAdjacentHTML("beforeend", cardBackSymbol());
 
 render();
 // The clips fetch and decode now, in the quiet after the first paint, so the
