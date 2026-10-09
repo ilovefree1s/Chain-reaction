@@ -698,13 +698,16 @@
   }
   .mplay:active, .mtile:active { transform: scale(0.97); }
   .mplay:focus-visible, .mtile:focus-visible { outline: 2px solid #FFFFFF; outline-offset: 3px; }
+  /* PLAY is centred on the whole button; the icon is pinned to the left edge
+     so it doesn't push the word off centre. */
   .mplay {
-    display: flex; align-items: center; gap: 3.6cqw; height: 24cqw; padding: 0 5cqw 0 3.4cqw;
+    position: relative; display: flex; align-items: center; justify-content: center; height: 24cqw; padding: 0;
     border-radius: 6cqw; background: linear-gradient(180deg, #FF9A2E, #F7791E);
     box-shadow: 0 0 6.4cqw rgba(247, 148, 30, 0.5), 0 1.4cqw 2cqw rgba(0, 0, 0, 0.45);
   }
-  .mplay .mico { width: 17cqw; height: 17cqw; border-radius: 50%; background: rgba(0, 0, 0, 0.18); }
-  .mplay .mlbl { flex: 1 1 auto; text-align: center; font-size: 15.5cqw; letter-spacing: 0.02em;
+  .mplay .mico { position: absolute; left: 3.4cqw; top: 50%; transform: translateY(-50%);
+                 width: 17cqw; height: 17cqw; border-radius: 50%; background: rgba(0, 0, 0, 0.18); }
+  .mplay .mlbl { text-align: center; font-size: 15.5cqw; letter-spacing: 0.02em;
                  text-shadow: 0 0.06em 0.05em rgba(120, 40, 0, 0.5); }
   .mrow { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3.8cqw; }
   .mtile {
@@ -1915,7 +1918,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.3.157 · 9 Oct 02:06";
+var APP_VERSION = "v1.3.158 · 9 Oct 02:08";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. The arrow beside it goes and looks for a
