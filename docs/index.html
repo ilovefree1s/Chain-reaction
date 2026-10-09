@@ -118,12 +118,15 @@
   .gwwheel { position: absolute; z-index: 2; left: 0; top: 50%; width: 34cqw; height: 34cqw; transform: translateY(-50%); }
   .gwrot { transform-origin: 50px 50px; animation: gwturn 6s linear infinite; }
   .gwbulb { animation: gwchase 1s steps(1) infinite; }
-  .gwwords { position: absolute; z-index: 2; left: 36cqw; right: 27cqw; top: 0; bottom: 0;
+  .gwwords { position: absolute; z-index: 2; left: 35.5cqw; right: 27.5cqw; top: 0; bottom: 0;
              display: flex; flex-direction: column; justify-content: center; }
   .gwspin { font-weight: 900; font-style: italic; color: #FFFFFF; line-height: 0.9; font-size: 6cqw; letter-spacing: 0.02em;
             -webkit-text-stroke: 0.05em rgba(4, 10, 24, 0.9); paint-order: stroke fill; }
-  .gwgamble { font-weight: 900; font-style: italic; line-height: 0.95; font-size: 9.2cqw; letter-spacing: 0.01em;
-              white-space: nowrap; color: transparent;
+  /* Two lines, GAMBLE over WHEEL!!: on one line it runs nearly twice as wide as
+     the room between the wheel and the cards, and lettering clipped to its own
+     box simply vanishes past the edge rather than overlapping anything. */
+  .gwgamble { font-weight: 900; font-style: italic; line-height: 0.92; font-size: 8.6cqw; letter-spacing: 0.01em;
+              white-space: nowrap; color: transparent; margin-top: 0.6cqw;
               background: linear-gradient(100deg, #FFE08A, #FF8A1E 38%, #FFFFFF 48%, #FF8A1E 58%, #E2410C);
               background-size: 250% 100%; -webkit-background-clip: text; background-clip: text;
               filter: drop-shadow(0 0.4cqw 0 rgba(4, 10, 24, 0.9)) drop-shadow(0 0 1.2cqw rgba(255, 120, 30, 0.55));
@@ -131,13 +134,15 @@
   .gwprice { align-self: flex-start; margin-top: 1.4cqw; padding: 0.6cqw 2.6cqw; border-radius: 99px;
              font-family: "CardBody", system-ui, sans-serif; font-size: 3.6cqw; letter-spacing: 0.08em; color: #F4F8FF;
              background: #070B14; border: 0.45cqw solid rgba(255, 255, 255, 0.55); animation: gwchip 1.6s ease-in-out infinite; }
-  .gwcards { position: absolute; z-index: 2; right: 2cqw; top: 50%; width: 23cqw; height: 36cqw;
+  /* A little smaller than the button is tall, and stacked close: the back card
+     peeks out behind the front one rather than sitting beside it. */
+  .gwcards { position: absolute; z-index: 2; right: 1.5cqw; top: 50%; width: 21cqw; height: 31cqw;
              transform: translateY(-50%); pointer-events: none; }
-  .gwcb { position: absolute; width: 24cqw; height: 34.3cqw; transform: rotate(var(--gwr));
+  .gwcb { position: absolute; width: 20.5cqw; height: 29.3cqw; transform: rotate(var(--gwr));
           filter: drop-shadow(0 0.8cqw 1.2cqw rgba(0, 0, 0, 0.6)); }
   .gwcb svg { width: 100%; height: 100%; display: block; }
-  .gwcb.back { right: -1cqw; top: -1cqw; --gwr: 12deg; animation: gwbob 3.6s ease-in-out infinite; }
-  .gwcb.front { right: 5cqw; top: 2cqw; --gwr: -8deg; animation: gwbob 3.6s ease-in-out -1.8s infinite; }
+  .gwcb.back { right: -0.5cqw; top: 0.2cqw; --gwr: 9deg; animation: gwbob 3.6s ease-in-out infinite; }
+  .gwcb.front { right: 2.2cqw; top: 1.6cqw; --gwr: -5deg; animation: gwbob 3.6s ease-in-out -1.8s infinite; }
   .gwspark { position: absolute; z-index: 3; width: 4cqw; height: 4cqw; pointer-events: none;
              animation: gwtwinkle 2.4s ease-in-out infinite; }
   @keyframes gwrim { to { --gwrim: 360deg; } }
@@ -1983,7 +1988,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.3.162 · 9 Oct 14:08";
+var APP_VERSION = "v1.3.165 · 9 Oct 14:16";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. The arrow beside it goes and looks for a
@@ -6176,52 +6181,94 @@ function gambleWheelArt() {
   }
   var price = DATA.wheelCost + (DATA.wheelCost === 1 ? " CARD" : " CARDS");
   return '<span class="gwface"></span><span class="gwrays"></span>' + wheel +
-    '<span class="gwwords"><span class="gwspin">SPIN THE</span><span class="gwgamble">GAMBLE WHEEL!!</span>' +
+    '<span class="gwwords"><span class="gwspin">SPIN THE</span><span class="gwgamble">GAMBLE<br>WHEEL!!</span>' +
     '<span class="gwprice">' + price + "</span></span>" +
     '<span class="gwcards"><span class="gwcb back">' + cardBackArt("gwb") + '</span>' +
     '<span class="gwcb front">' + cardBackArt("gwf") + "</span></span>" +
     spark(30, 4, 0, "#FFFFFF") + spark(88, 6, 0.8, "#FFD27A") + spark(70, 26, 1.6, "#BFE2FF") + spark(5, 26, 1.2, "#FFD27A");
 }
 
-/* The CHAIN REACTION card back, drawn small: blue left half, orange right half,
-   a steel seam between, a basket in each corner, a 4 THE BOYS badge top and
-   bottom, and the logo across a ringed basket at the centre. 70 x 100 units. */
+/*
+ * The CHAIN REACTION card back, drawn small after the real one: a blue half and
+ * an orange half glowing at their edges, honeycomb and circuit traces across
+ * them, a riveted steel seam down the middle, a ringed basket in each corner, a
+ * 4 THE BOYS badge top and bottom, and the logo over a basket hung with chains,
+ * a burst of light behind it. 70 x 100 units; [k] keeps each copy's ids apart.
+ */
 function cardBackArt(k) {
+  var F = ' font-family="CardName, Roboto Condensed, sans-serif" font-weight="900" font-style="italic"';
   function corner(x, y) {
     var c = x < 35 ? "#7CC4FF" : "#FFC27A";
-    return '<g transform="translate(' + x + " " + y + ')"><circle r="4.4" fill="#05080F" stroke="' + c + '" stroke-width=".6"/>' +
+    return '<g transform="translate(' + x + " " + y + ')"><circle r="4.6" fill="#05080F" stroke="' + c +
+      '" stroke-width=".7" filter="url(#' + k + 'g)"/>' +
       '<path d="M-2.2-1.6h4.4M-1.8-1.4l.5 2.4M0-1.4v2.4M1.8-1.4l-.5 2.4M-2 1.2h4l-.6 1.2h-2.8zM0 2.4v1.2" fill="none" stroke="' +
-      c + '" stroke-width=".45"/></g>';
+      c + '" stroke-width=".5"/></g>';
   }
   function badge(x, y) {
-    var f = ' font-family="CardName, Roboto Condensed, sans-serif" font-weight="900" font-style="italic"';
-    return '<g transform="translate(' + x + " " + y + ')"><circle r="6.6" fill="#070B14" stroke="#8D97A6" stroke-width="1"/>' +
-      '<text y="3" text-anchor="middle"' + f + ' font-size="8" fill="#3FA9FF">4</text>' +
-      '<text x="2.8" y="-.6"' + f + ' font-size="2.6" fill="#FFFFFF">THE</text>' +
-      '<text x="2.6" y="2.6"' + f + ' font-size="2.8" fill="#FF8A1E">BOYS</text></g>';
+    return '<g transform="translate(' + x + " " + y + ')">' +
+      '<circle r="7" fill="#070B14" stroke="url(#' + k + 'm)" stroke-width="1.3"/>' +
+      '<path d="M0-5.6A5.6 5.6 0 0 0 0 5.6" fill="none" stroke="#3FA9FF" stroke-width=".7" filter="url(#' + k + 'g)"/>' +
+      '<path d="M0-5.6A5.6 5.6 0 0 1 0 5.6" fill="none" stroke="#FF8A1E" stroke-width=".7" filter="url(#' + k + 'g)"/>' +
+      '<text x="-1.4" y="3.2" text-anchor="middle"' + F + ' font-size="9" fill="url(#' + k + 'm)" stroke="#05080F" stroke-width=".6" paint-order="stroke">4</text>' +
+      '<text x="1.4" y="-.6"' + F + ' font-size="2.6" fill="#FFFFFF">THE</text>' +
+      '<text x="1.2" y="2.7"' + F + ' font-size="2.9" fill="#FF8A1E">BOYS</text></g>';
+  }
+  var rays = "";
+  for (var i = 0; i < 20; i++) {
+    var a = i * 18 * Math.PI / 180;
+    rays += '<path d="M35 50L' + (35 + 34 * Math.cos(a - 0.05)).toFixed(1) + " " + (50 + 34 * Math.sin(a - 0.05)).toFixed(1) +
+      "L" + (35 + 34 * Math.cos(a + 0.05)).toFixed(1) + " " + (50 + 34 * Math.sin(a + 0.05)).toFixed(1) + 'Z" fill="' +
+      (Math.cos(a) < 0 ? "#3FA9FF" : "#FF8A1E") + '" fill-opacity=".22"/>';
   }
   return '<svg viewBox="0 0 70 100" aria-hidden="true"><defs>' +
-    '<linearGradient id="' + k + 'b" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2F86FF"/><stop offset="1" stop-color="#0A2A78"/></linearGradient>' +
-    '<linearGradient id="' + k + 'o" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FF9A2E"/><stop offset="1" stop-color="#8A2E00"/></linearGradient>' +
-    '<linearGradient id="' + k + 't" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFFFFF"/><stop offset="1" stop-color="#B9C3CF"/></linearGradient>' +
-    '<linearGradient id="' + k + 'r" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFC27A"/><stop offset="1" stop-color="#E2410C"/></linearGradient>' +
+    '<linearGradient id="' + k + 'b" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3FA2FF"/><stop offset="1" stop-color="#082468"/></linearGradient>' +
+    '<linearGradient id="' + k + 'o" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFB04D"/><stop offset="1" stop-color="#7A2800"/></linearGradient>' +
+    '<linearGradient id="' + k + 'm" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFFFFF"/><stop offset=".5" stop-color="#8D97A6"/><stop offset="1" stop-color="#E6ECF5"/></linearGradient>' +
+    '<linearGradient id="' + k + 't" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFFFFF"/><stop offset=".6" stop-color="#C9D2DE"/><stop offset="1" stop-color="#8D97A6"/></linearGradient>' +
+    '<linearGradient id="' + k + 'r" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFD27A"/><stop offset=".55" stop-color="#FF8A1E"/><stop offset="1" stop-color="#C8350A"/></linearGradient>' +
+    '<radialGradient id="' + k + 's"><stop offset="0" stop-color="#FFFFFF" stop-opacity=".55"/><stop offset=".35" stop-color="#9FD0FF" stop-opacity=".25"/><stop offset="1" stop-color="#9FD0FF" stop-opacity="0"/></radialGradient>' +
+    '<pattern id="' + k + 'h" width="6" height="10.4" patternUnits="userSpaceOnUse">' +
+      '<path d="M3 0l3 1.73v3.47L3 6.93 0 5.2V1.73zM3 6.93V10.4" fill="none" stroke="#9FD0FF" stroke-opacity=".14" stroke-width=".35"/></pattern>' +
+    '<filter id="' + k + 'g" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation=".9" result="b"/>' +
+      '<feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>' +
     '<clipPath id="' + k + 'c"><rect x="1" y="1" width="68" height="98" rx="5"/></clipPath></defs>' +
+    // the two halves, darkened inside, with honeycomb, circuit traces and a burst of light at the centre
     '<g clip-path="url(#' + k + 'c)"><rect width="35" height="100" fill="url(#' + k + 'b)"/>' +
       '<rect x="35" width="35" height="100" fill="url(#' + k + 'o)"/>' +
-      '<rect x="5" y="5" width="60" height="90" rx="3" fill="#05080F" fill-opacity=".72"/>' +
-      '<path d="M5 30L35 12 65 30M5 70L35 88 65 70" fill="none" stroke="#3FA9FF" stroke-opacity=".35" stroke-width=".8"/>' +
-      '<rect x="33.4" y="5" width="3.2" height="90" fill="#8D97A6"/></g>' +
-    '<rect x="1" y="1" width="68" height="98" rx="5" fill="none" stroke="#E6ECF5" stroke-width="1.6"/>' +
-    '<rect x="5" y="5" width="60" height="90" rx="3" fill="none" stroke="#3FA9FF" stroke-width=".9"/>' +
+      '<rect x="4.5" y="4.5" width="61" height="91" rx="3" fill="#05080F" fill-opacity=".74"/>' +
+      '<rect x="4.5" y="4.5" width="61" height="91" fill="url(#' + k + 'h)"/>' +
+      rays + '<circle cx="35" cy="50" r="26" fill="url(#' + k + 's)"/>' +
+      '<g fill="none" stroke-width=".55" stroke-opacity=".7">' +
+        '<path d="M8 24h6l3 3v9l-2 2M8 76h6l3-3v-9l-2-2M12 33v6" stroke="#3FA9FF"/>' +
+        '<path d="M62 24h-6l-3 3v9l2 2M62 76h-6l-3-3v-9l2-2M58 33v6" stroke="#FF8A1E"/></g>' +
+      '<g fill="#9FD0FF"><circle cx="15" cy="38" r=".7"/><circle cx="15" cy="62" r=".7"/></g>' +
+      '<g fill="#FFC27A"><circle cx="55" cy="38" r=".7"/><circle cx="55" cy="62" r=".7"/></g>' +
+      // the riveted steel seam
+      '<rect x="33" y="4.5" width="4" height="91" fill="url(#' + k + 'm)"/>' +
+      '<path d="M35 4.5V95.5" stroke="#05080F" stroke-opacity=".45" stroke-width=".4"/>' +
+      '<g fill="#05080F" fill-opacity=".55"><circle cx="35" cy="28" r=".8"/><circle cx="35" cy="72" r=".8"/></g></g>' +
+    // a steel edge, then neon inside it: blue down the left half, orange down the right
+    '<rect x="1" y="1" width="68" height="98" rx="5" fill="none" stroke="url(#' + k + 'm)" stroke-width="1.8"/>' +
+    '<path d="M34 4.5H7.5a3 3 0 0 0-3 3V92.5a3 3 0 0 0 3 3H34" fill="none" stroke="#3FA9FF" stroke-width="1" filter="url(#' + k + 'g)"/>' +
+    '<path d="M36 4.5H62.5a3 3 0 0 1 3 3V92.5a3 3 0 0 1-3 3H36" fill="none" stroke="#FF8A1E" stroke-width="1" filter="url(#' + k + 'g)"/>' +
     corner(11, 11) + corner(59, 11) + corner(11, 89) + corner(59, 89) + badge(35, 16) + badge(35, 84) +
-    '<circle cx="35" cy="50" r="17" fill="#070B14" stroke="#8D97A6" stroke-width="1.6"/>' +
-    '<circle cx="35" cy="50" r="14.5" fill="none" stroke="#3FA9FF" stroke-opacity=".7" stroke-width=".8"/>' +
-    '<path d="M28 41h14M29 41.5l1.5 7M32.5 41.5l.6 7M35 41.5v7M37.5 41.5l-.6 7M41 41.5l-1.5 7" stroke="#B9C3CF" stroke-width=".7"/>' +
-    '<path d="M27.5 57h15l-2 4h-11z" fill="#1A2C4A" stroke="#B9C3CF" stroke-width=".7"/><path d="M35 61v4" stroke="#B9C3CF" stroke-width=".9"/>' +
-    '<g transform="rotate(-8 35 50)" font-family="CardName, Roboto Condensed, sans-serif" font-style="italic" font-weight="900" ' +
-      'text-anchor="middle" paint-order="stroke" stroke="#05080F" stroke-width="1.4">' +
-      '<text x="35" y="49.5" font-size="9.6" fill="url(#' + k + 't)">CHAIN</text>' +
-      '<text x="35" y="58" font-size="8.4" fill="url(#' + k + 'r)">REACTION</text></g></svg>';
+    // the centre: a steel ring with a neon line, a basket hung with chains
+    '<circle cx="35" cy="50" r="17.5" fill="#070B14" fill-opacity=".85" stroke="url(#' + k + 'm)" stroke-width="1.8"/>' +
+    '<path d="M35 34A16 16 0 0 0 35 66" fill="none" stroke="#3FA9FF" stroke-width=".9" filter="url(#' + k + 'g)"/>' +
+    '<path d="M35 34A16 16 0 0 1 35 66" fill="none" stroke="#FF8A1E" stroke-width=".9" filter="url(#' + k + 'g)"/>' +
+    '<g stroke="url(#' + k + 'm)" fill="none">' +
+      '<path d="M27 39.5h16" stroke-width="1.3" stroke-linecap="round"/>' +
+      '<path d="M28.5 40l2 9.5M31.5 40l1 9.5M34 40l.4 9.5M36 40l-.4 9.5M38.5 40l-1 9.5M41.5 40l-2 9.5" stroke-width=".6" stroke-dasharray="1 .5"/>' +
+      '<path d="M26.5 57.5h17l-2.4 4.4H28.9z" fill="#1A2C4A" stroke-width=".8" stroke-linejoin="round"/>' +
+      '<path d="M35 61.9v4.6M31.5 66.6h7" stroke-width="1"/></g>' +
+    // the logo, struck in steel and fire, glowing off the dark
+    '<g transform="rotate(-8 35 51)"' + F + ' text-anchor="middle">' +
+      '<g filter="url(#' + k + 'g)" fill="none" stroke-width="1.2" stroke-opacity=".8">' +
+        '<text x="35" y="50" font-size="10.6" stroke="#3FA9FF">CHAIN</text>' +
+        '<text x="35" y="59" font-size="9.2" stroke="#FF8A1E">REACTION</text></g>' +
+      '<g paint-order="stroke" stroke="#05080F" stroke-width="1.6">' +
+        '<text x="35" y="50" font-size="10.6" fill="url(#' + k + 't)">CHAIN</text>' +
+        '<text x="35" y="59" font-size="9.2" fill="url(#' + k + 'r)">REACTION</text></g></g></svg>';
 }
 
 function wheelButton() {
