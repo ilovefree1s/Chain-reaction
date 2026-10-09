@@ -417,12 +417,40 @@
      halo hanging behind a card that is not one. drop-shadow follows the alpha,
      so the glow ends where the gold does. Blur radii are halved: box-shadow
      spreads about twice as far as drop-shadow for the same number. */
-  .facemodal .cardart {
+  .facemodal .cardart, .facemodal .drawnframe .glow {
     width: 100%; display: block;
     filter: drop-shadow(0 0 7px var(--rareglow, rgba(30, 111, 255, 0.3)))
             drop-shadow(0 0 23px var(--rareaura, rgba(30, 111, 255, 0.3)))
             drop-shadow(0 0 55px var(--rareaura, rgba(30, 111, 255, 0.3)));
   }
+  /* A frame drawn in the page (epic's). The glow sits on a still copy of the
+     card's shape underneath: a drop-shadow over the moving rim would be redrawn
+     every frame of the light going round, and a phone pays for that in battery. */
+  @property --rimspin { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
+  .drawnframe { position: absolute; inset: 0; }
+  .drawnframe .glow { position: absolute; inset: 0; }
+  .drawnframe .shape, .drawnframe .rim, .drawnframe .void {
+    position: absolute; inset: 0;
+    clip-path: polygon(8% 0, 92% 0, 100% 5.7%, 100% 94.3%, 92% 100%, 8% 100%, 0 94.3%, 0 5.7%);
+  }
+  .drawnframe .shape { background: #3A1466; }
+  .drawnframe .rim {
+    background: conic-gradient(from var(--rimspin), #4A1586, #F3DDFF 8%, #B96BFF 18%, #3A1466 34%,
+                               #B96BFF 52%, #F3DDFF 60%, #5B1FA6 74%, #4A1586);
+    animation: rimspin 6s linear infinite;
+  }
+  .drawnframe .void {
+    inset: 2.4cqw;
+    background:
+      radial-gradient(120% 70% at 50% 0%, rgba(185, 107, 255, 0.26), transparent 62%),
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='31'%3E%3Cpath d='M9 0l9 5.2v10.4L9 20.8 0 15.6V5.2zM9 20.8V31' fill='none' stroke='%23B96BFF' stroke-opacity='.13'/%3E%3C/svg%3E"),
+      #0B0517;
+    /* Sized to the card, so the honeycomb is as fine at any size. */
+    background-size: auto, 3.3cqw 5.7cqw, auto;
+  }
+  .drawnframe svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+  @keyframes rimspin { to { --rimspin: 360deg; } }
+  @media (prefers-reduced-motion: reduce) { .drawnframe .rim { animation: none; } }
   /* The enlarged card rides the thumb: dragged live, then either thrown off the
      edge or sprung back. pan-y hands horizontal drags to us and leaves vertical
      ones as scrolling. The chevrons deliberately skip all of it and cut. */
@@ -1531,12 +1559,60 @@ function cardPicture(c) {
   var own = CARD_ART[c.id];
   if (own) return { src: own, slots: artSlots(c.id) };
   var frame = ART_FRAMES[rarityOf(c).id];
+  if (frame && frame.drawn) return { src: null, slots: frame };
   return frame && frame.image ? { src: frame.image, slots: frame } : null;
 }
 
+/*
+ * Epic's frame, drawn rather than painted: a cut-cornered rim with a band of
+ * light running round it, a crystal gem top, bottom and either side, a
+ * honeycomb inside and the basket badge between the kind and the EPIC plate.
+ * Drawn in units of a 1000-wide card at the frame's own shape, so the bars in
+ * art-frames.json land exactly where the painting had them.
+ */
+function drawnFrameHtml(c, words) {
+  return '<div class="drawnframe" role="img" aria-label="' + esc(c.name) + ". " + esc(words) + '">' +
+    '<div class="glow"><div class="shape"></div></div>' +
+    '<div class="rim"></div><div class="void"></div>' +
+    '<svg viewBox="0 0 1000 1412" preserveAspectRatio="none" aria-hidden="true">' +
+    '<defs>' +
+      '<linearGradient id="epGem" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFF3FF"/>' +
+        '<stop offset=".45" stop-color="#C98BFF"/><stop offset="1" stop-color="#4A1586"/></linearGradient>' +
+      '<linearGradient id="epRim" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#F3DDFF"/>' +
+        '<stop offset=".35" stop-color="#B96BFF"/><stop offset=".6" stop-color="#5B1FA6"/>' +
+        '<stop offset="1" stop-color="#D9A6FF"/></linearGradient>' +
+      '<filter id="epGlow" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="7" result="b"/>' +
+        '<feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>' +
+    '</defs>' +
+    '<path d="M108 68H892L932 108V1304L892 1344H108L68 1304V108Z" fill="none" stroke="#B96BFF" stroke-opacity=".55" stroke-width="4"/>' +
+    '<path d="M68 1062H932" stroke="#D9A6FF" stroke-opacity=".85" stroke-width="7"/>' +
+    '<rect x="70" y="1138" width="276" height="124" rx="14" fill="#12082A" fill-opacity=".7" stroke="#B96BFF" stroke-opacity=".6" stroke-width="3"/>' +
+    '<rect x="654" y="1138" width="276" height="124" rx="14" fill="#12082A" fill-opacity=".7" stroke="#B96BFF" stroke-opacity=".6" stroke-width="3"/>' +
+    '<text x="792" y="1232" text-anchor="middle" font-family="CardName, Roboto Condensed, sans-serif" font-size="96" ' +
+      'letter-spacing="4" fill="#FFFFFF" stroke="#2A0B4D" stroke-width="7" paint-order="stroke" filter="url(#epGlow)">EPIC</text>' +
+    '<g transform="translate(500 1200)">' +
+      '<circle r="118" fill="#140826" stroke="url(#epRim)" stroke-width="10"/>' +
+      '<circle r="98" fill="none" stroke="#B96BFF" stroke-opacity=".5" stroke-width="3"/>' +
+      '<g transform="scale(2.4) translate(-50 -50)">' +
+        '<path d="M30 30h40" stroke="#E8E2F2" stroke-width="3.5" stroke-linecap="round"/>' +
+        '<path d="M33 31l5 25M41 31l2 25M50 31v25M59 31l-2 25M67 31l-5 25" stroke="#CFC6E0" stroke-width="1.6" stroke-dasharray="2.4 1.6"/>' +
+        '<path d="M29 58h42l-5 13H34z" fill="#2A1846" stroke="#E8E2F2" stroke-width="2.4" stroke-linejoin="round"/>' +
+        '<path d="M50 71v12M42 84h16" stroke="#E8E2F2" stroke-width="3" stroke-linecap="round"/>' +
+      '</g>' +
+    '</g>' +
+    '<g fill="url(#epGem)" stroke="#F3DDFF" stroke-width="3" filter="url(#epGlow)">' +
+      '<path d="M440 12l60-44 60 44-60 44z"/>' +
+      '<path d="M-12 706l36-60 36 60-36 60z"/><path d="M940 706l36-60 36 60-36 60z"/>' +
+      '<path d="M460 1400l40-28 40 28-40 28z"/>' +
+    '</g>' +
+    '</svg></div>';
+}
+
 function artFaceHtml(c, art, words, slots) {
-  var img = '<img class="cardart" onload="fitArtWords()" src="' + art + '" alt="' +
-    esc(c.name) + ". " + esc(words) + '">';
+  var img = art
+    ? '<img class="cardart" onload="fitArtWords()" src="' + art + '" alt="' +
+      esc(c.name) + ". " + esc(words) + '">'
+    : drawnFrameHtml(c, words);
   if (!slots) return img;
 
   /* One filled box. [key] tells the fitter which measurement is whose, so three

@@ -296,9 +296,18 @@ fs.readdirSync(artDir).sort().forEach((f) => {
     problems.push(`${f} has no entry in web/art-frames.json saying where its bars are`);
     return;
   }
+  if (frameBoxes[m[1]].drawn) {
+    problems.push(`${f} is a picture for a tier whose frame is drawn in code — delete the picture`);
+    return;
+  }
   fs.copyFileSync(path.join(artDir, f), path.join(assetsDir, f));
   copied.push(f);
   tierFrames[m[1]] = Object.assign({ image: "assets/" + f }, frameBoxes[m[1]]);
+});
+/* A tier can have its frame drawn in the page instead of painted — art-frames.json
+   names the drawing under "drawn", and the bars sit where the entry says. */
+Object.keys(frameBoxes).forEach((tier) => {
+  if (frameBoxes[tier].drawn && !tierFrames[tier]) tierFrames[tier] = Object.assign({}, frameBoxes[tier]);
 });
 
 const BOXES = path.join(root, "web", "art-boxes.json");
