@@ -192,10 +192,6 @@ const grassImage = copyArt("moregrass.png", "grass.png");
 const iconImage = copyArt("chainreactionicon.png", "icon.png");
 // The 4 THE BOYS badge riding the hub of every wheel.
 const hubLogo = copyArt("blue4theboys.png", "hublogo.png");
-// Tab-bar plates, replacing the dot-and-text buttons one at a time as they land.
-const navRules = copyArt("navrules.png", "navrules.png");
-const navHand = copyArt("navhand.png", "navhand.png");
-const navScore = copyArt("navscore.png", "navscore.png");
 // The FOR THE BOYS banner riding under the title on the menu.
 const ftbImage = copyArt("fortheboys.png", "fortheboys.png");
 const cardBack = copyArt("cardbacks.png", "cardback.png");
@@ -408,9 +404,6 @@ const template = fs.readFileSync(path.join(__dirname, "template.html"), "utf8");
   "__MENU_IMAGE__",
   "__GRASS_IMAGE__",
   "__HUB_LOGO__",
-  "__NAV_RULES__",
-  "__NAV_HAND__",
-  "__NAV_SCORE__",
   "__FTB_IMAGE__",
   "__CARD_BACK__",
   "__SG_BACKGROUND__",
@@ -446,9 +439,6 @@ const html = template
   .replace("__MENU_IMAGE__", menuImage)
   .replace("__GRASS_IMAGE__", grassImage)
   .replace("__HUB_LOGO__", hubLogo)
-  .replace("__NAV_RULES__", navRules)
-  .replace("__NAV_HAND__", navHand)
-  .replace("__NAV_SCORE__", navScore)
   .replace("__FTB_IMAGE__", ftbImage)
   .replace("__CARD_BACK__", cardBack)
   .replace("__SG_BACKGROUND__", sgBackground)
