@@ -269,6 +269,8 @@
     font-display: block; src: url("__BODY_FONT__") format("woff2");
   }
   .artwrap { position: relative; container-type: inline-size; }
+  /* Fitted to the card's one shape (CARD_AR) rather than its own proportions. */
+  .artwrap > img.cardart { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: fill; }
   /* The name across its bar. Heavy italic, the way the drawn faces already set
      a card name and the way the painted ones were lettered, condensed where the
      phone has a condensed face. One line always: it shrinks rather than wraps,
@@ -1829,12 +1831,21 @@ function amethystFrameHtml(label) {
     '</svg></div>';
 }
 
+/*
+ * Every card face is the same shape, whatever it is painted or drawn on — the
+ * same as the drawn SVG face's 720 by 1000. The tier frames and paintings
+ * were each made at their own proportions (0.68 to 0.75), so opening one card
+ * after another made the card grow and shrink. They are fitted to this shape
+ * instead; the bars sit at fractions of the card, so they move with it.
+ */
+var CARD_AR = 0.72;
+
 function artFaceHtml(c, art, words, slots) {
   var img = art
     ? '<img class="cardart" onload="fitArtWords()" src="' + art + '" alt="' +
       esc(c.name) + ". " + esc(words) + '">'
     : drawnFrameHtml(c, words, slots.drawn);
-  if (!slots) return img;
+  if (!slots) return '<div class="artwrap" style="aspect-ratio:' + CARD_AR + '">' + img + "</div>";
 
   /* One filled box. [key] tells the fitter which measurement is whose, so three
      boxes on a card are sized independently rather than sharing one answer. */
@@ -1847,8 +1858,7 @@ function artFaceHtml(c, art, words, slots) {
       "<div>" + html + "</div></div>";
   }
 
-  return '<div class="artwrap"' +
-    (slots.ar ? ' style="aspect-ratio:' + slots.ar + '"' : "") + ">" + img +
+  return '<div class="artwrap" style="aspect-ratio:' + CARD_AR + '">' + img +
     fill(slots.timing, "arttiming", c.id + ":t", esc(c.timing.toUpperCase()), c.timing) +
     fill(slots.title, "arttitle", c.id + ":n", esc(c.name), c.name) +
     fill(slots.text, "", c.id + ":w",
