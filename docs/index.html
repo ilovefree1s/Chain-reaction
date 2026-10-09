@@ -1002,15 +1002,54 @@
     color: var(--self); font-size: 24px; font-weight: 900;
     pointer-events: none;
   }
-  /* The painted plates, restacked with tight gaps so the splash stays seen. */
-  /* Two by two, the way the sheet itself is drawn. Stacked in one column these
+  /* The four game buttons, with tight gaps so the splash stays seen. */
+  /* Two by two. Stacked in one column these
      buttons are half as wide again as the old bands and would run past the foot
      of a phone; side by side they fit with room over, and each one is a bigger
      thing to hit. */
   .sgstack { width: min(100%, 420px); margin: 0 auto; display: grid;
              grid-template-columns: 1fr 1fr; gap: 12px; }
-  .sgplate { position: relative; overflow: hidden; cursor: pointer; }
-  .sgplate img { position: absolute; left: 0; width: 100%; }
+  .sgplate { position: relative; overflow: hidden; cursor: pointer; aspect-ratio: 1.57; border-radius: 16px;
+             container-type: inline-size; isolation: isolate; -webkit-tap-highlight-color: transparent; }
+  /* Drawn like SPIN THE GAMBLE WHEEL!!: the rim's light runs round on the same
+     clock (each a quarter turn behind the last), the glow sits inside the edge
+     because the plate clips, and the name shimmers. */
+  .spface { position: absolute; inset: 0; border-radius: 16px; border: 1.5cqw solid transparent;
+            background: radial-gradient(70% 90% at 50% 40%, #24366A, #090E1C 75%) padding-box,
+                        conic-gradient(from var(--gwrim), #1E6FFF, #FFFFFF 6%, #FF8A1E 14%, #6B2A06 30%, #1E6FFF 50%,
+                                       #BFE2FF 56%, #FF8A1E 64%, #0A2E7A 82%, #1E6FFF) border-box;
+            animation: gwrim 3s linear infinite, spglow 2.4s ease-in-out infinite; }
+  .sgplate:nth-child(2) .spface { animation-delay: -0.75s, -0.6s; }
+  .sgplate:nth-child(3) .spface { animation-delay: -1.5s, -1.2s; }
+  .sgplate:nth-child(4) .spface { animation-delay: -2.25s, -1.8s; }
+  .sprays { position: absolute; z-index: 1; left: 50%; top: 40%; width: 110cqw; height: 110cqw; border-radius: 50%;
+            pointer-events: none; transform: translate(-50%, -50%);
+            background: repeating-conic-gradient(rgba(255, 190, 80, 0.36) 0 9deg, transparent 9deg 22deg);
+            -webkit-mask: radial-gradient(closest-side, #000 25%, transparent 80%);
+            mask: radial-gradient(closest-side, #000 25%, transparent 80%);
+            animation: gwrays 9s linear infinite; }
+  .spart { position: absolute; z-index: 2; left: 50%; top: 5%; height: 72%; aspect-ratio: 1; transform: translateX(-50%); }
+  .spart svg { width: 100%; height: 100%; display: block; overflow: visible; }
+  .spcoin { animation: spflip 3.2s ease-in-out infinite; }
+  .spcoin .ctails { display: none; }
+  .spword { position: absolute; z-index: 3; left: 0; right: 0; bottom: 6%; text-align: center;
+            font-family: "CardName", "Roboto Condensed", system-ui, sans-serif; font-weight: 900; font-style: italic;
+            font-size: 11cqw; line-height: 1; letter-spacing: 0.03em; color: transparent;
+            background: linear-gradient(100deg, #FFE08A, #FF8A1E 38%, #FFFFFF 48%, #FF8A1E 58%, #E2410C);
+            background-size: 250% 100%; -webkit-background-clip: text; background-clip: text;
+            filter: drop-shadow(0 0.5cqw 0 rgba(4, 10, 24, 0.9)) drop-shadow(0 0 1.6cqw rgba(255, 120, 30, 0.55));
+            animation: gwshimmer 3.2s ease-in-out infinite; }
+  .spspin { transform-origin: 50px 50px; animation: gwturn 7s linear infinite; }
+  .spbob { transform-origin: 50px 50px; animation: spbob 2.8s ease-in-out infinite; }
+  .spbob2 { transform-origin: 50px 50px; animation: spbob 2.8s ease-in-out -1.4s infinite; }
+  .spfan { transform-origin: 50px 96px; animation: spfan 3.4s ease-in-out infinite; }
+  @keyframes spglow { 0%, 100% { box-shadow: inset 0 0 3cqw rgba(255, 138, 30, 0.25); }
+                      50% { box-shadow: inset 0 0 6cqw rgba(255, 138, 30, 0.6), inset 0 0 10cqw rgba(30, 111, 255, 0.3); } }
+  @keyframes spbob { 0%, 100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-3px) rotate(4deg); } }
+  @keyframes spfan { 0%, 100% { transform: rotate(0deg); } 50% { transform: rotate(3deg); } }
+  @keyframes spflip { 0%, 70%, 100% { transform: translateX(-50%) scaleX(1); } 80% { transform: translateX(-50%) scaleX(0.08); }
+                      90% { transform: translateX(-50%) scaleX(1); } }
+  @media (prefers-reduced-motion: reduce) { .sgplate, .sgplate * { animation: none !important; } }
   /* The card table: two buttons up top, felt everywhere else. */
   .modal.cardtable {
     overflow: hidden; touch-action: none;
@@ -1423,7 +1462,7 @@
   /* Under the light the others go dark, so the one lit is the only bright thing
      on the screen — and stays that way once it has landed. */
   .sgstack.running .sgplate { filter: brightness(0.3) saturate(0.5); }
-  .sgstack .sgplate.lit { filter: none; border-radius: 14px;
+  .sgstack .sgplate.lit { filter: none;
                           box-shadow: 0 0 0 3px #FF8A1E,
                                       0 0 24px rgba(247, 148, 30, 0.75); }
   /* Nothing else is tappable while the light is running: a game opened mid-run
@@ -1990,7 +2029,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.3.171 · 9 Oct 14:55";
+var APP_VERSION = "v1.3.172 · 9 Oct 15:06";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. The arrow beside it goes and looks for a
@@ -7940,6 +7979,70 @@ function secretWheelHtml() {
         : "");
 }
 
+/*
+ * One secret game's button, drawn the way SPIN THE GAMBLE WHEEL!! is: light
+ * racing round the rim, rays turning behind, the game's piece in the middle
+ * and its name in shimmering orange underneath. The coin is the coin the coin
+ * flip throws, heads up.
+ */
+function sgPlateArt(kind, word) {
+  var B = ' font-family="CardBody, sans-serif"';
+  var art;
+  if (kind === "wheel") {
+    var cols = ["#FF8A1E", "#1E6FFF", "#141B2A"], segs = "", bulbs = "";
+    for (var i = 0; i < 12; i++) {
+      var a0 = (i * 30 - 90) * Math.PI / 180, a1 = ((i + 1) * 30 - 90) * Math.PI / 180;
+      segs += '<path d="M50 50L' + (50 + 36 * Math.cos(a0)).toFixed(2) + " " + (50 + 36 * Math.sin(a0)).toFixed(2) +
+        "A36 36 0 0 1 " + (50 + 36 * Math.cos(a1)).toFixed(2) + " " + (50 + 36 * Math.sin(a1)).toFixed(2) +
+        'Z" fill="' + cols[i % 3] + '" stroke="#05080F" stroke-width=".8"/>';
+    }
+    for (var j = 0; j < 16; j++) {
+      var b = (j * 22.5 - 90) * Math.PI / 180;
+      bulbs += '<circle class="gwbulb" style="animation-delay:' + (j % 2 ? "-.5s" : "0s") + '" cx="' +
+        (50 + 42 * Math.cos(b)).toFixed(2) + '" cy="' + (50 + 42 * Math.sin(b)).toFixed(2) +
+        '" r="2.2" fill="' + (j % 2 ? "#7CC4FF" : "#FFD27A") + '"/>';
+    }
+    art = '<circle cx="50" cy="50" r="46" fill="#0B1220" stroke="#FFFFFF" stroke-width="2.4"/>' + bulbs +
+      '<g class="spspin">' + segs + "</g>" +
+      '<circle cx="50" cy="50" r="11" fill="#0B1220" stroke="#3FA9FF" stroke-width="2"/>' +
+      '<text x="50" y="54" text-anchor="middle"' + B + ' font-size="10" fill="#3FA9FF">4</text>' +
+      '<path d="M50 8l-6-11h12z" fill="#FF8A1E" stroke="#05080F" stroke-width="1.2"/>';
+  } else if (kind === "dice") {
+    // Two white dice, one size: the one behind first, so the front one overlaps it.
+    var die = function (cx, cy, rot, face, cls) {
+      var s = 40, h = 20, o = 11.2, at = face === 3 ? [[-o, -o], [0, 0], [o, o]]
+        : [[-o, -o], [o, -o], [0, 0], [-o, o], [o, o]];
+      return '<g class="' + cls + '"><g transform="translate(' + cx + " " + cy + ") rotate(" + rot + ')">' +
+        '<rect x="-17" y="-16" width="' + s + '" height="' + s + '" rx="8" fill="#05080F" opacity=".5"/>' +
+        '<rect x="-' + h + '" y="-' + h + '" width="' + s + '" height="' + s + '" rx="8" fill="url(#spdie)" stroke="#05080F" stroke-width="1.6"/>' +
+        '<g fill="#14100A">' + at.map(function (p) { return '<circle cx="' + p[0] + '" cy="' + p[1] + '" r="3.4"/>'; }).join("") +
+        "</g></g></g>";
+    };
+    art = '<defs><linearGradient id="spdie" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFFFFF"/>' +
+      '<stop offset=".6" stop-color="#E6ECF5"/><stop offset="1" stop-color="#9AA6B6"/></linearGradient></defs>' +
+      die(66, 38, 13, 3, "spbob2") + die(35, 60, -14, 5, "spbob");
+  } else if (kind === "cards") {
+    var suit = {
+      spade: '<path d="M0-6C-2.6-2.6-6-.8-6 2.2A3.2 3.2 0 0 0-.8 4L-2 7h4l-1.2-3A3.2 3.2 0 0 0 6 2.2C6-.8 2.6-2.6 0-6z"/>',
+      heart: '<path d="M0 5.6C-3.6 2.6-6.2.2-6.2-2.4A3.2 3.2 0 0 1 0-3.8a3.2 3.2 0 0 1 6.2 1.4C6.2.2 3.6 2.6 0 5.6z"/>',
+      diamond: '<path d="M0-6.5L4.5 0 0 6.5-4.5 0z"/>',
+      club: '<g><circle cy="-3.2" r="2.8"/><circle cx="-3.2" cy="1.2" r="2.8"/><circle cx="3.2" cy="1.2" r="2.8"/><path d="M-1 1h2l1 6h-4z"/></g>'
+    };
+    var card = function (rot, s, red, big) {
+      var c = red ? "#D2262E" : "#14100A";
+      return '<g transform="rotate(' + rot + ' 50 96)"><rect x="31" y="26" width="38" height="54" rx="4.5" fill="#FBF8F0" stroke="#3A4456" stroke-width="1.4"/>' +
+        '<text x="37.5" y="37" text-anchor="middle"' + B + ' font-size="9" fill="' + c + '">A</text>' +
+        '<g fill="' + c + '" transform="translate(37.5 44) scale(.62)">' + suit[s] + "</g>" +
+        (big ? '<g fill="' + c + '" transform="translate(52 56) scale(1.9)">' + suit[s] + "</g>" : "") + "</g>";
+    };
+    art = '<g class="spfan">' + card(-30, "diamond", 1) + card(-10, "club", 0) + card(10, "heart", 1) + card(30, "spade", 0, 1) + "</g>";
+  }
+  return '<span class="spface"></span><span class="sprays"></span>' +
+    (kind === "coin" ? '<span class="spart spcoin">' + coinArt() + "</span>"
+      : '<span class="spart"><svg viewBox="0 0 100 100" aria-hidden="true">' + art + "</svg></span>") +
+    '<span class="spword">' + word + "</span>";
+}
+
 function renderSecret() {
   if (secret.mode === "dice") return renderDiceGame();
   if (secret.mode === "coin") return renderCoinGame();
@@ -7968,19 +8071,10 @@ function renderSecret() {
   }
   // The landing: four side games, one door out — the whole cluster rides the
   // bottom of the screen, where a thumb already is after five quick taps.
-  // All four are painted on one sheet with generous gaps between them, so each
-  // plate is a window onto its own box, measured off an alpha scan of
-  // secretbuttons.png rather than guessed at.
   var lit = secret.pick ? secret.pick.lit : -1;
   var stack = SG_PLATES.map(function (p, i) {
-    var b = p[1];
-    return '<div class="sgplate' + (i === lit ? " lit" : "") +
-      '" data-act="' + p[0] + '" style="aspect-ratio:' +
-      b[2] + '/' + b[3] + '">' +
-      '<img src="' + SG_BUTTONS + '" alt="" draggable="false" style="' +
-      'width:' + (100 * SG_SHEET / b[2]).toFixed(3) + '%;' +
-      'left:' + (-100 * b[0] / b[2]).toFixed(3) + '%;' +
-      'top:' + (-100 * b[1] / b[3]).toFixed(3) + '%"></div>';
+    return '<div class="sgplate' + (i === lit ? " lit" : "") + '" data-act="' + p[0] + '">' +
+      sgPlateArt(p[1], p[2]) + "</div>";
   }).join("");
   return '<div class="modal sgmenu sgscreen">' +
     '<button class="sgback" data-act="closeSecret">&lsaquo;&nbsp;&nbsp;Back</button>' +
@@ -9759,20 +9853,15 @@ function spaceOut(pos, gap, ratio, pad) {
   }
 }
 
-/* ---- cards: one standard 52-card deck, drawn down and reshuffled on demand ---- */
-var SG_BUTTONS = "assets/sgbuttons.png";
-/* The four games, painted two by two on one 1254px square, each with its own box
-   inside it: left, top, width, height in the sheet's own pixels. Measured by
-   scanning the alpha channel for where each button actually starts and stops —
-   the drawn gaps are wide and eyeballing them puts a sliver of the neighbour in
-   the corner of every plate. Re-measure if the sheet is ever redrawn. */
-var SG_SHEET = 1254;
+/* The four games on the secret menu, two by two: what a tap opens, which piece
+   its button draws, and the name under it. */
 var SG_PLATES = [
-  ["secretWheel", [18, 164, 601, 383]],
-  ["secretDice", [635, 165, 598, 381]],
-  ["secretCards", [17, 674, 604, 383]],
-  ["secretCoin", [635, 676, 602, 381]]
+  ["secretWheel", "wheel", "WHEEL"],
+  ["secretDice", "dice", "DICE"],
+  ["secretCards", "cards", "CARDS"],
+  ["secretCoin", "coin", "COIN"]
 ];
+/* ---- cards: one standard 52-card deck, drawn down and reshuffled on demand ---- */
 var CARD_SUITS = ["♠", "♥", "♦", "♣"];
 var CARD_RANKS = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"];
 /*

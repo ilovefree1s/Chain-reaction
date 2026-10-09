@@ -190,7 +190,6 @@ const hubLogo = copyArt("blue4theboys.png", "hublogo.png");
 // The FOR THE BOYS banner riding under the title on the menu.
 const ftbImage = copyArt("fortheboys.png", "fortheboys.png");
 const sgBackground = copyArt("sgbackground.png", "sgbg.png");
-const sgButtons = copyArt("secretbuttons.png", "sgbuttons.png");
 const menuSound = copyAudio("chains.mp3");
 const wheelSound = copyAudio("gamble.mp3");
 const wolfSound = copyAudio("lonewolf.mp3");
@@ -395,7 +394,6 @@ const template = fs.readFileSync(path.join(__dirname, "template.html"), "utf8");
   "__HUB_LOGO__",
   "__FTB_IMAGE__",
   "__SG_BACKGROUND__",
-  "__SG_BUTTONS__",
   "__MENU_SOUND__",
   "__WHEEL_SOUND__",
   "__WOLF_SOUND__",
@@ -427,7 +425,6 @@ const html = template
   .replace("__HUB_LOGO__", hubLogo)
   .replace("__FTB_IMAGE__", ftbImage)
   .replace("__SG_BACKGROUND__", sgBackground)
-  .replace("__SG_BUTTONS__", sgButtons)
   .replace("__MENU_SOUND__", menuSound)
   .replace("__WHEEL_SOUND__", wheelSound)
   .replace("__WOLF_SOUND__", wolfSound)
