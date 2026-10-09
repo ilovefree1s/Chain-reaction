@@ -434,6 +434,8 @@
     clip-path: polygon(8% 0, 92% 0, 100% 5.7%, 100% 94.3%, 92% 100%, 8% 100%, 0 94.3%, 0 5.7%);
   }
   .drawnframe .shape { background: #3A1466; }
+  /* Common's silver frame is a rounded card, so its glow is too. */
+  .drawnframe.silver .shape { clip-path: none; border-radius: 4.2cqw; background: #C9D2DE; }
   .drawnframe .rim {
     background: conic-gradient(from var(--rimspin), #4A1586, #F3DDFF 8%, #B96BFF 18%, #3A1466 34%,
                                #B96BFF 52%, #F3DDFF 60%, #5B1FA6 74%, #4A1586);
@@ -1564,14 +1566,72 @@ function cardPicture(c) {
 }
 
 /*
- * Epic's frame, drawn rather than painted: a cut-cornered rim with a band of
- * light running round it, a crystal gem top, bottom and either side, a
- * honeycomb inside and the basket badge between the kind and the EPIC plate.
- * Drawn in units of a 1000-wide card at the frame's own shape, so the bars in
- * art-frames.json land exactly where the painting had them.
+ * The frames drawn in the page rather than painted, by the name art-frames.json
+ * gives them. Each is drawn in units of a 1000-wide card at its tier's own
+ * shape, so the bars in art-frames.json land exactly where the painting had them.
  */
-function drawnFrameHtml(c, words) {
-  return '<div class="drawnframe" role="img" aria-label="' + esc(c.name) + ". " + esc(words) + '">' +
+function drawnFrameHtml(c, words, drawing) {
+  var label = ' role="img" aria-label="' + esc(c.name) + ". " + esc(words) + '"';
+  return drawing === "silver" ? silverFrameHtml(label) : amethystFrameHtml(label);
+}
+
+/*
+ * Common's frame: a rounded silver rim, a blue line inside it, navy with a faint
+ * dot texture, and a silver bar along the bottom that rises around the badge.
+ * Commons are the cards seen most, so nothing on this one moves.
+ */
+function silverFrameHtml(label) {
+  return '<div class="drawnframe silver"' + label + '>' +
+    '<div class="glow"><div class="shape"></div></div>' +
+    '<svg viewBox="0 0 1000 1348" preserveAspectRatio="none" aria-hidden="true">' +
+    '<defs>' +
+      '<linearGradient id="cmSilver" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFFFFF"/>' +
+        '<stop offset=".3" stop-color="#C9D2DE"/><stop offset=".55" stop-color="#F2F5FA"/>' +
+        '<stop offset=".8" stop-color="#9AA6B8"/><stop offset="1" stop-color="#E6ECF5"/></linearGradient>' +
+      '<radialGradient id="cmNavy" cx=".5" cy=".22" r=".85"><stop offset="0" stop-color="#0E2C56"/>' +
+        '<stop offset=".6" stop-color="#071631"/><stop offset="1" stop-color="#040C1C"/></radialGradient>' +
+      '<pattern id="cmDots" width="22" height="22" patternUnits="userSpaceOnUse">' +
+        '<circle cx="11" cy="11" r="2.2" fill="#3FA9FF" fill-opacity=".09"/></pattern>' +
+      '<filter id="cmGlow" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="5" result="b"/>' +
+        '<feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>' +
+    '</defs>' +
+    '<rect width="1000" height="1348" rx="42" fill="url(#cmSilver)"/>' +
+    '<rect x="34" y="34" width="932" height="1280" rx="24" fill="url(#cmNavy)"/>' +
+    '<rect x="34" y="34" width="932" height="1280" rx="24" fill="url(#cmDots)"/>' +
+    '<rect x="46" y="46" width="908" height="1030" rx="16" fill="none" stroke="#1E8BFF" stroke-width="4" filter="url(#cmGlow)"/>' +
+    '<path d="M34 1100H330l40-26h260l40 26H966v26H34z" fill="url(#cmSilver)"/>' +
+    '<rect x="62" y="1162" width="282" height="108" rx="12" fill="#06132A" stroke="#1E8BFF" stroke-width="3" filter="url(#cmGlow)"/>' +
+    '<rect x="656" y="1162" width="282" height="108" rx="12" fill="#06132A" stroke="#1E8BFF" stroke-width="3" filter="url(#cmGlow)"/>' +
+    '<text x="797" y="1233" text-anchor="middle" font-family="CardBody, sans-serif" font-size="54" letter-spacing="2" ' +
+      'fill="#F2F5FA" stroke="#04101F" stroke-width="5" paint-order="stroke">COMMON</text>' +
+    '<g transform="translate(500 1194)">' +
+      '<circle r="124" fill="url(#cmSilver)"/>' +
+      '<circle r="108" fill="#0A1A33"/>' +
+      '<path d="M0-108A108 108 0 0 0 0 108Z" fill="#103A7A" fill-opacity=".55"/>' +
+      '<path d="M0-108A108 108 0 0 1 0 108Z" fill="#7A3A10" fill-opacity=".45"/>' +
+      '<circle r="108" fill="none" stroke="#1E8BFF" stroke-width="4" filter="url(#cmGlow)"/>' +
+      '<g transform="scale(2.3) translate(-50 -50)">' + BASKET_PATHS("#F2F5FA", "#D5DCE8", "#1A2C4A") + '</g>' +
+    '</g>' +
+    '</svg></div>';
+}
+
+/* The disc golf basket on every drawn badge, in a 100-unit box: rim, chains,
+   tray and pole. Coloured per frame so it sits in each one's metal. */
+function BASKET_PATHS(metal, chain, tray) {
+  return '<path d="M30 30h40" stroke="' + metal + '" stroke-width="3.5" stroke-linecap="round"/>' +
+    '<path d="M33 31l5 25M41 31l2 25M50 31v25M59 31l-2 25M67 31l-5 25" stroke="' + chain +
+      '" stroke-width="1.6" stroke-dasharray="2.4 1.6"/>' +
+    '<path d="M29 58h42l-5 13H34z" fill="' + tray + '" stroke="' + metal + '" stroke-width="2.4" stroke-linejoin="round"/>' +
+    '<path d="M50 71v12M42 84h16" stroke="' + metal + '" stroke-width="3" stroke-linecap="round"/>';
+}
+
+/*
+ * Epic's frame: a cut-cornered rim with a band of light running round it, a
+ * crystal gem top, bottom and either side, a honeycomb inside and the basket
+ * badge between the kind and the EPIC plate.
+ */
+function amethystFrameHtml(label) {
+  return '<div class="drawnframe"' + label + '>' +
     '<div class="glow"><div class="shape"></div></div>' +
     '<div class="rim"></div><div class="void"></div>' +
     '<svg viewBox="0 0 1000 1412" preserveAspectRatio="none" aria-hidden="true">' +
@@ -1593,12 +1653,7 @@ function drawnFrameHtml(c, words) {
     '<g transform="translate(500 1200)">' +
       '<circle r="118" fill="#140826" stroke="url(#epRim)" stroke-width="10"/>' +
       '<circle r="98" fill="none" stroke="#B96BFF" stroke-opacity=".5" stroke-width="3"/>' +
-      '<g transform="scale(2.4) translate(-50 -50)">' +
-        '<path d="M30 30h40" stroke="#E8E2F2" stroke-width="3.5" stroke-linecap="round"/>' +
-        '<path d="M33 31l5 25M41 31l2 25M50 31v25M59 31l-2 25M67 31l-5 25" stroke="#CFC6E0" stroke-width="1.6" stroke-dasharray="2.4 1.6"/>' +
-        '<path d="M29 58h42l-5 13H34z" fill="#2A1846" stroke="#E8E2F2" stroke-width="2.4" stroke-linejoin="round"/>' +
-        '<path d="M50 71v12M42 84h16" stroke="#E8E2F2" stroke-width="3" stroke-linecap="round"/>' +
-      '</g>' +
+      '<g transform="scale(2.4) translate(-50 -50)">' + BASKET_PATHS("#E8E2F2", "#CFC6E0", "#2A1846") + '</g>' +
     '</g>' +
     '<g fill="url(#epGem)" stroke="#F3DDFF" stroke-width="3" filter="url(#epGlow)">' +
       '<path d="M440 12l60-44 60 44-60 44z"/>' +
@@ -1612,7 +1667,7 @@ function artFaceHtml(c, art, words, slots) {
   var img = art
     ? '<img class="cardart" onload="fitArtWords()" src="' + art + '" alt="' +
       esc(c.name) + ". " + esc(words) + '">'
-    : drawnFrameHtml(c, words);
+    : drawnFrameHtml(c, words, slots.drawn);
   if (!slots) return img;
 
   /* One filled box. [key] tells the fitter which measurement is whose, so three

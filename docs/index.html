@@ -434,6 +434,8 @@
     clip-path: polygon(8% 0, 92% 0, 100% 5.7%, 100% 94.3%, 92% 100%, 8% 100%, 0 94.3%, 0 5.7%);
   }
   .drawnframe .shape { background: #3A1466; }
+  /* Common's silver frame is a rounded card, so its glow is too. */
+  .drawnframe.silver .shape { clip-path: none; border-radius: 4.2cqw; background: #C9D2DE; }
   .drawnframe .rim {
     background: conic-gradient(from var(--rimspin), #4A1586, #F3DDFF 8%, #B96BFF 18%, #3A1466 34%,
                                #B96BFF 52%, #F3DDFF 60%, #5B1FA6 74%, #4A1586);
@@ -1412,7 +1414,7 @@ var CARD_ART = {"31":"assets/card_31.png","43":"assets/card_43.png","54":"assets
 var ART_BOXES = {"31":{"x":0.1065,"y":0.6841,"w":0.786,"h":0.1319,"ar":0.7347},"43":{"x":0.1054,"y":0.7005,"w":0.7902,"h":0.1171,"ar":0.7242},"54":{"x":0.1065,"y":0.6968,"w":0.7889,"h":0.1286,"ar":0.723},"57":{"x":0.1061,"y":0.6655,"w":0.7877,"h":0.1597,"ar":0.7453},"59":{"x":0.1037,"y":0.7018,"w":0.7916,"h":0.1287,"ar":0.7187},"61":{"ar":0.6841,"text":{"x":0.1014,"y":0.6698,"w":0.7973,"h":0.1565},"timing":{"x":0.2424,"y":0.0214,"w":0.5266,"h":0.03,"pad":0.1115}}};
 /* One frame per rarity, worn by every card of that rarity with no painting of
    its own. The same shape as an art box, plus the picture to wear. */
-var ART_FRAMES = {"common":{"image":"assets/frame_common.png","ar":0.742,"timing":{"x":0.058,"y":0.0445,"w":0.8841,"h":0.0328},"title":{"x":0.058,"y":0.0787,"w":0.8841,"h":0.0897},"text":{"x":0.0914,"y":0.1844,"w":0.8173,"h":0.5729},"kind":{"x":0.0707,"y":0.8732,"w":0.2682,"h":0.0641}},"rare":{"image":"assets/frame_rare.png","ar":0.7448,"timing":{"x":0.0777,"y":0.0742,"w":0.8436,"h":0.0282},"title":{"x":0.0777,"y":0.1039,"w":0.8436,"h":0.0786},"text":{"x":0.1116,"y":0.1966,"w":0.7759,"h":0.5007},"kind":{"x":0.0657,"y":0.8242,"w":0.259,"h":0.0645}},"uncommon":{"image":"assets/frame_uncommon.png","ar":0.7502,"timing":{"x":0.0601,"y":0.0554,"w":0.8798,"h":0.0318},"title":{"x":0.0601,"y":0.088,"w":0.8798,"h":0.0872},"text":{"x":0.0936,"y":0.1914,"w":0.8128,"h":0.5565},"kind":{"x":0.0709,"y":0.8744,"w":0.2542,"h":0.0628}},"epic":{"drawn":"amethyst","ar":0.7082,"timing":{"x":0.0851,"y":0.0938,"w":0.8308,"h":0.026},"title":{"x":0.0851,"y":0.1212,"w":0.8308,"h":0.0726},"text":{"x":0.118,"y":0.2075,"w":0.765,"h":0.4637},"kind":{"x":0.0783,"y":0.8233,"w":0.2573,"h":0.0527}}};
+var ART_FRAMES = {"rare":{"image":"assets/frame_rare.png","ar":0.7448,"timing":{"x":0.0777,"y":0.0742,"w":0.8436,"h":0.0282},"title":{"x":0.0777,"y":0.1039,"w":0.8436,"h":0.0786},"text":{"x":0.1116,"y":0.1966,"w":0.7759,"h":0.5007},"kind":{"x":0.0657,"y":0.8242,"w":0.259,"h":0.0645}},"uncommon":{"image":"assets/frame_uncommon.png","ar":0.7502,"timing":{"x":0.0601,"y":0.0554,"w":0.8798,"h":0.0318},"title":{"x":0.0601,"y":0.088,"w":0.8798,"h":0.0872},"text":{"x":0.0936,"y":0.1914,"w":0.8128,"h":0.5565},"kind":{"x":0.0709,"y":0.8744,"w":0.2542,"h":0.0628}},"common":{"drawn":"silver","ar":0.742,"timing":{"x":0.058,"y":0.0445,"w":0.8841,"h":0.0328},"title":{"x":0.058,"y":0.0787,"w":0.8841,"h":0.0897},"text":{"x":0.0914,"y":0.1844,"w":0.8173,"h":0.5729},"kind":{"x":0.0707,"y":0.8732,"w":0.2682,"h":0.0641}},"epic":{"drawn":"amethyst","ar":0.7082,"timing":{"x":0.0851,"y":0.0938,"w":0.8308,"h":0.026},"title":{"x":0.0851,"y":0.1212,"w":0.8308,"h":0.0726},"text":{"x":0.118,"y":0.2075,"w":0.765,"h":0.4637},"kind":{"x":0.0783,"y":0.8233,"w":0.2573,"h":0.0527}}};
 
 /*
  * A painted card with its words dropped into the panel the painting left empty.
@@ -1564,14 +1566,72 @@ function cardPicture(c) {
 }
 
 /*
- * Epic's frame, drawn rather than painted: a cut-cornered rim with a band of
- * light running round it, a crystal gem top, bottom and either side, a
- * honeycomb inside and the basket badge between the kind and the EPIC plate.
- * Drawn in units of a 1000-wide card at the frame's own shape, so the bars in
- * art-frames.json land exactly where the painting had them.
+ * The frames drawn in the page rather than painted, by the name art-frames.json
+ * gives them. Each is drawn in units of a 1000-wide card at its tier's own
+ * shape, so the bars in art-frames.json land exactly where the painting had them.
  */
-function drawnFrameHtml(c, words) {
-  return '<div class="drawnframe" role="img" aria-label="' + esc(c.name) + ". " + esc(words) + '">' +
+function drawnFrameHtml(c, words, drawing) {
+  var label = ' role="img" aria-label="' + esc(c.name) + ". " + esc(words) + '"';
+  return drawing === "silver" ? silverFrameHtml(label) : amethystFrameHtml(label);
+}
+
+/*
+ * Common's frame: a rounded silver rim, a blue line inside it, navy with a faint
+ * dot texture, and a silver bar along the bottom that rises around the badge.
+ * Commons are the cards seen most, so nothing on this one moves.
+ */
+function silverFrameHtml(label) {
+  return '<div class="drawnframe silver"' + label + '>' +
+    '<div class="glow"><div class="shape"></div></div>' +
+    '<svg viewBox="0 0 1000 1348" preserveAspectRatio="none" aria-hidden="true">' +
+    '<defs>' +
+      '<linearGradient id="cmSilver" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFFFFF"/>' +
+        '<stop offset=".3" stop-color="#C9D2DE"/><stop offset=".55" stop-color="#F2F5FA"/>' +
+        '<stop offset=".8" stop-color="#9AA6B8"/><stop offset="1" stop-color="#E6ECF5"/></linearGradient>' +
+      '<radialGradient id="cmNavy" cx=".5" cy=".22" r=".85"><stop offset="0" stop-color="#0E2C56"/>' +
+        '<stop offset=".6" stop-color="#071631"/><stop offset="1" stop-color="#040C1C"/></radialGradient>' +
+      '<pattern id="cmDots" width="22" height="22" patternUnits="userSpaceOnUse">' +
+        '<circle cx="11" cy="11" r="2.2" fill="#3FA9FF" fill-opacity=".09"/></pattern>' +
+      '<filter id="cmGlow" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="5" result="b"/>' +
+        '<feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>' +
+    '</defs>' +
+    '<rect width="1000" height="1348" rx="42" fill="url(#cmSilver)"/>' +
+    '<rect x="34" y="34" width="932" height="1280" rx="24" fill="url(#cmNavy)"/>' +
+    '<rect x="34" y="34" width="932" height="1280" rx="24" fill="url(#cmDots)"/>' +
+    '<rect x="46" y="46" width="908" height="1030" rx="16" fill="none" stroke="#1E8BFF" stroke-width="4" filter="url(#cmGlow)"/>' +
+    '<path d="M34 1100H330l40-26h260l40 26H966v26H34z" fill="url(#cmSilver)"/>' +
+    '<rect x="62" y="1162" width="282" height="108" rx="12" fill="#06132A" stroke="#1E8BFF" stroke-width="3" filter="url(#cmGlow)"/>' +
+    '<rect x="656" y="1162" width="282" height="108" rx="12" fill="#06132A" stroke="#1E8BFF" stroke-width="3" filter="url(#cmGlow)"/>' +
+    '<text x="797" y="1233" text-anchor="middle" font-family="CardBody, sans-serif" font-size="54" letter-spacing="2" ' +
+      'fill="#F2F5FA" stroke="#04101F" stroke-width="5" paint-order="stroke">COMMON</text>' +
+    '<g transform="translate(500 1194)">' +
+      '<circle r="124" fill="url(#cmSilver)"/>' +
+      '<circle r="108" fill="#0A1A33"/>' +
+      '<path d="M0-108A108 108 0 0 0 0 108Z" fill="#103A7A" fill-opacity=".55"/>' +
+      '<path d="M0-108A108 108 0 0 1 0 108Z" fill="#7A3A10" fill-opacity=".45"/>' +
+      '<circle r="108" fill="none" stroke="#1E8BFF" stroke-width="4" filter="url(#cmGlow)"/>' +
+      '<g transform="scale(2.3) translate(-50 -50)">' + BASKET_PATHS("#F2F5FA", "#D5DCE8", "#1A2C4A") + '</g>' +
+    '</g>' +
+    '</svg></div>';
+}
+
+/* The disc golf basket on every drawn badge, in a 100-unit box: rim, chains,
+   tray and pole. Coloured per frame so it sits in each one's metal. */
+function BASKET_PATHS(metal, chain, tray) {
+  return '<path d="M30 30h40" stroke="' + metal + '" stroke-width="3.5" stroke-linecap="round"/>' +
+    '<path d="M33 31l5 25M41 31l2 25M50 31v25M59 31l-2 25M67 31l-5 25" stroke="' + chain +
+      '" stroke-width="1.6" stroke-dasharray="2.4 1.6"/>' +
+    '<path d="M29 58h42l-5 13H34z" fill="' + tray + '" stroke="' + metal + '" stroke-width="2.4" stroke-linejoin="round"/>' +
+    '<path d="M50 71v12M42 84h16" stroke="' + metal + '" stroke-width="3" stroke-linecap="round"/>';
+}
+
+/*
+ * Epic's frame: a cut-cornered rim with a band of light running round it, a
+ * crystal gem top, bottom and either side, a honeycomb inside and the basket
+ * badge between the kind and the EPIC plate.
+ */
+function amethystFrameHtml(label) {
+  return '<div class="drawnframe"' + label + '>' +
     '<div class="glow"><div class="shape"></div></div>' +
     '<div class="rim"></div><div class="void"></div>' +
     '<svg viewBox="0 0 1000 1412" preserveAspectRatio="none" aria-hidden="true">' +
@@ -1593,12 +1653,7 @@ function drawnFrameHtml(c, words) {
     '<g transform="translate(500 1200)">' +
       '<circle r="118" fill="#140826" stroke="url(#epRim)" stroke-width="10"/>' +
       '<circle r="98" fill="none" stroke="#B96BFF" stroke-opacity=".5" stroke-width="3"/>' +
-      '<g transform="scale(2.4) translate(-50 -50)">' +
-        '<path d="M30 30h40" stroke="#E8E2F2" stroke-width="3.5" stroke-linecap="round"/>' +
-        '<path d="M33 31l5 25M41 31l2 25M50 31v25M59 31l-2 25M67 31l-5 25" stroke="#CFC6E0" stroke-width="1.6" stroke-dasharray="2.4 1.6"/>' +
-        '<path d="M29 58h42l-5 13H34z" fill="#2A1846" stroke="#E8E2F2" stroke-width="2.4" stroke-linejoin="round"/>' +
-        '<path d="M50 71v12M42 84h16" stroke="#E8E2F2" stroke-width="3" stroke-linecap="round"/>' +
-      '</g>' +
+      '<g transform="scale(2.4) translate(-50 -50)">' + BASKET_PATHS("#E8E2F2", "#CFC6E0", "#2A1846") + '</g>' +
     '</g>' +
     '<g fill="url(#epGem)" stroke="#F3DDFF" stroke-width="3" filter="url(#epGlow)">' +
       '<path d="M440 12l60-44 60 44-60 44z"/>' +
@@ -1612,7 +1667,7 @@ function artFaceHtml(c, art, words, slots) {
   var img = art
     ? '<img class="cardart" onload="fitArtWords()" src="' + art + '" alt="' +
       esc(c.name) + ". " + esc(words) + '">'
-    : drawnFrameHtml(c, words);
+    : drawnFrameHtml(c, words, slots.drawn);
   if (!slots) return img;
 
   /* One filled box. [key] tells the fitter which measurement is whose, so three
@@ -1695,7 +1750,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.3.150 · 9 Oct 01:27";
+var APP_VERSION = "v1.3.152 · 9 Oct 01:31";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. The arrow beside it goes and looks for a
