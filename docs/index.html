@@ -698,15 +698,13 @@
   }
   .mplay:active, .mtile:active { transform: scale(0.97); }
   .mplay:focus-visible, .mtile:focus-visible { outline: 2px solid #FFFFFF; outline-offset: 3px; }
-  /* PLAY is centred on the whole button; the icon is pinned to the left edge
-     so it doesn't push the word off centre. */
+  /* Just the word, centred, with a hairline of pale orange round the edge. */
   .mplay {
-    position: relative; display: flex; align-items: center; justify-content: center; height: 24cqw; padding: 0;
+    display: flex; align-items: center; justify-content: center; height: 24cqw; padding: 0;
+    box-sizing: border-box; border: 0.5cqw solid #FFD3A3;
     border-radius: 6cqw; background: linear-gradient(180deg, #FF9A2E, #F7791E);
     box-shadow: 0 0 6.4cqw rgba(247, 148, 30, 0.5), 0 1.4cqw 2cqw rgba(0, 0, 0, 0.45);
   }
-  .mplay .mico { position: absolute; left: 3.4cqw; top: 50%; transform: translateY(-50%);
-                 width: 17cqw; height: 17cqw; border-radius: 50%; background: rgba(0, 0, 0, 0.18); }
   .mplay .mlbl { text-align: center; font-size: 15.5cqw; letter-spacing: 0.02em;
                  text-shadow: 0 0.06em 0.05em rgba(120, 40, 0, 0.5); }
   .mrow { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3.8cqw; }
@@ -1918,7 +1916,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.3.158 · 9 Oct 02:08";
+var APP_VERSION = "v1.3.159 · 9 Oct 02:09";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. The arrow beside it goes and looks for a
@@ -5097,10 +5095,10 @@ function backBar(title) {
 /*
  * The menu's buttons, drawn in the score card's colours: PLAY one big solid
  * orange button, like Lock hole & draw when it is ready, and the other three a
- * row of dark tiles outlined like the player rows. Icons in a 24-unit box.
+ * row of dark tiles outlined like the player rows. The tiles' icons are drawn
+ * in a 24-unit box.
  */
 var MENU_ICONS = {
-  play: '<path d="M7 4.5v15a1 1 0 0 0 1.5.86l12-7.5a1 1 0 0 0 0-1.72l-12-7.5A1 1 0 0 0 7 4.5z" fill="currentColor"/>',
   cards: '<rect x="2.5" y="5" width="11" height="15" rx="1.8" transform="rotate(-12 8 12.5)" fill="none" stroke="currentColor" stroke-width="1.8"/>' +
     '<rect x="9" y="3.5" width="12" height="16" rx="1.8" fill="currentColor"/>' +
     '<path d="M15 7.2c-1.6 2-3.6 3-3.6 4.8a1.8 1.8 0 0 0 3 1.1l-.7 2.1h2.6l-.7-2.1a1.8 1.8 0 0 0 3-1.1c0-1.8-2-2.8-3.6-4.8z" fill="#070B14"/>',
@@ -5134,7 +5132,7 @@ function renderMenu() {
       ? '<div class="menu-grass" style="background-image:url(' + GRASS_IMAGE + ')"></div>'
       : "") +
     '<div class="menu-buttons">' +
-      '<button class="mplay" data-act="play">' + menuIcon("play") + '<span class="mlbl">PLAY</span></button>' +
+      '<button class="mplay" data-act="play"><span class="mlbl">PLAY</span></button>' +
       '<div class="mrow">' +
         menuTile("goCards", "cards", "CARDS") +
         menuTile("goSettings", "settings", "SETTINGS") +
