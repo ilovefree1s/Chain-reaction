@@ -895,7 +895,7 @@
   /* Edge-on and back, as fast as the faces are being redrawn. Squashed top to
      bottom, not side to side: a tossed coin turns end over end, and scaleX had
      it spinning like a wheel on a vertical axis. */
-  .coin.spinning { animation: coinspin 180ms linear infinite; }
+  .coin.spinning { animation: coinspin 150ms linear infinite; }
   @keyframes coinspin { 50% { transform: scaleY(0.06); } }
   /* A die is a cube: six faces, each carrying its own number, turned so that the
      one you are meant to read is toward you. Nothing rewrites its dots. */
@@ -8489,7 +8489,7 @@ function runFlip(landed, strength) {
   if (!c || c.flipping) return;
   if (typeof strength !== "number") strength = 0.4;
   strength = Math.max(0, Math.min(1, strength));
-  var ms = Math.round(850 + 750 * strength);
+  var ms = Math.round(720 + 640 * strength);
   c.flipping = true;
   // Its own clip now, faded to the length of the throw.
   playClip(coinAudio, sfxVolume(), ms / 1000);
@@ -8501,10 +8501,11 @@ function runFlip(landed, strength) {
     if (!secret || secret.mode !== "coin") { clearInterval(iv); return; }
     c.face = Math.random() < 0.5 ? "HEADS" : "TAILS";
     // The face is swapped in place. Re-rendering here would build a new coin
-    // every 90ms and restart its arc from the floor each time — the coin
-    // juddered on the spot instead of being thrown.
+    // every tick and restart its arc from the floor each time — the coin
+    // juddered on the spot instead of being thrown. Two ticks to one turn of
+    // coinspin, so a face changes each time the coin goes edge-on.
     if (coin) coin.setAttribute("data-face", c.face);
-  }, 90);
+  }, 75);
   // Settles on the animation's own clock, not on a count of ticks.
   setTimeout(function () {
     clearInterval(iv);
