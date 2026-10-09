@@ -188,7 +188,6 @@ const nameFont = embedFont("robotocondensed-italic.woff2");
 const bodyFont = embedFont("russoone.woff2");
 
 const menuImage = copyArt("chainreactionmain.png", "menu.png");
-const buttonsImage = copyArt("newbuttons.png", "buttons.png");
 const grassImage = copyArt("moregrass.png", "grass.png");
 const iconImage = copyArt("chainreactionicon.png", "icon.png");
 // The 4 THE BOYS badge riding the hub of every wheel.
@@ -407,7 +406,6 @@ const template = fs.readFileSync(path.join(__dirname, "template.html"), "utf8");
   "__NAME_FONT__",
   "__BODY_FONT__",
   "__MENU_IMAGE__",
-  "__BUTTONS_IMAGE__",
   "__GRASS_IMAGE__",
   "__HUB_LOGO__",
   "__NAV_RULES__",
@@ -446,7 +444,6 @@ const html = template
   .replace("__NAME_FONT__", nameFont)
   .replace("__BODY_FONT__", bodyFont)
   .replace("__MENU_IMAGE__", menuImage)
-  .replace("__BUTTONS_IMAGE__", buttonsImage)
   .replace("__GRASS_IMAGE__", grassImage)
   .replace("__HUB_LOGO__", hubLogo)
   .replace("__NAV_RULES__", navRules)

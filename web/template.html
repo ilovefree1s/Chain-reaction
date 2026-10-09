@@ -681,26 +681,44 @@
               width: 50%; max-width: 280px; z-index: 1;
               touch-action: none; -webkit-user-drag: none; -webkit-touch-callout: none;
               filter: drop-shadow(0 3px 10px rgba(0, 0, 0, 0.65)); }
-  /* The button sheet is transparent, so it just sits on the photo. */
+  /* The menu's buttons, in the score card's colours: one big solid orange PLAY
+     and a row of three dark tiles outlined like the player rows. Sized off the
+     stack's own width (cqw), so the whole group scales as one. It sits above
+     the version stamp and the update arrow over it in the bottom-right corner. */
   .menu-buttons {
-    position: absolute; left: 0; right: 0; z-index: 1;
-    /* Lifted off the floor, but only just: the version line sits off to the
-       right of the stack rather than under it, so it needs no clearance.
-       The art carries empty floor below SETTINGS — BUTTON_BANDS has the last
-       band ending at 90.8%, so 9.2% of the sheet is padding. That is 4.2% of
-       the screen at this height, subtracted here so the number left over is
-       the gap you actually see under the bottom button. */
-    /* One number sizes the whole stack: the sheet keeps its aspect ratio and
-       every hit box is placed in percentages of it, so they scale together. */
-    bottom: calc(env(safe-area-inset-bottom) + 24px - 4.2%); height: 46%;
-    display: flex; justify-content: center;
+    position: absolute; z-index: 1; left: 50%; transform: translateX(-50%);
+    bottom: calc(env(safe-area-inset-bottom) + 92px);
+    width: min(80vw, 340px); container-type: inline-size;
+    display: flex; flex-direction: column; gap: 3.8cqw;
   }
-  .menu-buttons .sheet { position: relative; height: 100%; aspect-ratio: 941 / 1672; }
-  .menu-buttons img { height: 100%; width: 100%; display: block; }
-  /* Each hit box is measured off the artwork's pixels — see BUTTON_BANDS.
-     touch-action none: the browser never claims a long hold as a scroll, so
-     the 5-second secret-wheel press on SETTINGS survives to its timer. */
-  .hit { position: absolute; cursor: pointer; touch-action: none; }
+  .mplay, .mtile {
+    font-family: "CardName", "Roboto Condensed", system-ui, sans-serif; font-weight: 400;
+    color: #F4F8FF; cursor: pointer; border: 0; padding: 0;
+    -webkit-tap-highlight-color: transparent; transition: transform 90ms ease-out;
+  }
+  .mplay:active, .mtile:active { transform: scale(0.97); }
+  .mplay:focus-visible, .mtile:focus-visible { outline: 2px solid #FFFFFF; outline-offset: 3px; }
+  .mplay {
+    display: flex; align-items: center; gap: 3.6cqw; height: 24cqw; padding: 0 5cqw 0 3.4cqw;
+    border-radius: 6cqw; background: linear-gradient(180deg, #FF9A2E, #F7791E);
+    box-shadow: 0 0 6.4cqw rgba(247, 148, 30, 0.5), 0 1.4cqw 2cqw rgba(0, 0, 0, 0.45);
+  }
+  .mplay .mico { width: 17cqw; height: 17cqw; border-radius: 50%; background: rgba(0, 0, 0, 0.18); }
+  .mplay .mlbl { flex: 1 1 auto; text-align: center; font-size: 15.5cqw; letter-spacing: 0.02em;
+                 text-shadow: 0 0.06em 0.05em rgba(120, 40, 0, 0.5); }
+  .mrow { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3.8cqw; }
+  .mtile {
+    aspect-ratio: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 1.8cqw; border-radius: 6cqw; border: 0.9cqw solid transparent;
+    background: linear-gradient(#070B14, #070B14) padding-box,
+                linear-gradient(100deg, #1E6FFF, #3FA9FF 45%, #FF8A1E) border-box;
+    box-shadow: 0 0 6cqw rgba(30, 111, 255, 0.3);
+  }
+  .mtile .mico { width: 14cqw; height: 14cqw; color: #3FA9FF; }
+  .mtile .mlbl { font-size: 5.9cqw; letter-spacing: 0.02em;
+                 -webkit-text-stroke: 0.06em rgba(4, 10, 24, 0.9); paint-order: stroke fill; }
+  .mico { display: grid; place-items: center; flex: 0 0 auto; color: #F4F7FC; }
+  .mico svg { width: 62%; height: 62%; display: block; }
   /* The secret wheel's list — one name per line, kept between visits. */
   .secretbox {
     width: 100%; min-height: 130px; box-sizing: border-box; resize: none;
@@ -1046,11 +1064,6 @@
   .slotcard .tcorner { font-size: 15px; top: 3px; left: 5px; }
   .slotcard .tcorner.flip { top: auto; left: auto; bottom: 3px; right: 5px; }
   .slotcard .tmid { font-size: 32px; }
-  .menu-buttons-plain { position: absolute; left: 0; right: 0; z-index: 1;
-                        /* The fallback has no empty band, so it lifts clear of the line. */
-                        bottom: calc(env(safe-area-inset-bottom) + 34px); padding: 0 20px; }
-  .big.play { background: #F7941E; color: var(--pine); }
-  .big.menublue { background: #1B62B5; color: var(--off); }
 
   /* Black ground: the artwork's own edges are near-black, and pine would show as
      green bands around it. Stretched to fill the screen — the art's proportions are
@@ -1982,7 +1995,6 @@ function checkForUpdate() {
 
 /* Artwork, inlined as data URIs by web/build.js so this stays one file. */
 var MENU_IMAGE = "__MENU_IMAGE__";
-var BUTTONS_IMAGE = "__BUTTONS_IMAGE__";
 var GRASS_IMAGE = "__GRASS_IMAGE__";
 var NAV_RULES = "__NAV_RULES__";
 var NAV_HAND = "__NAV_HAND__";
@@ -5080,26 +5092,30 @@ function backBar(title) {
 }
 
 /*
- * The button artwork is one sheet with all four buttons painted in, so they can't be
- * laid out individually — the sheet is cropped to the button stack and four invisible
- * tap targets are tiled over it. Measured off newbuttons.png's actual pixels (alpha
- * scan of 941x1672): buttons sit at rows 164-468, 514-820, 862-1168 and 1208-1518,
- * paint spans columns 34-902. Band boundaries split the gaps at their midpoints, so
- * every tap snaps to the nearest button with no dead zones.
+ * The menu's buttons, drawn in the score card's colours: PLAY one big solid
+ * orange button, like Lock hole & draw when it is ready, and the other three a
+ * row of dark tiles outlined like the player rows. Icons in a 24-unit box.
  */
-var BUTTON_BANDS = [
-  ["play", 3.6, 9.81, 92.3, 19.56],
-  ["goCards", 3.6, 29.37, 92.3, 20.93],
-  ["goRules", 3.6, 50.30, 92.3, 20.75],
-  ["goSettings", 3.6, 71.05, 92.3, 19.74]
-];
+var MENU_ICONS = {
+  play: '<path d="M7 4.5v15a1 1 0 0 0 1.5.86l12-7.5a1 1 0 0 0 0-1.72l-12-7.5A1 1 0 0 0 7 4.5z" fill="currentColor"/>',
+  cards: '<rect x="2.5" y="5" width="11" height="15" rx="1.8" transform="rotate(-12 8 12.5)" fill="none" stroke="currentColor" stroke-width="1.8"/>' +
+    '<rect x="9" y="3.5" width="12" height="16" rx="1.8" fill="currentColor"/>' +
+    '<path d="M15 7.2c-1.6 2-3.6 3-3.6 4.8a1.8 1.8 0 0 0 3 1.1l-.7 2.1h2.6l-.7-2.1a1.8 1.8 0 0 0 3-1.1c0-1.8-2-2.8-3.6-4.8z" fill="#070B14"/>',
+  rules: '<path d="M2.5 5.5c3.2-1.2 6.4-1 9.5 1 3.1-2 6.3-2.2 9.5-1v13c-3.2-1.2-6.4-1-9.5 1-3.1-2-6.3-2.2-9.5-1z" fill="currentColor"/>' +
+    '<path d="M12 6.5v13" stroke="#070B14" stroke-width="1.4"/>' +
+    '<path d="M4.8 9.2c1.8-.4 3.6-.3 5.2.4M4.8 12c1.8-.4 3.6-.3 5.2.4M14 9.6c1.6-.7 3.4-.8 5.2-.4M14 12.4c1.6-.7 3.4-.8 5.2-.4" stroke="#070B14" stroke-width="1" stroke-linecap="round"/>',
+  settings: '<circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="3.6" stroke-dasharray="3.1 3.18"/>' +
+    '<circle cx="12" cy="12" r="6" fill="none" stroke="currentColor" stroke-width="3"/>'
+};
+function menuIcon(name) {
+  return '<span class="mico"><svg viewBox="0 0 24 24" aria-hidden="true">' + MENU_ICONS[name] + "</svg></span>";
+}
+function menuTile(act, icon, label) {
+  return '<button class="mtile" data-act="' + act + '">' + menuIcon(icon) +
+    '<span class="mlbl">' + label + "</span></button>";
+}
 
 function renderMenu() {
-  var targets = BUTTON_BANDS.map(function (b) {
-    return '<div class="hit" data-act="' + b[0] + '" style="left:' + b[1] +
-      '%;top:' + b[2] + '%;width:' + b[3] + '%;height:' + b[4] + '%"></div>';
-  }).join("");
-
   // A nudge, not a gate: it rides over the sky at the top, well clear of the button
   // bands, and tapping it goes straight to Settings. Saving a name is what clears
   // it — the face is optional, so a name-only player is done too.
@@ -5114,15 +5130,13 @@ function renderMenu() {
     (GRASS_IMAGE
       ? '<div class="menu-grass" style="background-image:url(' + GRASS_IMAGE + ')"></div>'
       : "") +
-    (BUTTONS_IMAGE
-      ? '<div class="menu-buttons"><div class="sheet">' +
-        '<img src="' + BUTTONS_IMAGE + '" alt="">' + targets + '</div></div>'
-      // Fallback if the sheet is missing, so the menu is never unusable.
-      : '<div class="menu-buttons-plain">' +
-        '<button class="big play" data-act="play">Play</button>' +
-        '<button class="big menublue" data-act="goCards">Cards</button>' +
-        '<button class="big menublue" data-act="goRules">Rules</button>' +
-        '<button class="big menublue" data-act="goSettings">Settings</button></div>') +
+    '<div class="menu-buttons">' +
+      '<button class="mplay" data-act="play">' + menuIcon("play") + '<span class="mlbl">PLAY</span></button>' +
+      '<div class="mrow">' +
+        menuTile("goCards", "cards", "CARDS") +
+        menuTile("goSettings", "settings", "SETTINGS") +
+        menuTile("goRules", "rules", "RULES") +
+      "</div></div>" +
     versionLine() +
     '</div>';
 }
@@ -11182,7 +11196,7 @@ app.addEventListener("pointerdown", function (e) {
 // Rapid taps read as a double-tap or long-press to the browser: keep its zoom
 // and its menus off the banner and the button bands.
 app.addEventListener("contextmenu", function (e) {
-  if (e.target.closest && e.target.closest(".hit, .menu-ftb")) e.preventDefault();
+  if (e.target.closest && e.target.closest(".menu-ftb")) e.preventDefault();
 });
 
 app.addEventListener("click", function (e) {
