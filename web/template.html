@@ -436,6 +436,7 @@
   .drawnframe .shape { background: #3A1466; }
   /* Common's silver frame is a rounded card, so its glow is too. */
   .drawnframe.silver .shape { clip-path: none; border-radius: 4.2cqw; background: #C9D2DE; }
+  .drawnframe.emerald .shape { clip-path: none; border-radius: 3.6cqw; background: #2FE04E; }
   .drawnframe .rim {
     background: conic-gradient(from var(--rimspin), #4A1586, #F3DDFF 8%, #B96BFF 18%, #3A1466 34%,
                                #B96BFF 52%, #F3DDFF 60%, #5B1FA6 74%, #4A1586);
@@ -1572,7 +1573,84 @@ function cardPicture(c) {
  */
 function drawnFrameHtml(c, words, drawing) {
   var label = ' role="img" aria-label="' + esc(c.name) + ". " + esc(words) + '"';
-  return drawing === "silver" ? silverFrameHtml(label) : amethystFrameHtml(label);
+  return drawing === "silver" ? silverFrameHtml(label)
+    : drawing === "emerald" ? emeraldFrameHtml(label)
+    : amethystFrameHtml(label);
+}
+
+/*
+ * Uncommon's frame: a broad band of glossy green glass with a hairline of chrome
+ * at the edge, the rules inside a double neon line with pale-green brackets at
+ * its corners, a green-glass bar rising round the badge, round emerald studs top,
+ * bottom and either side, and two small glints. Still, like common — round,
+ * polished stones rather than epic's cut diamonds keep the two tiers apart.
+ */
+function emeraldFrameHtml(label) {
+  var stud = function (x, y) {
+    return '<g transform="translate(' + x + " " + y + ')">' +
+      '<circle r="21" fill="url(#umChrome)" stroke="#5E6A7C" stroke-width="2"/>' +
+      '<circle r="15" fill="url(#umEmerald)"/>' +
+      '<circle cx="-5" cy="-6" r="4" fill="#FFFFFF" fill-opacity=".85"/></g>';
+  };
+  var glint = function (x, y, s, o) {
+    return '<path transform="translate(' + x + " " + y + ") scale(" + s + ')" fill="#FFFFFF" fill-opacity="' + o +
+      '" d="M0-22L4-4 22 0 4 4 0 22-4 4-22 0-4-4Z"/>';
+  };
+  return '<div class="drawnframe emerald"' + label + '>' +
+    '<div class="glow"><div class="shape"></div></div>' +
+    '<svg viewBox="0 0 1000 1333" preserveAspectRatio="none" aria-hidden="true">' +
+    '<defs>' +
+      '<linearGradient id="umGloss" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#A6FF8F"/>' +
+        '<stop offset=".22" stop-color="#2FE04E"/><stop offset=".5" stop-color="#0E8F2A"/>' +
+        '<stop offset=".75" stop-color="#3BEA58"/><stop offset="1" stop-color="#127A2A"/></linearGradient>' +
+      '<linearGradient id="umChrome" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFFFFF"/>' +
+        '<stop offset=".5" stop-color="#B9C3CF"/><stop offset="1" stop-color="#F2F5FA"/></linearGradient>' +
+      '<radialGradient id="umForest" cx=".5" cy=".2" r=".9"><stop offset="0" stop-color="#0E3A22"/>' +
+        '<stop offset=".6" stop-color="#062114"/><stop offset="1" stop-color="#03130B"/></radialGradient>' +
+      '<radialGradient id="umEmerald" cx=".38" cy=".32" r=".75"><stop offset="0" stop-color="#E9FFEE"/>' +
+        '<stop offset=".22" stop-color="#7DF29A"/><stop offset=".6" stop-color="#16A33E"/>' +
+        '<stop offset="1" stop-color="#05501B"/></radialGradient>' +
+      '<pattern id="umDots" width="22" height="22" patternUnits="userSpaceOnUse">' +
+        '<circle cx="11" cy="11" r="2.2" fill="#47D97F" fill-opacity=".09"/></pattern>' +
+      '<filter id="umGlow" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="5" result="b"/>' +
+        '<feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>' +
+    '</defs>' +
+    '<rect width="1000" height="1333" rx="36" fill="url(#umChrome)"/>' +
+    '<rect x="3" y="3" width="994" height="1327" rx="33" fill="url(#umGloss)"/>' +
+    '<path d="M46 16H954" stroke="#E4FFDC" stroke-opacity=".75" stroke-width="5" stroke-linecap="round"/>' +
+    '<path d="M16 60V1270" stroke="#E4FFDC" stroke-opacity=".25" stroke-width="3" stroke-linecap="round"/>' +
+    '<rect x="36" y="36" width="928" height="1261" rx="19" fill="url(#umForest)"/>' +
+    '<rect x="36" y="36" width="928" height="1261" rx="19" fill="url(#umDots)"/>' +
+    '<rect x="36" y="36" width="928" height="1261" rx="19" fill="none" stroke="#0A5A1E" stroke-width="4"/>' +
+    '<rect x="50" y="50" width="900" height="1016" rx="16" fill="none" stroke="#47D97F" stroke-width="5" filter="url(#umGlow)"/>' +
+    '<rect x="62" y="62" width="876" height="992" rx="11" fill="none" stroke="#47D97F" stroke-opacity=".35" stroke-width="2"/>' +
+    '<g fill="none" stroke="#9CFFB4" stroke-width="7" stroke-linecap="round" filter="url(#umGlow)">' +
+      '<path d="M50 140V72q0-22 22-22h70"/><path d="M950 140V72q0-22-22-22h-70"/>' +
+      '<path d="M50 976v68q0 22 22 22h70"/><path d="M950 976v68q0 22-22 22h-70"/></g>' +
+    '<path d="M36 1084H320l40-28h280l40 28H964v32H36z" fill="#0A5A1E"/>' +
+    '<path d="M36 1089H322l40-26h276l40 26H964v22H36z" fill="url(#umGloss)"/>' +
+    '<path d="M40 1092H322l40-26h276l40 26H960" fill="none" stroke="#E4FFDC" stroke-opacity=".55" stroke-width="3"/>' +
+    '<rect x="62" y="1150" width="270" height="110" rx="12" fill="#04170C" stroke="#47D97F" stroke-width="3" filter="url(#umGlow)"/>' +
+    '<rect x="668" y="1150" width="270" height="110" rx="12" fill="#04170C" stroke="#47D97F" stroke-width="3" filter="url(#umGlow)"/>' +
+    '<text x="803" y="1219" text-anchor="middle" font-family="CardBody, sans-serif" font-size="42" letter-spacing="2" ' +
+      'fill="#F2F5FA" stroke="#03130B" stroke-width="5" paint-order="stroke">UNCOMMON</text>' +
+    '<g fill="url(#umChrome)" stroke="#5E6A7C" stroke-width="2">' +
+      '<path d="M140 4h46l-34 28h-46z"/><path d="M860 4h-46l34 28h46z"/>' +
+      '<path d="M140 1329h46l-34-28h-46z"/><path d="M860 1329h-46l34-28h46z"/>' +
+      '<path d="M4 600v50l26-20v-50z"/><path d="M996 600v50l-26-20v-50z"/></g>' +
+    '<g transform="translate(500 1170)">' +
+      '<circle r="142" fill="url(#umGloss)"/>' +
+      '<circle r="142" fill="none" stroke="#0A5A1E" stroke-width="4" stroke-dasharray="6 18"/>' +
+      '<circle r="128" fill="url(#umGloss)"/>' +
+      '<circle r="110" fill="#0A1A33"/>' +
+      '<path d="M0-110A110 110 0 0 0 0 110Z" fill="#103A7A" fill-opacity=".55"/>' +
+      '<path d="M0-110A110 110 0 0 1 0 110Z" fill="#7A3A10" fill-opacity=".45"/>' +
+      '<circle r="110" fill="none" stroke="#47D97F" stroke-width="4" filter="url(#umGlow)"/>' +
+      '<g transform="scale(2.3) translate(-50 -50)">' + BASKET_PATHS("#F2F5FA", "#D5DCE8", "#1A2C4A") + '</g>' +
+    '</g>' +
+    stud(500, 18) + stud(18, 666) + stud(982, 666) + stud(500, 1315) +
+    glint(70, 22, 0.8, 0.9) + glint(976, 1236, 0.6, 0.75) +
+    '</svg></div>';
 }
 
 /*

@@ -436,6 +436,7 @@
   .drawnframe .shape { background: #3A1466; }
   /* Common's silver frame is a rounded card, so its glow is too. */
   .drawnframe.silver .shape { clip-path: none; border-radius: 4.2cqw; background: #C9D2DE; }
+  .drawnframe.emerald .shape { clip-path: none; border-radius: 3.6cqw; background: #2FE04E; }
   .drawnframe .rim {
     background: conic-gradient(from var(--rimspin), #4A1586, #F3DDFF 8%, #B96BFF 18%, #3A1466 34%,
                                #B96BFF 52%, #F3DDFF 60%, #5B1FA6 74%, #4A1586);
@@ -1414,7 +1415,7 @@ var CARD_ART = {"31":"assets/card_31.png","43":"assets/card_43.png","54":"assets
 var ART_BOXES = {"31":{"x":0.1065,"y":0.6841,"w":0.786,"h":0.1319,"ar":0.7347},"43":{"x":0.1054,"y":0.7005,"w":0.7902,"h":0.1171,"ar":0.7242},"54":{"x":0.1065,"y":0.6968,"w":0.7889,"h":0.1286,"ar":0.723},"57":{"x":0.1061,"y":0.6655,"w":0.7877,"h":0.1597,"ar":0.7453},"59":{"x":0.1037,"y":0.7018,"w":0.7916,"h":0.1287,"ar":0.7187},"61":{"ar":0.6841,"text":{"x":0.1014,"y":0.6698,"w":0.7973,"h":0.1565},"timing":{"x":0.2424,"y":0.0214,"w":0.5266,"h":0.03,"pad":0.1115}}};
 /* One frame per rarity, worn by every card of that rarity with no painting of
    its own. The same shape as an art box, plus the picture to wear. */
-var ART_FRAMES = {"rare":{"image":"assets/frame_rare.png","ar":0.7448,"timing":{"x":0.0777,"y":0.0742,"w":0.8436,"h":0.0282},"title":{"x":0.0777,"y":0.1039,"w":0.8436,"h":0.0786},"text":{"x":0.1116,"y":0.1966,"w":0.7759,"h":0.5007},"kind":{"x":0.0657,"y":0.8242,"w":0.259,"h":0.0645}},"uncommon":{"image":"assets/frame_uncommon.png","ar":0.7502,"timing":{"x":0.0601,"y":0.0554,"w":0.8798,"h":0.0318},"title":{"x":0.0601,"y":0.088,"w":0.8798,"h":0.0872},"text":{"x":0.0936,"y":0.1914,"w":0.8128,"h":0.5565},"kind":{"x":0.0709,"y":0.8744,"w":0.2542,"h":0.0628}},"common":{"drawn":"silver","ar":0.742,"timing":{"x":0.058,"y":0.0445,"w":0.8841,"h":0.0328},"title":{"x":0.058,"y":0.0787,"w":0.8841,"h":0.0897},"text":{"x":0.0914,"y":0.1844,"w":0.8173,"h":0.5729},"kind":{"x":0.0707,"y":0.8732,"w":0.2682,"h":0.0641}},"epic":{"drawn":"amethyst","ar":0.7082,"timing":{"x":0.0851,"y":0.0938,"w":0.8308,"h":0.026},"title":{"x":0.0851,"y":0.1212,"w":0.8308,"h":0.0726},"text":{"x":0.118,"y":0.2075,"w":0.765,"h":0.4637},"kind":{"x":0.0783,"y":0.8233,"w":0.2573,"h":0.0527}}};
+var ART_FRAMES = {"rare":{"image":"assets/frame_rare.png","ar":0.7448,"timing":{"x":0.0777,"y":0.0742,"w":0.8436,"h":0.0282},"title":{"x":0.0777,"y":0.1039,"w":0.8436,"h":0.0786},"text":{"x":0.1116,"y":0.1966,"w":0.7759,"h":0.5007},"kind":{"x":0.0657,"y":0.8242,"w":0.259,"h":0.0645}},"common":{"drawn":"silver","ar":0.742,"timing":{"x":0.058,"y":0.0445,"w":0.8841,"h":0.0328},"title":{"x":0.058,"y":0.0787,"w":0.8841,"h":0.0897},"text":{"x":0.0914,"y":0.1844,"w":0.8173,"h":0.5729},"kind":{"x":0.0707,"y":0.8732,"w":0.2682,"h":0.0641}},"uncommon":{"drawn":"emerald","ar":0.7502,"timing":{"x":0.0601,"y":0.0554,"w":0.8798,"h":0.0318},"title":{"x":0.0601,"y":0.088,"w":0.8798,"h":0.0872},"text":{"x":0.0936,"y":0.1914,"w":0.8128,"h":0.5565},"kind":{"x":0.0709,"y":0.8744,"w":0.2542,"h":0.0628}},"epic":{"drawn":"amethyst","ar":0.7082,"timing":{"x":0.0851,"y":0.0938,"w":0.8308,"h":0.026},"title":{"x":0.0851,"y":0.1212,"w":0.8308,"h":0.0726},"text":{"x":0.118,"y":0.2075,"w":0.765,"h":0.4637},"kind":{"x":0.0783,"y":0.8233,"w":0.2573,"h":0.0527}}};
 
 /*
  * A painted card with its words dropped into the panel the painting left empty.
@@ -1572,7 +1573,84 @@ function cardPicture(c) {
  */
 function drawnFrameHtml(c, words, drawing) {
   var label = ' role="img" aria-label="' + esc(c.name) + ". " + esc(words) + '"';
-  return drawing === "silver" ? silverFrameHtml(label) : amethystFrameHtml(label);
+  return drawing === "silver" ? silverFrameHtml(label)
+    : drawing === "emerald" ? emeraldFrameHtml(label)
+    : amethystFrameHtml(label);
+}
+
+/*
+ * Uncommon's frame: a broad band of glossy green glass with a hairline of chrome
+ * at the edge, the rules inside a double neon line with pale-green brackets at
+ * its corners, a green-glass bar rising round the badge, round emerald studs top,
+ * bottom and either side, and two small glints. Still, like common — round,
+ * polished stones rather than epic's cut diamonds keep the two tiers apart.
+ */
+function emeraldFrameHtml(label) {
+  var stud = function (x, y) {
+    return '<g transform="translate(' + x + " " + y + ')">' +
+      '<circle r="21" fill="url(#umChrome)" stroke="#5E6A7C" stroke-width="2"/>' +
+      '<circle r="15" fill="url(#umEmerald)"/>' +
+      '<circle cx="-5" cy="-6" r="4" fill="#FFFFFF" fill-opacity=".85"/></g>';
+  };
+  var glint = function (x, y, s, o) {
+    return '<path transform="translate(' + x + " " + y + ") scale(" + s + ')" fill="#FFFFFF" fill-opacity="' + o +
+      '" d="M0-22L4-4 22 0 4 4 0 22-4 4-22 0-4-4Z"/>';
+  };
+  return '<div class="drawnframe emerald"' + label + '>' +
+    '<div class="glow"><div class="shape"></div></div>' +
+    '<svg viewBox="0 0 1000 1333" preserveAspectRatio="none" aria-hidden="true">' +
+    '<defs>' +
+      '<linearGradient id="umGloss" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#A6FF8F"/>' +
+        '<stop offset=".22" stop-color="#2FE04E"/><stop offset=".5" stop-color="#0E8F2A"/>' +
+        '<stop offset=".75" stop-color="#3BEA58"/><stop offset="1" stop-color="#127A2A"/></linearGradient>' +
+      '<linearGradient id="umChrome" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFFFFF"/>' +
+        '<stop offset=".5" stop-color="#B9C3CF"/><stop offset="1" stop-color="#F2F5FA"/></linearGradient>' +
+      '<radialGradient id="umForest" cx=".5" cy=".2" r=".9"><stop offset="0" stop-color="#0E3A22"/>' +
+        '<stop offset=".6" stop-color="#062114"/><stop offset="1" stop-color="#03130B"/></radialGradient>' +
+      '<radialGradient id="umEmerald" cx=".38" cy=".32" r=".75"><stop offset="0" stop-color="#E9FFEE"/>' +
+        '<stop offset=".22" stop-color="#7DF29A"/><stop offset=".6" stop-color="#16A33E"/>' +
+        '<stop offset="1" stop-color="#05501B"/></radialGradient>' +
+      '<pattern id="umDots" width="22" height="22" patternUnits="userSpaceOnUse">' +
+        '<circle cx="11" cy="11" r="2.2" fill="#47D97F" fill-opacity=".09"/></pattern>' +
+      '<filter id="umGlow" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="5" result="b"/>' +
+        '<feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>' +
+    '</defs>' +
+    '<rect width="1000" height="1333" rx="36" fill="url(#umChrome)"/>' +
+    '<rect x="3" y="3" width="994" height="1327" rx="33" fill="url(#umGloss)"/>' +
+    '<path d="M46 16H954" stroke="#E4FFDC" stroke-opacity=".75" stroke-width="5" stroke-linecap="round"/>' +
+    '<path d="M16 60V1270" stroke="#E4FFDC" stroke-opacity=".25" stroke-width="3" stroke-linecap="round"/>' +
+    '<rect x="36" y="36" width="928" height="1261" rx="19" fill="url(#umForest)"/>' +
+    '<rect x="36" y="36" width="928" height="1261" rx="19" fill="url(#umDots)"/>' +
+    '<rect x="36" y="36" width="928" height="1261" rx="19" fill="none" stroke="#0A5A1E" stroke-width="4"/>' +
+    '<rect x="50" y="50" width="900" height="1016" rx="16" fill="none" stroke="#47D97F" stroke-width="5" filter="url(#umGlow)"/>' +
+    '<rect x="62" y="62" width="876" height="992" rx="11" fill="none" stroke="#47D97F" stroke-opacity=".35" stroke-width="2"/>' +
+    '<g fill="none" stroke="#9CFFB4" stroke-width="7" stroke-linecap="round" filter="url(#umGlow)">' +
+      '<path d="M50 140V72q0-22 22-22h70"/><path d="M950 140V72q0-22-22-22h-70"/>' +
+      '<path d="M50 976v68q0 22 22 22h70"/><path d="M950 976v68q0 22-22 22h-70"/></g>' +
+    '<path d="M36 1084H320l40-28h280l40 28H964v32H36z" fill="#0A5A1E"/>' +
+    '<path d="M36 1089H322l40-26h276l40 26H964v22H36z" fill="url(#umGloss)"/>' +
+    '<path d="M40 1092H322l40-26h276l40 26H960" fill="none" stroke="#E4FFDC" stroke-opacity=".55" stroke-width="3"/>' +
+    '<rect x="62" y="1150" width="270" height="110" rx="12" fill="#04170C" stroke="#47D97F" stroke-width="3" filter="url(#umGlow)"/>' +
+    '<rect x="668" y="1150" width="270" height="110" rx="12" fill="#04170C" stroke="#47D97F" stroke-width="3" filter="url(#umGlow)"/>' +
+    '<text x="803" y="1219" text-anchor="middle" font-family="CardBody, sans-serif" font-size="42" letter-spacing="2" ' +
+      'fill="#F2F5FA" stroke="#03130B" stroke-width="5" paint-order="stroke">UNCOMMON</text>' +
+    '<g fill="url(#umChrome)" stroke="#5E6A7C" stroke-width="2">' +
+      '<path d="M140 4h46l-34 28h-46z"/><path d="M860 4h-46l34 28h46z"/>' +
+      '<path d="M140 1329h46l-34-28h-46z"/><path d="M860 1329h-46l34-28h46z"/>' +
+      '<path d="M4 600v50l26-20v-50z"/><path d="M996 600v50l-26-20v-50z"/></g>' +
+    '<g transform="translate(500 1170)">' +
+      '<circle r="142" fill="url(#umGloss)"/>' +
+      '<circle r="142" fill="none" stroke="#0A5A1E" stroke-width="4" stroke-dasharray="6 18"/>' +
+      '<circle r="128" fill="url(#umGloss)"/>' +
+      '<circle r="110" fill="#0A1A33"/>' +
+      '<path d="M0-110A110 110 0 0 0 0 110Z" fill="#103A7A" fill-opacity=".55"/>' +
+      '<path d="M0-110A110 110 0 0 1 0 110Z" fill="#7A3A10" fill-opacity=".45"/>' +
+      '<circle r="110" fill="none" stroke="#47D97F" stroke-width="4" filter="url(#umGlow)"/>' +
+      '<g transform="scale(2.3) translate(-50 -50)">' + BASKET_PATHS("#F2F5FA", "#D5DCE8", "#1A2C4A") + '</g>' +
+    '</g>' +
+    stud(500, 18) + stud(18, 666) + stud(982, 666) + stud(500, 1315) +
+    glint(70, 22, 0.8, 0.9) + glint(976, 1236, 0.6, 0.75) +
+    '</svg></div>';
 }
 
 /*
@@ -1750,7 +1828,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.3.152 · 9 Oct 01:31";
+var APP_VERSION = "v1.3.153 · 9 Oct 01:39";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. The arrow beside it goes and looks for a

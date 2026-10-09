@@ -55,6 +55,7 @@
   }
  },
  "uncommon": {
+  "drawn": "emerald",
   "ar": 0.7502,
   "timing": {
    "x": 0.0601,
