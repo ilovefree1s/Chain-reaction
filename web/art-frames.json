@@ -28,6 +28,7 @@
   }
  },
  "rare": {
+  "drawn": "crest",
   "ar": 0.7448,
   "timing": {
    "x": 0.0777,

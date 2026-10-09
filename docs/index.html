@@ -437,6 +437,7 @@
   /* Common's silver frame is a rounded card, so its glow is too. */
   .drawnframe.silver .shape { clip-path: none; border-radius: 4.2cqw; background: #C9D2DE; }
   .drawnframe.emerald .shape { clip-path: none; border-radius: 3.6cqw; background: #2FE04E; }
+  .drawnframe.crest .shape { clip-path: none; border-radius: 4cqw; background: #1A66E0; }
   .drawnframe .rim {
     background: conic-gradient(from var(--rimspin), #4A1586, #F3DDFF 8%, #B96BFF 18%, #3A1466 34%,
                                #B96BFF 52%, #F3DDFF 60%, #5B1FA6 74%, #4A1586);
@@ -1415,7 +1416,7 @@ var CARD_ART = {"31":"assets/card_31.png","43":"assets/card_43.png","54":"assets
 var ART_BOXES = {"31":{"x":0.1065,"y":0.6841,"w":0.786,"h":0.1319,"ar":0.7347},"43":{"x":0.1054,"y":0.7005,"w":0.7902,"h":0.1171,"ar":0.7242},"54":{"x":0.1065,"y":0.6968,"w":0.7889,"h":0.1286,"ar":0.723},"57":{"x":0.1061,"y":0.6655,"w":0.7877,"h":0.1597,"ar":0.7453},"59":{"x":0.1037,"y":0.7018,"w":0.7916,"h":0.1287,"ar":0.7187},"61":{"ar":0.6841,"text":{"x":0.1014,"y":0.6698,"w":0.7973,"h":0.1565},"timing":{"x":0.2424,"y":0.0214,"w":0.5266,"h":0.03,"pad":0.1115}}};
 /* One frame per rarity, worn by every card of that rarity with no painting of
    its own. The same shape as an art box, plus the picture to wear. */
-var ART_FRAMES = {"rare":{"image":"assets/frame_rare.png","ar":0.7448,"timing":{"x":0.0777,"y":0.0742,"w":0.8436,"h":0.0282},"title":{"x":0.0777,"y":0.1039,"w":0.8436,"h":0.0786},"text":{"x":0.1116,"y":0.1966,"w":0.7759,"h":0.5007},"kind":{"x":0.0657,"y":0.8242,"w":0.259,"h":0.0645}},"common":{"drawn":"silver","ar":0.742,"timing":{"x":0.058,"y":0.0445,"w":0.8841,"h":0.0328},"title":{"x":0.058,"y":0.0787,"w":0.8841,"h":0.0897},"text":{"x":0.0914,"y":0.1844,"w":0.8173,"h":0.5729},"kind":{"x":0.0707,"y":0.8732,"w":0.2682,"h":0.0641}},"uncommon":{"drawn":"emerald","ar":0.7502,"timing":{"x":0.0601,"y":0.0554,"w":0.8798,"h":0.0318},"title":{"x":0.0601,"y":0.088,"w":0.8798,"h":0.0872},"text":{"x":0.0936,"y":0.1914,"w":0.8128,"h":0.5565},"kind":{"x":0.0709,"y":0.8744,"w":0.2542,"h":0.0628}},"epic":{"drawn":"amethyst","ar":0.7082,"timing":{"x":0.0851,"y":0.0938,"w":0.8308,"h":0.026},"title":{"x":0.0851,"y":0.1212,"w":0.8308,"h":0.0726},"text":{"x":0.118,"y":0.2075,"w":0.765,"h":0.4637},"kind":{"x":0.0783,"y":0.8233,"w":0.2573,"h":0.0527}}};
+var ART_FRAMES = {"common":{"drawn":"silver","ar":0.742,"timing":{"x":0.058,"y":0.0445,"w":0.8841,"h":0.0328},"title":{"x":0.058,"y":0.0787,"w":0.8841,"h":0.0897},"text":{"x":0.0914,"y":0.1844,"w":0.8173,"h":0.5729},"kind":{"x":0.0707,"y":0.8732,"w":0.2682,"h":0.0641}},"rare":{"drawn":"crest","ar":0.7448,"timing":{"x":0.0777,"y":0.0742,"w":0.8436,"h":0.0282},"title":{"x":0.0777,"y":0.1039,"w":0.8436,"h":0.0786},"text":{"x":0.1116,"y":0.1966,"w":0.7759,"h":0.5007},"kind":{"x":0.0657,"y":0.8242,"w":0.259,"h":0.0645}},"uncommon":{"drawn":"emerald","ar":0.7502,"timing":{"x":0.0601,"y":0.0554,"w":0.8798,"h":0.0318},"title":{"x":0.0601,"y":0.088,"w":0.8798,"h":0.0872},"text":{"x":0.0936,"y":0.1914,"w":0.8128,"h":0.5565},"kind":{"x":0.0709,"y":0.8744,"w":0.2542,"h":0.0628}},"epic":{"drawn":"amethyst","ar":0.7082,"timing":{"x":0.0851,"y":0.0938,"w":0.8308,"h":0.026},"title":{"x":0.0851,"y":0.1212,"w":0.8308,"h":0.0726},"text":{"x":0.118,"y":0.2075,"w":0.765,"h":0.4637},"kind":{"x":0.0783,"y":0.8233,"w":0.2573,"h":0.0527}}};
 
 /*
  * A painted card with its words dropped into the panel the painting left empty.
@@ -1575,7 +1576,80 @@ function drawnFrameHtml(c, words, drawing) {
   var label = ' role="img" aria-label="' + esc(c.name) + ". " + esc(words) + '"';
   return drawing === "silver" ? silverFrameHtml(label)
     : drawing === "emerald" ? emeraldFrameHtml(label)
+    : drawing === "crest" ? crestFrameHtml(label)
     : amethystFrameHtml(label);
+}
+
+/*
+ * Rare's frame: a rounded rim of deep blue steel, a raised crest across the top
+ * holding a sapphire and a smaller one under the badge, a smoky blue inside
+ * with honeycomb fading in at the corners, and sapphires above and below the
+ * badge. The smoke is made from noise in the page rather than shipped as a
+ * picture. Still, like common and uncommon.
+ */
+function crestFrameHtml(label) {
+  return '<div class="drawnframe crest"' + label + '>' +
+    '<div class="glow"><div class="shape"></div></div>' +
+    '<svg viewBox="0 0 1000 1343" preserveAspectRatio="none" aria-hidden="true">' +
+    '<defs>' +
+      '<linearGradient id="rrSteel" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3FA2FF"/>' +
+        '<stop offset=".25" stop-color="#1A66E0"/><stop offset=".5" stop-color="#082C84"/>' +
+        '<stop offset=".75" stop-color="#2580F0"/><stop offset="1" stop-color="#0A3290"/></linearGradient>' +
+      '<linearGradient id="rrBright" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5CB8FF"/>' +
+        '<stop offset=".3" stop-color="#2C86FF"/><stop offset=".55" stop-color="#1248B8"/>' +
+        '<stop offset=".8" stop-color="#3C98FF"/><stop offset="1" stop-color="#1650C4"/></linearGradient>' +
+      '<linearGradient id="rrChrome" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#BFE2FF"/>' +
+        '<stop offset=".5" stop-color="#4E9CF0"/><stop offset="1" stop-color="#9FD0FF"/></linearGradient>' +
+      '<linearGradient id="rrStone" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#EAF6FF"/>' +
+        '<stop offset=".4" stop-color="#5CC0FF"/><stop offset="1" stop-color="#0A3C9E"/></linearGradient>' +
+      '<radialGradient id="rrDeep" cx=".5" cy=".2" r=".9"><stop offset="0" stop-color="#14408A"/>' +
+        '<stop offset=".6" stop-color="#081C46"/><stop offset="1" stop-color="#040D24"/></radialGradient>' +
+      '<pattern id="rrHex" width="36" height="62" patternUnits="userSpaceOnUse">' +
+        '<path d="M18 0l18 10.4v20.8L18 41.6 0 31.2V10.4zM18 41.6V62" fill="none" stroke="#5CC0FF" stroke-opacity=".12" stroke-width="2"/></pattern>' +
+      '<filter id="rrSmoke" x="0" y="0" width="100%" height="100%">' +
+        '<feTurbulence type="fractalNoise" baseFrequency=".006 .012" numOctaves="3" seed="7"/>' +
+        '<feColorMatrix values="0 0 0 0 .35  0 0 0 0 .6  0 0 0 0 1  0 0 0 .9 -.35"/></filter>' +
+      '<filter id="rrGlow" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="6" result="b"/>' +
+        '<feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>' +
+      '<radialGradient id="rrFade" cx=".5" cy=".5" r=".7"><stop offset=".55" stop-color="#000"/>' +
+        '<stop offset="1" stop-color="#fff"/></radialGradient>' +
+      '<mask id="rrCorners"><rect width="1000" height="1343" fill="url(#rrFade)"/></mask>' +
+      '<clipPath id="rrPanel"><rect x="56" y="56" width="888" height="1231" rx="16"/></clipPath>' +
+    '</defs>' +
+    '<rect width="1000" height="1343" rx="40" fill="url(#rrSteel)"/>' +
+    '<rect x="24" y="24" width="952" height="1295" rx="26" fill="#051A4A"/>' +
+    '<rect x="24" y="24" width="952" height="1295" rx="26" fill="none" stroke="#8FD0FF" stroke-opacity=".45" stroke-width="2"/>' +
+    '<rect x="56" y="56" width="888" height="1231" rx="16" fill="url(#rrDeep)"/>' +
+    '<rect x="56" y="56" width="888" height="1231" filter="url(#rrSmoke)" opacity=".55" clip-path="url(#rrPanel)"/>' +
+    '<rect x="56" y="56" width="888" height="1231" rx="16" fill="url(#rrHex)" mask="url(#rrCorners)"/>' +
+    '<rect x="74" y="74" width="852" height="936" rx="12" fill="none" stroke="#4DB6FF" stroke-width="5" filter="url(#rrGlow)"/>' +
+    '<path d="M56 1026H944v22H56z" fill="url(#rrBright)"/>' +
+    '<path d="M60 1027H940" stroke="#8FD0FF" stroke-opacity=".5" stroke-width="3"/>' +
+    '<rect x="44" y="1066" width="300" height="146" rx="10" fill="#06173C" stroke="#4DB6FF" stroke-width="3" filter="url(#rrGlow)"/>' +
+    '<rect x="656" y="1066" width="300" height="146" rx="10" fill="#06173C" stroke="#4DB6FF" stroke-width="3" filter="url(#rrGlow)"/>' +
+    '<text x="806" y="1172" text-anchor="middle" font-family="CardName, Roboto Condensed, sans-serif" font-size="104" ' +
+      'letter-spacing="4" fill="#F4F8FF" stroke="#04102A" stroke-width="7" paint-order="stroke">RARE</text>' +
+    '<g fill="url(#rrChrome)" stroke="#123E8C" stroke-width="2">' +
+      '<path d="M330 1084l28 22-28 22h-24l28-22-28-22z"/><path d="M670 1084l-28 22 28 22h24l-28-22 28-22z"/></g>' +
+    '<g transform="translate(500 1112)">' +
+      '<circle r="142" fill="url(#rrBright)"/>' +
+      '<circle r="142" fill="none" stroke="#051A4A" stroke-width="5"/>' +
+      '<circle r="124" fill="url(#rrChrome)"/>' +
+      '<circle r="110" fill="#0A1A33"/>' +
+      '<path d="M0-110A110 110 0 0 0 0 110Z" fill="#103A7A" fill-opacity=".55"/>' +
+      '<path d="M0-110A110 110 0 0 1 0 110Z" fill="#7A3A10" fill-opacity=".45"/>' +
+      '<circle r="110" fill="none" stroke="#4DB6FF" stroke-width="4" filter="url(#rrGlow)"/>' +
+      '<g transform="scale(2.3) translate(-50 -50)">' + BASKET_PATHS("#F2F5FA", "#D5DCE8", "#1A2C4A") + '</g>' +
+    '</g>' +
+    '<g fill="url(#rrBright)" stroke="#8FD0FF" stroke-opacity=".7" stroke-width="2">' +
+      '<path d="M330 0H670L630 48H560L500 70 440 48H370Z"/>' +
+      '<path d="M380 1343H620L590 1310H540L500 1296 460 1310H410Z"/></g>' +
+    '<g fill="url(#rrChrome)" stroke="#123E8C" stroke-width="2">' +
+      '<path d="M330 0h40l-30 36h-40z"/><path d="M670 0h-40l30 36h40z"/></g>' +
+    '<g fill="url(#rrStone)" stroke="#EAF6FF" stroke-width="2.5" filter="url(#rrGlow)">' +
+      '<path d="M500 940l24 34-24 34-24-34z"/><path d="M500 1238l26 38-26 38-26-38z"/>' +
+      '<path d="M500 -20l36 56-36 56-36-56z"/></g>' +
+    '</svg></div>';
 }
 
 /*
@@ -1828,7 +1902,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.3.153 · 9 Oct 01:39";
+var APP_VERSION = "v1.3.154 · 9 Oct 01:52";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. The arrow beside it goes and looks for a
