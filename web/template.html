@@ -377,6 +377,18 @@
   .rmt span { font-size: 13px; color: var(--sage); }
   @media (prefers-reduced-motion: reduce) { .rchev { transition: none; } }
 
+  /* A helpful tip: a slim line where the thing it explains is, closed with ✕. */
+  .tip { display: flex; align-items: center; gap: 9px; margin: 0 0 6px; padding: 6px 4px 6px 10px; border-radius: 12px;
+         background: rgba(255, 138, 30, 0.1); border: 1px solid rgba(255, 138, 30, 0.45); }
+  /* Over the fan it sits in the empty space above the cards rather than
+     pushing them down, so the tab still fits a short phone. */
+  .handpage.fan .tip { position: relative; z-index: 1; margin-bottom: -26px; background: #160E08; }
+  .tipic { flex: 0 0 auto; color: #FF8A1E; display: grid; place-items: center; }
+  .tipic svg { width: 18px; height: 18px; }
+  .tiptx { flex: 1; min-width: 0; font-size: 12.5px; line-height: 1.3; color: var(--off); }
+  .tipx { flex: 0 0 auto; width: 32px; height: 32px; min-height: 0; padding: 0; border-radius: 50%; background: none;
+          color: var(--sage); font-size: 20px; line-height: 1; }
+
   /* ---- the HAND tab ---- */
   /* The switch in the top corner, fanned cards or a list, the one in use lit. */
   .backbar .viewtog { position: absolute; right: 0; display: flex; gap: 2px; padding: 3px; border-radius: 99px;
@@ -6288,7 +6300,7 @@ function renderHand() {
       (room > 0 ? '<div class="hrow hslot">' + plural(room, "open slot") + "</div>" : "") + "</div>";
   } else {
     var n = s.hand.length, sp = FAN_SPREAD[Math.min(n, 7)];
-    cards = '<div class="hfan" style="--st:' + sp[0] + ";--an:" + sp[1] + '">' + s.hand.map(function (id, k) {
+    cards = (n > 1 ? tipHtml("fanSlide") : "") + '<div class="hfan" style="--st:' + sp[0] + ";--an:" + sp[1] + '">' + s.hand.map(function (id, k) {
       return handFaceHtml(BY_ID[id], act, picked(id), held[id] != null, k, n);
     }).join("") + "</div>";
   }
@@ -7319,6 +7331,29 @@ function settingsGroupValid() { return myNameDraft.trim() !== ""; }
 
 /* Whether the game offers its helpful tips — on unless a player switched them off. */
 function tipsOn() { return settings.tips !== false; }
+
+/*
+ * The helpful tips, each shown in the place it is about until the player
+ * closes it or does the thing it describes, and never again after that.
+ * Switching tips off in Settings hides them all; the ones already seen stay
+ * seen if they are switched back on.
+ */
+var TIPS = {
+  fanSlide: "Touch a card and keep your finger down, then slide left and right to read through your hand."
+};
+function tipSeen(key) { return !!(settings.tipsSeen && settings.tipsSeen[key]); }
+function markTipSeen(key) {
+  if (tipSeen(key)) return;
+  settings.tipsSeen = settings.tipsSeen || {};
+  settings.tipsSeen[key] = true;
+  putSettings(settings);
+}
+function tipHtml(key) {
+  if (!tipsOn() || tipSeen(key) || !TIPS[key]) return "";
+  return '<div class="tip" role="note"><span class="tipic">' + setIcon("tips") + "</span>" +
+    '<span class="tiptx">' + esc(TIPS[key]) + "</span>" +
+    '<button class="tipx" data-act="tipDone" data-t="' + key + '" aria-label="Got it, hide this tip">&times;</button></div>';
+}
 
 var SET_ICONS = {
   course: '<path d="M5 21V3"/><path d="M5 4l11 3.5L5 11"/><path d="M3 21h12"/><path d="M15 15h6l-1 3h-4z"/><path d="M18 18v3"/>',
@@ -11946,6 +11981,8 @@ function scrubLetGo() {
   if (d.peek && d.peek.parentNode) d.peek.parentNode.removeChild(d.peek);
   if (d.card) { d.card.classList.remove("lift"); d.card.style.zIndex = d.z; }
   if (d.peek || d.moved) peekAte = true;
+  // Slid through the fan: the tip that says how has done its job.
+  if (d.moved && d.axis === "x" && !tipSeen("fanSlide")) { markTipSeen("fanSlide"); scrubMissedRender = true; }
   // A repaint that waited for the finger, after the tap (if it was one) lands.
   if (scrubMissedRender) { scrubMissedRender = false; setTimeout(render, 80); }
 }
@@ -12192,6 +12229,7 @@ app.addEventListener("click", function (e) {
       screen = "settings"; render(); break;
 
     // ---- settings ----
+    case "tipDone": markTipSeen(el.getAttribute("data-t")); render(); break;
     case "toggleTips":
       settings.tips = !tipsOn();
       putSettings(settings); render(); break;
