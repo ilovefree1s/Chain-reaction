@@ -624,21 +624,23 @@
   .drawnframe { position: absolute; inset: 0; }
   .drawnframe .glow { position: absolute; inset: 0; }
   .drawnframe .shape, .drawnframe .rim, .drawnframe .void {
-    position: absolute; inset: 0;
-    clip-path: polygon(8% 0, 92% 0, 100% 5.7%, 100% 94.3%, 92% 100%, 8% 100%, 0 94.3%, 0 5.7%);
+    position: absolute; inset: 0; border-radius: 4cqw;
   }
   .drawnframe .shape { background: #3A1466; }
   /* Common's silver frame is a rounded card, so its glow is too. */
-  .drawnframe.silver .shape { clip-path: none; border-radius: 4.2cqw; background: #C9D2DE; }
-  .drawnframe.emerald .shape { clip-path: none; border-radius: 3.6cqw; background: #2FE04E; }
-  .drawnframe.crest .shape { clip-path: none; border-radius: 4cqw; background: #1A66E0; }
+  .drawnframe.silver .shape { border-radius: 4.2cqw; background: #C9D2DE; }
+  .drawnframe.emerald .shape { border-radius: 3.6cqw; background: #2FE04E; }
+  .drawnframe.crest .shape { border-radius: 4cqw; background: #1A66E0; }
+  /* The light racing round the rim, the way it races round the SPIN THE GAMBLE
+     WHEEL!! button: a white-hot streak with a violet tail, chased by a fainter
+     one, on deep purple. */
   .drawnframe .rim {
-    background: conic-gradient(from var(--rimspin), #4A1586, #F3DDFF 8%, #B96BFF 18%, #3A1466 34%,
-                               #B96BFF 52%, #F3DDFF 60%, #5B1FA6 74%, #4A1586);
-    animation: rimspin 6s linear infinite;
+    background: conic-gradient(from var(--rimspin), #3A1466, #FFFFFF 5%, #F3DDFF 9%, #B96BFF 16%, #4A1586 30%,
+                               #3A1466 46%, #E8C8FF 53%, #B96BFF 59%, #4A1586 72%, #3A1466);
+    animation: rimspin 3s linear infinite;
   }
   .drawnframe .void {
-    inset: 2.4cqw;
+    inset: 2.4cqw; border-radius: 1.6cqw;
     background:
       radial-gradient(120% 70% at 50% 0%, rgba(185, 107, 255, 0.26), transparent 62%),
       url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='31'%3E%3Cpath d='M9 0l9 5.2v10.4L9 20.8 0 15.6V5.2zM9 20.8V31' fill='none' stroke='%23B96BFF' stroke-opacity='.13'/%3E%3C/svg%3E"),
@@ -809,9 +811,11 @@
     background: linear-gradient(#070B14, #070B14) padding-box,
                 conic-gradient(from var(--rim), #1E6FFF, #3FA9FF 25%, #FF8A1E 50%,
                                #3FA9FF 75%, #1E6FFF) border-box;
-    animation: rimspin 2.6s linear infinite;
+    animation: alertrim 2.6s linear infinite;
   }
-  @keyframes rimspin { to { --rim: 360deg; } }
+  /* Named apart from the epic frame's rimspin: of two keyframes with one name,
+     the later wins for every element using it. */
+  @keyframes alertrim { to { --rim: 360deg; } }
   @keyframes alertpulse {
     from { box-shadow: 0 6px 24px rgba(0, 0, 0, .55), 0 0 10px rgba(247, 148, 30, .35); }
     to   { box-shadow: 0 6px 24px rgba(0, 0, 0, .55), 0 0 26px rgba(247, 148, 30, .7); }
@@ -2096,7 +2100,7 @@ function BASKET_PATHS(metal, chain, tray) {
 }
 
 /*
- * Epic's frame: a cut-cornered rim with a band of light running round it, a
+ * Epic's frame: a rounded rim with a streak of light racing round it, a
  * crystal gem top, bottom and either side, a honeycomb inside and the basket
  * badge between the kind and the EPIC plate.
  */
@@ -2114,7 +2118,7 @@ function amethystFrameHtml(label) {
       '<filter id="epGlow" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="7" result="b"/>' +
         '<feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>' +
     '</defs>' +
-    '<path d="M108 68H892L932 108V1304L892 1344H108L68 1304V108Z" fill="none" stroke="#B96BFF" stroke-opacity=".55" stroke-width="4"/>' +
+    '<rect x="68" y="68" width="864" height="1276" rx="22" fill="none" stroke="#B96BFF" stroke-opacity=".55" stroke-width="4"/>' +
     '<path d="M68 1062H932" stroke="#D9A6FF" stroke-opacity=".85" stroke-width="7"/>' +
     '<rect x="70" y="1138" width="276" height="124" rx="14" fill="#12082A" fill-opacity=".7" stroke="#B96BFF" stroke-opacity=".6" stroke-width="3"/>' +
     '<rect x="654" y="1138" width="276" height="124" rx="14" fill="#12082A" fill-opacity=".7" stroke="#B96BFF" stroke-opacity=".6" stroke-width="3"/>' +
@@ -2228,7 +2232,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.3.201 · 11 Oct 17:47";
+var APP_VERSION = "v1.3.205 · 11 Oct 17:52";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. The arrow beside it goes and looks for a
