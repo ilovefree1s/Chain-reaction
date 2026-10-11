@@ -419,18 +419,24 @@
      a full hand of seven stays on a narrow phone. --k is a card's place either
      side of the middle; --st and --an are how far apart and how tilted. */
   .hfan { --u: min(1px, 0.256vw); position: relative; height: calc(292 * var(--u)); margin-top: 2px; }
-  .hface { position: absolute; left: 50%; bottom: calc(30 * var(--u)); width: calc(140 * var(--u)); margin-left: calc(-70 * var(--u));
-           aspect-ratio: 0.72; box-sizing: border-box; container-type: inline-size; overflow: hidden; cursor: pointer;
-           border-radius: 9px; border: 3px solid transparent; color: var(--off); transform-origin: 50% 120%;
-           transform: translateX(calc(var(--k) * var(--st) * var(--u))) translateY(calc(var(--ak) * 6 * var(--u)))
-                      rotate(calc(var(--k) * var(--an) * 1deg));
-           transition: transform 0.18s ease-out;
+  /* A little card face in its tier's frame: the fan holds them, and the CARDS
+     screen lays every card out flat in them. */
+  .hface { position: relative; aspect-ratio: 0.72; box-sizing: border-box; container-type: inline-size; overflow: hidden; cursor: pointer;
+           border-radius: 9px; border: 3px solid transparent; color: var(--off);
            background: radial-gradient(120% 70% at 50% 0%, var(--rareglow), #070B14 62%) padding-box,
                        var(--hrim, linear-gradient(var(--rare), var(--rare))) border-box;
            box-shadow: 0 6px 14px rgba(0, 0, 0, 0.55), 0 0 12px var(--rareaura); }
-  .hface.picked { transform: translateX(calc(var(--k) * var(--st) * var(--u))) translateY(calc((var(--ak) * 6 - 28) * var(--u)))
-                             rotate(calc(var(--k) * var(--an) * 1deg));
-                  box-shadow: 0 0 0 2px #FF8A1E, 0 0 16px rgba(255, 138, 30, 0.6); }
+  .hfan .hface { position: absolute; left: 50%; bottom: calc(30 * var(--u)); width: calc(140 * var(--u)); margin-left: calc(-70 * var(--u));
+                 transform-origin: 50% 120%;
+                 transform: translateX(calc(var(--k) * var(--st) * var(--u))) translateY(calc(var(--ak) * 6 * var(--u)))
+                            rotate(calc(var(--k) * var(--an) * 1deg));
+                 transition: transform 0.18s ease-out; }
+  .hfan .hface.picked { transform: translateX(calc(var(--k) * var(--st) * var(--u))) translateY(calc((var(--ak) * 6 - 28) * var(--u)))
+                                   rotate(calc(var(--k) * var(--an) * 1deg));
+                        box-shadow: 0 0 0 2px #FF8A1E, 0 0 16px rgba(255, 138, 30, 0.6); }
+  /* Every card, flat, two to a row (three where the page is wide enough). */
+  .libgrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-bottom: 6px; }
+  @media (min-width: 560px) { .libgrid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
   .ht-common { --hrim: linear-gradient(135deg, #FFFFFF, #8D97A6 35%, #F2F5FA 55%, #5E6A7C); }
   .ht-uncommon { --hrim: linear-gradient(135deg, #B8FFD0, #1E9A57 35%, #47D97F 55%, #0B5A2E); }
   .ht-rare { --hrim: linear-gradient(135deg, #BFE2FF, #1E4FD8 35%, #4D8BFF 55%, #0A2E8A); }
@@ -471,7 +477,7 @@
   .hdask b { font-size: 17px; }
   .hdask span { color: var(--sage); font-size: 14px; }
   .tabpeek .handdock { display: none; }
-  @media (prefers-reduced-motion: reduce) { .wtile, .wtile * { animation: none !important; } .hface { transition: none; } }
+  @media (prefers-reduced-motion: reduce) { .wtile, .wtile * { animation: none !important; } .hfan .hface { transition: none; } }
   .handgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   /* The outline is the card's rarity here as well: the hand is where you are
      deciding what to play, which is the moment it matters most. Defaults kept
@@ -6041,11 +6047,16 @@ function handOrderHtml(s) {
     '<div class="horder">' + stops + "</div>";
 }
 
-/* A card in the fan: a little face in its tier's frame. */
+/* A card in the fan: a little face in its tier's frame, at its place in the arc. */
 function handFaceHtml(c, act, picked, held, k, n) {
-  var rare = rarityOf(c), mid = (n - 1) / 2;
+  var mid = (n - 1) / 2;
+  return smallFaceHtml(c, act, picked, held, ";--k:" + (k - mid) + ";--ak:" + Math.abs(k - mid) + ";z-index:" + (k + 1));
+}
+/* The little face itself, wherever it sits: tier and kind, name, timing, words. */
+function smallFaceHtml(c, act, picked, held, more) {
+  var rare = rarityOf(c);
   return '<div class="hface ht-' + rare.id + (picked ? " picked" : "") + '" data-act="' + act + '" data-i="' + c.id + '" style="' +
-    rarityVars(rare) + ";--k:" + (k - mid) + ";--ak:" + Math.abs(k - mid) + ";z-index:" + (k + 1) + '">' +
+    rarityVars(rare) + (more || "") + '">' +
     '<div class="hft"><b>' + esc(rare.id) + "</b><span>" + esc(c.kind) + "</span></div>" +
     '<div class="hfn">' + esc(c.name) + "</div>" +
     '<span class="hfw">' + (held ? "HELD &middot; " : "") + (wheelOnlyCard(c.id) ? "wheel only &middot; " : "") + esc(c.timing) + "</span>" +
@@ -6893,7 +6904,7 @@ function miniCardHtml(c, act, picked, held) {
 function cardHalves(words) {
   return String(words).split(/\s+(?=On (?:yourself|another player):)/);
 }
-function cardHtml(c, withActions, altText, browse) {
+function cardHtml(c, withActions, altText) {
   var words = altText || c.text;
   var acts = "";
   if (withActions && confirmDiscard === c.id) {
@@ -6916,14 +6927,10 @@ function cardHtml(c, withActions, altText, browse) {
   // and its glow come off the tier without the stylesheet knowing the tiers.
   var rare = rarityOf(c);
   var edge = ' style="' + rarityVars(rare) +
-    (withActions || browse ? ';cursor:pointer' : "") + '"';
+    (withActions ? ';cursor:pointer' : "") + '"';
 
-  // In hand a tile opens the card you are about to play; in the library it opens
-  // the same face with nothing to press, because a reference is for looking at.
-  var tap = withActions ? ' data-act="viewCard" data-i="' + c.id + '"'
-    : browse ? ' data-act="browseCard" data-i="' + c.id + '"' : "";
-  // The library reads as a list whether or not a card has been painted — same
-  // rows, same words, same order. The painting is what opening one gets you.
+  // In hand a tile opens the card you are about to play.
+  var tap = withActions ? ' data-act="viewCard" data-i="' + c.id + '"' : "";
   return '<div class="card"' + tap + edge + '><div class="body">' +
     // The little GAMBLE WHEEL!! in the top corner — this card lives there.
     (wheelOnlyCard(c.id)
@@ -7116,8 +7123,9 @@ function renderCardLibrary() {
   return DATA.timings.map(function (t) {
     var group = CARDS.filter(function (c) { return c.timing === t; });
     if (!group.length) return "";
+    // Little faces, the same ones the fanned hand holds; a tap opens the full card.
     return '<div class="label">' + esc(t) + ' &middot; ' + group.length + '</div>' +
-      group.map(function (c) { return cardHtml(c, false, null, true); }).join("");
+      '<div class="libgrid">' + group.map(function (c) { return smallFaceHtml(c, "browseCard", false, false); }).join("") + "</div>";
   }).join("");
 }
 
