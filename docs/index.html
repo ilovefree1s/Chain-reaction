@@ -438,8 +438,11 @@
   .hfan .hface.lift { transform: translateX(calc(var(--k) * var(--st) * var(--u))) translateY(calc((var(--ak) * 6 - 30) * var(--u)))
                                  rotate(calc(var(--k) * var(--an) * 1deg));
                       box-shadow: 0 0 0 2px #FFFFFF, 0 0 18px var(--rare); }
-  .peekwrap.fanpeek { align-items: flex-start; padding-top: calc(env(safe-area-inset-top) + 12px); background: none; }
-  .peekwrap.fanpeek .card { width: min(260px, 66vw); box-shadow: 0 12px 34px rgba(0, 0, 0, 0.8); }
+  .peekwrap.handpeek { align-items: flex-start; padding-top: calc(env(safe-area-inset-top) + 12px); background: none; }
+  .hlist { touch-action: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+  .hrow.lift { border-color: #FFFFFF; box-shadow: inset 0 0 0 1px #FFFFFF, 0 0 14px var(--rare); transform: scale(1.02); }
+  .hrow { transition: transform 0.12s ease-out; }
+  .peekwrap.handpeek .card { width: min(260px, 66vw); box-shadow: 0 12px 34px rgba(0, 0, 0, 0.8); }
   .hfan .hface.picked { transform: translateX(calc(var(--k) * var(--st) * var(--u))) translateY(calc((var(--ak) * 6 - 28) * var(--u)))
                                    rotate(calc(var(--k) * var(--an) * 1deg));
                         box-shadow: 0 0 0 2px #FF8A1E, 0 0 16px rgba(255, 138, 30, 0.6); }
@@ -2133,7 +2136,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.3.188 · 11 Oct 16:49";
+var APP_VERSION = "v1.3.192 · 11 Oct 16:54";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. The arrow beside it goes and looks for a
@@ -5215,7 +5218,7 @@ function render() {
   // The same goes for a page being swiped between tabs.
   if (tDrag || (tabDrag && tabDrag.on)) return;
   // A finger held on the fan likewise: the cards it is sliding over stay put.
-  if (fanScrub) { fanMissedRender = true; return; }
+  if (handScrub) { scrubMissedRender = true; return; }
   var html;
   // The hole strip's swipe position survives re-renders (hellos repaint every
   // few seconds); only an actual hole change recenters it.
@@ -6173,8 +6176,8 @@ function renderHand() {
     cards = '<p class="hint">Nothing in hand. Cards arrive when you lock a hole.</p>';
   } else if (view === "list") {
     var room = DATA.handCap - s.hand.length;
-    cards = s.hand.map(function (id) { return handRowHtml(BY_ID[id], act, picked(id), held[id] != null); }).join("") +
-      (room > 0 ? '<div class="hrow hslot">' + plural(room, "open slot") + "</div>" : "");
+    cards = '<div class="hlist">' + s.hand.map(function (id) { return handRowHtml(BY_ID[id], act, picked(id), held[id] != null); }).join("") +
+      (room > 0 ? '<div class="hrow hslot">' + plural(room, "open slot") + "</div>" : "") + "</div>";
   } else {
     var n = s.hand.length, sp = FAN_SPREAD[Math.min(n, 7)];
     cards = '<div class="hfan" style="--st:' + sp[0] + ";--an:" + sp[1] + '">' + s.hand.map(function (id, k) {
@@ -11551,7 +11554,7 @@ function setTab(t) {
 function tabSwipeFrom(target) {
   if (screen !== "round" || !state || viewCard != null || peekEl) return false;
   if (app.querySelector(".modal")) return false;
-  return !(target.closest && target.closest(".holestrip, nav, .alerts, .hfan, input, textarea, select"));
+  return !(target.closest && target.closest(".holestrip, nav, .alerts, .hfan, .hlist, input, textarea, select"));
 }
 /* The page to [dx], and the tab it is heading for alongside it. */
 function tabDragTo(d, dx) {
@@ -11662,7 +11665,7 @@ function peekHide() {
 }
 app.addEventListener("pointerdown", function (e) {
   var el = e.target.closest('[data-act="payPick"], [data-act="viewCard"]');
-  if (!el || el.closest(".hfan")) return; // the fan has a hold of its own, below
+  if (!el || el.closest(".hfan, .hlist")) return; // the hand has a hold of its own, below
   var id = +el.getAttribute("data-i");
   peekFrom = [e.clientX, e.clientY];
   peekAte = false;
@@ -11700,81 +11703,115 @@ document.addEventListener("touchmove", function (e) {
 }, { passive: false });
 // The hold must never open Android's long-press menu instead of the card.
 app.addEventListener("contextmenu", function (e) {
-  if (peekEl || peekTimer || fanScrub) e.preventDefault();
+  if (peekEl || peekTimer || handScrub) e.preventDefault();
 });
 
 /*
- * The fanned hand, held the way a real one is: touch a card and it lifts out
- * of the fan; keep the finger down and slide, and whichever card is under it
- * lifts instead, the full card showing up top once the finger has moved or
- * held a moment. Letting go puts it back. A quick tap still opens the card
- * (or picks it, mid-trade) — a hold or a slide eats that tap.
+ * The hand, held the way a real one is: touch a card and it lifts; keep the
+ * finger down and slide, and whichever card is under it lifts instead, the
+ * full card showing once the finger has moved or held a moment. Letting go
+ * puts it back. A quick tap still opens the card (or picks it, mid-trade) — a
+ * hold or a slide eats that tap.
  *
- * The card under the finger is found from left edges, not hit-testing: each
- * card covers the right of the one before it, so what shows of a card is the
- * strip from its own left edge to the next one's.
+ * Fanned, the slide is sideways and the card under the finger is found from
+ * left edges, not hit-testing: each card covers the right of the one before
+ * it, so what shows of a card is the strip from its own left edge to the
+ * next one's. The full card shows up top, clear of the fan.
+ *
+ * Listed, the slide is up and down, the row under the finger is the one, and
+ * the full card shows just above or below it.
  */
-var fanScrub = null;
-function fanCardAt(fan, x) {
-  var cards = fan.querySelectorAll(".hface"), at = 0;
-  for (var i = 0; i < cards.length; i++) {
-    var r = cards[i].getBoundingClientRect();
-    if ((r.left + r.right) / 2 - cards[i].offsetWidth / 2 <= x) at = i;
+var handScrub = null;
+function scrubItemAt(d, x, y) {
+  var items = d.box.querySelectorAll(d.sel), at = 0, best = Infinity;
+  for (var i = 0; i < items.length; i++) {
+    var r = items[i].getBoundingClientRect();
+    if (d.axis === "x") {
+      if ((r.left + r.right) / 2 - items[i].offsetWidth / 2 <= x) at = i;
+    } else {
+      var off = y < r.top ? r.top - y : y > r.bottom ? y - r.bottom : 0;
+      if (off < best) { best = off; at = i; }
+    }
   }
-  return cards[at];
+  return items[at];
 }
-function fanLift(card) {
-  var d = fanScrub;
+/* Where the full card goes, shrunk to fit so it never sits over the card being
+   held: fanned, up top above the fan; listed, above or below the held row,
+   whichever has more room, since a long card is taller than either half. */
+function scrubPlace(d) {
+  if (!d.peek || !d.card) return;
+  var card = d.peek.querySelector(".card");
+  if (!card) return;
+  card.style.transform = "";
+  var h = card.offsetHeight, r = d.card.getBoundingClientRect();
+  // Fanned, it stays up top and shrinks to end above the highest card.
+  if (d.axis === "x") {
+    var room = d.box.getBoundingClientRect().top + 30 - card.getBoundingClientRect().top;
+    card.style.transformOrigin = "top center";
+    card.style.transform = "scale(" + Math.min(1, Math.max(80, room) / h).toFixed(3) + ")";
+    return;
+  }
+  var above = r.top - 16, below = window.innerHeight - 140 - r.bottom - 8;
+  var up = above >= below, k = Math.min(1, Math.max(80, up ? above : below) / h);
+  d.peek.style.paddingTop = (up ? Math.max(8, r.top - 8 - h * k) : r.bottom + 8) + "px";
+  card.style.transformOrigin = "top center";
+  card.style.transform = "scale(" + k.toFixed(3) + ")";
+}
+function scrubLift(card) {
+  var d = handScrub;
   if (d.card === card) return;
   if (d.card) { d.card.classList.remove("lift"); d.card.style.zIndex = d.z; }
   d.card = card;
   d.z = card.style.zIndex;
   card.classList.add("lift");
-  card.style.zIndex = 20;
-  if (d.peek) d.peek.innerHTML = cardHtml(BY_ID[+card.getAttribute("data-i")], false);
+  if (d.axis === "x") card.style.zIndex = 20;
+  if (d.peek) { d.peek.innerHTML = cardHtml(BY_ID[+card.getAttribute("data-i")], false); scrubPlace(d); }
 }
-function fanShow() {
-  var d = fanScrub;
+function scrubShow() {
+  var d = handScrub;
   if (!d || d.peek) return;
   if (d.timer) { clearTimeout(d.timer); d.timer = null; }
   d.peek = document.createElement("div");
-  d.peek.className = "peekwrap fanpeek";
+  d.peek.className = "peekwrap handpeek" + (d.axis === "y" ? " rows" : "");
   d.peek.innerHTML = cardHtml(BY_ID[+d.card.getAttribute("data-i")], false);
   document.body.appendChild(d.peek);
+  scrubPlace(d);
 }
-function fanLetGo() {
-  var d = fanScrub;
+function scrubLetGo() {
+  var d = handScrub;
   if (!d) return;
-  fanScrub = null;
+  handScrub = null;
   if (d.timer) clearTimeout(d.timer);
   if (d.peek && d.peek.parentNode) d.peek.parentNode.removeChild(d.peek);
   if (d.card) { d.card.classList.remove("lift"); d.card.style.zIndex = d.z; }
   if (d.peek || d.moved) peekAte = true;
   // A repaint that waited for the finger, after the tap (if it was one) lands.
-  if (fanMissedRender) { fanMissedRender = false; setTimeout(render, 80); }
+  if (scrubMissedRender) { scrubMissedRender = false; setTimeout(render, 80); }
 }
-var fanMissedRender = false;
+var scrubMissedRender = false;
 app.addEventListener("pointerdown", function (e) {
-  var card = e.target.closest && e.target.closest(".hfan .hface");
-  if (!card || fanScrub) return;
-  fanScrub = { fan: card.parentNode, pid: e.pointerId, x: e.clientX, moved: false, card: null, z: "", peek: null,
-               timer: setTimeout(fanShow, 350) };
+  var card = e.target.closest && e.target.closest(".hfan .hface, .hlist .hrow[data-i]");
+  if (!card || handScrub) return;
+  var fan = !!card.closest(".hfan");
+  handScrub = { box: card.parentNode, sel: fan ? ".hface" : ".hrow[data-i]", axis: fan ? "x" : "y",
+                pid: e.pointerId, x: e.clientX, ystart: e.clientY, y: e.clientY, moved: false, card: null, z: "", peek: null,
+                timer: setTimeout(scrubShow, 350) };
   peekAte = false;
-  fanLift(card);
+  scrubLift(card);
 });
 window.addEventListener("pointermove", function (e) {
-  var d = fanScrub;
+  var d = handScrub;
   if (!d || e.pointerId !== d.pid) return;
-  if (!d.moved && Math.abs(e.clientX - d.x) > 8) { d.moved = true; fanShow(); }
+  if (!d.moved && Math.abs(d.axis === "x" ? e.clientX - d.x : e.clientY - d.ystart) > 8) { d.moved = true; scrubShow(); }
   if (!d.moved) return;
-  var card = fanCardAt(d.fan, e.clientX);
+  var card = scrubItemAt(d, e.clientX, e.clientY);
   if (card && card !== d.card) {
-    fanLift(card);
+    scrubLift(card);
     try { if (navigator.vibrate) navigator.vibrate(6); } catch (err) { /* a feel, not a need */ }
   }
 });
-window.addEventListener("pointerup", fanLetGo);
-window.addEventListener("pointercancel", fanLetGo);
+window.addEventListener("pointerup", scrubLetGo);
+window.addEventListener("pointercancel", scrubLetGo);
 
 /* The secret way in: five rapid taps on the FOR THE BOYS banner inside one
    second. The banner does nothing else, so stray taps cost nothing. */
