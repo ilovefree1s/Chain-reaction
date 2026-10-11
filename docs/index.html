@@ -2118,7 +2118,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.3.182 · 11 Oct 16:26";
+var APP_VERSION = "v1.3.183 · 11 Oct 16:33";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. The arrow beside it goes and looks for a
@@ -5220,6 +5220,7 @@ function render() {
   if (diceSim) drawDiceSim(diceSim);
   fitMetaLines();
   fitArtWords();
+  fitHandList();
   // The faces are carried in the page but still arrive after the first paint.
   // Anything measured before then was measured against a stand-in, and these two
   // are far wider than what stands in for them — so those answers are thrown
@@ -5229,6 +5230,7 @@ function render() {
     document.fonts.ready.then(function () {
       ART_FIT = {};
       fitArtWords();
+      fitHandList();
     });
   }
   if (secretSel) {
@@ -5284,6 +5286,33 @@ function fitMetaLines(again) {
     }
   }
 }
+
+/*
+ * The list fills the screen: whatever room is left between the last card and
+ * Draw and Pass is shared out across the rows, up to 12px each, so a phone
+ * taller than the one the rows were sized for doesn't end in a strip of
+ * nothing. Measured, because the room depends on the phone and on what else
+ * the tab is showing. A page that already scrolls has no room to give.
+ */
+function fitHandList(again) {
+  if (again !== false) requestAnimationFrame(function () { fitHandList(false); });
+  var page = app.querySelector(".tabslide .handpage.list");
+  if (!page) return;
+  var rows = page.querySelectorAll(".hrow"), gap = page.querySelector(".handgap"),
+      btn = page.querySelector(".handdock .hdbtn");
+  if (!rows.length || !gap || !btn) return;
+  for (var i = 0; i < rows.length; i++) rows[i].style.paddingTop = rows[i].style.paddingBottom = "";
+  var sc = document.scrollingElement;
+  if (sc.scrollHeight > sc.clientHeight + 1) return;
+  var free = btn.getBoundingClientRect().top - gap.getBoundingClientRect().top - 10;
+  var each = Math.min(12, Math.floor(free / rows.length));
+  if (each < 2) return;
+  var pad = parseFloat(getComputedStyle(rows[0]).paddingTop) || 0;
+  for (var j = 0; j < rows.length; j++) {
+    rows[j].style.paddingTop = rows[j].style.paddingBottom = (pad + each / 2) + "px";
+  }
+}
+window.addEventListener("resize", function () { fitHandList(); });
 
 function backBar(title, right) {
   return '<div class="backbar">' +
