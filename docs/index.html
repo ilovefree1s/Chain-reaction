@@ -534,10 +534,10 @@
      held one is dimmed, since it can't be spent. */
   .paygrid { margin-bottom: 4px; }
   .paygrid .hface { transition: transform 0.15s ease-out; }
-  .paygrid .hface.picked { transform: translateY(-4px); box-shadow: 0 0 0 3px #FF8A1E, 0 0 18px rgba(255, 138, 30, 0.6); }
-  .paygrid .hface.picked::after { content: "\2713"; position: absolute; bottom: 4cqw; right: 4cqw; width: 14cqw; height: 14cqw;
+  .paygrid .hface.picked { transform: translateY(-4px); box-shadow: 0 0 0 5px #FF8A1E, 0 0 22px rgba(255, 138, 30, 0.65); }
+  .paygrid .hface.picked::after { content: "\2713"; position: absolute; bottom: 4cqw; right: 4cqw; width: 21cqw; height: 21cqw;
                                   border-radius: 50%; background: #FF8A1E; color: #1A0A00; display: grid; place-items: center;
-                                  font-size: 9cqw; font-weight: 900; }
+                                  font-size: 14cqw; font-weight: 900; box-shadow: 0 0 0 1.5px #1A0A00; }
   .hface.held { filter: brightness(0.6) saturate(0.6); }
   @media (prefers-reduced-motion: reduce) { .paygrid .hface { transition: none; } }
   .ht-common { --hrim: linear-gradient(135deg, #FFFFFF, #8D97A6 35%, #F2F5FA 55%, #5E6A7C); }
@@ -2241,7 +2241,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.3.216 · 11 Oct 18:13";
+var APP_VERSION = "v1.3.217 · 11 Oct 18:19";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. The arrow beside it goes and looks for a
