@@ -185,8 +185,6 @@ const bodyFont = embedFont("russoone.woff2");
 const menuImage = copyArt("chainreactionmain.png", "menu.png");
 const grassImage = copyArt("moregrass.png", "grass.png");
 const iconImage = copyArt("chainreactionicon.png", "icon.png");
-// The 4 THE BOYS badge riding the hub of every wheel.
-const hubLogo = copyArt("blue4theboys.png", "hublogo.png");
 // The FOR THE BOYS banner riding under the title on the menu.
 const ftbImage = copyArt("fortheboys.png", "fortheboys.png");
 const sgBackground = copyArt("sgbackground.png", "sgbg.png");
@@ -391,7 +389,6 @@ const template = fs.readFileSync(path.join(__dirname, "template.html"), "utf8");
   "__BODY_FONT__",
   "__MENU_IMAGE__",
   "__GRASS_IMAGE__",
-  "__HUB_LOGO__",
   "__FTB_IMAGE__",
   "__SG_BACKGROUND__",
   "__MENU_SOUND__",
@@ -422,7 +419,6 @@ const html = template
   .replace("__BODY_FONT__", bodyFont)
   .replace("__MENU_IMAGE__", menuImage)
   .replace("__GRASS_IMAGE__", grassImage)
-  .replace("__HUB_LOGO__", hubLogo)
   .replace("__FTB_IMAGE__", ftbImage)
   .replace("__SG_BACKGROUND__", sgBackground)
   .replace("__MENU_SOUND__", menuSound)

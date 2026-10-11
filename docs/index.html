@@ -1653,17 +1653,18 @@
   /* ---- the double wheel itself ---- */
   .wheelbox { position: relative; max-width: 340px; margin: 0 auto 12px; }
   .wheelbox svg { display: block; width: 100%; }
-  /* The 4 THE BOYS badge on the hub. Overlaid on the box rather than drawn in
-     the svg so it holds still while the wheel spins under it. */
-  .wheelhub { position: absolute; top: 50%; left: 50%; width: 28%;
-              transform: translate(-50%, -50%); pointer-events: none; }
+  /* The hub and the pointer sit over the turning wheel and hold still. */
+  .wheelbox svg.wheeltop { position: absolute; inset: 0; height: 100%; pointer-events: none; }
   /* 5.2s: long enough for the GAMBLE sound to play out under it. SPIN_MS and the
      settle fallback in spinWheel() are the same number — change all three. */
   .wheelbox svg.go { transition: transform 5.2s cubic-bezier(0.12, 0.8, 0.08, 1); }
-  .wheelptr { position: absolute; top: 0; left: 50%; transform: translateX(-50%);
-              width: 0; height: 0; border: 12px solid transparent; border-bottom: none;
-              border-top: 20px solid var(--self); z-index: 1;
-              filter: drop-shadow(0 0 6px rgba(255, 138, 30, 0.8)); }
+  .wheelbox .wheelptr { position: absolute; top: -2%; left: 50%; width: 13%; z-index: 1; pointer-events: none;
+                       transform: translateX(-50%); transform-origin: 50% 19%;
+                       filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.6)); }
+  /* Flicks over the slices for as long as the wheel turns: quick, then slower. */
+  .wheelbox svg.go ~ .wheelptr { animation: wflap 0.11s ease-in-out 0s 24 alternate, wflap 0.3s ease-in-out 2.64s 8 alternate; }
+  @keyframes wflap { from { transform: translateX(-50%) rotate(0deg); } to { transform: translateX(-50%) rotate(-16deg); } }
+  @media (prefers-reduced-motion: reduce) { .wheelbox svg.go ~ .wheelptr { animation: none; } }
   /* Which game settles it, decided the way a slot machine decides: the light
      runs over the four games, faster than you can follow, and slows to a stop
      on one of them. Nobody picks, so nobody argues about the picking. */
@@ -2241,7 +2242,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.3.217 · 11 Oct 18:19";
+var APP_VERSION = "v1.3.218 · 11 Oct 18:36";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. The arrow beside it goes and looks for a
@@ -2564,7 +2565,6 @@ function playWolfSound(volume) {
  * Nothing is ever played at reduced speed, so the pitch never sags into mud.
  */
 var WHEEL_SOUND = "assets/gamble.mp3";
-var HUB_LOGO = "assets/hublogo.png";
 var wheelCtx = null, wheelClick = null;
 var wheelNode = null, wheelGain = null;
 
@@ -4172,7 +4172,7 @@ function renderBeaterWheel() {
   var html = '<div class="modal">' +
     '<div class="exempt" style="color:#FF8A1E">Who wrecks the beater</div>';
   if (beaterBid.wheel) {
-    html += '<div class="wheelbox"><div class="wheelptr"></div>' +
+    html += '<div class="wheelbox">' +
       wheelSvg("wheel-bid", beaterBid.wheel.labels, beaterBid.wheel.rot, null, 14) +
       '</div>';
   }
@@ -5527,7 +5527,7 @@ function renderOrderDraw() {
       : landed ? 'That is the order. Starting the round&hellip;'
       : orderWheel.spinning ? '&nbsp;'
       : 'Every order the group could tee in, once each.') + '</p>' +
-    '<div class="wheelbox"><div class="wheelptr"></div>' +
+    '<div class="wheelbox">' +
     wheelSvg("wheel-order", labels, orderWheel.rot, null, labels.length > 12 ? 7 : 12) +
     '</div>' +
     '<div class="exempt">' + (orderWheel.spinning ? '&hellip;'
@@ -7798,7 +7798,7 @@ function renderWheel() {
   }
   if (!nameSettled && !free) {
     html += '<div class="label">Who\'s exempt</div>' +
-      '<div class="wheelbox"><div class="wheelptr"></div>' +
+      '<div class="wheelbox">' +
       wheelSvg("wheel-name", wheel.nameLabels, wheel.nameRot, null, 14) +
       '</div>';
   }
@@ -7834,7 +7834,7 @@ function renderWheel() {
       // cards retire for the round, so it's worth reading here.
       html += '<div class="label">The effect <span style="color:#FF8A1E">&middot; ' +
         wheel.cardLabels.length + ' left</span></div>' +
-        '<div class="wheelbox"><div class="wheelptr"></div>' +
+        '<div class="wheelbox">' +
         wheelSvg("wheel-card", wheel.cardLabels, wheel.cardRot, null, 7.5,
           false, wheel.cardTints) +
         '</div>';
@@ -7849,7 +7849,7 @@ function renderWheel() {
   // Team cards take a second name instead of a good/bad half.
   if (stage === "cardDone" && needsMate(wheel.card.id)) {
     html += '<div class="label">And their partner</div>' +
-      '<div class="wheelbox"><div class="wheelptr"></div>' +
+      '<div class="wheelbox">' +
       wheelSvg("wheel-mate", wheel.mateLabels || mateLabels().concat(mateLabels()),
         wheel.mateRot, null, 14) +
       '</div>' +
@@ -7857,7 +7857,7 @@ function renderWheel() {
   } else if (stage === "cardDone") {
     // Dual cards only: which half applies?
     html += '<div class="label">Good or bad?</div>' +
-      '<div class="wheelbox"><div class="wheelptr"></div>' +
+      '<div class="wheelbox">' +
       wheelSvg("wheel-fate", wheel.fateLabels, wheel.fateRot, null, 16, true) +
       '</div>' +
       (watching ? "" : '<button class="big wheel" data-act="spinFate">Spin good or bad</button>');
@@ -7905,11 +7905,13 @@ function renderWheel() {
   return html;
 }
 
-/* The wheel: alternating near-black wedges, labels along each spoke, a gradient
-   rim and a hub. The svg itself rotates; the pointer div above it stays put. */
-/* A colour dropped into the wheel's own dark ground. A slice painted in a full
-   rarity colour turns the wheel into a paint chart and the names unreadable; a
-   tint of it keeps the wheel a wheel and still says which tier is where. */
+/* The wheel, "Chain Link": solid orange and blue slices, names along each
+   spoke, and a ring of steel chain round the rim that turns with it. On the
+   effect wheel each slice wears its card's tier colour instead, every other one
+   a shade deeper so two slices of one tier side by side are still two. The svg
+   itself rotates; the hub carrying the CHAIN REACTION title and the hook pointer
+   are drawn over it and hold still. */
+/* A colour dropped part way into the wheel's own dark ground. */
 function wheelTint(hex, mix) {
   var n = parseInt(String(hex).replace("#", ""), 16);
   var want = [(n >> 16) & 255, (n >> 8) & 255, n & 255];
@@ -7918,14 +7920,43 @@ function wheelTint(hex, mix) {
     return Math.round(ground[i] + (v - ground[i]) * mix);
   }).join(",") + ")";
 }
+/* Dark names on the light slices (orange, and every tier but blue), white on blue. */
+function wheelInk(hex) {
+  var n = parseInt(String(hex).replace("#", ""), 16);
+  var l = (0.299 * ((n >> 16) & 255) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255;
+  return l > 0.5 ? "#0B1220" : "#FFFFFF";
+}
+/* Chain round a circle: face-on links first, the edge-on ones laid over them. */
+function wheelChain(n, r, len, wid, thick, paint, off) {
+  var faces = "", bars = "";
+  for (var i = 0; i < n; i++) {
+    var a = (i * 360 / n - 90 + off) * Math.PI / 180;
+    var x = (160 + r * Math.cos(a)).toFixed(2), y = (160 + r * Math.sin(a)).toFixed(2);
+    var turn = ' transform="rotate(' + (i * 360 / n + off).toFixed(1) + " " + x + " " + y + ')"';
+    if (i % 2) {
+      bars += '<rect x="' + (x - len / 2 + 1).toFixed(2) + '" y="' + (y - thick * 0.75).toFixed(2) +
+        '" width="' + (len - 2) + '" height="' + thick * 1.5 + '" rx="' + thick * 0.75 +
+        '" fill="' + paint + '" stroke="#11151F" stroke-width=".8"' + turn + "/>";
+    } else {
+      var box = 'x="' + (x - len / 2).toFixed(2) + '" y="' + (y - wid / 2).toFixed(2) + '" width="' + len +
+        '" height="' + wid + '" rx="' + wid / 2 + '" fill="none"';
+      faces += "<rect " + box + ' stroke="#11151F" stroke-width="' + (thick + 1.6) + '"' + turn + "/>" +
+        "<rect " + box + ' stroke="' + paint + '" stroke-width="' + thick + '"' + turn + "/>";
+    }
+  }
+  return faces + bars;
+}
+function wheelSteel(id) {
+  return '<linearGradient id="' + id + '" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#F2F6FC"/>' +
+    '<stop offset=".5" stop-color="#7C889C"/><stop offset="1" stop-color="#D6DEEA"/></linearGradient>';
+}
 function wheelSvg(id, labels, rotation, winner, fontSize, duo, tints) {
-  var n = labels.length, seg = 360 / n, C = 160, R = 152;
+  var n = labels.length, seg = 360 / n, C = 160, R = 140;
   var parts = labels.map(function (label, i) {
     var lit = i === winner;
     var good = duo && i % 2 === 0;
-    // Alternating strengths, so two slices of the same tier side by side are
-    // still two slices.
     var tint = tints && tints[i];
+    var col = duo ? (good ? "#1E6FFF" : "#FF8A1E") : tint || (i % 2 ? "#1E6FFF" : "#FF8A1E");
     var a0 = (i * seg - 90) * Math.PI / 180;
     var a1 = ((i + 1) * seg - 90) * Math.PI / 180;
     var mid = i * seg + seg / 2 - 90;
@@ -7934,29 +7965,48 @@ function wheelSvg(id, labels, rotation, winner, fontSize, duo, tints) {
       ' L' + (C + R * Math.cos(a0)).toFixed(2) + ' ' + (C + R * Math.sin(a0)).toFixed(2) +
       ' A' + R + ' ' + R + ' 0 0 1 ' +
       (C + R * Math.cos(a1)).toFixed(2) + ' ' + (C + R * Math.sin(a1)).toFixed(2) + ' Z"' +
-      ' fill="' + (lit ? (good ? "#0A2C4A" : "#2A1503")
-        : duo ? (good ? "#08131F" : "#170D06")
-        : tint ? wheelTint(tint, i % 2 ? 0.14 : 0.24)
-        : i % 2 ? "#061022" : "#0B1424") + '"' +
-      ' stroke="' + (lit ? (good ? "#4DC3FF" : "#FF8A1E")
-        : tint ? wheelTint(tint, 0.5) : "#22304A") + '" stroke-width="2"/>' +
-      '<text x="' + (C + R * 0.42).toFixed(1) + '" y="' + C + '"' +
+      ' fill="' + (tint && i % 2 ? wheelTint(col, 0.8) : col) + '"' +
+      ' stroke="' + (lit ? "#FFFFFF" : "#0A1120") + '" stroke-width="' + (lit ? 3 : 1.2) + '"/>' +
+      '<text x="' + (C + R * 0.36).toFixed(1) + '" y="' + C + '"' +
       ' transform="rotate(' + mid.toFixed(2) + ' ' + C + ' ' + C + ')"' +
-      ' fill="' + (duo ? (good ? "#4DC3FF" : "#FF8A1E")
-        : lit ? "#FF8A1E" : tint || "#F4F8FF") +
-      '" font-size="' + fontSize + '"' +
+      ' fill="' + wheelInk(col) + '" font-size="' + fontSize + '"' +
       ' font-weight="800" dominant-baseline="middle">' + esc(short) + '</text>';
   }).join("");
   return '<svg id="' + id + '" viewBox="0 0 320 320" style="transform:rotate(' + rotation + 'deg)">' +
-    '<defs><linearGradient id="' + id + '-rim" x1="0" y1="0" x2="1" y2="1">' +
-    '<stop offset="0" stop-color="#1E6FFF"/><stop offset="0.5" stop-color="#3FA9FF"/>' +
-    '<stop offset="1" stop-color="#FF8A1E"/></linearGradient></defs>' + parts +
-    '<circle cx="160" cy="160" r="' + R + '" fill="none" stroke="url(#' + id + '-rim)" stroke-width="4"/>' +
-    // A hub disc drawn over the wedges: it swallows the segment lines where
-    // they converge, leaving a clean stage for the badge.
-    '<circle cx="160" cy="160" r="42" fill="#061022" stroke="#4DC3FF" stroke-width="2"/>' +
-    '</svg>' +
-    (HUB_LOGO ? '<img class="wheelhub" src="' + HUB_LOGO + '" alt="">' : '');
+    '<defs>' + wheelSteel(id + "-steel") + '</defs>' +
+    '<circle cx="160" cy="160" r="151" fill="#0A1120" stroke="#3A4A66" stroke-width="1"/>' + parts +
+    '<circle cx="160" cy="160" r="' + R + '" fill="none" stroke="#FF8A1E" stroke-width="2"/>' +
+    wheelChain(36, 150, 32, 13, 3.6, "url(#" + id + "-steel)", 5) +
+    '</svg>' + wheelTop(id) + wheelPointer(id);
+}
+/* The hub: a small gold ring holding the title as the card back strikes it,
+   CHAIN in steel over REACTION in fire, tilted. */
+function wheelTop(id) {
+  var F = ' font-family="CardName, Roboto Condensed, sans-serif" font-weight="900" font-style="italic" text-anchor="middle"';
+  return '<svg class="wheeltop" viewBox="0 0 320 320" aria-hidden="true"><defs>' +
+    '<linearGradient id="' + id + '-tt" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFFFFF"/>' +
+      '<stop offset=".6" stop-color="#C9D2DE"/><stop offset="1" stop-color="#8D97A6"/></linearGradient>' +
+    '<linearGradient id="' + id + '-tr" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFD27A"/>' +
+      '<stop offset=".55" stop-color="#FF8A1E"/><stop offset="1" stop-color="#C8350A"/></linearGradient>' +
+    '<filter id="' + id + '-tg" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="1.6" result="b"/>' +
+      '<feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>' +
+    '<circle cx="160" cy="160" r="39" fill="#11151F"/>' +
+    '<circle cx="160" cy="160" r="36" fill="#070B14" stroke="#FFC72E" stroke-width="4"/>' +
+    '<g transform="rotate(-8 160 160)"' + F + '>' +
+      '<g filter="url(#' + id + '-tg)" fill="none" stroke-width="2" stroke-opacity=".8">' +
+        '<text x="160" y="158" font-size="21" stroke="#3FA9FF">CHAIN</text>' +
+        '<text x="160" y="175" font-size="15.5" stroke="#FF8A1E">REACTION</text></g>' +
+      '<g paint-order="stroke" stroke="#05080F" stroke-width="2.6">' +
+        '<text x="160" y="158" font-size="21" fill="url(#' + id + '-tt)">CHAIN</text>' +
+        '<text x="160" y="175" font-size="15.5" fill="url(#' + id + '-tr)">REACTION</text></g></g></svg>';
+}
+/* An orange pointer hung from a steel link. It flicks over the slices while the
+   wheel turns, quick at first, slower as it settles. */
+function wheelPointer(id) {
+  return '<svg class="wheelptr" viewBox="0 0 40 58" aria-hidden="true"><defs>' + wheelSteel(id + "-ps") + '</defs>' +
+    '<circle cx="20" cy="11" r="8" fill="none" stroke="#11151F" stroke-width="6"/>' +
+    '<circle cx="20" cy="11" r="8" fill="none" stroke="url(#' + id + '-ps)" stroke-width="4"/>' +
+    '<path d="M20 56 L8 22 H32 Z" fill="#FF8A1E" stroke="#1A0A00" stroke-width="2" stroke-linejoin="round"/></svg>';
 }
 
 /* ---------- course & pars ---------- */
@@ -8302,7 +8352,7 @@ function secretLabels() {
 
 function secretWheelHtml() {
   var labels = secretLabels();
-  return '<div class="wheelptr"></div>' +
+  return '' +
     (labels.length >= 2
       ? wheelSvg("wheel-secret", labels, secret.rot, null, 14)
       // Nothing to type into on a watching phone, so it is not told to type.
