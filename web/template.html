@@ -88,76 +88,15 @@
   .big.wheel, .big.blue { background: linear-gradient(180deg, #3FA9FF, #1E6FFF); color: #fff;
                box-shadow: 0 0 16px rgba(30, 111, 255, 0.35); }
   .big.quiet { background: var(--panel); color: var(--sage); border: 2px solid var(--edge); }
-  /* The painted banner IS the button — it already carries its own name and
-     price, so nothing is drawn over it. Dimmed the way an inactive tab plate
-     is, when the hand can't cover the spin. */
-  /* SPIN THE GAMBLE WHEEL!! — drawn (see gambleWheelArt). 3:1, sized off its own
-     width (cqw) so every piece scales together. Dimmed and stilled when it is
-     not yours to spin. The card backs and sparkles reach past the edge on
-     purpose, so there is room above and below. */
-  .wheelplate { display: block; width: 100%; padding: 0; border: 0; background: none;
-                margin: 2.4vw 0 calc(10px + 2.4vw); cursor: pointer; -webkit-tap-highlight-color: transparent; }
-  .wheelplate:focus-visible { outline: 2px solid #FFFFFF; outline-offset: 3px; }
-  .wheelplate[disabled] { cursor: default; }
-  .wheelplate[disabled] .gwart { filter: brightness(0.45) saturate(0.6); }
-  .wheelplate[disabled] .gwart, .wheelplate[disabled] .gwart * { animation: none !important; }
-  .gwart { position: relative; display: block; width: 100%; aspect-ratio: 3 / 1; container-type: inline-size;
-           font-family: "CardName", "Roboto Condensed", system-ui, sans-serif; text-align: left; }
+  /* The racing rim light, turning rays and chasing bulbs the drawn secret-game
+     buttons and the HAND tab's wheel tile share. */
   @property --gwrim { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
-  .gwface { position: absolute; inset: 0; border-radius: 4cqw; overflow: hidden; border: 0.9cqw solid transparent;
-            background: radial-gradient(60% 140% at 18% 50%, #24366A, #090E1C 70%) padding-box,
-                        conic-gradient(from var(--gwrim), #1E6FFF, #FFFFFF 6%, #FF8A1E 14%, #6B2A06 30%, #1E6FFF 50%,
-                                       #BFE2FF 56%, #FF8A1E 64%, #0A2E7A 82%, #1E6FFF) border-box;
-            animation: gwrim 3s linear infinite, gwglow 2.4s ease-in-out infinite; }
-  .gwrays { position: absolute; z-index: 1; left: 17cqw; top: 50%; width: 62cqw; height: 62cqw; border-radius: 50%;
-            pointer-events: none; transform: translate(-50%, -50%);
-            background: repeating-conic-gradient(from 0deg, rgba(255, 190, 80, 0.42) 0 9deg, transparent 9deg 22deg);
-            -webkit-mask: radial-gradient(closest-side, #000 30%, transparent 100%);
-            mask: radial-gradient(closest-side, #000 30%, transparent 100%);
-            animation: gwrays 9s linear infinite; }
-  .gwwheel { position: absolute; z-index: 2; left: 0; top: 50%; width: 34cqw; height: 34cqw; transform: translateY(-50%); }
-  .gwrot { transform-origin: 50px 50px; animation: gwturn 6s linear infinite; }
   .gwbulb { animation: gwchase 1s steps(1) infinite; }
-  .gwwords { position: absolute; z-index: 2; left: 35.5cqw; right: 27.5cqw; top: 0; bottom: 0;
-             display: flex; flex-direction: column; justify-content: center; }
-  .gwspin { font-weight: 900; font-style: italic; color: #FFFFFF; line-height: 0.9; font-size: 6cqw; letter-spacing: 0.02em;
-            -webkit-text-stroke: 0.05em rgba(4, 10, 24, 0.9); paint-order: stroke fill; }
-  /* Two lines, GAMBLE over WHEEL!!: on one line it runs nearly twice as wide as
-     the room between the wheel and the cards, and lettering clipped to its own
-     box simply vanishes past the edge rather than overlapping anything. */
-  .gwgamble { font-weight: 900; font-style: italic; line-height: 0.92; font-size: 8.6cqw; letter-spacing: 0.01em;
-              white-space: nowrap; color: transparent; margin-top: 0.6cqw;
-              background: linear-gradient(100deg, #FFE08A, #FF8A1E 38%, #FFFFFF 48%, #FF8A1E 58%, #E2410C);
-              background-size: 250% 100%; -webkit-background-clip: text; background-clip: text;
-              filter: drop-shadow(0 0.4cqw 0 rgba(4, 10, 24, 0.9)) drop-shadow(0 0 1.2cqw rgba(255, 120, 30, 0.55));
-              animation: gwshimmer 3.2s ease-in-out infinite; }
-  .gwprice { align-self: flex-start; margin-top: 1.4cqw; padding: 0.6cqw 2.6cqw; border-radius: 99px;
-             font-family: "CardBody", system-ui, sans-serif; font-size: 3.6cqw; letter-spacing: 0.08em; color: #F4F8FF;
-             background: #070B14; border: 0.45cqw solid rgba(255, 255, 255, 0.55); animation: gwchip 1.6s ease-in-out infinite; }
-  /* A little smaller than the button is tall, and stacked close: the back card
-     peeks out behind the front one rather than sitting beside it. */
-  .gwcards { position: absolute; z-index: 2; right: 1.5cqw; top: 50%; width: 21cqw; height: 31cqw;
-             transform: translateY(-50%); pointer-events: none; }
-  .gwcb { position: absolute; width: 20.5cqw; height: 29.3cqw; transform: rotate(var(--gwr));
-          filter: drop-shadow(0 0.8cqw 1.2cqw rgba(0, 0, 0, 0.6)); }
-  .gwcb svg { width: 100%; height: 100%; display: block; }
-  .gwcb.back { right: -0.5cqw; top: 0.2cqw; --gwr: 9deg; animation: gwbob 3.6s ease-in-out infinite; }
-  .gwcb.front { right: 2.2cqw; top: 1.6cqw; --gwr: -5deg; animation: gwbob 3.6s ease-in-out -1.8s infinite; }
-  .gwspark { position: absolute; z-index: 3; width: 4cqw; height: 4cqw; pointer-events: none;
-             animation: gwtwinkle 2.4s ease-in-out infinite; }
   @keyframes gwrim { to { --gwrim: 360deg; } }
-  @keyframes gwglow { 0%, 100% { box-shadow: 0 0 4cqw rgba(255, 138, 30, 0.45), 0 0 9cqw rgba(30, 111, 255, 0.25); }
-                      50% { box-shadow: 0 0 7cqw rgba(255, 138, 30, 0.85), 0 0 14cqw rgba(30, 111, 255, 0.5); } }
   @keyframes gwrays { to { transform: translate(-50%, -50%) rotate(360deg); } }
   @keyframes gwturn { to { transform: rotate(360deg); } }
   @keyframes gwchase { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0.2; } }
   @keyframes gwshimmer { 0% { background-position: 120% 0; } 60%, 100% { background-position: -40% 0; } }
-  @keyframes gwchip { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.08); } }
-  @keyframes gwbob { 0%, 100% { transform: translateY(0) rotate(var(--gwr)); }
-                     50% { transform: translateY(-1.4cqw) rotate(calc(var(--gwr) + 2deg)); } }
-  @keyframes gwtwinkle { 0%, 100% { opacity: 0; transform: scale(0.3) rotate(0deg); }
-                         45% { opacity: 1; transform: scale(1) rotate(45deg); } 60% { opacity: 0.9; } }
-  @media (prefers-reduced-motion: reduce) { .gwart, .gwart * { animation: none !important; } }
   /* For use *on* a panel, where .quiet would vanish into the background. */
   .big.raised { background: #0B1526; color: var(--sage); border: 2px solid var(--edge); }
   /* Trade up climbs the tiers, so it wears all of them in order round its rim —
@@ -209,13 +148,6 @@
   .hole-title span.locked { color: var(--self); }
   /* The skins line sits under par, in ice, so it never reads as part of the par. */
   .hole-title span.stake { display: block; color: #4DC3FF; font-weight: 900; }
-  /* Its own line under the label, and ice rather than sage: this is the tap target. */
-  /* margin 0 kills the page-subtitle .sub rule's 28px, which was shoving the
-     Discard tile's three lines off-centre. */
-  .counter .sub { display: block; color: #4DC3FF; font-weight: 900; margin: 0; }
-  /* line-height after the font shorthand, or the shorthand resets it and the
-     three-line Discard tile overflows its pinned height. */
-  button.counter { cursor: pointer; font: inherit; line-height: 1.15; text-align: center; }
   .pilerow { font-size: 12px; font-weight: 900; letter-spacing: 1px; color: #5E6C88;
              margin: 12px 0 4px; }
   .pilerow.played { color: #4DC3FF; }
@@ -278,20 +210,6 @@
   .lead { background: var(--group); color: var(--pine); font-size: 11px; font-weight: 900;
           border-radius: 4px; padding: 2px 6px; }
   .rel .lead, .subline .lead { margin-right: 7px; }
-
-  .counters { display: flex; gap: 8px; margin-bottom: 12px; }
-  /* A pinned height, not padding: inherited line boxes were quietly inflating
-     the tiles to nearly double what the glance they serve needs. */
-  .counter { flex: 1; height: 68px; box-sizing: border-box;
-             border: 2px solid transparent; border-radius: 12px; padding: 4px;
-             text-align: center; line-height: 1.15;
-             background: linear-gradient(var(--panel), var(--panel)) padding-box,
-                         linear-gradient(100deg, #1E6FFF, #3FA9FF 45%, #FF8A1E) border-box;
-             box-shadow: 0 0 10px rgba(30, 111, 255, 0.2); }
-  .cwrap { display: flex; flex-direction: column; justify-content: center; height: 100%; }
-  .counter b { display: block; font-size: 20px; font-weight: 900; line-height: 1.1; }
-  .counter span { font-size: 11px; font-weight: 900; letter-spacing: 1px; color: var(--sage);
-                  text-transform: uppercase; line-height: 1.15; }
 
   /* The outline is the card's rarity — the one thing about a card you can read
      without reading it. Defaults kept for anything drawn before a tier is known,
@@ -403,19 +321,145 @@
     text-shadow: 0 1px 3px rgba(0, 0, 0, 0.75);
   }
   .confirmq { margin: 14px 0 0; font-weight: 700; }
-  /* The running order, read left to right. Whoever is up is loud; you are
-     underlined wherever you happen to sit in it. */
-  .turnrow { display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
-             margin-bottom: 12px; }
-  .turn { font-size: 15px; font-weight: 900; color: var(--sage); }
-  .turn.up { color: var(--self); }
-  .turntag.up { color: var(--self); opacity: 1; }
-  .turn.final { color: #4DC3FF; }
-  .turntag { font-size: 10px; font-weight: 900; letter-spacing: 1px;
-             text-transform: uppercase; color: #4DC3FF; opacity: .7;
-             margin-left: 5px; }
-  .turn.me { text-decoration: underline; text-underline-offset: 3px; }
-  .turnsep { color: #3A4A66; }
+  /* ---- the HAND tab ---- */
+  /* The switch in the top corner, fanned cards or a list, the one in use lit. */
+  .backbar .viewtog { position: absolute; right: 0; display: flex; gap: 2px; padding: 3px; border-radius: 99px;
+                      background: #0B1322; border: 1px solid #2B3B58; }
+  .viewtog button { min-height: 0; width: 34px; height: 28px; padding: 0; border-radius: 99px; background: none;
+                    color: var(--sage); display: grid; place-items: center; }
+  .viewtog button svg { width: 18px; height: 18px; display: block; }
+  .viewtog.fan button[data-v="fan"], .viewtog.list button[data-v="list"] {
+    color: #1A0A00; background: linear-gradient(180deg, #FF9A2E, #F7791E); box-shadow: 0 0 10px rgba(247, 148, 30, 0.45); }
+  .hstats { display: flex; justify-content: space-between; align-items: baseline; margin: 2px 2px 10px;
+            font-size: 11px; font-weight: 900; letter-spacing: 0.1em; color: var(--sage); }
+  .hstats b { color: var(--off); font-size: 15px; letter-spacing: 0; margin-right: 5px; }
+  .hstats .tap { min-height: 0; padding: 6px 4px; margin: -6px -4px; background: none; font: inherit;
+                 letter-spacing: inherit; color: #4DC3FF; cursor: pointer; }
+  .hstats .tap b { color: #4DC3FF; }
+  .htools { display: grid; grid-template-columns: 1.45fr 1fr; gap: 8px; margin-bottom: 4px; }
+  .htool { box-sizing: border-box; height: 52px; min-height: 0; border-radius: 14px; padding: 0 10px; color: var(--off); }
+  .handpage.fan .htool { height: 80px; }
+  .wtile { display: grid; grid-template-columns: auto 1fr auto; align-items: center; column-gap: 9px; text-align: left;
+           border: 2px solid transparent;
+           background: radial-gradient(70% 120% at 25% 50%, #24366A, #090E1C 75%) padding-box,
+                       conic-gradient(from var(--gwrim), #1E6FFF, #FFFFFF 6%, #FF8A1E 14%, #6B2A06 30%, #1E6FFF 50%,
+                                      #BFE2FF 56%, #FF8A1E 64%, #0A2E7A 82%, #1E6FFF) border-box;
+           animation: gwrim 3s linear infinite; }
+  .wtile svg { width: 36px; height: 36px; display: block; }
+  .wtw { font-family: "CardName", "Roboto Condensed", system-ui, sans-serif; font-style: italic; font-weight: 900;
+         font-size: 12px; line-height: 1; color: #FFFFFF; }
+  .wtw b { display: block; font-size: 19px; line-height: 0.95; color: transparent;
+           background: linear-gradient(100deg, #FFE08A, #FF8A1E 45%, #E2410C); -webkit-background-clip: text; background-clip: text; }
+  /* The price: 2x and one card back, since a spin costs two cards. */
+  .wtp { display: flex; align-items: center; padding: 3px 6px 3px 8px; border-radius: 99px; background: #070B14;
+         border: 1px solid rgba(255, 255, 255, 0.55); font-size: 13px; font-weight: 900; line-height: 1; }
+  .wtp .x { font-size: 11px; margin: 0 4px 0 1px; }
+  .wtb { width: 9px; height: 13px; box-sizing: border-box; border-radius: 2px; border: 1px solid #E6ECF5; transform: rotate(-6deg);
+         background: linear-gradient(90deg, #1E5FE0 0 48%, #C9D2DE 48% 52%, #E2701A 52%); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.6); }
+  /* Fanned, there is room to spare: a bigger wheel, the price tucked under the words. */
+  .handpage.fan .wtile { grid-template-columns: auto 1fr; grid-template-rows: auto auto; row-gap: 4px; column-gap: 10px;
+                         align-content: center; }
+  .handpage.fan .wtile svg { grid-row: 1 / 3; width: 56px; height: 56px; }
+  .handpage.fan .wtw { font-size: 14px; }
+  .handpage.fan .wtw b { font-size: 23px; }
+  .handpage.fan .wtp { justify-self: start; }
+  .ttile { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+           font-size: 15px; font-weight: 800; letter-spacing: 0.04em; border: 3px solid transparent;
+           background: linear-gradient(#0B1526, #0B1526) padding-box, var(--sweep) border-box; }
+  .ttile small { font-size: 11px; font-weight: 800; letter-spacing: 0.08em; opacity: 0.85; }
+  .handpage.fan .ttile { font-size: 17px; }
+  .handpage.fan .ttile small { font-size: 12px; }
+  .htool:disabled { opacity: 1; filter: brightness(0.5) saturate(0.6); cursor: default; }
+  .htool:disabled, .htool:disabled * { animation: none; }
+  .handpage .label { margin: 9px 0 6px; }
+  .hnote { font-size: 14px; margin: 4px 0 2px; }
+  /* The card order as a route line: a stop a player, whoever is up lit. */
+  .horder { display: flex; align-items: flex-start; margin: 0 0 2px; }
+  .hostop { flex: 1 1 0; min-width: 0; position: relative; display: flex; flex-direction: column; align-items: center; gap: 2px; }
+  .hostop::before { content: ""; position: absolute; top: 6px; left: 0; right: 0; height: 2px; background: #26344E; }
+  .hostop:first-child::before { left: 50%; }
+  .hostop:last-child::before { right: 50%; }
+  .hostop i { position: relative; z-index: 1; width: 14px; height: 14px; box-sizing: border-box; border-radius: 50%;
+              background: #0B1322; border: 2px solid #3A4A66; }
+  .hostop.up i { background: var(--self); border-color: #FFE0B8; box-shadow: 0 0 10px rgba(255, 138, 30, 0.8); }
+  .hostop.last i { border-color: #4DC3FF; }
+  .hon { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 1px;
+         font-size: 12px; font-weight: 800; line-height: 1.15; color: var(--sage); }
+  .hostop.me .hon { text-decoration: underline; text-underline-offset: 2px; }
+  .hot { font-size: 8.5px; font-weight: 900; letter-spacing: 0.12em; line-height: 1; min-height: 9px; color: var(--sage); }
+  .hostop.last .hon, .hostop.last .hot { color: #4DC3FF; }
+  .hostop.up .hon, .hostop.up .hot { color: var(--self); }
+  /* The list: a card a row, its tier's gem, name, and tier, kind and timing. */
+  .hrow { display: flex; align-items: center; gap: 12px; padding: 7.5px 12px; margin-bottom: 5px; border-radius: 12px; cursor: pointer;
+          background: linear-gradient(90deg, var(--rareglow, rgba(63, 169, 255, 0.2)), #0A1220 45%); border: 1px solid #22304A; }
+  .hrg { flex: 0 0 auto; width: 14px; height: 14px; border-radius: 2px; transform: rotate(45deg);
+         background: var(--rare); box-shadow: 0 0 8px var(--rare); }
+  .hrt { flex: 1; min-width: 0; }
+  .hrn { font-family: "CardName", "Roboto Condensed", system-ui, sans-serif; font-size: 17px; line-height: 1.15;
+         overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .hrheld { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 10px; font-weight: 900;
+            letter-spacing: 2px; color: #FF8A1E; vertical-align: middle; margin-left: 4px; }
+  .hrm { margin-top: 1px; font-size: 10px; font-weight: 900; letter-spacing: 0.08em; text-transform: uppercase; color: #4DC3FF;
+         white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .hrm b { color: var(--rare); }
+  .hrc { color: #4A5B7A; font-size: 22px; font-weight: 300; }
+  .hrow.picked { border-color: #FF8A1E; box-shadow: inset 0 0 0 1px #FF8A1E, 0 0 12px rgba(255, 138, 30, 0.35); }
+  .hrow.hslot { justify-content: center; padding: 9px 12px; cursor: default; background: none; border-style: dashed;
+                color: #4A5B7A; font-size: 13px; font-weight: 700; }
+  /* The fan: little card faces held in an arc, sized off the screen's width so
+     a full hand of seven stays on a narrow phone. --k is a card's place either
+     side of the middle; --st and --an are how far apart and how tilted. */
+  .hfan { --u: min(1px, 0.256vw); position: relative; height: calc(292 * var(--u)); margin-top: 2px; }
+  .hface { position: absolute; left: 50%; bottom: calc(30 * var(--u)); width: calc(140 * var(--u)); margin-left: calc(-70 * var(--u));
+           aspect-ratio: 0.72; box-sizing: border-box; container-type: inline-size; overflow: hidden; cursor: pointer;
+           border-radius: 9px; border: 3px solid transparent; color: var(--off); transform-origin: 50% 120%;
+           transform: translateX(calc(var(--k) * var(--st) * var(--u))) translateY(calc(var(--ak) * 6 * var(--u)))
+                      rotate(calc(var(--k) * var(--an) * 1deg));
+           transition: transform 0.18s ease-out;
+           background: radial-gradient(120% 70% at 50% 0%, var(--rareglow), #070B14 62%) padding-box,
+                       var(--hrim, linear-gradient(var(--rare), var(--rare))) border-box;
+           box-shadow: 0 6px 14px rgba(0, 0, 0, 0.55), 0 0 12px var(--rareaura); }
+  .hface.picked { transform: translateX(calc(var(--k) * var(--st) * var(--u))) translateY(calc((var(--ak) * 6 - 28) * var(--u)))
+                             rotate(calc(var(--k) * var(--an) * 1deg));
+                  box-shadow: 0 0 0 2px #FF8A1E, 0 0 16px rgba(255, 138, 30, 0.6); }
+  .ht-common { --hrim: linear-gradient(135deg, #FFFFFF, #8D97A6 35%, #F2F5FA 55%, #5E6A7C); }
+  .ht-uncommon { --hrim: linear-gradient(135deg, #B8FFD0, #1E9A57 35%, #47D97F 55%, #0B5A2E); }
+  .ht-rare { --hrim: linear-gradient(135deg, #BFE2FF, #1E4FD8 35%, #4D8BFF 55%, #0A2E8A); }
+  .ht-epic { --hrim: linear-gradient(135deg, #E8C8FF, #7A2FD8 35%, #B96BFF 55%, #3A0E6E); }
+  .ht-legendary { --hrim: linear-gradient(135deg, #FFF1C2, #C8900A 35%, #FFC72E 55%, #7A5200); }
+  .hft { display: flex; justify-content: space-between; padding: 6cqw 7cqw 0; font-size: 6.4cqw; font-weight: 900;
+         letter-spacing: 0.06em; text-transform: uppercase; }
+  .hft b { color: var(--rare); }
+  .hft span { color: #4DC3FF; }
+  .hfn { padding: 4cqw 7cqw 0; font-family: "CardName", "Roboto Condensed", system-ui, sans-serif; font-size: 11.5cqw;
+         line-height: 1.04; text-wrap: balance; }
+  .hfw { display: inline-block; margin: 3cqw 7cqw 0; padding: 1cqw 3cqw; border-radius: 99px; background: rgba(77, 195, 255, 0.14);
+         color: #4DC3FF; font-size: 5.6cqw; font-weight: 900; letter-spacing: 0.06em; text-transform: uppercase; }
+  .hfx { padding: 4cqw 7cqw 0; font-size: 7.2cqw; line-height: 1.32; color: #D5DEEE;
+         display: -webkit-box; -webkit-line-clamp: 7; -webkit-box-orient: vertical; overflow: hidden; }
+  .hfg { position: absolute; left: 50%; bottom: 4cqw; width: 7cqw; height: 7cqw; transform: translateX(-50%) rotate(45deg);
+         background: var(--rare); box-shadow: 0 0 3cqw var(--rare); }
+  /* Draw and Pass, pinned over the tab bar the way the hole strip is, and the
+     room under the page so nothing scrolls out of reach behind them. */
+  .handgap { height: 66px; }
+  .handdock { position: fixed; left: 0; right: 0; z-index: 5; bottom: calc(65px + env(safe-area-inset-bottom));
+              max-width: 640px; margin: 0 auto; box-sizing: border-box;
+              display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 12px 16px 8px;
+              background: linear-gradient(180deg, rgba(5, 7, 12, 0), var(--pine) 26%); }
+  .handdock.one { grid-template-columns: 1fr; }
+  .hdbtn { height: 48px; min-height: 0; padding: 0; border-radius: 14px; display: flex; flex-direction: column;
+           align-items: center; justify-content: center; gap: 1px; font-size: 15px; font-weight: 800; letter-spacing: 0.04em; color: #FFFFFF; }
+  .hdbtn small { font-size: 10.5px; font-weight: 800; letter-spacing: 0.08em; opacity: 0.85; }
+  .hdbtn.draw { background: linear-gradient(180deg, #FF9A2E, #F7791E); box-shadow: 0 0 16px rgba(247, 148, 30, 0.4); }
+  .hdbtn.pass { background: linear-gradient(180deg, #3FA9FF, #1E6FFF); box-shadow: 0 0 14px rgba(30, 111, 255, 0.35); }
+  .hdbtn.keep { background: var(--panel); color: var(--sage); border: 2px solid var(--edge); }
+  .hdbtn:disabled { opacity: 1; background: var(--panel); color: #5E6C88; border: 2px solid var(--edge); box-shadow: none; }
+  .handdock.ask { padding-top: 12px; background: var(--pine); border-top: 1px solid var(--edge); }
+  .hdask { grid-column: 1 / -1; display: flex; flex-direction: column; gap: 3px; }
+  .hdask b { font-size: 17px; }
+  .hdask span { color: var(--sage); font-size: 14px; }
+  .tabpeek .handdock { display: none; }
+  @media (prefers-reduced-motion: reduce) { .wtile, .wtile * { animation: none !important; } .hface { transition: none; } }
   .handgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   /* The outline is the card's rarity here as well: the hand is where you are
      deciding what to play, which is the moment it matters most. Defaults kept
@@ -5145,7 +5189,7 @@ function render() {
   } else {
     // The course you're on. The hole and par live in the Score screen's own header.
     // The tab's page sits in a wrapper of its own, which is what a swipe moves.
-    html = backBar(state.courseName || "") +
+    html = backBar(state.courseName || "", tab === "hand" ? handViewToggle() : "") +
       '<div class="tabslide">' + tabHtml(tab) + '</div>' +
       renderNav();
   }
@@ -5229,10 +5273,10 @@ function fitMetaLines(again) {
   }
 }
 
-function backBar(title) {
+function backBar(title, right) {
   return '<div class="backbar">' +
     '<button class="back" data-act="menu">&lsaquo;&nbsp; Menu</button>' +
-    '<span>' + esc(title.toUpperCase()) + '</span></div>';
+    '<span>' + esc(title.toUpperCase()) + '</span>' + (right || "") + '</div>';
 }
 
 /*
@@ -5851,49 +5895,206 @@ function renderPile() {
 }
 
 /* ---------- hand ---------- */
-function renderHand() {
-  var s = state;
-  var counters = '<div class="counters">' +
-    counter("Hand", s.hand.length + "/" + DATA.handCap) +
-    counter("Deck", s.deck.length) +
-    // The only counter worth opening: what's in the pile is a list, not just a
-    // number, and mid-round people forget what they've used.
-    counter("Discard", s.discard.length, "Played", "openPile") + '</div>';
+/*
+ * The HAND tab, top to bottom: the counts on one line, the wheel and trade up
+ * side by side, the card order as a little route line, your hand, and Draw and
+ * Pass pinned at the foot over the tab bar, nearest the thumb. The hand is
+ * held one of two ways, each player's own pick from the switch in the top
+ * corner: fanned like real cards, or a list a card to a row. Tapping a card
+ * opens it, where Play and Discard live; mid-trade a tap picks it instead.
+ */
+function handView() { return settings.handView === "list" ? "list" : "fan"; }
 
-  var drawBlock = "";
-  if (s.owed > 0) {
-    drawBlock = handIsFull(s)
-      ? '<button class="big quiet" disabled>Hand is full &mdash; trade up first</button>' +
-        '<p class="hint">You\'re owed ' + plural(s.owed, 'card') + ' but you\'re holding the maximum of ' +
-        DATA.handCap + '. ' + (tradesLeft(s)
-          ? 'A trade takes 2 and gives 1 back, so it makes the room. '
-          : 'Your ' + TRADES_PER_ROUND + ' trades are spent, so the room has to come ' +
-            'from playing one. ') +
-        'Locking the next hole loses whatever you haven\'t taken.</p>'
-      : '<button class="big primary" data-act="draw">Draw a card (' + s.owed + ' owed)</button>';
+var HAND_VIEW_ICONS = {
+  fan: '<rect x="3.2" y="6" width="9" height="13" rx="1.6" transform="rotate(-16 7.7 12.5)" fill="none" stroke="currentColor" stroke-width="1.7"/>' +
+    '<rect x="11.8" y="6" width="9" height="13" rx="1.6" transform="rotate(16 16.3 12.5)" fill="none" stroke="currentColor" stroke-width="1.7"/>' +
+    '<rect x="7.5" y="4" width="9" height="14" rx="1.6" fill="currentColor"/>',
+  list: '<path d="M8.5 6.5h12M8.5 12h12M8.5 17.5h12" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>' +
+    '<g fill="currentColor"><rect x="2.5" y="4.6" width="3.8" height="3.8" rx=".8" transform="rotate(45 4.4 6.5)"/>' +
+    '<rect x="2.5" y="10.1" width="3.8" height="3.8" rx=".8" transform="rotate(45 4.4 12)"/>' +
+    '<rect x="2.5" y="15.6" width="3.8" height="3.8" rx=".8" transform="rotate(45 4.4 17.5)"/></g>'
+};
+function handViewToggle() {
+  var v = handView();
+  return '<div class="viewtog ' + v + '" role="group" aria-label="Show your hand as">' +
+    [["fan", "Fanned cards"], ["list", "A list"]].map(function (o) {
+      return '<button data-act="handView" data-v="' + o[0] + '" aria-label="' + o[1] + '" aria-pressed="' + (v === o[0]) + '">' +
+        '<svg viewBox="0 0 24 24" aria-hidden="true">' + HAND_VIEW_ICONS[o[0]] + "</svg></button>";
+    }).join("") + "</div>";
+}
+
+/* Whether the wheel can be bought right now, and if not, why — the reasons the
+   card order already spells out (someone else's priority, everyone passed) are
+   left to it rather than said twice. */
+function wheelGate(s) {
+  var busy = wheelHeldByOther();
+  if (busy) return { hint: esc(busy) + " is on the wheel. It comes free when they finish." };
+  // Everyone has passed, so the throwing has started: a wheel landed on a hole
+  // half-thrown lands on nothing.
+  if (prioOpen(s)) return { quiet: true };
+  if (live && !iHavePrio(s)) return { quiet: true };
+  if (canAffordWheel(s)) return { ok: true };
+  return { hint: "Spinning costs " + DATA.wheelCost + " cards and you're holding " + s.hand.length +
+    ". Playing GAMBLE WHEEL!! spins for free." };
+}
+var miniWheelCache = null;
+function miniWheelSvg() {
+  if (miniWheelCache) return miniWheelCache;
+  var cols = ["#FF8A1E", "#1E6FFF", "#141B2A"], segs = "";
+  for (var i = 0; i < 12; i++) {
+    var a0 = (i * 30 - 90) * Math.PI / 180, a1 = ((i + 1) * 30 - 90) * Math.PI / 180;
+    segs += '<path d="M50 50L' + (50 + 38 * Math.cos(a0)).toFixed(1) + " " + (50 + 38 * Math.sin(a0)).toFixed(1) +
+      "A38 38 0 0 1 " + (50 + 38 * Math.cos(a1)).toFixed(1) + " " + (50 + 38 * Math.sin(a1)).toFixed(1) +
+      'Z" fill="' + cols[i % 3] + '"/>';
   }
-  // A hole you have locked that the table has not finished. Without this, a lock
-  // that pays nothing looks like a lock that went wrong.
+  miniWheelCache = '<svg viewBox="-4 -10 108 114" aria-hidden="true"><circle cx="50" cy="50" r="47" fill="#0B1220" stroke="#FFFFFF" stroke-width="3"/>' +
+    '<g class="spspin">' + segs + '</g><circle cx="50" cy="50" r="12" fill="#0B1220" stroke="#3FA9FF" stroke-width="2.4"/>' +
+    '<path d="M50 6l-7-13h14z" fill="#FF8A1E"/></svg>';
+  return miniWheelCache;
+}
+/* SPIN THE WHEEL!!, its price as 2× and one card back. */
+function wheelTileHtml(s) {
+  var g = wheelGate(s);
+  return '<button class="htool wtile"' + (g.ok ? ' data-act="openWheel"' : " disabled") +
+    ' aria-label="Spin the GAMBLE WHEEL!! for ' + DATA.wheelCost + ' cards">' + miniWheelSvg() +
+    '<span class="wtw">SPIN THE<b>WHEEL!!</b></span>' +
+    '<span class="wtp">' + DATA.wheelCost + '<span class="x">&times;</span><span class="wtb"></span></span></button>';
+}
+/* Trade up, wearing every tier round its rim; it says why when it can't. */
+function tradeTileHtml(s) {
+  var left = tradesLeft(s), can = left > 0 && anyTradeUp(s);
+  return '<button class="htool ttile"' + (can ? ' data-act="askTrade"' : " disabled") +
+    ' style="--sweep:' + tierSweep() + '">TRADE UP<small>' +
+    (!left ? "ALL " + TRADES_PER_ROUND + " SPENT" : can ? left + " LEFT" : "NEEDS A PAIR · " + left + " LEFT") +
+    "</small></button>";
+}
+
+/* Who plays when: a route line of the order, whoever holds priority lit, and
+   the last word marked, since cards played later override the ones before. */
+function handOrderHtml(s) {
+  if (!s || s.players.length < 2) return "";
+  // Between holes there is no order to show yet, only what it is waiting on.
+  if (prioWaiting(s)) {
+    var g = s.prioHole || 0, late = lateToLock(s, g);
+    return '<div class="label">Card order &middot; hole ' + (g + 2) + '</div>' +
+      '<p class="hint">' + (scoreDisputes(s, g).length
+        ? 'The scorecards disagree on hole ' + (g + 1) + '. The order for hole ' + (g + 2) +
+          ' is set once they match.'
+        : late.length
+        ? 'Waiting on ' + esc(joinNames(late)) + ' to lock hole ' + (g + 1) +
+          '. The order for hole ' + (g + 2) + ' comes from everyone\'s score.'
+        : 'Waiting on the table to lock hole ' + (g + 1) + '.') + '</p>';
+  }
+  var order = playOrder(s), open = prioOpen(s), up = prioHolder(s);
+  var stops = order.map(function (i, at) {
+    var me = i === s.meIndex, last = at === order.length - 1;
+    // Nobody is up once the queue has emptied — everybody is.
+    var holds = !open && s.players[i] === up;
+    var tag = holds ? (me ? "YOU &middot; UP" : "UP") : last ? "LAST WORD" : me ? "YOU" : "";
+    return '<div class="hostop' + (holds ? " up" : "") + (last ? " last" : "") + (me ? " me" : "") + '">' +
+      '<i></i><span class="hon">' + esc(s.players[i]) + '</span><span class="hot">' + tag + "</span></div>";
+  }).join("");
+  var note = open ? "Everyone passed &mdash; play freely, or go and throw."
+    : !iHavePrio(s) ? esc(up) + " has priority. Yours when they pass." : "";
+  return '<div class="label">Card order &middot; ' + (open ? "open to everyone" : "same as the tee") + "</div>" +
+    '<div class="horder">' + stops + "</div>" + (note ? '<p class="hint hnote">' + note + "</p>" : "");
+}
+
+/* A card in the fan: a little face in its tier's frame. */
+function handFaceHtml(c, act, picked, held, k, n) {
+  var rare = rarityOf(c), mid = (n - 1) / 2;
+  return '<div class="hface ht-' + rare.id + (picked ? " picked" : "") + '" data-act="' + act + '" data-i="' + c.id + '" style="' +
+    rarityVars(rare) + ";--k:" + (k - mid) + ";--ak:" + Math.abs(k - mid) + ";z-index:" + (k + 1) + '">' +
+    '<div class="hft"><b>' + esc(rare.id) + "</b><span>" + esc(c.kind) + "</span></div>" +
+    '<div class="hfn">' + esc(c.name) + "</div>" +
+    '<span class="hfw">' + (held ? "HELD &middot; " : "") + (wheelOnlyCard(c.id) ? "wheel only &middot; " : "") + esc(c.timing) + "</span>" +
+    '<div class="hfx">' + esc(c.text) + '</div><i class="hfg"></i></div>';
+}
+/* A card in the list: its tier's gem, name, and tier, kind and timing. */
+function handRowHtml(c, act, picked, held) {
+  var rare = rarityOf(c);
+  return '<div class="hrow' + (picked ? " picked" : "") + '" data-act="' + act + '" data-i="' + c.id + '" style="' + rarityVars(rare) + '">' +
+    '<i class="hrg"></i><div class="hrt"><div class="hrn">' + esc(c.name) + (held ? ' <span class="hrheld">HELD</span>' : "") + "</div>" +
+    '<div class="hrm"><b>' + esc(rare.id) + "</b> &middot; " + (wheelOnlyCard(c.id) ? "wheel only &middot; " : "") +
+    esc(c.kind) + " &middot; " + esc(c.timing) + '</div></div><span class="hrc">&rsaquo;</span></div>';
+}
+/* A fan spreads wider the fewer cards it holds, so a short hand doesn't huddle
+   in the middle and a full one stays on the screen. */
+var FAN_SPREAD = { 1: [0, 0], 2: [46, 7], 3: [44, 7], 4: [38, 6], 5: [32, 5], 6: [26, 4], 7: [23, 3.5] };
+
+/* Draw and Pass, side by side at the foot. Asking first before a pass with
+   cards in hand: it hands the turn on and cannot be taken back. */
+function handDockHtml(s) {
+  if (confirmPass) {
+    return '<div class="handdock ask"><div class="hdask"><b>Pass your turn?</b>' +
+      '<span>You still hold ' + plural(s.hand.length, "card") + '. It goes to ' + esc(nextInLine(s)) +
+      ' and comes back when the lap does.</span></div>' +
+      '<button class="hdbtn draw" data-act="passYes">PASS</button>' +
+      '<button class="hdbtn keep" data-act="passNo">KEEP IT</button></div>';
+  }
+  var draw = s.owed > 0
+    ? (handIsFull(s) ? '<button class="hdbtn draw" disabled>HAND FULL<small>' + s.owed + ' OWED</small></button>'
+      : '<button class="hdbtn draw" data-act="draw">DRAW<small>' + s.owed + ' OWED</small></button>')
+    : '<button class="hdbtn draw" disabled>DRAW<small>NOTHING OWED</small></button>';
+  var pass = "";
+  if (s.players.length >= 2 && !prioWaiting(s)) {
+    pass = prioOpen(s) ? '<button class="hdbtn pass" disabled>PASS<small>EVERYONE PASSED</small></button>'
+      : !iHavePrio(s) ? '<button class="hdbtn pass" disabled>PASS<small>NOT YOUR TURN</small></button>'
+      : '<button class="hdbtn pass" data-act="passPrio">PASS<small>PRIORITY</small></button>';
+  }
+  return '<div class="handdock' + (pass ? "" : " one") + '">' + draw + pass + "</div>";
+}
+
+function renderHand() {
+  var s = state, view = handView();
+  var stats = '<div class="hstats"><span><b>' + s.hand.length + "/" + DATA.handCap + "</b>HAND</span>" +
+    "<span><b>" + s.deck.length + "</b>DECK</span>" +
+    // The only count worth opening: what's in the pile is a list, not just a
+    // number, and mid-round people forget what they've used.
+    '<button class="tap" data-act="openPile"><b>' + s.discard.length + "</b>DISCARD &rsaquo;</button></div>";
+
+  var wg = wheelGate(s);
+  var tools = tradeUp ? tradeBlock(s)
+    : '<div class="htools">' + wheelTileHtml(s) + tradeTileHtml(s) + "</div>" +
+      (wg.hint ? '<p class="hint hnote">' + wg.hint + "</p>" : "");
+
+  // Owed cards with no room for them, and a locked hole the table hasn't
+  // finished: without these a lock that pays nothing looks like one that broke.
+  var notes = "";
+  if (s.owed > 0 && handIsFull(s)) {
+    notes += '<p class="hint">You\'re owed ' + plural(s.owed, "card") + " but you're holding the maximum of " +
+      DATA.handCap + ". " + (tradesLeft(s)
+        ? "A trade takes 2 and gives 1 back, so it makes the room. "
+        : "Your " + TRADES_PER_ROUND + " trades are spent, so the room has to come from playing one. ") +
+      "Locking the next hole loses whatever you haven't taken.</p>";
+  }
   var waiting = pendingDeal(s);
   if (waiting) {
-    drawBlock += '<p class="hint">Hole ' + (waiting.hole + 1) + ' pays ' + waiting.owed +
-      ' card' + (waiting.owed === 1 ? "" : "s") + ' &mdash; ' + esc(waiting.why) + '</p>';
+    notes += '<p class="hint">Hole ' + (waiting.hole + 1) + " pays " + waiting.owed +
+      " card" + (waiting.owed === 1 ? "" : "s") + " &mdash; " + esc(waiting.why) + "</p>";
   }
 
   var held = heldCardIds(s);
-  // Mid-trade the hand is a picker: the tiles choose instead of opening.
-  var picking = !!tradeUp;
-  var cards = s.hand.length
-    ? '<div class="handgrid">' +
-      s.hand.map(function (id) {
-        return miniCardHtml(BY_ID[id], picking ? "tradePick" : null,
-          picking && tradeUp.picks.indexOf(id) !== -1, held[id] != null);
-      }).join("") + '</div>'
-    : '<p class="hint">Nothing in hand. Cards arrive when you lock a hole.</p>';
+  // Mid-trade the hand is a picker: a tap chooses instead of opening.
+  var act = tradeUp ? "tradePick" : "viewCard";
+  var picked = function (id) { return !!tradeUp && tradeUp.picks.indexOf(id) !== -1; };
+  var cards;
+  if (!s.hand.length) {
+    cards = '<p class="hint">Nothing in hand. Cards arrive when you lock a hole.</p>';
+  } else if (view === "list") {
+    var room = DATA.handCap - s.hand.length;
+    cards = s.hand.map(function (id) { return handRowHtml(BY_ID[id], act, picked(id), held[id] != null); }).join("") +
+      (room > 0 ? '<div class="hrow hslot">' + plural(room, "open slot") + "</div>" : "");
+  } else {
+    var n = s.hand.length, sp = FAN_SPREAD[Math.min(n, 7)];
+    cards = '<div class="hfan" style="--st:' + sp[0] + ";--an:" + sp[1] + '">' + s.hand.map(function (id, k) {
+      return handFaceHtml(BY_ID[id], act, picked(id), held[id] != null, k, n);
+    }).join("") + "</div>";
+  }
 
-  return counters + drawBlock + playOrderStrip(s) + wheelButton() +
-    '<div class="label">Your hand</div>' +
-    (s.hand.length ? tradeBlock(s) : "") + cards;
+  return '<div class="handpage ' + view + '">' + stats + tools + handOrderHtml(s) +
+    '<div class="label">Your hand</div>' + cards + notes +
+    '<div class="handgap"></div>' + handDockHtml(s) + "</div>";
 }
 
 /*
@@ -6163,106 +6364,7 @@ function passPrio(s) {
  * which is the whole fix: the table stopped having an order because nothing was
  * ever showing one.
  */
-function playOrderStrip(s) {
-  if (!s || s.players.length < 2) return "";
-  // Between holes there is no order to show yet, only what it is waiting on.
-  if (prioWaiting(s)) {
-    var g = s.prioHole || 0, late = lateToLock(s, g);
-    return '<div class="label">Card order &middot; hole ' + (g + 2) + '</div>' +
-      '<p class="hint">' + (scoreDisputes(s, g).length
-        ? 'The scorecards disagree on hole ' + (g + 1) + '. The order for hole ' + (g + 2) +
-          ' is set once they match.'
-        : late.length
-        ? 'Waiting on ' + esc(joinNames(late)) + ' to lock hole ' + (g + 1) +
-          '. The order for hole ' + (g + 2) + ' comes from everyone\'s score.'
-        : 'Waiting on the table to lock hole ' + (g + 1) + '.') + '</p>';
-  }
-  var order = playOrder(s);
-  var open = prioOpen(s);
-  var up = prioHolder(s);
-  var names = order.map(function (i, at) {
-    var me = i === s.meIndex;
-    var last = at === order.length - 1;
-    // Nobody is up once the queue has emptied — everybody is.
-    var holds = !open && s.players[i] === up;
-    // Cards played later override the ones before them, so whoever goes last
-    // settles it — the same player who tees last, which is whoever came off
-    // the hole before worst, or whoever the wheel put last on the first.
-    return '<span class="turn' + (holds ? " up" : "") + (last ? " final" : "") +
-      (me ? " me" : "") + '">' + esc(s.players[i]) +
-      (holds ? '<span class="turntag up">up</span>'
-        : last ? '<span class="turntag">last word</span>' : "") + '</span>';
-  }).join('<span class="turnsep">&rsaquo;</span>');
-  // Only the holder can hand it on, because only they have it to hand. Once
-  // the whole table has passed there is nothing left to hand anybody.
-  /*
-   * Passing with cards in hand asks first. It hands the turn on and cannot be
-   * taken back — the lap moves and the next player is already deciding — and
-   * it is a wide button sitting under a row of names people tap at.
-   *
-   * With an empty hand there is nothing to ask about: no card to play, no spin
-   * to buy, and the app passes for you anyway the moment it notices.
-   */
-  var pass = open
-    ? '<p class="hint">Everyone passed &mdash; play freely, or go and throw.</p>'
-    : !iHavePrio(s)
-    ? '<p class="hint">' + esc(up) + ' has priority. Yours when they pass.</p>'
-    : confirmPass
-    ? '<div class="panel" style="margin:0 0 12px">' +
-      '<div style="font-size:19px;font-weight:700">Pass your turn?</div>' +
-      '<p style="color:var(--sage);margin:6px 0 10px">You still hold ' +
-      s.hand.length + (s.hand.length === 1 ? ' card' : ' cards') +
-      '. It goes to ' + esc(nextInLine(s)) + ' and comes back when the lap does.</p>' +
-      '<div class="row"><button class="big primary" data-act="passYes" style="margin:0">' +
-      'Pass</button>' +
-      '<button class="big quiet" data-act="passNo" style="margin:0">Keep it</button></div></div>'
-    : '<button class="big blue" data-act="passPrio" style="margin:0 0 12px">' +
-      'Pass priority &rsaquo;</button>';
-  return '<div class="label">Card order &middot; ' +
-    (open ? 'open to everyone' : 'same as the tee') + '</div>' +
-    '<div class="turnrow">' + names + '</div>' + pass;
-}
 
-/*
- * The SPIN THE GAMBLE WHEEL!! button, drawn: light racing round its rim, rays
- * turning behind a live wheel with chasing lights, a shimmering title over the
- * real price, two CHAIN REACTION card backs bobbing at the right-hand end and
- * sparkles popping round the edge. Everything stops when the button is dimmed.
- */
-function gambleWheelArt() {
-  var cols = ["#FF8A1E", "#1E6FFF", "#141B2A"], segs = "", bulbs = "";
-  for (var i = 0; i < 12; i++) {
-    var a0 = (i * 30 - 90) * Math.PI / 180, a1 = ((i + 1) * 30 - 90) * Math.PI / 180;
-    segs += '<path d="M50 50L' + (50 + 38 * Math.cos(a0)).toFixed(2) + " " + (50 + 38 * Math.sin(a0)).toFixed(2) +
-      "A38 38 0 0 1 " + (50 + 38 * Math.cos(a1)).toFixed(2) + " " + (50 + 38 * Math.sin(a1)).toFixed(2) +
-      'Z" fill="' + cols[i % 3] + '" stroke="#05080F" stroke-width=".8"/>';
-  }
-  for (var j = 0; j < 16; j++) {
-    var b = (j * 22.5 - 90) * Math.PI / 180;
-    bulbs += '<circle class="gwbulb" style="animation-delay:' + (j % 2 ? "-.5s" : "0s") + '" cx="' +
-      (50 + 44.5 * Math.cos(b)).toFixed(2) + '" cy="' + (50 + 44.5 * Math.sin(b)).toFixed(2) +
-      '" r="2.2" fill="' + (j % 2 ? "#7CC4FF" : "#FFD27A") + '"/>';
-  }
-  var wheel = '<svg class="gwwheel" viewBox="-4 -8 108 112" aria-hidden="true">' +
-    '<circle cx="50" cy="50" r="48" fill="#0B1220" stroke="#FFFFFF" stroke-width="2.5"/>' + bulbs +
-    '<g class="gwrot">' + segs + "</g>" +
-    '<circle cx="50" cy="50" r="38" fill="none" stroke="#05080F" stroke-width="1.6"/>' +
-    '<circle cx="50" cy="50" r="12" fill="#0B1220" stroke="#3FA9FF" stroke-width="2"/>' +
-    '<text x="50" y="54" text-anchor="middle" font-family="CardBody, sans-serif" font-size="10" fill="#3FA9FF">4</text>' +
-    '<path d="M50 4l-6-10h12z" fill="#FF8A1E" stroke="#05080F" stroke-width="1.2"/></svg>';
-  function spark(left, top, delay, color) {
-    return '<svg class="gwspark" style="left:' + left + "cqw;top:" + top + "cqw;animation-delay:" + delay +
-      's" viewBox="-12 -12 24 24" aria-hidden="true"><path d="M0-12L2.4-2.4 12 0 2.4 2.4 0 12-2.4 2.4-12 0-2.4-2.4Z" fill="' +
-      color + '"/></svg>';
-  }
-  var price = DATA.wheelCost + (DATA.wheelCost === 1 ? " CARD" : " CARDS");
-  return '<span class="gwface"></span><span class="gwrays"></span>' + wheel +
-    '<span class="gwwords"><span class="gwspin">SPIN THE</span><span class="gwgamble">GAMBLE<br>WHEEL!!</span>' +
-    '<span class="gwprice">' + price + "</span></span>" +
-    '<span class="gwcards"><span class="gwcb back">' + cardBackArt("gwb") + '</span>' +
-    '<span class="gwcb front">' + cardBackArt("gwf") + "</span></span>" +
-    spark(30, 4, 0, "#FFFFFF") + spark(88, 6, 0.8, "#FFD27A") + spark(70, 26, 1.6, "#BFE2FF") + spark(5, 26, 1.2, "#FFD27A");
-}
 
 /*
  * The CHAIN REACTION card back, drawn small after the real one: a blue half and
@@ -6347,38 +6449,6 @@ function cardBackArt(k) {
         '<text x="35" y="59" font-size="9.2" fill="url(#' + k + 'r)">REACTION</text></g></g></svg>';
 }
 
-function wheelButton() {
-  var s = state;
-  var label = "Spin the GAMBLE WHEEL!! (" + DATA.wheelCost + " cards)";
-  // The button says all of that in its drawing; the label carries the same
-  // words for anyone the drawing doesn't reach.
-  var plate = '<span class="gwart" role="img" aria-label="' + esc(label) + '">' + gambleWheelArt() + "</span>";
-  // Somebody else has it. Dimmed and named, rather than a button that looks
-  // ready and then does nothing when it is pressed.
-  var busy = wheelHeldByOther();
-  if (busy) {
-    return '<button class="wheelplate" disabled>' + plate + "</button>" +
-      '<p class="hint">' + esc(busy) + ' is on the wheel. It comes free when they finish.</p>';
-  }
-  // Everyone has passed, so the talking is over and the throwing has started.
-  // Cards can still answer what happens out there; buying a spin cannot,
-  // because a wheel landed on a hole half-thrown lands on nothing.
-  if (prioOpen(s)) {
-    return '<button class="wheelplate" disabled>' + plate + "</button>" +
-      '<p class="hint">Everyone passed &mdash; the wheel is shut for this hole. ' +
-      'It opens again when the scores go in.</p>';
-  }
-  if (live && !iHavePrio(s)) {
-    return '<button class="wheelplate" disabled>' + plate + "</button>" +
-      '<p class="hint">' + esc(prioHolder(s)) + ' has priority. The wheel is theirs until they pass.</p>';
-  }
-  if (canAffordWheel(s)) {
-    return '<button class="wheelplate" data-act="openWheel">' + plate + "</button>";
-  }
-  return '<button class="wheelplate" disabled>' + plate + "</button>" +
-    '<p class="hint">Spinning costs ' + DATA.wheelCost + ' cards and you\'re holding ' +
-    s.hand.length + '. Playing GAMBLE WHEEL!! spins for free.</p>';
-}
 
 /* The price of a spin: pick which cards leave your hand. */
 function renderWheelCost() {
@@ -6772,16 +6842,6 @@ function miniCardHtml(c, act, picked, held) {
     '<div class="minitext">' + esc(c.text) + '</div></div>';
 }
 
-function counter(label, value, sublabel, act) {
-  // Ice, not sage, on the second line: it is the tap target, and it has to look like
-  // something rather than like a caption.
-  // The inner wrap does the vertical centring: a <button> refuses to lay its
-  // own children out as a flex column, so the tile can't.
-  return (act ? '<button class="counter" data-act="' + act + '">' : '<div class="counter">') +
-    '<span class="cwrap"><b>' + value + '</b><span>' + label + '</span>' +
-    (sublabel ? '<span class="sub">' + sublabel + '</span>' : "") + '</span>' +
-    (act ? "</button>" : "</div>");
-}
 
 /* [altText] rewrites the card's words for where it is being shown — the wheel
    passes the wheel wording. Art is painted with the card's own text, so when a
@@ -11687,6 +11747,9 @@ app.addEventListener("click", function (e) {
       if (s.hand.length) { confirmPass = true; render(); break; }
       passPrio(s); render(); break;
     case "passNo": confirmPass = false; render(); break;
+    case "handView":
+      settings.handView = el.getAttribute("data-v") === "list" ? "list" : "fan";
+      putSettings(settings); render(); break;
     case "passYes":
       confirmPass = false;
       if (!iHavePrio(s)) { render(); break; }
