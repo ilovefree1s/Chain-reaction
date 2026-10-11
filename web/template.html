@@ -650,7 +650,19 @@
   }
   .drawnframe svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
   @keyframes rimspin { to { --rimspin: 360deg; } }
-  @media (prefers-reduced-motion: reduce) { .drawnframe .rim { animation: none; } }
+  /* Rare's glint: a short soft highlight on a thin ring over the outer rim,
+     drawn only on the ring (the mask cuts the middle out), round at epic's pace. */
+  @property --shine { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
+  .drawnframe .shine { position: absolute; inset: 0; border-radius: 4cqw; padding: 1.3cqw; pointer-events: none;
+    background: conic-gradient(from var(--shine), rgba(220, 240, 255, 0) 0deg 334deg, rgba(220, 240, 255, 0.75) 350deg,
+                               #FFFFFF 353deg, rgba(220, 240, 255, 0) 360deg);
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    mask-composite: exclude;
+    mix-blend-mode: screen; animation: shinespin 7.5s linear infinite; }
+  @keyframes shinespin { to { --shine: 360deg; } }
+  @media (prefers-reduced-motion: reduce) { .drawnframe .rim, .drawnframe .shine { animation: none; } }
   /* The enlarged card rides the thumb: dragged live, then either thrown off the
      edge or sprung back. pan-y hands horizontal drags to us and leaves vertical
      ones as scrolling. The chevrons deliberately skip all of it and cut. */
@@ -1907,7 +1919,8 @@ function drawnFrameHtml(c, words, drawing) {
  * holding a sapphire and a smaller one under the badge, a smoky blue inside
  * with honeycomb fading in at the corners, and sapphires above and below the
  * badge. The smoke is made from noise in the page rather than shipped as a
- * picture. Still, like common and uncommon.
+ * picture. One small glint travels round the rim, a quieter cousin of the
+ * streak on epic's.
  */
 function crestFrameHtml(label) {
   return '<div class="drawnframe crest"' + label + '>' +
@@ -1971,7 +1984,7 @@ function crestFrameHtml(label) {
     '<g fill="url(#rrStone)" stroke="#EAF6FF" stroke-width="2.5" filter="url(#rrGlow)">' +
       '<path d="M500 940l24 34-24 34-24-34z"/><path d="M500 1238l26 38-26 38-26-38z"/>' +
       '<path d="M500 -20l36 56-36 56-36-56z"/></g>' +
-    '</svg></div>';
+    '</svg><div class="shine"></div></div>';
 }
 
 /*
