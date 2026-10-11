@@ -335,6 +335,49 @@
     text-shadow: 0 1px 3px rgba(0, 0, 0, 0.75);
   }
   .confirmq { margin: 14px 0 0; font-weight: 700; }
+  /* ---- the Rules tab: a quick reference ---- */
+  /* The two round actions side by side at the top. */
+  .racts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 4px; }
+  .ract { min-height: 58px; padding: 6px 4px; border-radius: 14px; display: flex; flex-direction: column; align-items: center;
+          justify-content: center; gap: 2px; font-size: 14px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; }
+  .ract small { font-size: 11px; font-weight: 700; letter-spacing: 0; text-transform: none; color: var(--sage); }
+  .ract.dispute { background: #0B1426; border: 2px solid #3FA9FF; color: #BFE2FF; }
+  .ract.end { background: #12070A; border: 2px solid #5A1E22; color: #FF8A80; }
+  /* Cards drawn after a hole: the number in a chip, what earns it beside it. */
+  .rdraws { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .rdraw { display: flex; align-items: center; gap: 10px; padding: 10px; border-radius: 14px; background: #070B14; border: 1px solid #22304A; }
+  .rdraw .rn { flex: 0 0 auto; min-width: 42px; height: 42px; padding: 0 6px; box-sizing: border-box; border-radius: 12px;
+               display: grid; place-items: center; font-size: 22px; font-weight: 900; background: #0B1A33; color: #4DC3FF; }
+  .rdraw .rn.zero { color: var(--sage); background: #0B1322; }
+  .rdraw .rn.two { background: rgba(255, 138, 30, 0.16); color: var(--self); }
+  .rdraw .rn.bonus { background: rgba(71, 217, 127, 0.16); color: #47D97F; font-size: 18px; }
+  .rdraw .rt { min-width: 0; font-size: 13px; line-height: 1.25; color: var(--off); }
+  .rdraw .rt small { display: block; margin-top: 1px; font-size: 11px; color: var(--sage); }
+  /* The rarity order a clash goes by, weakest on the left. */
+  .rclash { display: flex; align-items: center; justify-content: space-between; padding: 12px; border-radius: 14px;
+            background: #070B14; border: 1px solid #22304A; }
+  .rclash .rg { display: flex; flex-direction: column; align-items: center; gap: 5px; font-size: 9.5px; font-weight: 900;
+                letter-spacing: 0.08em; text-transform: uppercase; }
+  .rclash .rg i { width: 18px; height: 18px; border-radius: 3px; transform: rotate(45deg); }
+  .rclash .rgt { color: #4A5B7A; font-weight: 900; }
+  /* A rule a row: tap the row to open its words. */
+  .racc { border-radius: 14px; background: #070B14; border: 1px solid #22304A; margin-bottom: 7px; overflow: hidden; }
+  .racc.open { border-color: #3FA9FF; }
+  .rhd, .rmore { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 0; padding: 9px 12px; background: none;
+                 border-radius: 0; text-align: left; color: var(--off); }
+  .rhd b { flex: 1; font-size: 15.5px; font-weight: 800; }
+  .ric { flex: 0 0 auto; width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; background: #0B1A33; }
+  .ric svg { width: 22px; height: 22px; stroke: #4DC3FF; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .rchev { color: #4DC3FF; font-size: 22px; font-weight: 900; transition: transform 0.15s; }
+  .racc.open .rchev, .rmore.open .rchev { transform: rotate(90deg); }
+  .rbd { padding: 0 14px 12px 64px; font-size: 14px; line-height: 1.45; color: var(--sage); }
+  .rmore { padding: 12px; border-radius: 14px; border: 2px solid transparent;
+           background: linear-gradient(#070B14, #070B14) padding-box, linear-gradient(100deg, #1E6FFF, #3FA9FF 45%, #FF8A1E) border-box; }
+  .rmt { flex: 1; min-width: 0; }
+  .rmt b { display: block; font-size: 16px; }
+  .rmt span { font-size: 13px; color: var(--sage); }
+  @media (prefers-reduced-motion: reduce) { .rchev { transition: none; } }
+
   /* ---- the HAND tab ---- */
   /* The switch in the top corner, fanned cards or a list, the one in use lit. */
   .backbar .viewtog { position: absolute; right: 0; display: flex; gap: 2px; padding: 3px; border-radius: 99px;
@@ -2186,7 +2229,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.3.198 · 11 Oct 17:15";
+var APP_VERSION = "v1.3.199 · 11 Oct 17:40";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. The arrow beside it goes and looks for a
@@ -7115,40 +7158,77 @@ function renderRoundRules() {
       '<button class="big quiet" data-act="endNo" style="margin:0">Keep playing</button></div></div>'
     : '<button class="big danger" data-act="endAsk">End round</button>';
 
-  // Live first: joining mid-round shouldn't mean scrolling past the whole deck.
-  // Courses are made and saved in Setup's course sheet — mid-round the Rules
-  // tab is for rules, cards and ending the round, nothing else.
-  // The shortcut is announced where you would otherwise start the long scroll
-  // looking for the button it saves you.
-  //
-  // Asked, the question comes to the top. It was reached by scrolling the
-  // whole tab to its foot, which is a lot of travel to watch when the group is
-  // already packing up — and the shortcut existed to save exactly that.
-  return (confirming ? danger + '<div style="height:14px"></div>' : "") +
-    '<p class="hint" style="text-align:center;margin:0 0 14px">' +
-    'Tap RULES 3&times; to end the round early.</p>' +
-    // The rules say an argument goes to the coin. This is the way there —
-    // at the top, because a table mid-argument is not going to scroll.
+  // The two things the tab is for mid-round sit side by side at the top: the
+  // way to the coin when the table is arguing, which is not going to scroll,
+  // and the way out when it is packing up. Asked, either question takes their
+  // place, so it is always answered where it was asked.
+  var top = confirming
+    ? danger
     // First it asks who the argument is with: only that player is called over.
-    (disputePick
-      ? '<div class="panel" style="margin-bottom:16px">' +
-        '<p class="confirmq" style="text-align:center;margin-top:0">Dispute with&hellip;</p>' +
-        state.players.map(function (name, i) {
-          return (i === state.meIndex || !name.trim()) ? "" :
-            '<button class="big primary" data-act="disputeWith" data-t="' + esc(name) + '">' +
-            esc(name) + "</button>";
-        }).join("") +
-        // No name: the whole table hears it and any of them can tap in.
-        '<button class="big raised" data-act="disputeWith">All players</button>' +
-        '<button class="big quiet" data-act="disputeCancel" style="margin-bottom:0">Cancel</button>' +
-        '</div>'
-      : '<button class="big raised" data-act="dispute">Settle a dispute</button>' +
-        '<p class="hint" style="text-align:center;margin:-6px 0 16px">' +
-        'Coin, dice, wheel or cards &mdash; the app has no opinion.</p>') +
-    renderLiveSection() + renderHouseRules() + renderCardLibrary() +
-    '<div style="height:16px"></div>' +
-    // Not repeated when it is already up top — one question, in one place.
-    (confirming ? "" : danger);
+    : disputePick
+    ? '<div class="panel" style="margin-bottom:16px">' +
+      '<p class="confirmq" style="text-align:center;margin-top:0">Dispute with&hellip;</p>' +
+      state.players.map(function (name, i) {
+        return (i === state.meIndex || !name.trim()) ? "" :
+          '<button class="big primary" data-act="disputeWith" data-t="' + esc(name) + '">' +
+          esc(name) + "</button>";
+      }).join("") +
+      // No name: the whole table hears it and any of them can tap in.
+      '<button class="big raised" data-act="disputeWith">All players</button>' +
+      '<button class="big quiet" data-act="disputeCancel" style="margin-bottom:0">Cancel</button>' +
+      '</div>'
+    : '<div class="racts">' +
+      '<button class="ract dispute" data-act="dispute">Settle a dispute<small>coin, dice, wheel or cards</small></button>' +
+      '<button class="ract end" data-act="endAsk">End round<small>or tap RULES 3&times;</small></button></div>';
+
+  // Live first after that: joining mid-round shouldn't mean scrolling past the
+  // whole deck. Courses are made in Setup's course sheet — mid-round the Rules
+  // tab is for rules, cards and ending the round, nothing else.
+  var mode = state ? state.mode : rulesMode;
+  return top + renderLiveSection() +
+    '<div class="label">Cards drawn after a hole</div>' + drawTiles(mode) +
+    '<div class="label">Who wins a clash</div>' + clashLadder() +
+    '<div class="label">How it works</div>' + ruleRows(mode) +
+    '<div class="label">The cards</div>' +
+    '<button class="rmore' + (rulesCards ? " open" : "") + '" data-act="rulesCards" aria-expanded="' + rulesCards + '">' +
+    '<span class="ric"><svg viewBox="0 0 24 24">' + NEON_ICONS.cards + "</svg></span>" +
+    '<span class="rmt"><b>All ' + CARDS.length + " cards</b><span>grouped by when you play them</span></span>" +
+    '<span class="rchev">&rsaquo;</span></button>' +
+    (rulesCards ? '<div style="height:10px"></div>' + renderCardLibrary() : "");
+}
+
+/* Which rule is open on the Rules tab (one at a time), and whether the card
+   list under them is showing. */
+var rulesOpen = -1, rulesCards = false;
+
+/* The cards-drawn table as tiles: the number in a chip, what earns it beside. */
+function drawTiles(mode) {
+  return '<div class="rdraws">' + (mode === "skins" ? SKINS_DRAW_TABLE : DRAW_TABLE).map(function (r) {
+    var m = /^(\+?\d+)\s*(.*)$/.exec(r[1]) || [r[1], r[1], ""];
+    var cut = r[0].indexOf(", "), main = cut < 0 ? r[0] : r[0].slice(0, cut), more = cut < 0 ? "" : r[0].slice(cut + 2);
+    var small = [more, m[2]].filter(Boolean).join(" &middot; ");
+    var kind = m[1] === "0" ? " zero" : m[1].charAt(0) === "+" ? " bonus" : +m[1] >= 2 ? " two" : "";
+    return '<div class="rdraw"><span class="rn' + kind + '">' + esc(m[1]) + '</span><span class="rt">' + esc(main) +
+      (small ? "<small>" + small + "</small>" : "") + "</span></div>";
+  }).join("") + "</div>";
+}
+/* The rarity order a clash goes by, weakest on the left. */
+function clashLadder() {
+  return '<div class="rclash">' + RARITIES.map(function (t, i) {
+    return (i ? '<span class="rgt">&lt;</span>' : "") + '<span class="rg" style="color:' + t.color + '"><i style="background:' +
+      t.color + ";box-shadow:0 0 8px " + t.color + '"></i>' + esc(t.id) + "</span>";
+  }).join("") + "</div>";
+}
+/* Every rule a one-line row; a tap opens its words. */
+function ruleRows(mode) {
+  return houseRules(mode).map(function (r, i) {
+    var open = rulesOpen === i;
+    return '<div class="racc' + (open ? " open" : "") + '">' +
+      '<button class="rhd" data-act="ruleOpen" data-n="' + i + '" aria-expanded="' + open + '">' +
+      '<span class="ric"><svg viewBox="0 0 24 24">' + NEON_ICONS[r[0]] + "</svg></span>" +
+      "<b>" + esc(r[1]) + '</b><span class="rchev">&rsaquo;</span></button>' +
+      (open ? '<div class="rbd">' + esc(r[2]) + "</div>" : "") + "</div>";
+  }).join("");
 }
 
 /* ---- neon page helpers ---- */
@@ -7191,23 +7271,6 @@ function renderRules() {
     nsec("Cards drawn at the end of a hole") + table;
 }
 
-function renderHouseRules() {
-  // Mid-round the format is a fact, not a choice: the rules show the game
-  // being played and the stroke/skins picker stays home.
-  var mode = state ? state.mode : rulesMode;
-  var rules = houseRules(mode).map(function (r) {
-    return '<div class="panel"><div style="font-size:22px;font-weight:700">' + esc(r[1]) +
-      '</div><p style="margin:4px 0 0;color:var(--sage)">' + esc(r[2]) + '</p></div>';
-  }).join("");
-
-  var table = (mode === "skins" ? SKINS_DRAW_TABLE : DRAW_TABLE).map(function (r) {
-    return '<div class="total"><span class="name" style="font-size:17px;font-weight:400;color:var(--sage)">' +
-      esc(r[0]) + '</span><span class="v">' + r[1] + '</span></div>';
-  }).join("");
-
-  return '<div class="label">How it works</div>' + (state ? "" : formatPicker()) + rules +
-    '<div class="label">Cards drawn at the end of a hole</div>' + table;
-}
 
 function renderCardLibrary() {
   return DATA.timings.map(function (t) {
@@ -12069,6 +12132,8 @@ app.addEventListener("click", function (e) {
 
     case "mode": setup.mode = el.getAttribute("data-t"); render(); break;
     case "rulesMode": rulesMode = el.getAttribute("data-t"); render(); break;
+    case "ruleOpen": rulesOpen = rulesOpen === n ? -1 : n; render(); break;
+    case "rulesCards": rulesCards = !rulesCards; render(); break;
 
     case "openPile": pileOpen = true; pileAt = s ? s.meIndex : null; render(); break;
     case "closePile": pileOpen = false; render(); break;
