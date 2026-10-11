@@ -382,7 +382,7 @@
          background: rgba(255, 138, 30, 0.1); border: 1px solid rgba(255, 138, 30, 0.45); }
   /* Over the fan it sits in the empty space above the cards rather than
      pushing them down, so the tab still fits a short phone. */
-  .handpage.fan .tip { position: relative; z-index: 1; margin-bottom: -26px; background: #160E08; }
+  .handpage.fan .tip:not(.callout) { position: relative; z-index: 1; margin-bottom: -26px; background: #160E08; }
   /* A tip floating under the thing in the corner it points at, arrow up to it. */
   .tip.callout { position: absolute; top: calc(100% + 8px); right: 0; z-index: 8; width: min(250px, 72vw); margin: 0;
                  text-align: left; background: #160E08; box-shadow: 0 8px 22px rgba(0, 0, 0, 0.6); }
@@ -411,7 +411,7 @@
   .hstats .tap { min-height: 0; padding: 6px 4px; margin: -6px -4px; background: none; font: inherit;
                  letter-spacing: inherit; color: #4DC3FF; cursor: pointer; }
   .hstats .tap b { color: #4DC3FF; }
-  .htools { display: grid; grid-template-columns: 1.45fr 1fr; gap: 8px; margin-bottom: 4px; }
+  .htools { position: relative; display: grid; grid-template-columns: 1.45fr 1fr; gap: 8px; margin-bottom: 4px; }
   .htool { box-sizing: border-box; height: 52px; min-height: 0; border-radius: 14px; padding: 0 10px; color: var(--off); }
   .handpage.fan .htool { height: 80px; }
   .wtile { display: grid; grid-template-columns: auto 1fr auto; align-items: center; column-gap: 9px; text-align: left;
@@ -6253,7 +6253,9 @@ function renderHand() {
 
   var wg = wheelGate(s);
   var tools = tradeUp ? tradeBlock(s)
-    : '<div class="htools">' + wheelTileHtml(s) + tradeTileHtml(s) + "</div>" +
+    : '<div class="htools">' + wheelTileHtml(s) + tradeTileHtml(s) +
+      // One tip at a time up here: the trade one waits until the switch's is closed.
+      (tradesLeft(s) > 0 && (tipSeen("viewSwitch") || !tipsOn()) ? tipHtml("tradeUp", "callout") : "") + "</div>" +
       (wg.hint ? '<p class="hint hnote">' + wg.hint + "</p>" : "");
 
   // Owed cards with no room for them, and a locked hole the table hasn't
@@ -7307,7 +7309,9 @@ function tipsOn() { return settings.tips !== false; }
  */
 var TIPS = {
   fanSlide: "Touch a card and keep your finger down, then slide left and right to read through your hand.",
-  viewSwitch: "Switch your hand between fanned cards and a list here."
+  viewSwitch: "Switch your hand between fanned cards and a list here.",
+  // Read when shown: the trade count is set further down the file.
+  tradeUp: function () { return "Trade 2 cards of the same rarity for 1 card a rarity higher. You get " + TRADES_PER_ROUND + " trades a round."; }
 };
 function tipSeen(key) { return !!(settings.tipsSeen && settings.tipsSeen[key]); }
 function markTipSeen(key) {
@@ -7321,7 +7325,7 @@ function markTipSeen(key) {
 function tipHtml(key, cls) {
   if (!tipsOn() || tipSeen(key) || !TIPS[key]) return "";
   return '<div class="tip' + (cls ? " " + cls : "") + '" role="note"><span class="tipic">' + setIcon("tips") + "</span>" +
-    '<span class="tiptx">' + esc(TIPS[key]) + "</span>" +
+    '<span class="tiptx">' + esc(typeof TIPS[key] === "function" ? TIPS[key]() : TIPS[key]) + "</span>" +
     '<button class="tipx" data-act="tipDone" data-t="' + key + '" aria-label="Got it, hide this tip">&times;</button></div>';
 }
 /* Words that always sit in a tip's box — instructions for a screen rather
@@ -12357,7 +12361,7 @@ app.addEventListener("click", function (e) {
       resolveCard(s, i, false, null);
       break;
 
-    case "askTrade": tradeUp = { picks: [] }; viewCard = null; render(); break;
+    case "askTrade": tradeUp = { picks: [] }; viewCard = null; markTipSeen("tradeUp"); render(); break;
     case "cancelTrade": tradeUp = null; render(); break;
     case "tradePick":
       if (tradeUp) {
