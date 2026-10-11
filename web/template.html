@@ -221,7 +221,7 @@
   .pilerow.played { color: #4DC3FF; }
 
   .holehead { margin-bottom: 16px; }
-  .stripgap { height: 66px; }
+  .stripgap { height: 50px; }
   /* Four or fewer on the card: everything shaves a few pixels so the whole
      screen sits still — no just-barely scroll. Five players scroll instead. */
   .scorepage.tight .holehead { margin-bottom: 8px; }
@@ -229,7 +229,7 @@
   .scorepage.tight .player .name { font-size: 20px; }
   .scorepage.tight .hint { margin: 0 0 6px; }
   .scorepage.tight .big { margin-bottom: 6px; }
-  .scorepage.tight .stripgap { height: 48px; }
+  .scorepage.tight .stripgap { height: 32px; }
   .player { border: 2px solid transparent; border-radius: 14px; padding: 12px; margin-bottom: 10px;
             background: linear-gradient(var(--panel), var(--panel)) padding-box,
                         linear-gradient(100deg, #1E6FFF, #3FA9FF 45%, #FF8A1E) border-box;
@@ -1379,22 +1379,33 @@
   .tabpeek .holestrip { display: none; }
   /* Mid-swipe the page hangs off the side; it must not widen the page with it. */
   #app.tabswiping { overflow-x: clip; }
-  /* UDisc-style hole strip riding above the tab bar on the Score screen:
-     a swipeable row of hole chips, tap one to jump. */
+  /* The hole strip riding above the tab bar on the Score screen is a scorecard
+     row: HOLE over YOU, ruled like paper, swipeable, tap a column to jump. The
+     labels stay put at the left while the holes scroll under them. Your locked
+     score is marked the way a card marks it: a circle under par, a square over. */
   .holestrip { position: fixed; left: 0; right: 0;
                bottom: calc(65px + env(safe-area-inset-bottom));
-               display: flex; gap: 8px; overflow-x: auto; padding: 8px 12px;
-               background: var(--panel); border-top: 1px solid var(--edge); z-index: 5;
+               display: flex; overflow-x: auto; padding: 6px 0;
+               background: #0A1220; border-top: 1px solid #2B3B58; z-index: 5;
                -webkit-overflow-scrolling: touch; scrollbar-width: none; }
   .holestrip::-webkit-scrollbar { display: none; }
-  .holechip { flex: 0 0 auto; min-width: 62px; border-radius: 12px; padding: 6px 0 5px;
-              background: none; border: 1px solid var(--edge); color: var(--off);
-              display: flex; flex-direction: column; align-items: center; gap: 1px; }
-  .holechip strong { font-size: 18px; font-weight: 900; line-height: 1.1; }
-  .holechip span { font-size: 10px; font-weight: 700; letter-spacing: 1px; color: var(--sage); }
-  .holechip.on { border-color: var(--self); }
-  .holechip.on strong { color: var(--self); }
-  .holechip.done strong { color: var(--sage); }
+  .holestrip::after { content: ""; flex: 0 0 12px; }
+  .holelab { position: sticky; left: 0; z-index: 2; flex: 0 0 auto; display: grid;
+             grid-template-rows: repeat(2, 22px); align-items: center; padding: 0 9px 0 12px;
+             background: #0A1220; border-right: 1px solid #2B3B58;
+             font-size: 9.5px; font-weight: 800; letter-spacing: 1px; color: var(--sage); }
+  .holechip { flex: 0 0 42px; min-height: 0; padding: 0; display: grid; grid-template-rows: repeat(2, 22px);
+              align-items: center; justify-items: center; background: none; color: var(--off);
+              border-radius: 0; border-right: 1px solid rgba(43, 59, 88, 0.65); }
+  .holechip .hno { font-size: 15px; font-weight: 900; line-height: 1; }
+  .holechip .hyou { width: 20px; height: 20px; display: grid; place-items: center;
+                    font-size: 13px; font-weight: 900; line-height: 1; }
+  .holechip .hyou.under { border: 1.5px solid #3FA9FF; border-radius: 50%; color: #BFE2FF; }
+  .holechip .hyou.over { border: 1.5px solid #FF5A4D; border-radius: 3px; color: #FFC9C4; }
+  .holechip.on { background: rgba(255, 138, 30, 0.12); box-shadow: inset 0 0 0 2px var(--self);
+                 border-radius: 8px; border-right-color: transparent; }
+  .holechip.on .hno { background: var(--self); color: #1A0A00; border-radius: 5px; padding: 1px 7px; }
+  .holechip.on .hyou:empty::after { content: "\2022"; color: var(--self); }
   /* Press-and-hold peek at a full card face — rides over any sheet, and takes
      no touches of its own so letting go lands wherever the finger was. */
   .peekwrap { position: fixed; inset: 0; z-index: 30; display: flex; align-items: center;
@@ -1420,22 +1431,29 @@
   /* Each tab owns an even third, with a thin line marking the boundary. */
   nav button { flex: 1 1 0; min-width: 0; }
   nav button + button { border-left: 1px solid var(--edge); }
-  /* Drawn tabs: icon over word, quiet sage until it is the tab you're on, which
-     turns orange with a glowing bar along its top edge. */
-  nav button.navtab { position: relative; gap: 3px; color: var(--sage); }
-  nav button.navtab.on { color: #FF8A1E; }
-  nav button.navtab.on::before {
-    content: ""; position: absolute; top: -1px; left: 22%; right: 22%; height: 3px;
-    border-radius: 0 0 3px 3px; background: #FF8A1E; box-shadow: 0 0 10px rgba(255, 138, 30, 0.9);
+  /* Drawn tabs: soft pills on a lighter bar than the hole strip, icon over word,
+     quiet sage until it is the tab you're on, which fills with orange. Same
+     height as before: 1 + 6 + 52 + 6, so nothing pinned above it moves. */
+  nav { background: #0B1426; border-top-color: rgba(63, 169, 255, 0.35); gap: 6px;
+        padding: 6px 8px calc(6px + env(safe-area-inset-bottom)); }
+  nav button.navtab { position: relative; gap: 3px; color: var(--sage); min-height: 52px; border-radius: 14px; }
+  nav button.navtab + button.navtab { border-left: 0; }
+  /* An orange line between each pair of tabs, centred in the gap. */
+  nav button.navtab + button.navtab::after {
+    content: ""; position: absolute; left: -4px; top: 10px; bottom: 10px; width: 2px; border-radius: 1px;
+    background: #FF8A1E; box-shadow: 0 0 6px rgba(255, 138, 30, 0.7);
   }
+  nav button.navtab.on { color: #FF8A1E;
+    background: linear-gradient(180deg, rgba(255, 138, 30, 0.22), rgba(255, 138, 30, 0.07));
+    box-shadow: inset 0 0 0 1px rgba(255, 138, 30, 0.5); }
   .navic { width: 22px; height: 22px; display: block; }
   .navlb { font-size: 13px; font-weight: 800; letter-spacing: 0.08em; line-height: 1; }
   /* The live count in the tab's top-right corner — inside the bar, so it never
      pokes up into the hole strip above. */
-  .navct { position: absolute; top: 7px; right: 16%; font-size: 12px; font-weight: 900;
+  .navct { position: absolute; top: 6px; right: 12%; font-size: 12px; font-weight: 900;
            line-height: 1; color: var(--off); }
   nav button.navtab.on .navct { color: #FF8A1E; }
-  nav button.navtab .badge { top: 4px; left: 16%; }
+  nav button.navtab .badge { top: 4px; left: 12%; }
 
   .modal {
     position: fixed; inset: 0; background: var(--pine); z-index: 20; overflow-y: auto;
@@ -5677,15 +5695,17 @@ function renderScore() {
       'on a wheel spin. Tap to open hole ' + (g.hole + 1) + '.</div></div>';
   }).join("");
 
-  // UDisc-style hole strip riding above the tab bar: every hole as a chip,
-  // swipe through them, tap one to jump. A locked chip trades its par line
-  // for your locked score under a check.
-  var strip = '<div class="holestrip" id="holestrip">';
+  // The hole strip riding above the tab bar, as a scorecard row: each hole a
+  // column, its number over your locked score, swipe through them, tap one to
+  // jump. Holes not yet locked leave YOU blank.
+  var strip = '<div class="holestrip" id="holestrip"><div class="holelab"><span>HOLE</span><span>YOU</span></div>';
   for (var hc = 0; hc < s.holeCount; hc++) {
+    var mine = s.locked[hc] ? s.scores[hc][s.meIndex] : null;
+    var mark = mine == null ? "" : mine < s.pars[hc] ? " under" : mine > s.pars[hc] ? " over" : "";
     strip += '<button class="holechip' + (hc === h ? " on" : "") + (s.locked[hc] ? " done" : "") +
-      '" data-act="hole" data-n="' + hc + '"><strong>' + (hc + 1) + '</strong>' +
-      '<span>' + (s.locked[hc] ? "&#10003; " + s.scores[hc][s.meIndex] : "PAR " + s.pars[hc]) +
-      '</span></button>';
+      '" data-act="hole" data-n="' + hc + '" aria-label="Hole ' + (hc + 1) + ", par " + s.pars[hc] +
+      (mine == null ? "" : ", you " + mine) + '"><span class="hno">' + (hc + 1) + '</span>' +
+      '<span class="hyou' + mark + '">' + (mine == null ? "" : mine) + '</span></button>';
   }
   strip += '</div>';
 
