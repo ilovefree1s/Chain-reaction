@@ -391,6 +391,8 @@
   .tipic { flex: 0 0 auto; color: #FF8A1E; display: grid; place-items: center; }
   .tipic svg { width: 18px; height: 18px; }
   .tiptx { flex: 1; min-width: 0; font-size: 12.5px; line-height: 1.3; color: var(--off); }
+  .tip.fixed { margin: 0 0 14px; padding: 10px 12px; }
+  .tip.fixed .tiptx { font-size: 14px; line-height: 1.4; }
   .tipx { flex: 0 0 auto; width: 32px; height: 32px; min-height: 0; padding: 0; border-radius: 50%; background: none;
           color: var(--sage); font-size: 20px; line-height: 1; }
 
@@ -522,6 +524,16 @@
   /* Every card, flat, two to a row (three where the page is wide enough). */
   .libgrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-bottom: 6px; }
   @media (min-width: 560px) { .libgrid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  /* Paying for a spin: a picked card rides up, ringed orange with a tick; a
+     held one is dimmed, since it can't be spent. */
+  .paygrid { margin-bottom: 4px; }
+  .paygrid .hface { transition: transform 0.15s ease-out; }
+  .paygrid .hface.picked { transform: translateY(-4px); box-shadow: 0 0 0 3px #FF8A1E, 0 0 18px rgba(255, 138, 30, 0.6); }
+  .paygrid .hface.picked::after { content: "\2713"; position: absolute; bottom: 4cqw; right: 4cqw; width: 14cqw; height: 14cqw;
+                                  border-radius: 50%; background: #FF8A1E; color: #1A0A00; display: grid; place-items: center;
+                                  font-size: 9cqw; font-weight: 900; }
+  .hface.held { filter: brightness(0.6) saturate(0.6); }
+  @media (prefers-reduced-motion: reduce) { .paygrid .hface { transition: none; } }
   .ht-common { --hrim: linear-gradient(135deg, #FFFFFF, #8D97A6 35%, #F2F5FA 55%, #5E6A7C); }
   .ht-uncommon { --hrim: linear-gradient(135deg, #B8FFD0, #1E9A57 35%, #47D97F 55%, #0B5A2E); }
   .ht-rare { --hrim: linear-gradient(135deg, #BFE2FF, #1E4FD8 35%, #4D8BFF 55%, #0A2E8A); }
@@ -563,24 +575,6 @@
   .hdask span { color: var(--sage); font-size: 14px; }
   .tabpeek .handdock { display: none; }
   @media (prefers-reduced-motion: reduce) { .wtile, .wtile * { animation: none !important; } .hfan .hface { transition: none; } }
-  .handgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-  /* The outline is the card's rarity here as well: the hand is where you are
-     deciding what to play, which is the moment it matters most. Defaults kept
-     for anything drawn before a tier is known. */
-  /* min-width:0 or the column is sized by the widest thing that refuses to
-     wrap. A grid track is 1fr of the space OR its content's minimum, whichever
-     is larger, and the kind-and-timing line is nowrap by design — so the tiles
-     grew to fit a line nobody was ever meant to read at full width, and the two
-     columns came out different sizes because their lines are different lengths.
-     fitMetaLines shrinks that line to fit; this lets it. */
-  .minicard { min-width: 0;
-              border: 2px solid transparent; border-radius: 14px; padding: 12px;
-              cursor: pointer;
-              background: linear-gradient(#070B14, #070B14) padding-box,
-                          linear-gradient(100deg, var(--rare, #3FA9FF),
-                                          var(--rare, #3FA9FF)) border-box;
-              box-shadow: 0 0 14px var(--rareglow, rgba(30, 111, 255, 0.25)); }
-  .minicard img { width: 100%; display: block; border-radius: 8px; }
   /* Sits in the gap directly above the button stack — next to the Settings button it
      points at, and clear of the logo. Solid, because the grass behind it is bright. */
   .charhint { position: absolute; z-index: 3; left: 16px; right: 16px;
@@ -589,24 +583,6 @@
               background: rgba(5, 7, 12, .88); border: 2px solid #FF8A1E;
               color: #FF8A1E; font: inherit; font-size: 15px; font-weight: 900;
               text-align: center; }
-  /* Chosen to pay for a spin — the same orange the scorecard uses for "you". */
-  .minicard.picked { background: linear-gradient(#130C05, #130C05) padding-box,
-                                 linear-gradient(100deg, #FF8A1E, #FF9A2E) border-box;
-                     box-shadow: 0 0 14px rgba(255, 138, 30, 0.3); }
-  /* Kind and timing on one line, always. As a pair of chips the longer timings wrapped
-     to a second row and pushed the card's own words out of sight — and the point of the
-     tile is starting to read without opening it. Plain text buys back the room. */
-  /* font-size is the starting point only — fitMetaLines() shrinks it per tile until
-     the line fits, because the longest ("GROUP · AFTER ALL PLAY A CARD") overflows a
-     half-width tile at any size a phone could still read. Same as Android. */
-  .minirare { font-weight: 900; }
-  .minimeta { color: #4DC3FF; font-size: 10px; font-weight: 900; letter-spacing: .5px;
-              text-transform: uppercase; margin-bottom: 8px;
-              white-space: nowrap; overflow: hidden; text-overflow: clip; }
-  .mininame { color: #F4F8FF; font-size: 17px; font-weight: 700; line-height: 1.2;
-              margin-bottom: 4px; }
-  .minitext { color: #A9B8D4; font-size: 13px; line-height: 1.35; display: -webkit-box;
-              -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
   /* Clipped sideways: a card waiting just past the screen edge, or one thrown off
      it, would otherwise widen the page and let it scroll. */
   .facemodal { display: flex; overflow-x: hidden; }
@@ -711,9 +687,6 @@
      it, because a table that has been handed a phone skims past sage text. */
   .hint .read { color: #fff; font-weight: 700; }
 
-  /* A fresh card the table hasn't locked yet: in hand, visible, not yet playable. */
-  .heldtag { font-size: 10px; font-weight: 900; letter-spacing: 2px; color: #FF8A1E;
-             margin-bottom: 6px; }
 
   /* A locked hole two phones disagree on. Flags, never fixes: no phone referees. */
   .dispute { border: 2px solid var(--attack); border-radius: 14px; padding: 12px 14px;
@@ -5394,7 +5367,6 @@ function render() {
   // A throw in the air when the page repaints: its dice are put straight back
   // where they are, rather than waiting a frame drawn from the felt's corner.
   if (diceSim) drawDiceSim(diceSim);
-  fitMetaLines();
   fitArtWords();
   fitHandList();
   // The faces are carried in the page but still arrive after the first paint.
@@ -5436,32 +5408,6 @@ function render() {
   syncMusic();
 }
 
-/*
- * Shrink each tile's kind-and-timing line until it fits on one row. CSS can't do this
- * on its own, and a wrapped second row is exactly what pushed the card's own words out
- * of sight. Cheap: at most seven tiles, a few half-pixel steps each.
- */
-var META_MAX_PX = 10, META_MIN_PX = 6;
-
-/*
- * Run once as the tiles go in and again on the next frame. The first pass reads
- * a layout the browser has only just been handed and can measure the line
- * narrower than it ends up — which leaves it at a size that does not fit and
- * clips the timing off the end. The second pass measures a settled grid.
- * Idempotent: every pass starts again from the largest size.
- */
-function fitMetaLines(again) {
-  if (again !== false) requestAnimationFrame(function () { fitMetaLines(false); });
-  var nodes = app.querySelectorAll(".minimeta");
-  for (var i = 0; i < nodes.length; i++) {
-    var el = nodes[i], size = META_MAX_PX;
-    el.style.fontSize = size + "px";
-    while (el.scrollWidth > el.clientWidth && size > META_MIN_PX) {
-      size -= 0.5;
-      el.style.fontSize = size + "px";
-    }
-  }
-}
 
 /*
  * The list fills the screen: whatever room is left between the last card and
@@ -6224,7 +6170,7 @@ function handFaceHtml(c, act, picked, held, k, n) {
 /* The little face itself, wherever it sits: tier and kind, name, timing, words. */
 function smallFaceHtml(c, act, picked, held, more) {
   var rare = rarityOf(c);
-  return '<div class="hface ht-' + rare.id + (picked ? " picked" : "") + '" data-act="' + act + '" data-i="' + c.id + '" style="' +
+  return '<div class="hface ht-' + rare.id + (picked ? " picked" : "") + (held ? " held" : "") + '" data-act="' + act + '" data-i="' + c.id + '" style="' +
     rarityVars(rare) + (more || "") + '">' +
     '<div class="hft"><b>' + esc(rare.id) + "</b><span>" + esc(c.kind) + "</span></div>" +
     '<div class="hfn">' + esc(c.name) + "</div>" +
@@ -6676,24 +6622,25 @@ function renderWheelCost() {
   var s = state;
   // A held card can't pay for a spin — spending it is playing it by another name.
   var held = heldCardIds(s);
+  // The same little faces the fanned hand holds, laid out flat.
   var tiles = s.hand.map(function (id) {
     var picked = wheelPay.indexOf(id) !== -1;
-    return miniCardHtml(BY_ID[id], "payPick", picked, held[id] != null);
+    return smallFaceHtml(BY_ID[id], "payPick", picked, held[id] != null);
   }).join("");
 
   var ready = wheelPay.length === DATA.wheelCost;
   return '<div class="modal nmodal">' +
     '<div class="nheader"><button class="back" data-act="payCancel">&lsaquo;&nbsp; Back</button>' +
     "<h1>SPIN COSTS " + DATA.wheelCost + "</h1></div>" +
-    '<p class="nbody" style="margin:0 0 14px">Pick ' + DATA.wheelCost +
-    " cards to discard for a spin on the GAMBLE WHEEL!! But be careful, it&rsquo;s called the GAMBLE WHEEL for a reason. Sometimes maybe good, sometimes maybe shit... &#x1F608;</p>" +
+    noteTipHtml("Pick " + DATA.wheelCost +
+      " cards to discard for a spin on the GAMBLE WHEEL!! But be careful, it&rsquo;s called the GAMBLE WHEEL for a reason. Sometimes maybe good, sometimes maybe shit... &#x1F608;") +
     // The refusal explains itself: a held card silently ignoring taps just
     // reads as a broken screen.
     (Object.keys(held).length
       ? '<p class="hint" style="margin:0 0 14px">HELD cards can\'t buy a spin &mdash; ' +
         "they free up once the whole table locks the hole in agreement.</p>"
       : "") +
-    '<div class="handgrid">' + tiles + "</div>" +
+    '<div class="libgrid paygrid">' + tiles + "</div>" +
     '<p class="hint"' + (ready ? ' style="color:#FF8A1E"' : "") + ">" +
     wheelPay.length + " of " + DATA.wheelCost + " chosen</p>" +
     '<button class="big primary" data-act="payConfirm"' + (ready ? "" : " disabled") +
@@ -7042,26 +6989,7 @@ function runMirrorSpin(kind, w) {
   })();
 }
 
-/* Half-width hand tile: tags, name, a taste of the text. No buttons — tapping
-   opens the full face, where Play and Discard live. */
-/* [act] and [picked] let the same tile double as the pay-for-a-spin picker;
-   [held] marks a card still frozen while the table locks its hole. */
-/* Painted or not, a tile is a tile: the name, the tier and what the card does,
-   at a size you can read down a list. A painting shrunk to this is a stamp —
-   handsome and unreadable — so the art waits until the card is opened. */
-function miniCardHtml(c, act, picked, held) {
-  var tag = held ? '<div class="heldtag">HELD</div>' : "";
-  var rare = rarityOf(c);
-  var open = '<div class="minicard' + (picked ? " picked" : "") + '" data-act="' +
-    (act || "viewCard") + '" data-i="' + c.id + '" style="' + rarityVars(rare) + '">';
-  return open + tag +
-    '<div class="minimeta">' + (wheelOnlyCard(c.id)
-      ? '<span style="color:#FF8A1E">wheel only</span> &middot; ' : "") +
-    '<span class="minirare" style="color:' + rare.color + '">' + esc(rare.id) + '</span>' +
-    ' &middot; ' + esc(c.kind) + ' &middot; ' + esc(c.timing) + '</div>' +
-    '<div class="mininame">' + esc(c.name) + '</div>' +
-    '<div class="minitext">' + esc(c.text) + '</div></div>';
-}
+
 
 
 /* [altText] rewrites the card's words for where it is being shown — the wheel
@@ -7364,6 +7292,13 @@ function tipHtml(key, cls) {
   return '<div class="tip' + (cls ? " " + cls : "") + '" role="note"><span class="tipic">' + setIcon("tips") + "</span>" +
     '<span class="tiptx">' + esc(TIPS[key]) + "</span>" +
     '<button class="tipx" data-act="tipDone" data-t="' + key + '" aria-label="Got it, hide this tip">&times;</button></div>';
+}
+/* Words that always sit in a tip's box — instructions for a screen rather
+   than a tip: no close button, and the Settings switch doesn't hide them.
+   [html] is already escaped. */
+function noteTipHtml(html) {
+  return '<div class="tip fixed" role="note"><span class="tipic">' + setIcon("tips") + "</span>" +
+    '<span class="tiptx">' + html + "</span></div>";
 }
 
 var SET_ICONS = {
