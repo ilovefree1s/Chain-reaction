@@ -130,9 +130,6 @@
   /* 44, not 56: wide enough for a two-digit blow-up hole, and every pixel saved
      here is a pixel the name beside it gets to keep. */
   .num { width: 44px; text-align: center; font-size: 32px; font-weight: 900; }
-  /* − score + as one tight cluster: the row's 10px gap holds it off the name,
-     but inside it the three pieces sit nearly flush. */
-  .steps { display: flex; align-items: center; gap: 3px; }
 
   input[type=text] {
     width: 100%; min-height: var(--tap); background: var(--panel); color: var(--off);
@@ -171,11 +168,6 @@
                box-shadow: 0 0 14px rgba(247, 148, 30, 0.35); }
   .player .name { font-size: 22px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .player.me .name { color: var(--self); }
-  /* Name and figure share a line: the name gives way first, so a long one
-     ellipsizes rather than pushing the score out of the row. */
-  .nameline { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
-  .nameline .name { min-width: 0; flex: 0 1 auto; }
-  .nameline .rel { flex: 0 0 auto; }
   .rel { font-size: 15px; font-weight: 900; }
   /* A size down from the score above it: it is the quieter half of the row,
      and at 15px the lead flag and the skins together outgrew the column and
@@ -194,6 +186,28 @@
                     transform: translateX(-50%); z-index: 1;
                     margin: 0 0 3px; padding: 1px 5px; font-size: 11px;
                     vertical-align: baseline; line-height: 1.3; }
+  /* The Score tab's rows, big: a larger face and name, round minus and plus,
+     and this hole's score in large type, marked as the hole strip marks it. */
+  .player.sboard { padding: 12px; margin-bottom: 10px; }
+  .scorepage.tight .player.sboard { padding: 11px 12px; margin-bottom: 9px; }
+  .player.sboard .row { gap: 12px; }
+  .player.sboard .pbadge { align-self: center; }
+  .player.sboard .name { font-size: 21px; font-weight: 800; }
+  .scorepage.tight .player.sboard .name { font-size: 21px; }
+  .player.sboard .subline { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin-top: 4px; font-size: 14px; }
+  .player.sboard .subline .lead { margin: 0; }
+  .player.sboard .subline .handct { margin: 0; }
+  .player.sboard .subline .rel { font-size: 15px; }
+  .sctl { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
+  .sbtn { width: 44px; height: 44px; min-height: 0; flex: 0 0 44px; padding: 0; border-radius: 50%;
+          background: #0B1322; border: 1px solid #3A4A66; font-size: 24px; font-weight: 900; line-height: 1;
+          display: flex; align-items: center; justify-content: center; }
+  .smark { width: 50px; height: 50px; box-sizing: border-box; display: grid; place-items: center;
+           font-size: 30px; font-weight: 900; border: 2px solid transparent; }
+  .smark.none { color: #4A5B7A; }
+  .smark.under { border-color: #3FA9FF; border-radius: 50%; color: #BFE2FF; }
+  .smark.eagle { border-color: #47D97F; border-radius: 50%; color: #C8FFD9; box-shadow: 0 0 10px rgba(71, 217, 127, 0.45); }
+  .smark.over { border-color: #FF5A4D; border-radius: 4px; color: #FFC9C4; }
   /* Under par cool blue, even quiet, over par hot orange — the palette does the talking. */
   .rel.under { color: var(--react); }
   .rel.even { color: var(--sage); }
@@ -2136,7 +2150,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.3.192 · 11 Oct 16:54";
+var APP_VERSION = "v1.3.194 · 11 Oct 17:03";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. The arrow beside it goes and looks for a
@@ -5763,33 +5777,32 @@ function renderScore() {
     var held = handCountFor(s, i);
     var chip = held != null
       ? '<span class="handct">' + held + "/" + DATA.handCap + "</span>" : "";
-    return '<div class="player' + (me ? " me" : "") + '"><div class="row">' +
+    // This hole's score, marked the way the strip and a paper card mark it:
+    // green for two under or better, a blue circle for a birdie, a red square
+    // over par, plain at par.
+    var diff = score == null ? null : score - par;
+    var mark = diff == null ? " none" : diff <= -2 ? " eagle" : diff < 0 ? " under" : diff > 0 ? " over" : "";
+    return '<div class="player sboard' + (me ? " me" : "") + '"><div class="row">' +
       // Only takes up room once somebody has actually picked a character.
-      // The row's own gap is the whole spacing — names were getting cut off.
       // The hand count rides the badge's corner, where it costs the row no
       // width at all. Without a badge there is no corner, so it falls back to
       // the line under the name.
-      (ch ? '<div class="pbadge">' + badgeHtml(ch, 40) + chip + '</div>' : "") +
-      // Over/under sits beside the name, where the eye already is. No running
-      // stroke total: the par tells the story mid-round, and totals wait for
-      // the results screen.
-      '<div class="grow"><div class="nameline"><div class="name">' + esc(name) + '</div>' +
-        '<div class="rel ' + relClass(rel) + '">' + fmtRel(rel) + '</div></div>' +
-        // What is left below: the lead flag, the skins, and — for a player with
-        // no badge to carry it — the hand count. Dropped entirely when empty,
-        // so a plain stroke round keeps its rows tight.
-        (function () {
-          var below = (lead ? '<span class="lead">LEAD</span>' : "") +
-            (isSkins(s) ? plural(skinsFor(s, i), "skin") : "") +
-            (ch ? "" : (chip ? " " + chip : ""));
-          return below ? '<div class="subline">' + below + '</div>' : "";
-        }()) +
-        '</div>' +
-      '<div class="steps">' +
-      '<button class="step" data-act="score" data-i="' + i + '" data-n="-1"' +
-        (locked || (score != null && score <= 1) ? " disabled" : "") + '>&minus;</button>' +
-      '<div class="num">' + (score == null ? "&ndash;" : score) + '</div>' +
-      '<button class="step" data-act="score" data-i="' + i + '" data-n="1"' + (locked ? " disabled" : "") + '>+</button>' +
+      (ch ? '<div class="pbadge">' + badgeHtml(ch, 54) + chip + '</div>' : "") +
+      // No running stroke total: the par tells the story mid-round, and totals
+      // wait for the results screen.
+      '<div class="grow"><div class="name">' + esc(name) + '</div>' +
+        // Under the name: over/under, the lead flag, the skins, and — for a
+        // player with no badge to carry it — the hand count.
+        '<div class="subline"><span class="rel ' + relClass(rel) + '">' + fmtRel(rel) + '</span>' +
+        (lead ? '<span class="lead">LEAD</span>' : "") +
+        (isSkins(s) ? '<span class="skn">' + plural(skinsFor(s, i), "skin") + "</span>" : "") +
+        (ch ? "" : chip) + "</div></div>" +
+      '<div class="sctl">' +
+      '<button class="sbtn" data-act="score" data-i="' + i + '" data-n="-1"' +
+        (locked || (score != null && score <= 1) ? " disabled" : "") + ' aria-label="One less for ' + esc(name) + '">&minus;</button>' +
+      '<div class="smark' + mark + '">' + (score == null ? "&ndash;" : score) + '</div>' +
+      '<button class="sbtn" data-act="score" data-i="' + i + '" data-n="1"' + (locked ? " disabled" : "") +
+        ' aria-label="One more for ' + esc(name) + '">+</button>' +
       '</div></div></div>';
   }).join("");
 
