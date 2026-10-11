@@ -523,7 +523,10 @@
   .hlist { touch-action: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
   .hrow.lift { border-color: #FFFFFF; box-shadow: inset 0 0 0 1px #FFFFFF, 0 0 14px var(--rare); transform: scale(1.02); }
   .hrow { transition: transform 0.12s ease-out; }
-  .peekwrap.handpeek .card { width: min(260px, 66vw); box-shadow: 0 12px 34px rgba(0, 0, 0, 0.8); }
+  .peekwrap.handpeek .hface { width: min(238px, 62vw); cursor: default; animation: hpeekin 0.14s ease-out;
+                              box-shadow: 0 0 0 1.5px #FFFFFF, 0 14px 30px rgba(0, 0, 0, 0.7), 0 0 22px var(--rare); }
+  @keyframes hpeekin { from { opacity: 0; } }
+  @media (prefers-reduced-motion: reduce) { .peekwrap.handpeek .hface { animation: none; } }
   .hfan .hface.picked { transform: translateX(calc(var(--k) * var(--st) * var(--u))) translateY(calc((var(--ak) * 6 - 28) * var(--u)))
                                    rotate(calc(var(--k) * var(--an) * 1deg));
                         box-shadow: 0 0 0 2px #FF8A1E, 0 0 16px rgba(255, 138, 30, 0.6); }
@@ -2247,7 +2250,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.3.222 · 11 Oct 18:56";
+var APP_VERSION = "v1.3.223 · 11 Oct 18:59";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. The arrow beside it goes and looks for a
@@ -11955,12 +11958,12 @@ function scrubItemAt(d, x, y) {
   }
   return items[at];
 }
-/* Listed, where the full card goes: above or below the held row, whichever
-   has more room, shrunk to fit there since a long card is taller than either
-   half — never over the row being held. */
+/* Listed, the held card comes up as its face, the one the fan grows: above or
+   below the held row, whichever has more room, shrunk to fit there if it must
+   — never over the row being held. */
 function scrubPlace(d) {
   if (!d.peek || !d.card || d.axis === "x") return;
-  var card = d.peek.querySelector(".card");
+  var card = d.peek.querySelector(".hface");
   if (!card) return;
   card.style.transform = "";
   var h = card.offsetHeight, r = d.card.getBoundingClientRect();
@@ -11970,6 +11973,9 @@ function scrubPlace(d) {
   card.style.transformOrigin = "top center";
   card.style.transform = "scale(" + k.toFixed(3) + ")";
 }
+function listPeekHtml(row) {
+  return smallFaceHtml(BY_ID[+row.getAttribute("data-i")], "", false, false, "");
+}
 function scrubLift(card) {
   var d = handScrub;
   if (d.card === card) return;
@@ -11978,7 +11984,7 @@ function scrubLift(card) {
   d.z = card.style.zIndex;
   card.classList.add("lift");
   if (d.axis === "x") card.style.zIndex = 20;
-  if (d.peek && d.axis === "y") { d.peek.innerHTML = cardHtml(BY_ID[+card.getAttribute("data-i")], false); scrubPlace(d); }
+  if (d.peek && d.axis === "y") { d.peek.innerHTML = listPeekHtml(card); scrubPlace(d); }
 }
 function scrubShow() {
   var d = handScrub;
@@ -11988,7 +11994,7 @@ function scrubShow() {
   if (d.axis === "x") { d.peek = true; d.box.classList.add("peeking"); return; }
   d.peek = document.createElement("div");
   d.peek.className = "peekwrap handpeek" + (d.axis === "y" ? " rows" : "");
-  d.peek.innerHTML = cardHtml(BY_ID[+d.card.getAttribute("data-i")], false);
+  d.peek.innerHTML = listPeekHtml(d.card);
   document.body.appendChild(d.peek);
   scrubPlace(d);
 }
