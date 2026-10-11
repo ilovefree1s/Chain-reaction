@@ -478,18 +478,6 @@
          white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .hrm b { color: var(--rare); }
   .hrc { color: #4A5B7A; font-size: 22px; font-weight: 300; }
-  /* Up over down, filling the end of the row top to bottom so each is a fair
-     target for a thumb; the first card has no up, the last no down. */
-  .hmove { flex: 0 0 auto; align-self: stretch; display: flex; flex-direction: column; margin: -7.5px -12px -7.5px 0;
-           border-left: 1px solid #22304A; }
-  .hmv { flex: 1; width: 46px; min-height: 0; padding: 0; border: 0; border-radius: 0; background: none; color: #8EA0BF; cursor: pointer;
-         display: grid; place-items: center; }
-  .hmv + .hmv { border-top: 1px solid #22304A; }
-  .hmv svg { width: 14px; height: 9px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
-  .hmv:active { color: #FF8A1E; background: rgba(255, 138, 30, 0.12); }
-  .hmv:disabled { color: #2A3854; cursor: default; background: none; }
-  @media (max-height: 820px) { .handpage.list .hmove { margin-top: -5px; margin-bottom: -5px; } }
-  @media (max-height: 760px) { .handpage.list .hmove { margin-top: -3.5px; margin-bottom: -3.5px; } }
   /* Shorter screens give each row a little less, so a full hand still fits. */
   @media (max-height: 820px) {
     .handpage.list .hrow { padding-top: 5px; padding-bottom: 5px; }
@@ -6204,21 +6192,26 @@ function smallFaceHtml(c, act, picked, held, more, words) {
     '<div class="hfx">' + (words != null ? "<p>" + cardHalves(words).map(esc).join("</p><p>") + "</p>" : esc(c.text)) +
     '</div><i class="hfg"></i></div>';
 }
-/* A card in the list: its tier's gem, name, and tier, kind and timing, and
-   arrows at the end to move it up or down the hand. [k] of [n] is where it
-   sits; without them (mid-trade, when a tap picks) the row has no arrows. */
-function handRowHtml(c, act, picked, held, k, n) {
+/* A card in the list: its tier's gem, name, and tier, kind and timing. */
+function handRowHtml(c, act, picked, held) {
   var rare = rarityOf(c);
   return '<div class="hrow' + (picked ? " picked" : "") + '" data-act="' + act + '" data-i="' + c.id + '" style="' + rarityVars(rare) + '">' +
     '<i class="hrg"></i><div class="hrt"><div class="hrn">' + esc(c.name) + (held ? ' <span class="hrheld">HELD</span>' : "") + "</div>" +
     '<div class="hrm"><b>' + esc(rare.id) + "</b> &middot; " + (wheelOnlyCard(c.id) ? "wheel only &middot; " : "") +
-    esc(c.kind) + " &middot; " + esc(c.timing) + '</div></div>' +
-    (n > 1 ? '<span class="hmove">' + moveArrow(c, -1, k === 0) + moveArrow(c, 1, k === n - 1) + "</span>" : '<span class="hrc">&rsaquo;</span>') + "</div>";
+    esc(c.kind) + " &middot; " + esc(c.timing) + '</div></div><span class="hrc">&rsaquo;</span></div>';
 }
-function moveArrow(c, d, end) {
-  return '<button class="hmv" data-act="moveCard" data-i="' + c.id + '" data-d="' + d + '"' + (end ? " disabled" : "") +
-    ' aria-label="Move ' + esc(c.name) + (d < 0 ? " up" : " down") + '"><svg viewBox="0 0 12 8" aria-hidden="true"><path d="' +
-    (d < 0 ? "M1 7L6 1.6L11 7" : "M1 1L6 6.4L11 1") + '"/></svg></button>';
+/* The hand as the HAND tab lays it out, sorted by tier: commons first (top of
+   the list, left of the fan), then uncommon, rare and epic, legendaries last.
+   Cards of one tier keep the order they arrived in. */
+function handByTier(ids) {
+  var rank = function (id) {
+    var t = rarityOf(BY_ID[id]).id;
+    for (var i = 0; i < RARITIES.length; i++) if (RARITIES[i].id === t) return i;
+    return 0;
+  };
+  return ids.map(function (id, k) { return { id: id, k: k, r: rank(id) }; })
+    .sort(function (a, b) { return a.r - b.r || a.k - b.k; })
+    .map(function (x) { return x.id; });
 }
 /* A fan spreads wider the fewer cards it holds, so a short hand doesn't huddle
    in the middle and a full one stays on the screen. */
@@ -6285,14 +6278,11 @@ function renderHand() {
     cards = '<p class="hint">Nothing in hand. Cards arrive when you lock a hole.</p>';
   } else if (view === "list") {
     var room = DATA.handCap - s.hand.length;
-    cards = '<div class="hlist">' + s.hand.map(function (id, k) {
-      return tradeUp ? handRowHtml(BY_ID[id], act, picked(id), held[id] != null)
-                     : handRowHtml(BY_ID[id], act, picked(id), held[id] != null, k, s.hand.length);
-    }).join("") +
+    cards = '<div class="hlist">' + handByTier(s.hand).map(function (id) { return handRowHtml(BY_ID[id], act, picked(id), held[id] != null); }).join("") +
       (room > 0 ? '<div class="hrow hslot">' + plural(room, "open slot") + "</div>" : "") + "</div>";
   } else {
     var n = s.hand.length, sp = FAN_SPREAD[Math.min(n, 7)];
-    cards = (n > 1 ? tipHtml("fanSlide") : "") + '<div class="hfan" style="--st:' + sp[0] + ";--an:" + sp[1] + '">' + s.hand.map(function (id, k) {
+    cards = (n > 1 ? tipHtml("fanSlide") : "") + '<div class="hfan" style="--st:' + sp[0] + ";--an:" + sp[1] + '">' + handByTier(s.hand).map(function (id, k) {
       return handFaceHtml(BY_ID[id], act, picked(id), held[id] != null, k, n);
     }).join("") + "</div>";
   }
@@ -12018,8 +12008,6 @@ function scrubLetGo() {
 }
 var scrubMissedRender = false;
 app.addEventListener("pointerdown", function (e) {
-  // The arrows on a list row move the card; they never start a hold.
-  if (e.target.closest && e.target.closest(".hmove")) { peekAte = false; return; }
   var card = e.target.closest && e.target.closest(".hfan .hface, .hlist .hrow[data-i]");
   if (!card || handScrub) return;
   var fan = !!card.closest(".hfan");
@@ -12174,14 +12162,6 @@ app.addEventListener("click", function (e) {
       if (s.hand.length) { confirmPass = true; render(); break; }
       passPrio(s); render(); break;
     case "passNo": confirmPass = false; render(); break;
-    case "moveCard": {
-      // The order is only how this phone lays the hand out, so it is saved and
-      // nothing is sent.
-      var mid = +el.getAttribute("data-i"), from = s.hand.indexOf(mid), to = from + (+el.getAttribute("data-d"));
-      if (from < 0 || to < 0 || to >= s.hand.length) break;
-      s.hand.splice(from, 1); s.hand.splice(to, 0, mid);
-      save(s); render(); break;
-    }
     case "handView":
       settings.handView = el.getAttribute("data-v") === "list" ? "list" : "fan";
       putSettings(settings);
