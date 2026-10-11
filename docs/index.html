@@ -555,6 +555,11 @@
          color: #4DC3FF; font-size: 5.6cqw; font-weight: 900; letter-spacing: 0.06em; text-transform: uppercase; }
   .hfx { padding: 4cqw 7cqw 0; font-size: 7.2cqw; line-height: 1.32; color: #D5DEEE;
          display: -webkit-box; -webkit-line-clamp: 7; -webkit-box-orient: vertical; overflow: hidden; }
+  /* The card a spin lands on: one face, big enough to read, growing to fit
+     every word of it rather than cutting the wording off. */
+  .hface.landed { width: min(270px, 74vw); margin: 4px auto 14px; padding-bottom: 14cqw; overflow: visible; cursor: default; }
+  .hface.landed .hfx { display: block; overflow: visible; font-size: 6.4cqw; }
+  .hface.landed .hfx p { margin: 0 0 3cqw; }
   .hfg { position: absolute; left: 50%; bottom: 4cqw; width: 7cqw; height: 7cqw; transform: translateX(-50%) rotate(45deg);
          background: var(--rare); box-shadow: 0 0 3cqw var(--rare); }
   /* Draw and Pass, pinned over the tab bar the way the hole strip is, and the
@@ -2242,7 +2247,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.3.218 · 11 Oct 18:36";
+var APP_VERSION = "v1.3.219 · 11 Oct 18:39";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. The arrow beside it goes and looks for a
@@ -6174,14 +6179,18 @@ function handFaceHtml(c, act, picked, held, k, n) {
   return smallFaceHtml(c, act, picked, held, ";--k:" + (k - mid) + ";--ak:" + Math.abs(k - mid) + ";z-index:" + (k + 1));
 }
 /* The little face itself, wherever it sits: tier and kind, name, timing, words. */
-function smallFaceHtml(c, act, picked, held, more) {
+/* [words] stands in for the card text, whole and in its halves: the wheel
+   fills names into it and shows the card it landed on this way, untapped. */
+function smallFaceHtml(c, act, picked, held, more, words) {
   var rare = rarityOf(c);
-  return '<div class="hface ht-' + rare.id + (picked ? " picked" : "") + (held ? " held" : "") + '" data-act="' + act + '" data-i="' + c.id + '" style="' +
+  return '<div class="hface ht-' + rare.id + (picked ? " picked" : "") + (held ? " held" : "") + (words != null ? " landed" : "") + '"' +
+    (act ? ' data-act="' + act + '"' : "") + ' data-i="' + c.id + '" style="' +
     rarityVars(rare) + (more || "") + '">' +
     '<div class="hft"><b>' + esc(rare.id) + "</b><span>" + esc(c.kind) + "</span></div>" +
     '<div class="hfn">' + esc(c.name) + "</div>" +
     '<span class="hfw">' + (held ? "HELD &middot; " : "") + (wheelOnlyCard(c.id) ? "wheel only &middot; " : "") + esc(c.timing) + "</span>" +
-    '<div class="hfx">' + esc(c.text) + '</div><i class="hfg"></i></div>';
+    '<div class="hfx">' + (words != null ? "<p>" + cardHalves(words).map(esc).join("</p><p>") + "</p>" : esc(c.text)) +
+    '</div><i class="hfg"></i></div>';
 }
 /* A card in the list: its tier's gem, name, and tier, kind and timing. */
 function handRowHtml(c, act, picked, held) {
@@ -7844,7 +7853,7 @@ function renderWheel() {
     }
   }
   if (cardSettled) {
-    html += cardHtml(wheel.card, false, wheelWords(wheel.card, wheel));
+    html += smallFaceHtml(wheel.card, "", false, false, "", wheelWords(wheel.card, wheel));
   }
   // Team cards take a second name instead of a good/bad half.
   if (stage === "cardDone" && needsMate(wheel.card.id)) {
