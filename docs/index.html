@@ -2124,7 +2124,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.3.185 · 11 Oct 16:37";
+var APP_VERSION = "v1.3.186 · 11 Oct 16:43";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. The arrow beside it goes and looks for a
@@ -2154,6 +2154,22 @@ var updating = false;
  * Without a service worker at all — a browser that blocks them, or a first
  * visit that has not registered yet — a hard reload is the whole of it.
  */
+/*
+ * Which build the site is serving right now, read off the page itself. Asked
+ * past every cache (a query string the worker has never stored, and no-store),
+ * so the answer is the server's and not this phone's.
+ */
+function liveBuild() {
+  if (!window.fetch) return Promise.resolve(null);
+  return fetch("index.html?build=" + Date.now(), { cache: "no-store" })
+    .then(function (res) { return res && res.ok ? res.text() : ""; })
+    .then(function (text) {
+      var m = /var APP_VERSION = "([^"]+)"/.exec(text);
+      return m ? m[1] : null;
+    })
+    .catch(function () { return null; });
+}
+
 function checkForUpdate() {
   if (updating) return;
   updating = true;
@@ -2184,22 +2200,33 @@ function checkForUpdate() {
     localNote("You are on the newest version.", "Up to date");
     render();
   }
+  /*
+   * Two answers, and the site's wins. The worker alone can't tell a stale
+   * page: once it has fetched the new build in the background it has nothing
+   * newer to find, while the page on screen — resumed, never reloaded — is
+   * still the old one, and the button used to report that as up to date. The
+   * worker's answer stands only when the site can't be reached to say.
+   */
+  var workerNew = false, site, waiting = 2;
+  function behind() { return site ? site !== APP_VERSION : workerNew; }
+  function settle() { if (--waiting === 0) finish(behind()); }
+  liveBuild().then(function (v) { site = v; settle(); });
   // However it goes, the arrow stops spinning: a check that hangs on a dead
   // connection must not leave the button looking busy for the rest of the round.
-  setTimeout(function () { finish(false); }, 12000);
+  setTimeout(function () { finish(behind()); }, 12000);
   if (!navigator.serviceWorker) { location.reload(); return; }
   navigator.serviceWorker.getRegistrations().then(function (regs) {
     if (!regs.length) { location.reload(); return; }
-    var waited = 0;
+    var left = regs.length, seen = 0;
     regs.forEach(function (reg) {
       // A worker that turns up installing or waiting IS the new build.
-      reg.addEventListener("updatefound", function () { waited++; });
+      reg.addEventListener("updatefound", function () { seen++; });
       reg.update().then(function () {
-        if (reg.installing || reg.waiting || waited) finish(true);
-        else finish(false);
-      }).catch(function () { finish(false); });
+        if (reg.installing || reg.waiting || seen) workerNew = true;
+      }).catch(function () { /* the site's answer still counts */ })
+        .then(function () { if (--left === 0) settle(); });
     });
-  }).catch(function () { finish(false); });
+  }).catch(function () { settle(); });
 }
 
 /* Artwork, inlined as data URIs by web/build.js so this stays one file. */
