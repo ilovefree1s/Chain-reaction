@@ -383,6 +383,11 @@
   /* Over the fan it sits in the empty space above the cards rather than
      pushing them down, so the tab still fits a short phone. */
   .handpage.fan .tip { position: relative; z-index: 1; margin-bottom: -26px; background: #160E08; }
+  /* A tip floating under the thing in the corner it points at, arrow up to it. */
+  .tip.callout { position: absolute; top: calc(100% + 8px); right: 0; z-index: 8; width: min(250px, 72vw); margin: 0;
+                 text-align: left; background: #160E08; box-shadow: 0 8px 22px rgba(0, 0, 0, 0.6); }
+  .tip.callout::before { content: ""; position: absolute; top: -7px; right: 28px; width: 12px; height: 12px; transform: rotate(45deg);
+                         background: #160E08; border-left: 1px solid rgba(255, 138, 30, 0.45); border-top: 1px solid rgba(255, 138, 30, 0.45); }
   .tipic { flex: 0 0 auto; color: #FF8A1E; display: grid; place-items: center; }
   .tipic svg { width: 18px; height: 18px; }
   .tiptx { flex: 1; min-width: 0; font-size: 12.5px; line-height: 1.3; color: var(--off); }
@@ -1513,7 +1518,7 @@
                    padding: 0 12px; color: var(--sage); font-weight: 700; font-size: 17px; }
   /* Centred on the bar, not the leftover space; side margins keep a long course name
      from running under the Menu button. */
-  .backbar span { color: var(--off); font-weight: 900; font-style: italic; font-size: 18px;
+  .backbar > span { color: var(--off); font-weight: 900; font-style: italic; font-size: 18px;
                   letter-spacing: 1.5px; margin: 0 88px; overflow: hidden;
                   text-overflow: ellipsis; white-space: nowrap; }
 
@@ -5369,7 +5374,7 @@ function render() {
   } else {
     // The course you're on. The hole and par live in the Score screen's own header.
     // The tab's page sits in a wrapper of its own, which is what a swipe moves.
-    html = backBar(state.courseName || "", tab === "hand" ? handViewToggle() : "") +
+    html = backBar(state.courseName || "", tab === "hand" ? handViewToggle() + tipHtml("viewSwitch", "callout") : "") +
       '<div class="tabslide">' + tabHtml(tab) + '</div>' +
       renderNav();
   }
@@ -7339,7 +7344,8 @@ function tipsOn() { return settings.tips !== false; }
  * seen if they are switched back on.
  */
 var TIPS = {
-  fanSlide: "Touch a card and keep your finger down, then slide left and right to read through your hand."
+  fanSlide: "Touch a card and keep your finger down, then slide left and right to read through your hand.",
+  viewSwitch: "Switch your hand between fanned cards and a list here."
 };
 function tipSeen(key) { return !!(settings.tipsSeen && settings.tipsSeen[key]); }
 function markTipSeen(key) {
@@ -7348,9 +7354,11 @@ function markTipSeen(key) {
   settings.tipsSeen[key] = true;
   putSettings(settings);
 }
-function tipHtml(key) {
+/* [cls] "callout" floats it over the page beside what it points at, rather
+   than taking a line of its own — it is closed in a tap, so covering is fine. */
+function tipHtml(key, cls) {
   if (!tipsOn() || tipSeen(key) || !TIPS[key]) return "";
-  return '<div class="tip" role="note"><span class="tipic">' + setIcon("tips") + "</span>" +
+  return '<div class="tip' + (cls ? " " + cls : "") + '" role="note"><span class="tipic">' + setIcon("tips") + "</span>" +
     '<span class="tiptx">' + esc(TIPS[key]) + "</span>" +
     '<button class="tipx" data-act="tipDone" data-t="' + key + '" aria-label="Got it, hide this tip">&times;</button></div>';
 }
@@ -12144,7 +12152,9 @@ app.addEventListener("click", function (e) {
     case "passNo": confirmPass = false; render(); break;
     case "handView":
       settings.handView = el.getAttribute("data-v") === "list" ? "list" : "fan";
-      putSettings(settings); render(); break;
+      putSettings(settings);
+      markTipSeen("viewSwitch"); // found the switch: the tip pointing at it is done
+      render(); break;
     case "passYes":
       confirmPass = false;
       if (!iHavePrio(s)) { render(); break; }
