@@ -5015,6 +5015,9 @@ function startRound() {
     ? (hostTable && hostTable.cfg && typeof hostTable.cfg.round === "string" ? hostTable.cfg.round : null)
     : eventId();
   commit(round);
+  // A new round brings the helpful tips back: each shows once a round, unless
+  // tips are switched off in Settings.
+  if (settings.tipsSeen) { settings.tipsSeen = {}; putSettings(settings); }
   // The room rides with the round: a reload rejoins it without asking.
   if (live) {
     state.liveCode = live.code;
@@ -7339,9 +7342,9 @@ function tipsOn() { return settings.tips !== false; }
 
 /*
  * The helpful tips, each shown in the place it is about until the player
- * closes it or does the thing it describes, and never again after that.
- * Switching tips off in Settings hides them all; the ones already seen stay
- * seen if they are switched back on.
+ * closes it or does the thing it describes, and not again that round —
+ * starting a new round brings them all back. Switching tips off in Settings
+ * hides them all.
  */
 var TIPS = {
   fanSlide: "Touch a card and keep your finger down, then slide left and right to read through your hand.",
