@@ -674,6 +674,7 @@
      edge or sprung back. pan-y hands horizontal drags to us and leaves vertical
      ones as scrolling. The chevrons deliberately skip all of it and cut. */
   .faceslide { touch-action: pan-y; }
+  .faceinner.picking .faceslide { margin: 0 auto; }
   .faceslide.settling { transition: transform 180ms ease-out; }
   .faceslide.leaving { transition: transform 200ms ease-in, opacity 200ms ease-in;
                        opacity: 0; }
@@ -5383,6 +5384,7 @@ function render() {
   if (diceSim) drawDiceSim(diceSim);
   fitArtWords();
   fitHandList();
+  fitPickFace();
   // The faces are carried in the page but still arrive after the first paint.
   // Anything measured before then was measured against a stand-in, and these two
   // are far wider than what stands in for them — so those answers are thrown
@@ -5393,6 +5395,7 @@ function render() {
       ART_FIT = {};
       fitArtWords();
       fitHandList();
+      fitPickFace();
     });
   }
   if (secretSel) {
@@ -5448,7 +5451,19 @@ function fitHandList(again) {
     rows[j].style.paddingTop = rows[j].style.paddingBottom = (pad + each / 2) + "px";
   }
 }
-window.addEventListener("resize", function () { fitHandList(); });
+window.addEventListener("resize", function () { fitHandList(); fitPickFace(); });
+/* Choosing who a card lands on: the card shrinks until every name fits under
+   it, so nobody has to scroll to find who they are playing it on. */
+function fitPickFace() {
+  var m = app.querySelector(".facemodal"), slide = m && m.querySelector(".faceinner.picking .faceslide");
+  if (!slide) return;
+  slide.style.width = "";
+  var over = m.scrollHeight - m.clientHeight;
+  if (over <= 0) return;
+  var w = slide.offsetWidth, h = slide.offsetHeight;
+  if (!w || !h) return;
+  slide.style.width = Math.max(140, Math.floor(w - (over + 2) * w / h)) + "px";
+}
 
 function backBar(title, right) {
   return '<div class="backbar">' +
@@ -7785,7 +7800,7 @@ function renderFaceModal() {
   }
   // Nothing animates in: a swiped-to card came over during the swipe and is
   // already in place when this draws, and a chevron simply cuts.
-  return '<div class="modal facemodal"><div class="faceinner" style="' +
+  return '<div class="modal facemodal"><div class="faceinner' + (inHand && playTarget === c.id ? " picking" : "") + '" style="' +
     rarityVars(rarityOf(c)) + '">' +
     '<div class="faceslide">' + face + '</div>' + nav + acts +
     (closeUsed
