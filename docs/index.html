@@ -2250,7 +2250,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.3.224 · 11 Oct 19:01";
+var APP_VERSION = "v1.3.225 · 11 Oct 21:01";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. The arrow beside it goes and looks for a
@@ -7176,7 +7176,7 @@ function renderRoundRules() {
       '</div>'
     : '<div class="racts">' +
       '<button class="ract dispute" data-act="dispute">Settle a dispute<small>coin, dice, wheel or cards</small></button>' +
-      '<button class="ract end" data-act="endAsk">End round<small>or tap RULES 3&times;</small></button></div>';
+      '<button class="ract end" data-act="endAsk">End round</button></div>';
 
   // Live first after that: joining mid-round shouldn't mean scrolling past the
   // whole deck. Courses are made in Setup's course sheet — mid-round the Rules
