@@ -67,7 +67,7 @@ drop the file in `raw/`, add one `copyAudio("x.mp3")` line, rebuild.
 Current audio: `chains.mp3` (general menu sound), `draw.wav` (one card leaving the
 deck), `shuffle.wav` (shuffling), `dice.mp3`, `coin.mp3`, `gamble.mp3` (wheel),
 `lonewolf.mp3`, `gamblegamesbeep.mp3` + `gameselected.mp3` (the game picker), and
-`chainreaction.mp3` (the 4.8MB soundtrack).
+`goldenjacket.mp3` (the 5.5MB soundtrack, "Golden Jacket").
 
 `playClip(audio, volume, maxSeconds, rate)` clips and pitches; `warmClips()` primes
 them at startup so the first play is not late.

@@ -205,7 +205,7 @@ const pickedSound = copyAudio("gameselected.mp3");
  * list would simply mean no music.
  */
 const musicTracks = [
-  copyAudio("chainreaction.mp3"),
+  copyAudio("goldenjacket.mp3"),
 ].filter(Boolean);
 
 // ---- card faces: card_01 .. one per card, dropped into the Android drawables ----
