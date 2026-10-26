@@ -148,6 +148,8 @@
   .pilerow { font-size: 12px; font-weight: 900; letter-spacing: 1px; color: #5E6C88;
              margin: 12px 0 4px; }
   .pilerow.played { color: #4DC3FF; }
+  .pilegrid .pilerow { margin: 0 0 5px; font-size: 11px; line-height: 1.25; }
+  .pilecell { min-width: 0; }
 
   .holehead { margin-bottom: 16px; }
   .stripgap { height: 50px; }
@@ -2251,7 +2253,7 @@ applyCharacterNames();
  * plus the time it was built. Shown at the foot of the menu and of Settings, so
  * the group can hold two phones side by side and see who needs to reload.
  */
-var APP_VERSION = "v1.3.227 · 20 Oct 00:22";
+var APP_VERSION = "v1.3.228 · 26 Oct 02:41";
 function versionLine() {
   // Just the number on screen — the full build stamp stays in APP_VERSION for
   // the lobby's stale-phone check. The arrow beside it goes and looks for a
@@ -5369,11 +5371,13 @@ function render() {
       '<div class="tabslide">' + tabHtml(tab) + '</div>' +
       renderNav();
   }
-  if (viewCard != null) html += renderFaceModal();
+  // Opened from the discard pile, the full card sits over the pile, not under it.
+  if (viewCard != null && !pileOpen) html += renderFaceModal();
   if (wheel) html += renderWheel();
   html += renderBeaterWheel();
   if (secret) html += renderSecret();
   if (pileOpen) html += renderPile();
+  if (pileOpen && viewCard != null) html += renderFaceModal();
   if (parsUI.open) html += renderParGrid();
   if (charPick) html += renderCharSheet();
   if (wheelPay) html += renderWheelCost();
@@ -6012,6 +6016,13 @@ function renderResults() {
     '<button class="big quiet" data-act="viewScorecard">Back to scorecard</button>';
 }
 
+/* One card in the pile: the same little face the CARDS screen lays out, with
+   what became of it written over the top. A tap opens the full card. */
+function pileCell(label, played, c) {
+  return '<div class="pilecell"><div class="pilerow' + (played ? " played" : "") + '">' + label + "</div>" +
+    smallFaceHtml(c, "browseCard", false, false) + "</div>";
+}
+
 /* The discard pile, opened from its counter: everything that has left your hand this
    round, newest first, saying which you played and which you dumped. */
 function renderPile() {
@@ -6042,10 +6053,9 @@ function renderPile() {
         '<div style="height:20px"></div>' +
         '<button class="big quiet" data-act="closePile">Close</button></div>';
     }
-    var rows = log.map(function (e) {
-      return '<div class="pilerow' + (e.played ? " played" : "") + '">' +
-        (e.played ? "PLAYED" : "DISCARDED") + "</div>" + cardHtml(BY_ID[e.id], false);
-    }).join("");
+    var rows = '<div class="libgrid pilegrid">' + log.map(function (e) {
+      return pileCell(e.played ? "PLAYED" : "DISCARDED", e.played, BY_ID[e.id]);
+    }).join("") + "</div>";
     return head + picker +
       '<p class="nbody">' + log.length + ' in the pile &middot; ' + playedCount + ' played, ' +
       (log.length - playedCount) + ' discarded.</p>' +
@@ -6068,14 +6078,11 @@ function renderPile() {
       '<div style="height:20px"></div>' +
       '<button class="big quiet" data-act="closePile">Close</button></div>';
   }
-  var theirRows = seen.map(function (e) {
-    if (e.spent) {
-      return '<div class="pilerow">SPENT ON A SPIN</div>' + cardHtml(BY_ID[e.c], false);
-    }
-    return '<div class="pilerow played">PLAYED' +
-      (e.t ? " &middot; on " + (e.t === ALL_TARGET ? "EVERYONE" : esc(e.t)) : "") +
-      "</div>" + cardHtml(BY_ID[e.c], false);
-  }).join("");
+  var theirRows = '<div class="libgrid pilegrid">' + seen.map(function (e) {
+    if (e.spent) return pileCell("SPENT ON A SPIN", false, BY_ID[e.c]);
+    return pileCell("PLAYED" +
+      (e.t ? " &middot; on " + (e.t === ALL_TARGET ? "EVERYONE" : esc(e.t)) : ""), true, BY_ID[e.c]);
+  }).join("") + "</div>";
   return head + picker +
     '<p class="nbody">' + plural(seen.length, "card") + ' seen from ' + esc(s.players[at]) +
     ' this round &mdash; what they played, and what they paid the wheel. Their quiet' +
